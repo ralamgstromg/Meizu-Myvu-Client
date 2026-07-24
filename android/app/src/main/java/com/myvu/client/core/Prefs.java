@@ -293,6 +293,46 @@ public final class Prefs {
         prefs(c).edit().putInt("notification_display_duration", clamped).apply();
     }
 
+    public static boolean wifiEnabled(Context c) {
+        return prefs(c).getBoolean("system_wifi_enabled", false);
+    }
+
+    public static void setWifiEnabled(Context c, boolean enabled) {
+        prefs(c).edit().putBoolean("system_wifi_enabled", enabled).apply();
+    }
+
+    public static boolean zenModeEnabled(Context c) {
+        return prefs(c).getBoolean("system_zen_mode_enabled", false);
+    }
+
+    public static void setZenModeEnabled(Context c, boolean enabled) {
+        prefs(c).edit().putBoolean("system_zen_mode_enabled", enabled).apply();
+    }
+
+    public static boolean wearDetectionEnabled(Context c) {
+        return prefs(c).getBoolean("system_wear_detection_enabled", true);
+    }
+
+    public static void setWearDetectionEnabled(Context c, boolean enabled) {
+        prefs(c).edit().putBoolean("system_wear_detection_enabled", enabled).apply();
+    }
+
+    public static boolean musicTouchPanelEnabled(Context c) {
+        return prefs(c).getBoolean("system_music_tp_enabled", true);
+    }
+
+    public static void setMusicTouchPanelEnabled(Context c, boolean enabled) {
+        prefs(c).edit().putBoolean("system_music_tp_enabled", enabled).apply();
+    }
+
+    public static boolean airModeEnabled(Context c) {
+        return prefs(c).getBoolean("system_air_mode_enabled", false);
+    }
+
+    public static void setAirModeEnabled(Context c, boolean enabled) {
+        prefs(c).edit().putBoolean("system_air_mode_enabled", enabled).apply();
+    }
+
     /**
      * Optional place to report weather for -- a city name or "lat,lon". Blank
      * means "use the phone's location", which is the normal case; this exists

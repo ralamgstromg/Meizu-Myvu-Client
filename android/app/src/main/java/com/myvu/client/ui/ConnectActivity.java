@@ -292,17 +292,49 @@ public class ConnectActivity extends AppCompatActivity implements LogBus.Listene
     }
 
     private void wireSettings() {
-        toggle(R.id.swWifi, new Toggle() { public void set(boolean on) { service.connection().toggleWifi(on); } });
-        toggle(R.id.swZen, new Toggle() { public void set(boolean on) { service.connection().setZenMode(on); } });
-        toggle(R.id.swWear, new Toggle() { public void set(boolean on) { service.connection().setWearDetection(on); } });
-        toggle(R.id.swMusicTp, new Toggle() { public void set(boolean on) { service.connection().setMusicTpControl(on); } });
-        toggle(R.id.swAir, new Toggle() { public void set(boolean on) { service.connection().setAirMode(on); } });
+        wireSystemToggle(R.id.swWifi, Prefs.wifiEnabled(this), new SystemToggleSetter() {
+            @Override public void set(boolean enabled) { Prefs.setWifiEnabled(ConnectActivity.this, enabled); }
+            @Override public void sendToGlasses(ConnectionManager conn, boolean enabled) { conn.toggleWifi(enabled); }
+        });
+        wireSystemToggle(R.id.swZen, Prefs.zenModeEnabled(this), new SystemToggleSetter() {
+            @Override public void set(boolean enabled) { Prefs.setZenModeEnabled(ConnectActivity.this, enabled); }
+            @Override public void sendToGlasses(ConnectionManager conn, boolean enabled) { conn.setZenMode(enabled); }
+        });
+        wireSystemToggle(R.id.swWear, Prefs.wearDetectionEnabled(this), new SystemToggleSetter() {
+            @Override public void set(boolean enabled) { Prefs.setWearDetectionEnabled(ConnectActivity.this, enabled); }
+            @Override public void sendToGlasses(ConnectionManager conn, boolean enabled) { conn.setWearDetection(enabled); }
+        });
+        wireSystemToggle(R.id.swMusicTp, Prefs.musicTouchPanelEnabled(this), new SystemToggleSetter() {
+            @Override public void set(boolean enabled) { Prefs.setMusicTouchPanelEnabled(ConnectActivity.this, enabled); }
+            @Override public void sendToGlasses(ConnectionManager conn, boolean enabled) { conn.setMusicTpControl(enabled); }
+        });
+        wireSystemToggle(R.id.swAir, Prefs.airModeEnabled(this), new SystemToggleSetter() {
+            @Override public void set(boolean enabled) { Prefs.setAirModeEnabled(ConnectActivity.this, enabled); }
+            @Override public void sendToGlasses(ConnectionManager conn, boolean enabled) { conn.setAirMode(enabled); }
+        });
 
         findViewById(R.id.btnSyncTime).setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { if (need()) service.connection().syncTime(); }
         });
         findViewById(R.id.btnDeviceInfo).setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { if (need()) service.connection().query("get_device_info"); }
+        });
+    }
+
+    private interface SystemToggleSetter {
+        void set(boolean enabled);
+        void sendToGlasses(ConnectionManager conn, boolean enabled);
+    }
+
+    private void wireSystemToggle(int id, boolean initialState, final SystemToggleSetter setter) {
+        MaterialSwitch sw = findViewById(id);
+        if (sw == null) return;
+        sw.setChecked(initialState);
+        sw.setOnCheckedChangeListener((btn, isChecked) -> {
+            setter.set(isChecked);
+            if (bound && service != null && service.connection().state() == ConnectionState.READY) {
+                setter.sendToGlasses(service.connection(), isChecked);
+            }
         });
     }
 
