@@ -233,6 +233,8 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
         wireWeather();
+        wireMirror();
+        wireGlassesSettings();
         findViewById(R.id.btnPickApps).setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View view) {
                 startActivity(new Intent(SettingsActivity.this, NotificationAppsActivity.class));
@@ -241,6 +243,84 @@ public class SettingsActivity extends AppCompatActivity {
         findViewById(R.id.btnSettingsBack).setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View view) { finish(); }
         });
+    }
+
+    private void wireMirror() {
+        MaterialSwitch sw = findViewById(R.id.swMirror);
+        if (sw != null) {
+            sw.setChecked(Prefs.mirrorEnabled(this));
+            sw.setOnCheckedChangeListener((b, checked) -> {
+                Prefs.setMirrorEnabled(SettingsActivity.this, checked);
+            });
+        }
+    }
+
+    private void wireGlassesSettings() {
+        com.google.android.material.slider.Slider sliderBrightness = findViewById(R.id.sliderBrightness);
+        com.google.android.material.slider.Slider sliderVolume = findViewById(R.id.sliderVolume);
+        TextView lblBrightness = findViewById(R.id.lblBrightness);
+        TextView lblVolume = findViewById(R.id.lblVolume);
+
+        int currentBrightness = Prefs.brightness(this);
+        int currentVolume = Prefs.volume(this);
+
+        if (sliderBrightness != null) {
+            sliderBrightness.setValue(currentBrightness);
+            if (lblBrightness != null) {
+                lblBrightness.setText("Display brightness: " + currentBrightness + " (Default: 3)");
+            }
+            sliderBrightness.addOnChangeListener((slider, value, fromUser) -> {
+                int val = (int) value;
+                Prefs.setBrightness(SettingsActivity.this, val);
+                if (lblBrightness != null) {
+                    lblBrightness.setText("Display brightness: " + val + " (Default: 3)");
+                }
+                ConnectionManager c = MyvuService.activeConnection();
+                if (c != null) {
+                    c.setBrightness(val);
+                }
+            });
+        }
+
+        if (sliderVolume != null) {
+            sliderVolume.setValue(currentVolume);
+            if (lblVolume != null) {
+                lblVolume.setText("Glasses volume: " + currentVolume + " (Default: 11)");
+            }
+            sliderVolume.addOnChangeListener((slider, value, fromUser) -> {
+                int val = (int) value;
+                Prefs.setVolume(SettingsActivity.this, val);
+                if (lblVolume != null) {
+                    lblVolume.setText("Glasses volume: " + val + " (Default: 11)");
+                }
+                ConnectionManager c = MyvuService.activeConnection();
+                if (c != null) {
+                    c.setVolume(val);
+                }
+            });
+        }
+
+        com.google.android.material.slider.Slider sliderStandbyPos = findViewById(R.id.sliderStandbyPos);
+        TextView lblStandbyPos = findViewById(R.id.lblStandbyPos);
+        int currentStandbyPos = Prefs.standbyPosition(this);
+
+        if (sliderStandbyPos != null) {
+            sliderStandbyPos.setValue(currentStandbyPos);
+            if (lblStandbyPos != null) {
+                lblStandbyPos.setText("Widget FOV position: " + currentStandbyPos + " (Default: 0)");
+            }
+            sliderStandbyPos.addOnChangeListener((slider, value, fromUser) -> {
+                int val = (int) value;
+                Prefs.setStandbyPosition(SettingsActivity.this, val);
+                if (lblStandbyPos != null) {
+                    lblStandbyPos.setText("Widget FOV position: " + val + " (Default: 0)");
+                }
+                ConnectionManager c = MyvuService.activeConnection();
+                if (c != null) {
+                    c.setStandbyPosition(val);
+                }
+            });
+        }
     }
 
     private void bindAiFields() {

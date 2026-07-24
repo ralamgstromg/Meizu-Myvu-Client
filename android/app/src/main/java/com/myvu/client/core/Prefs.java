@@ -248,6 +248,33 @@ public final class Prefs {
         prefs(c).edit().putBoolean("ai_ignore_ssl", ignore).apply();
     }
 
+    public static int brightness(Context c) {
+        return prefs(c).getInt("glasses_brightness", 2);
+    }
+
+    public static void setBrightness(Context c, int brightness) {
+        int clamped = Math.max(1, Math.min(5, brightness));
+        prefs(c).edit().putInt("glasses_brightness", clamped).apply();
+    }
+
+    public static int volume(Context c) {
+        return prefs(c).getInt("glasses_volume", 12);
+    }
+
+    public static void setVolume(Context c, int volume) {
+        int clamped = Math.max(0, Math.min(15, volume));
+        prefs(c).edit().putInt("glasses_volume", clamped).apply();
+    }
+
+    public static int standbyPosition(Context c) {
+        return prefs(c).getInt("glasses_standby_position", 0);
+    }
+
+    public static void setStandbyPosition(Context c, int position) {
+        int clamped = Math.max(0, Math.min(3, position));
+        prefs(c).edit().putInt("glasses_standby_position", clamped).apply();
+    }
+
     /**
      * Optional place to report weather for -- a city name or "lat,lon". Blank
      * means "use the phone's location", which is the normal case; this exists

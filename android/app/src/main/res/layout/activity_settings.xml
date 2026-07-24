@@ -464,7 +464,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- ===== Notification mirroring ===== -->
+            <!-- ===== Glasses Settings (Brightness & Volume) ===== -->
             <com.google.android.material.card.MaterialCardView
                 style="@style/Card.Myvu"
                 android:layout_width="match_parent"
@@ -477,7 +477,90 @@
 
                     <TextView style="@style/CardTitle.Myvu"
                         android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Notification mirroring" />
+                        android:text="Glasses display &amp; audio" />
+
+                    <TextView style="@style/Label.Myvu"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Default levels applied when connected. Changes take effect immediately." />
+
+                    <TextView
+                        android:id="@+id/lblBrightness"
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Display brightness: 3 (Default: 3)" />
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/sliderBrightness"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="1"
+                        android:valueTo="5"
+                        android:stepSize="1"
+                        android:value="3" />
+
+                    <TextView
+                        android:id="@+id/lblVolume"
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Glasses volume: 11 (Default: 11)" />
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/sliderVolume"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="0"
+                        android:valueTo="15"
+                        android:stepSize="1"
+                        android:value="11" />
+
+                    <TextView
+                        android:id="@+id/lblStandbyPos"
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Widget FOV position: 0 (Default: 0)" />
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/sliderStandbyPos"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="0"
+                        android:valueTo="3"
+                        android:stepSize="1"
+                        android:value="0" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== Notification mirroring ===== -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Card.Myvu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView style="@style/CardTitle.Myvu"
+                            android:layout_width="0dp" android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Notification mirroring" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/swMirror"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                    </LinearLayout>
 
                     <TextView style="@style/Label.Myvu"
                         android:layout_width="match_parent" android:layout_height="wrap_content"
