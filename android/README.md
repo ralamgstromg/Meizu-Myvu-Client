@@ -50,12 +50,15 @@ ui              connect screen + live log
 ## Building
 
 The Gradle wrapper is checked in, so a clone needs only a JDK 17 and an Android
-SDK (`compileSdk 34`) — it fetches the pinned Gradle 8.14.3 itself:
+SDK (`compileSdk 35`) — it fetches the pinned Gradle 8.14.3 itself:
 
 ```sh
 cd android
 ./gradlew :app:assembleDebug      # gradlew.bat on Windows
 ./gradlew test                    # JVM unit tests (codec, crypto, protocol)
+
+# android/app/build/outputs/apk/release/app-release-unsigned.apk
+./gradlew :app:assembleRelease
 ```
 
 The APK lands in `app/build/outputs/apk/debug/`. Point the SDK location at your

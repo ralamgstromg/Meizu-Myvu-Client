@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace 'com.myvu.client'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId 'com.myvu.client'
         minSdk 26
-        targetSdk 34
+        targetSdk 35
         versionCode 3
         versionName '0.3'
     }
@@ -60,14 +60,14 @@ dependencies {
     // FusedLocationProvider for turn-by-turn (replaces the Python client's
     // pyserial NMEA reader). Kept behind nav/LocationSource so the zero-dep
     // framework LocationManager path stays available.
-    implementation 'com.google.android.gms:play-services-location:21.3.0'
+    implementation 'com.google.android.gms:play-services-location:21.4.0'
     // Pulled in transitively by Play Services anyway; gives us AppCompatActivity.
-    implementation 'androidx.appcompat:appcompat:1.7.0'
-    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'com.google.android.material:material:1.14.0'
 
     testImplementation 'junit:junit:4.13.2'
     // REQUIRED: the org.json in android.jar is a stub that throws
     // RuntimeException("Stub!") under JVM unit tests, so every codec test that
     // touches JSON would fail without a real implementation on the test path.
-    testImplementation 'org.json:json:20240303'
+    testImplementation 'org.json:json:20260522'
 }
