@@ -275,6 +275,24 @@ public final class Prefs {
         prefs(c).edit().putInt("glasses_standby_position", clamped).apply();
     }
 
+    public static int screenOffTime(Context c) {
+        return prefs(c).getInt("glasses_screen_off_time", 10);
+    }
+
+    public static void setScreenOffTime(Context c, int seconds) {
+        int clamped = Math.max(3, Math.min(60, seconds));
+        prefs(c).edit().putInt("glasses_screen_off_time", clamped).apply();
+    }
+
+    public static int notificationDuration(Context c) {
+        return prefs(c).getInt("notification_display_duration", 5);
+    }
+
+    public static void setNotificationDuration(Context c, int seconds) {
+        int clamped = Math.max(1, Math.min(30, seconds));
+        prefs(c).edit().putInt("notification_display_duration", clamped).apply();
+    }
+
     /**
      * Optional place to report weather for -- a city name or "lat,lon". Blank
      * means "use the phone's location", which is the normal case; this exists

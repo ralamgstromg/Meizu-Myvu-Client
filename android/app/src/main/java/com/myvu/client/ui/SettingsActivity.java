@@ -253,6 +253,24 @@ public class SettingsActivity extends AppCompatActivity {
                 Prefs.setMirrorEnabled(SettingsActivity.this, checked);
             });
         }
+
+        com.google.android.material.slider.Slider sliderNotifDuration = findViewById(R.id.sliderNotifDuration);
+        TextView lblNotifDuration = findViewById(R.id.lblNotifDuration);
+        int currentNotifDuration = com.myvu.client.core.GlassesConfig.getNotificationDuration(this);
+
+        if (sliderNotifDuration != null) {
+            sliderNotifDuration.setValue(currentNotifDuration);
+            if (lblNotifDuration != null) {
+                lblNotifDuration.setText("Notification display time: " + currentNotifDuration + "s (Default: 5s)");
+            }
+            sliderNotifDuration.addOnChangeListener((slider, value, fromUser) -> {
+                int val = (int) value;
+                com.myvu.client.core.GlassesConfig.setNotificationDuration(SettingsActivity.this, val);
+                if (lblNotifDuration != null) {
+                    lblNotifDuration.setText("Notification display time: " + val + "s (Default: 5s)");
+                }
+            });
+        }
     }
 
     private void wireGlassesSettings() {
@@ -261,8 +279,8 @@ public class SettingsActivity extends AppCompatActivity {
         TextView lblBrightness = findViewById(R.id.lblBrightness);
         TextView lblVolume = findViewById(R.id.lblVolume);
 
-        int currentBrightness = Prefs.brightness(this);
-        int currentVolume = Prefs.volume(this);
+        int currentBrightness = com.myvu.client.core.GlassesConfig.getBrightness(this);
+        int currentVolume = com.myvu.client.core.GlassesConfig.getVolume(this);
 
         if (sliderBrightness != null) {
             sliderBrightness.setValue(currentBrightness);
@@ -271,13 +289,9 @@ public class SettingsActivity extends AppCompatActivity {
             }
             sliderBrightness.addOnChangeListener((slider, value, fromUser) -> {
                 int val = (int) value;
-                Prefs.setBrightness(SettingsActivity.this, val);
+                com.myvu.client.core.GlassesConfig.setBrightness(SettingsActivity.this, val);
                 if (lblBrightness != null) {
                     lblBrightness.setText("Display brightness: " + val + " (Default: 3)");
-                }
-                ConnectionManager c = MyvuService.activeConnection();
-                if (c != null) {
-                    c.setBrightness(val);
                 }
             });
         }
@@ -289,20 +303,16 @@ public class SettingsActivity extends AppCompatActivity {
             }
             sliderVolume.addOnChangeListener((slider, value, fromUser) -> {
                 int val = (int) value;
-                Prefs.setVolume(SettingsActivity.this, val);
+                com.myvu.client.core.GlassesConfig.setVolume(SettingsActivity.this, val);
                 if (lblVolume != null) {
                     lblVolume.setText("Glasses volume: " + val + " (Default: 11)");
-                }
-                ConnectionManager c = MyvuService.activeConnection();
-                if (c != null) {
-                    c.setVolume(val);
                 }
             });
         }
 
         com.google.android.material.slider.Slider sliderStandbyPos = findViewById(R.id.sliderStandbyPos);
         TextView lblStandbyPos = findViewById(R.id.lblStandbyPos);
-        int currentStandbyPos = Prefs.standbyPosition(this);
+        int currentStandbyPos = com.myvu.client.core.GlassesConfig.getStandbyPosition(this);
 
         if (sliderStandbyPos != null) {
             sliderStandbyPos.setValue(currentStandbyPos);
@@ -311,13 +321,27 @@ public class SettingsActivity extends AppCompatActivity {
             }
             sliderStandbyPos.addOnChangeListener((slider, value, fromUser) -> {
                 int val = (int) value;
-                Prefs.setStandbyPosition(SettingsActivity.this, val);
+                com.myvu.client.core.GlassesConfig.setStandbyPosition(SettingsActivity.this, val);
                 if (lblStandbyPos != null) {
                     lblStandbyPos.setText("Widget FOV position: " + val + " (Default: 0)");
                 }
-                ConnectionManager c = MyvuService.activeConnection();
-                if (c != null) {
-                    c.setStandbyPosition(val);
+            });
+        }
+
+        com.google.android.material.slider.Slider sliderScreenOff = findViewById(R.id.sliderScreenOff);
+        TextView lblScreenOff = findViewById(R.id.lblScreenOff);
+        int currentScreenOff = com.myvu.client.core.GlassesConfig.getScreenOffTime(this);
+
+        if (sliderScreenOff != null) {
+            sliderScreenOff.setValue(currentScreenOff);
+            if (lblScreenOff != null) {
+                lblScreenOff.setText("Screen active time: " + currentScreenOff + "s (Default: 10s)");
+            }
+            sliderScreenOff.addOnChangeListener((slider, value, fromUser) -> {
+                int val = (int) value;
+                com.myvu.client.core.GlassesConfig.setScreenOffTime(SettingsActivity.this, val);
+                if (lblScreenOff != null) {
+                    lblScreenOff.setText("Screen active time: " + val + "s (Default: 10s)");
                 }
             });
         }

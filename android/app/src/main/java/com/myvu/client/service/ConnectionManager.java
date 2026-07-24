@@ -937,10 +937,10 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
         conn.postDelayed(new Runnable() {
             @Override
             public void run() {
-                try { sendActionNow(SystemSettings.setScreenOffTime(5)); } catch (Exception ignored) {}
-                try { sendActionNow(SystemSettings.setBrightness(Prefs.brightness(context))); } catch (Exception ignored) {}
-                try { sendActionNow(SystemSettings.setVolume(Prefs.volume(context))); } catch (Exception ignored) {}
-                try { sendActionNow(SystemSettings.setStandbyPosition(Prefs.standbyPosition(context))); } catch (Exception ignored) {}
+                try { sendActionNow(SystemSettings.setScreenOffTime(com.myvu.client.core.GlassesConfig.getScreenOffTime(context))); } catch (Exception ignored) {}
+                try { sendActionNow(SystemSettings.setBrightness(com.myvu.client.core.GlassesConfig.getBrightness(context))); } catch (Exception ignored) {}
+                try { sendActionNow(SystemSettings.setVolume(com.myvu.client.core.GlassesConfig.getVolume(context))); } catch (Exception ignored) {}
+                try { sendActionNow(SystemSettings.setStandbyPosition(com.myvu.client.core.GlassesConfig.getStandbyPosition(context))); } catch (Exception ignored) {}
             }
         }, 550);
         conn.postDelayed(new Runnable() {

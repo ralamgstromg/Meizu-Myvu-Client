@@ -30,6 +30,7 @@ import org.json.JSONObject;
 public class MirrorNotificationListener extends NotificationListenerService {
 
     private final NotificationFilter notificationFilter = new NotificationFilter();
+    private final android.os.Handler dismissHandler = new android.os.Handler(android.os.Looper.getMainLooper());
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
@@ -87,6 +88,7 @@ public class MirrorNotificationListener extends NotificationListenerService {
             // The id is derived from package + numeric id, NOT sbn.getKey().
             // See Notifications.notificationId -- passing the platform key here
             // made the glasses reboot on every mirrored notification.
+            final String notifId = Notifications.notificationId(pkg, sbn.getId());
             JSONObject entry = Notifications.entry(
                     pkg,
                     sbn.getId(),
@@ -97,6 +99,21 @@ public class MirrorNotificationListener extends NotificationListenerService {
                     false);
             connection.sendAction(Notifications.buildShow(entry));
             LogBus.log("mirrored notification from " + appLabel(pkg) + ": " + displayTitle);
+
+            int durationSec = com.myvu.client.core.GlassesConfig.getNotificationDuration(this);
+            if (durationSec > 0) {
+                dismissHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            ConnectionManager active = MyvuService.activeConnection();
+                            if (active != null) {
+                                active.sendAction(Notifications.buildDismiss(notifId));
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                }, durationSec * 1000L);
+            }
         } catch (Exception e) {
             LogBus.error("could not mirror a notification", e);
         }

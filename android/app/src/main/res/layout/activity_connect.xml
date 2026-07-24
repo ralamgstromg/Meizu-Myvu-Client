@@ -325,58 +325,6 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Display & audio -->
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/Card.Myvu"
-                    android:layout_width="match_parent" android:layout_height="wrap_content">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="vertical">
-                        <TextView style="@style/CardTitle.Myvu" android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" android:text="Display &amp; audio" />
-
-                        <TextView android:id="@+id/lblBrightness" style="@style/Label.Myvu"
-                            android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp" android:text="Brightness" />
-                        <com.google.android.material.slider.Slider
-                            android:id="@+id/sldBrightness" android:layout_width="match_parent"
-                            android:layout_height="wrap_content" android:valueFrom="0" android:valueTo="10"
-                            android:stepSize="1" android:value="5" />
-
-                        <TextView android:id="@+id/lblVolume" style="@style/Label.Myvu"
-                            android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Volume" />
-                        <com.google.android.material.slider.Slider
-                            android:id="@+id/sldVolume" android:layout_width="match_parent"
-                            android:layout_height="wrap_content" android:valueFrom="0" android:valueTo="15"
-                            android:stepSize="1" android:value="8" />
-
-                        <TextView style="@style/Label.Myvu" android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" android:layout_marginTop="6dp"
-                            android:text="Standby widget position" />
-                        <com.google.android.material.button.MaterialButtonToggleGroup
-                            android:id="@+id/fovGroup" android:layout_width="match_parent"
-                            android:layout_height="wrap_content" app:singleSelection="true"
-                            app:selectionRequired="true" android:layout_marginTop="4dp">
-                            <com.google.android.material.button.MaterialButton
-                                style="?attr/materialButtonOutlinedStyle" android:id="@+id/fov0"
-                                android:layout_width="0dp" android:layout_weight="1"
-                                android:layout_height="wrap_content" android:text="0" />
-                            <com.google.android.material.button.MaterialButton
-                                style="?attr/materialButtonOutlinedStyle" android:id="@+id/fov1"
-                                android:layout_width="0dp" android:layout_weight="1"
-                                android:layout_height="wrap_content" android:text="1" />
-                            <com.google.android.material.button.MaterialButton
-                                style="?attr/materialButtonOutlinedStyle" android:id="@+id/fov2"
-                                android:layout_width="0dp" android:layout_weight="1"
-                                android:layout_height="wrap_content" android:text="2" />
-                            <com.google.android.material.button.MaterialButton
-                                style="?attr/materialButtonOutlinedStyle" android:id="@+id/fov3"
-                                android:layout_width="0dp" android:layout_weight="1"
-                                android:layout_height="wrap_content" android:text="3" />
-                        </com.google.android.material.button.MaterialButtonToggleGroup>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
                 <!-- System -->
                 <com.google.android.material.card.MaterialCardView
                     style="@style/Card.Myvu"

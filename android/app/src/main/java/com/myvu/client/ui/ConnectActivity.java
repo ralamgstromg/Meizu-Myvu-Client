@@ -292,32 +292,6 @@ public class ConnectActivity extends AppCompatActivity implements LogBus.Listene
     }
 
     private void wireSettings() {
-        // Sliders fire on release only, so a drag is one command, not dozens.
-        ((Slider) findViewById(R.id.sldBrightness)).addOnSliderTouchListener(
-                new Slider.OnSliderTouchListener() {
-                    @Override public void onStartTrackingTouch(@NonNull Slider s) { }
-                    @Override public void onStopTrackingTouch(@NonNull Slider s) {
-                        if (need()) service.connection().setBrightness((int) s.getValue());
-                    }
-                });
-        ((Slider) findViewById(R.id.sldVolume)).addOnSliderTouchListener(
-                new Slider.OnSliderTouchListener() {
-                    @Override public void onStartTrackingTouch(@NonNull Slider s) { }
-                    @Override public void onStopTrackingTouch(@NonNull Slider s) {
-                        if (need()) service.connection().setVolume((int) s.getValue());
-                    }
-                });
-
-        MaterialButtonToggleGroup fov = findViewById(R.id.fovGroup);
-        fov.check(R.id.fov0);
-        fov.addOnButtonCheckedListener(new MaterialButtonToggleGroup.OnButtonCheckedListener() {
-            @Override public void onButtonChecked(MaterialButtonToggleGroup g, int id, boolean checked) {
-                if (!checked || !need()) return;
-                int pos = id == R.id.fov1 ? 1 : id == R.id.fov2 ? 2 : id == R.id.fov3 ? 3 : 0;
-                service.connection().setStandbyPosition(pos);
-            }
-        });
-
         toggle(R.id.swWifi, new Toggle() { public void set(boolean on) { service.connection().toggleWifi(on); } });
         toggle(R.id.swZen, new Toggle() { public void set(boolean on) { service.connection().setZenMode(on); } });
         toggle(R.id.swWear, new Toggle() { public void set(boolean on) { service.connection().setWearDetection(on); } });
