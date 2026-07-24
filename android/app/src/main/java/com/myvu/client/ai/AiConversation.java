@@ -142,6 +142,7 @@ public class AiConversation {
     private final GlassesMicStream mic = new GlassesMicStream();
     private final OpusDecoderStream decoder = new OpusDecoderStream();
     private final TtsPlayer tts;
+    private final PhoneActionExecutor actionExecutor;
     /** Decoding runs off the connection thread; audio arrives faster than realtime. */
     private final ExecutorService audio = Executors.newSingleThreadExecutor();
 
@@ -182,6 +183,7 @@ public class AiConversation {
         this.context = context.getApplicationContext();
         this.sender = sender;
         this.tts = new TtsPlayer(this.context);
+        this.actionExecutor = new PhoneActionExecutor(this.context);
     }
 
     public boolean isActive() {
@@ -544,8 +546,12 @@ public class AiConversation {
         });
     }
 
-    private void deliver(String answer) {
+    private void deliver(String rawAnswer) {
         if (!active) return;
+        String answer = actionExecutor.processAndExecute(rawAnswer);
+        if (answer == null || answer.trim().isEmpty()) {
+            answer = "Acción ejecutada en el teléfono.";
+        }
         LogBus.log("AI answer: " + answer);
 
         send(AiProtocol.chatAnswer(sessionId, answer, 1));

@@ -9,10 +9,12 @@ package com.myvu.client.ai;
  */
 public enum AiProvider {
 
-    CLAUDE("claude", "Claude", "console.anthropic.com", "claude-haiku-4-5-20251001"),
-    OPENAI("openai", "ChatGPT", "platform.openai.com", "gpt-4.1-mini"),
-    GEMINI("gemini", "Gemini", "aistudio.google.com", "gemini-flash-lite-latest"),
-    LOCAL("local", "Local AI", "", "");
+    CLAUDE("claude", "Claude (Anthropic)", "console.anthropic.com", "claude-3-5-haiku-20241022"),
+    OPENAI("openai", "ChatGPT (OpenAI)", "platform.openai.com", "gpt-4o-mini"),
+    GEMINI("gemini", "Gemini (Google)", "aistudio.google.com", "gemini-2.0-flash"),
+    GROQ("groq", "Groq (Ultra-Fast)", "console.groq.com", "llama-3.3-70b-versatile"),
+    NVIDIA("nvidia", "NVIDIA NIM (Free Credits)", "build.nvidia.com", "meta/llama-3.3-70b-instruct"),
+    LOCAL("local", "Custom / Local AI", "", "");
 
     /** Stable id used in SharedPreferences names -- never rename a value. */
     public final String id;
@@ -36,6 +38,8 @@ public enum AiProvider {
         switch (this) {
             case OPENAI: return new OpenAiClient(apiKey, model, systemPrompt);
             case GEMINI: return new GeminiClient(apiKey, model, systemPrompt);
+            case GROQ:   return new LocalAiClient("https://api.groq.com/openai/v1/chat/completions", apiKey, model, systemPrompt);
+            case NVIDIA: return new LocalAiClient("https://integrate.api.nvidia.com/v1/chat/completions", apiKey, model, systemPrompt);
             case LOCAL:  return new LocalAiClient(endpoint, apiKey, model, systemPrompt);
             default:     return new ClaudeClient(apiKey, model, systemPrompt);
         }

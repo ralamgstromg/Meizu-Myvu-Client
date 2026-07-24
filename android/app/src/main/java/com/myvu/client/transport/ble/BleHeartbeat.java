@@ -23,7 +23,7 @@ import com.myvu.client.core.LogBus;
 public class BleHeartbeat {
 
     public static final byte[] HEARTBEAT_DATA = { 0, 0, 9, 16, 0 };
-    public static final long STANDARD_INTERVAL_MS = 3000;
+    public static final long STANDARD_INTERVAL_MS = 10000;
     public static final long EXTENDED_INTERVAL_MS = 15000;
     public static final long ACTIVE_DATA_TIMEOUT_MS = 15000;
 

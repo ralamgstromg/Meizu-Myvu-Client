@@ -937,7 +937,8 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
         conn.postDelayed(new Runnable() {
             @Override
             public void run() {
-                try { sendActionNow(SystemSettings.setScreenOffTime(10)); } catch (Exception ignored) {}
+                try { sendActionNow(SystemSettings.setScreenOffTime(5)); } catch (Exception ignored) {}
+                try { sendActionNow(SystemSettings.setBrightness(3)); } catch (Exception ignored) {}
             }
         }, 550);
         conn.postDelayed(new Runnable() {

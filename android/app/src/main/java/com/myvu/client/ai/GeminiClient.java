@@ -43,6 +43,8 @@ public class GeminiClient extends AiHttpClient {
                         .put("role", "user")
                         .put("parts", new JSONArray().put(new JSONObject()
                                 .put("text", question)))))
+                .put("tools", new JSONArray().put(new JSONObject()
+                        .put("google_search", new JSONObject())))
                 .put("generationConfig", new JSONObject()
                         .put("maxOutputTokens", MAX_TOKENS))
                 .toString();
