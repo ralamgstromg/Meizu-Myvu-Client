@@ -17,9 +17,6 @@ import com.myvu.client.core.Prefs;
 
 import org.json.JSONObject;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-
 /**
  * Mirrors the phone's real notifications onto the lens.
  *
@@ -32,19 +29,7 @@ import java.util.Deque;
  */
 public class MirrorNotificationListener extends NotificationListenerService {
 
-    /**
-     * A busy phone can emit notifications far faster than the relay drains, and
-     * flooding it starves the ACK path that everything else depends on. These
-     * bounds keep mirroring from degrading the connection.
-     */
-    private static final int MAX_PER_WINDOW = 10;
-    private static final long WINDOW_MS = 10_000;
-    /** Ignore a repeat of the same notification within this interval. */
-    private static final long DEDUPE_MS = 2_000;
-
-    private final Deque<Long> recentSends = new ArrayDeque<>();
-    private String lastKey;
-    private long lastKeyAt;
+    private final NotificationFilter notificationFilter = new NotificationFilter();
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
@@ -53,11 +38,6 @@ public class MirrorNotificationListener extends NotificationListenerService {
 
         Notification n = sbn.getNotification();
         if (n == null) return;
-
-        // Ongoing notifications are persistent UI (media players, downloads,
-        // foreground services), not events worth showing on a lens.
-        if ((n.flags & Notification.FLAG_ONGOING_EVENT) != 0) return;
-        if ((n.flags & Notification.FLAG_GROUP_SUMMARY) != 0) return; // duplicates its children
 
         // Opt-in only: notifications carry OTPs, 2FA codes and private messages,
         // so nothing is forwarded unless the user picked that app in Settings.
@@ -75,39 +55,48 @@ public class MirrorNotificationListener extends NotificationListenerService {
         if (extras == null) return;
         String title = charSequence(extras, Notification.EXTRA_TITLE);
         String text = charSequence(extras, Notification.EXTRA_TEXT);
-        if (TextUtils.isEmpty(title) && TextUtils.isEmpty(text)) return;
 
-        if (isDuplicate(sbn.getKey())) return;
-        if (!allowedByRateLimit()) {
-            LogBus.warn("notification mirroring rate-limited (" + MAX_PER_WINDOW
-                    + " per " + (WINDOW_MS / 1000) + "s) -- dropping one from " + pkg);
+        // Filter noise flags (ongoing events, group summaries) and empty content
+        if (NotificationFilter.isNoiseOrEmpty(n.flags, title, text)) return;
+
+        // Content-based deduplication (identical title + text within 3s window)
+        if (notificationFilter.isDuplicateContent(pkg, title, text)) return;
+
+        // Rate limiting (max 10 per 10s sliding window)
+        if (!notificationFilter.allowRateLimit()) {
+            LogBus.warn("notification mirroring rate-limited -- dropping one from " + pkg);
             return;
         }
 
         ConnectionManager connection = MyvuService.activeConnection();
         if (connection == null) {
-            // This used to return silently, which made "mirroring does nothing"
-            // impossible to diagnose: the notification passed every filter and
-            // the only missing piece was the glasses. Say so.
-            LogBus.warn("not mirroring " + appLabel(pkg)
-                    + ": not connected to the glasses");
+            LogBus.warn("not mirroring " + appLabel(pkg) + ": not connected to the glasses");
             return;
         }
 
+        if (!connection.isRelayConnected()) {
+            connection.wakeRelay();
+            LogBus.warn("app relay is DOWN -- attempting reconnect to deliver notification from " + appLabel(pkg));
+        }
+
         try {
+            // Smart text formatting / truncation for lens display (max 120 chars)
+            String displayTitle = TextUtils.isEmpty(title) ? appLabel(pkg) : NotificationFilter.truncate(title);
+            String displayText = NotificationFilter.truncate(text == null ? "" : text);
+
             // The id is derived from package + numeric id, NOT sbn.getKey().
             // See Notifications.notificationId -- passing the platform key here
             // made the glasses reboot on every mirrored notification.
             JSONObject entry = Notifications.entry(
                     pkg,
                     sbn.getId(),
-                    TextUtils.isEmpty(title) ? appLabel(pkg) : title,
-                    text == null ? "" : text,
+                    displayTitle,
+                    displayText,
                     appLabel(pkg),
                     sbn.getPostTime(),
                     false);
             connection.sendAction(Notifications.buildShow(entry));
-            LogBus.log("mirrored notification from " + appLabel(pkg) + ": " + title);
+            LogBus.log("mirrored notification from " + appLabel(pkg) + ": " + displayTitle);
         } catch (Exception e) {
             LogBus.error("could not mirror a notification", e);
         }
@@ -130,25 +119,6 @@ public class MirrorNotificationListener extends NotificationListenerService {
     }
 
     // ------------------------------------------------------------ helpers
-
-    private boolean isDuplicate(String key) {
-        long now = System.currentTimeMillis();
-        if (key != null && key.equals(lastKey) && now - lastKeyAt < DEDUPE_MS) return true;
-        lastKey = key;
-        lastKeyAt = now;
-        return false;
-    }
-
-    /** Sliding window rather than a fixed quota, so bursts recover on their own. */
-    private boolean allowedByRateLimit() {
-        long now = System.currentTimeMillis();
-        while (!recentSends.isEmpty() && now - recentSends.peekFirst() > WINDOW_MS) {
-            recentSends.removeFirst();
-        }
-        if (recentSends.size() >= MAX_PER_WINDOW) return false;
-        recentSends.addLast(now);
-        return true;
-    }
 
     private String charSequence(Bundle extras, String key) {
         CharSequence cs = extras.getCharSequence(key);

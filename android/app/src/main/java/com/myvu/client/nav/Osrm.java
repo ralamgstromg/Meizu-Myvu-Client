@@ -1,5 +1,7 @@
 package com.myvu.client.nav;
 
+import com.myvu.client.ai.HttpRetry;
+import com.myvu.client.core.HttpCache;
 import com.myvu.client.core.LogBus;
 
 import org.json.JSONArray;
@@ -36,6 +38,8 @@ public final class Osrm {
     private static final String NOMINATIM_BASE = "https://nominatim.openstreetmap.org";
     private static final String USER_AGENT = "myvu-android-client/1.0";
     private static final int TIMEOUT_MS = 20000;
+    private static final long GEOCODE_CACHE_TTL_MS = 86_400_000L; // 24 hours
+    private static final long ROUTE_CACHE_TTL_MS = 300_000L; // 5 minutes
 
     /** Resolves "lat,lon" directly, otherwise geocodes the text. */
     public static double[] parsePoint(String s) throws IOException {
@@ -59,7 +63,7 @@ public final class Osrm {
                 + "q=" + URLEncoder.encode(place, "UTF-8")
                 + "&format=json&limit=1";
         try {
-            JSONArray results = new JSONArray(get(url));
+            JSONArray results = new JSONArray(get(url, GEOCODE_CACHE_TTL_MS));
             if (results.length() == 0) {
                 throw new IOException("no geocode result for \"" + place + "\"");
             }
@@ -83,7 +87,7 @@ public final class Osrm {
                 + "?overview=full&geometries=geojson&steps=true&annotations=false";
 
         try {
-            JSONObject data = new JSONObject(get(url));
+            JSONObject data = new JSONObject(get(url, ROUTE_CACHE_TTL_MS));
             String code = data.optString("code");
             if (!"Ok".equals(code) || data.optJSONArray("routes") == null) {
                 throw new IOException("OSRM returned " + code + ": "
@@ -164,7 +168,18 @@ public final class Osrm {
         return bestCum;
     }
 
-    private static String get(String url) throws IOException {
+    private static String get(String url, long ttlMs) throws IOException {
+        String cached = HttpCache.getInstance().get(url);
+        if (cached != null) {
+            return cached;
+        }
+
+        String body = HttpRetry.execute("OSRM", () -> fetchDirect(url));
+        HttpCache.getInstance().put(url, body, ttlMs);
+        return body;
+    }
+
+    private static String fetchDirect(String url) throws IOException {
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         try {
             conn.setRequestMethod("GET");
@@ -176,7 +191,7 @@ public final class Osrm {
             InputStream in = status >= 400 ? conn.getErrorStream() : conn.getInputStream();
             String body = readAll(in);
             if (status >= 400) {
-                throw new IOException("HTTP " + status + " from " + url + ": "
+                throw HttpRetry.statusError(status, "HTTP " + status + " from " + url + ": "
                         + body.substring(0, Math.min(200, body.length())));
             }
             return body;

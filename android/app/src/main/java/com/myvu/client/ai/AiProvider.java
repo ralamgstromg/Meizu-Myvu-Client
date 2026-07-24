@@ -11,7 +11,7 @@ public enum AiProvider {
 
     CLAUDE("claude", "Claude", "console.anthropic.com", "claude-haiku-4-5-20251001"),
     OPENAI("openai", "ChatGPT", "platform.openai.com", "gpt-4.1-mini"),
-    GEMINI("gemini", "Gemini", "aistudio.google.com", "gemini-2.5-flash"),
+    GEMINI("gemini", "Gemini", "aistudio.google.com", "gemini-flash-lite-latest"),
     LOCAL("local", "Local AI", "", "");
 
     /** Stable id used in SharedPreferences names -- never rename a value. */

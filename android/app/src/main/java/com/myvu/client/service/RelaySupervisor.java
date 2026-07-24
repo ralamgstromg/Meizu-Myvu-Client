@@ -74,6 +74,8 @@ public class RelaySupervisor {
         attempt = 0;
     }
 
+    private static final long RESET_ATTEMPTS_AFTER_MS = 30000;
+
     private void check() {
         if (!running) return;
         if (delegate.isRelayConnected()) {
@@ -88,6 +90,9 @@ public class RelaySupervisor {
         // each one wakes us; without this the retries collapsed into a tight
         // connect/close loop that hammered the device.
         long now = System.currentTimeMillis();
+        if (now - lastAttemptAt > RESET_ATTEMPTS_AFTER_MS) {
+            attempt = 0; // Reset retry budget after cooldown
+        }
         if (now - lastAttemptAt < BACKOFF_MS) return;
         if (attempt >= MAX_ATTEMPTS) return;
 
@@ -99,7 +104,7 @@ public class RelaySupervisor {
 
         if (attempt >= MAX_ATTEMPTS) {
             LogBus.warn("relay reconnect gave up after " + MAX_ATTEMPTS
-                    + " attempts; will retry when the glasses ask again");
+                    + " attempts; will retry on next notification or cooldown");
         }
     }
 

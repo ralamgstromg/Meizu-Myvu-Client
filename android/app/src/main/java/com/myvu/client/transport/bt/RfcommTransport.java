@@ -121,20 +121,14 @@ public class RfcommTransport implements Transport {
             closeQuietly(secure);
             if (closing.get()) throw e;
 
-            // Do NOT retry insecure when the local stack is wedged. Seen in the
-            // Bluetooth logs as:
-            //   RFCOMM_CreateConnection: already at opened state 1, MCB_state=4
-            // The multiplexer for this device is stuck believing the DLCI is
-            // open, so a second attempt cannot succeed -- it just allocates
-            // another port against the same stuck MCB and deepens the leak.
-            // Only a Bluetooth restart clears it.
-            if (looksLikeWedgedStack(e)) {
-                throw new IOException("the phone's Bluetooth stack has a stale RFCOMM "
-                        + "connection for this device (MCB stuck open). Toggle Bluetooth "
-                        + "off and on to clear it.", e);
-            }
             LogBus.warn("secure RFCOMM connect failed (" + e.getMessage()
-                    + ") -- retrying insecure");
+                    + ") -- retrying insecure after delay");
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                throw new IOException("interrupted waiting for RFCOMM retry", ie);
+            }
         }
 
         BluetoothSocket insecure =
@@ -144,6 +138,29 @@ public class RfcommTransport implements Transport {
             return insecure;
         } catch (IOException e) {
             closeQuietly(insecure);
+            if (closing.get()) throw e;
+
+            // Try reflection fallback to channel 13 before giving up
+            LogBus.warn("insecure RFCOMM connect failed (" + e.getMessage()
+                    + ") -- retrying reflection channel");
+            try {
+                Thread.sleep(500);
+                BluetoothSocket reflection = (BluetoothSocket) device.getClass()
+                        .getMethod("createRfcommSocket", new Class[] { int.class })
+                        .invoke(device, 13);
+                if (reflection != null) {
+                    reflection.connect();
+                    return reflection;
+                }
+            } catch (Exception reflectionErr) {
+                LogBus.warn("reflection RFCOMM connect failed: " + reflectionErr.getMessage());
+            }
+
+            if (looksLikeWedgedStack(e)) {
+                throw new IOException("the phone's Bluetooth stack has a stale RFCOMM "
+                        + "connection for this device (MCB stuck open). Toggle Bluetooth "
+                        + "off and on to clear it.", e);
+            }
             throw e;
         }
     }

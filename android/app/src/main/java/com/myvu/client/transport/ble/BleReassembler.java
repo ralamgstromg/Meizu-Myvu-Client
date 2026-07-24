@@ -1,5 +1,6 @@
 package com.myvu.client.transport.ble;
 
+import com.myvu.client.core.BufferPool;
 import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +22,9 @@ public class BleReassembler {
         frameCount = 0;
         pkgType = -1;
         header = new byte[0];
+        for (byte[] frame : frames.values()) {
+            BufferPool.recycle(frame);
+        }
         frames.clear();
         active = false;
     }
@@ -59,8 +63,12 @@ public class BleReassembler {
             // arrival order.
             for (int i = 1; i <= frameCount; i++) {
                 byte[] f = frames.get(i);
-                if (f != null) out.write(f, 0, f.length);
+                if (f != null) {
+                    out.write(f, 0, f.length);
+                    BufferPool.recycle(f);
+                }
             }
+            frames.clear();
             active = false;
             return out.toByteArray();
         }

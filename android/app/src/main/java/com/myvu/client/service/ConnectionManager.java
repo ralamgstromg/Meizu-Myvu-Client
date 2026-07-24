@@ -44,6 +44,8 @@ import com.myvu.client.transport.bt.RfcommTransport;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -109,6 +111,20 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
     private static final long RELAY_ESTABLISH_TIMEOUT_MS = 15000;
 
     private RelaySupervisor supervisor;
+
+    private static class PendingAction {
+        final String actionJson;
+        final String targetPkg;
+        final String sourcePkg;
+
+        PendingAction(String actionJson, String targetPkg, String sourcePkg) {
+            this.actionJson = actionJson;
+            this.targetPkg = targetPkg;
+            this.sourcePkg = sourcePkg;
+        }
+    }
+
+    private final Deque<PendingAction> pendingNotifications = new ArrayDeque<>();
 
     /**
      * Connects the standard HFP/A2DP audio profiles so the glasses light their
@@ -607,6 +623,15 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
         return rfcomm != null && rfcomm.isConnected() && rfSession != null && rfSession.ready;
     }
 
+    public void wakeRelay() {
+        conn.post(new Runnable() {
+            @Override
+            public void run() {
+                if (supervisor != null) supervisor.wake();
+            }
+        });
+    }
+
     @Override
     public boolean canConnectRelay() {
         return sppUuid != null && device != null && !relayEstablishing;
@@ -845,7 +870,14 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
         setState(ConnectionState.READY);
         // A clean session clears the backoff, so the next drop starts fresh.
         cancelReconnect();
-        if (transport != null) relayEstablished();
+        if (transport != null) {
+            relayEstablished();
+            while (!pendingNotifications.isEmpty()) {
+                PendingAction p = pendingNotifications.pollFirst();
+                LogBus.log("flushing queued notification over RFCOMM: " + truncate(p.actionJson, 80));
+                sendActionNow(p.actionJson, p.targetPkg, p.sourcePkg);
+            }
+        }
 
         // Apply defaults only on the transport that will actually carry app
         // traffic. BLE goes ready first and the relay takes over seconds later,
@@ -989,6 +1021,20 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
     private void sendActionNow(String actionJson, String targetPkg, String sourcePkg) {
         RelaySession session = activeSession();
         Transport transport = activeTransport();
+
+        // MYVU glasses require RFCOMM for notifications -- BLE drops SHOW_NOTIFICATION
+        boolean isNotification = actionJson != null && actionJson.contains("SHOW_NOTIFICATION");
+        if (isNotification && transport == null) {
+            if (relayEstablishing || canConnectRelay()) {
+                if (pendingNotifications.size() < 5) {
+                    pendingNotifications.add(new PendingAction(actionJson, targetPkg, sourcePkg));
+                    LogBus.warn("app relay not ready -- queued notification for RFCOMM delivery");
+                }
+                wakeRelay();
+                return;
+            }
+        }
+
         if (session == null || !session.ready) {
             LogBus.warn("no ready session -- action dropped");
             return;

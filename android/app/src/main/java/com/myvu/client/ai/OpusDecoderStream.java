@@ -3,6 +3,7 @@ package com.myvu.client.ai;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 
+import com.myvu.client.core.BufferPool;
 import com.myvu.client.core.LogBus;
 
 import java.io.ByteArrayOutputStream;
@@ -117,10 +118,11 @@ public class OpusDecoderStream {
                 }
                 if (info.size > 0) {
                     ByteBuffer buf = codec.getOutputBuffer(outIndex);
-                    byte[] chunk = new byte[info.size];
+                    byte[] chunk = BufferPool.obtain(info.size);
                     buf.position(info.offset);
-                    buf.get(chunk);
-                    all.write(chunk, 0, chunk.length);
+                    buf.get(chunk, 0, info.size);
+                    all.write(chunk, 0, info.size);
+                    BufferPool.recycle(chunk);
                 }
                 codec.releaseOutputBuffer(outIndex, false);
                 if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) break;
@@ -149,11 +151,12 @@ public class OpusDecoderStream {
             if (outIndex < 0) break;
             if (info.size > 0) {
                 ByteBuffer buf = codec.getOutputBuffer(outIndex);
-                byte[] chunk = new byte[info.size];
+                byte[] chunk = BufferPool.obtain(info.size);
                 buf.position(info.offset);
-                buf.get(chunk);
-                out.write(chunk, 0, chunk.length);
-                all.write(chunk, 0, chunk.length);
+                buf.get(chunk, 0, info.size);
+                out.write(chunk, 0, info.size);
+                all.write(chunk, 0, info.size);
+                BufferPool.recycle(chunk);
             }
             codec.releaseOutputBuffer(outIndex, false);
         }
