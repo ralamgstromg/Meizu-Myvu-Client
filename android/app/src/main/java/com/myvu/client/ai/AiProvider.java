@@ -14,6 +14,7 @@ public enum AiProvider {
     GEMINI("gemini", "Gemini (Google)", "aistudio.google.com", "gemini-2.0-flash"),
     GROQ("groq", "Groq (Ultra-Fast)", "console.groq.com", "llama-3.3-70b-versatile"),
     NVIDIA("nvidia", "NVIDIA NIM (Free Credits)", "build.nvidia.com", "meta/llama-3.3-70b-instruct"),
+    ASSISTANT("assistant", "Asistente de Android (Google/Gemini)", "", ""),
     LOCAL("local", "Custom / Local AI", "", "");
 
     /** Stable id used in SharedPreferences names -- never rename a value. */
@@ -35,13 +36,20 @@ public enum AiProvider {
     /** Blank model or system prompt fall back to the shipped defaults. */
     public AiClient newClient(String apiKey, String model, String endpoint,
                               String systemPrompt) {
+        return newClient(null, apiKey, model, endpoint, systemPrompt);
+    }
+
+    public AiClient newClient(android.content.Context context, String apiKey, String model, String endpoint,
+                              String systemPrompt) {
+        boolean ignoreSsl = context != null && com.myvu.client.core.Prefs.ignoreSsl(context);
         switch (this) {
-            case OPENAI: return new OpenAiClient(apiKey, model, systemPrompt);
-            case GEMINI: return new GeminiClient(apiKey, model, systemPrompt);
-            case GROQ:   return new LocalAiClient("https://api.groq.com/openai/v1/chat/completions", apiKey, model, systemPrompt);
-            case NVIDIA: return new LocalAiClient("https://integrate.api.nvidia.com/v1/chat/completions", apiKey, model, systemPrompt);
-            case LOCAL:  return new LocalAiClient(endpoint, apiKey, model, systemPrompt);
-            default:     return new ClaudeClient(apiKey, model, systemPrompt);
+            case OPENAI:    return new OpenAiClient(apiKey, model, systemPrompt);
+            case GEMINI:    return new GeminiClient(apiKey, model, systemPrompt);
+            case GROQ:      return new LocalAiClient("https://api.groq.com/openai/v1/chat/completions", apiKey, model, systemPrompt, false);
+            case NVIDIA:    return new LocalAiClient("https://integrate.api.nvidia.com/v1/chat/completions", apiKey, model, systemPrompt, false);
+            case ASSISTANT: return new AndroidAssistantClient(context);
+            case LOCAL:     return new LocalAiClient(endpoint, apiKey, model, systemPrompt, ignoreSsl);
+            default:        return new ClaudeClient(apiKey, model, systemPrompt);
         }
     }
 

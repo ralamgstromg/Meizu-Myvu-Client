@@ -52,6 +52,7 @@ public final class OpenAiTranscriptionClient {
     private String transcribeOnce(byte[] wav) throws IOException {
         URL url = HttpEndpoint.parse(endpoint, serviceLabel + " endpoint");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        com.myvu.client.core.SslUtils.applySslBypass(conn);
         try {
             conn.setRequestMethod("POST");
             if (!apiKey.isEmpty()) {

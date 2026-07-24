@@ -115,6 +115,7 @@ public final class OpenMeteo {
 
     private static String get(String url) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+        com.myvu.client.core.SslUtils.applySslBypass(c);
         try {
             c.setRequestMethod("GET");
             c.setRequestProperty("User-Agent", USER_AGENT);

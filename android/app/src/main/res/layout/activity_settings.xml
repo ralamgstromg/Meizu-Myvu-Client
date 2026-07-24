@@ -70,46 +70,88 @@
                         android:layout_marginTop="2dp"
                         android:text="Who answers your questions. The key and model are remembered per provider, and stored on this device only — never in the app's source." />
 
-                    <com.google.android.material.button.MaterialButtonToggleGroup
-                        android:id="@+id/btnProviderGroup"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        app:singleSelection="true"
-                        app:selectionRequired="true">
+                        android:orientation="vertical">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnProviderClaude"
-                            style="?attr/materialButtonOutlinedStyle"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Claude" />
+                            android:orientation="horizontal">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnProviderOpenai"
-                            style="?attr/materialButtonOutlinedStyle"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:text="ChatGPT" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnProviderAssistant"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="wrap_content"
+                                android:textSize="11sp"
+                                android:text="Asistente" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnProviderGemini"
-                            style="?attr/materialButtonOutlinedStyle"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:text="Gemini" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnProviderGemini"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="wrap_content"
+                                android:textSize="11sp"
+                                android:text="Gemini" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnProviderLocal"
-                            style="?attr/materialButtonOutlinedStyle"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnProviderOpenai"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="wrap_content"
+                                android:textSize="11sp"
+                                android:text="ChatGPT" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnProviderClaude"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="wrap_content"
+                                android:textSize="11sp"
+                                android:text="Claude" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Local" />
-                    </com.google.android.material.button.MaterialButtonToggleGroup>
+                            android:orientation="horizontal"
+                            android:layout_marginTop="4dp">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnProviderGroq"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="wrap_content"
+                                android:textSize="11sp"
+                                android:text="Groq" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnProviderNvidia"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="wrap_content"
+                                android:textSize="11sp"
+                                android:text="NVIDIA" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnProviderLocal"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="wrap_content"
+                                android:textSize="11sp"
+                                android:text="Local / Custom" />
+                        </LinearLayout>
+                    </LinearLayout>
 
                     <!-- Hint and helper are set at runtime for the chosen provider. -->
                     <com.google.android.material.textfield.TextInputLayout
@@ -155,6 +197,14 @@
                             android:inputType="textUri"
                             android:importantForAutofill="no" android:maxLines="1" />
                     </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/chkIgnoreSsl"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textSize="13sp"
+                        android:text="Permitir certificados SSL autofirmados (HTTPS)" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

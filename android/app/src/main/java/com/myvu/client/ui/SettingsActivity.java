@@ -48,6 +48,7 @@ public class SettingsActivity extends AppCompatActivity {
     private TextInputEditText txtTtsModel;
     private TextInputEditText txtTtsVoice;
     private TextInputEditText txtSystemPrompt;
+    private com.google.android.material.materialswitch.MaterialSwitch chkIgnoreSsl;
 
     private AiProvider aiProvider;
     private SttProvider sttProvider;
@@ -71,6 +72,7 @@ public class SettingsActivity extends AppCompatActivity {
         layApiKey = findViewById(R.id.layApiKey);
         layModel = findViewById(R.id.layModel);
         layAiEndpoint = findViewById(R.id.layAiEndpoint);
+        chkIgnoreSsl = findViewById(R.id.chkIgnoreSsl);
         laySttApiKey = findViewById(R.id.laySttApiKey);
         laySttEndpoint = findViewById(R.id.laySttEndpoint);
         laySttModel = findViewById(R.id.laySttModel);
@@ -92,20 +94,26 @@ public class SettingsActivity extends AppCompatActivity {
         txtSystemPrompt = findViewById(R.id.txtSystemPrompt);
     }
 
+    private final View.OnClickListener providerClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            aiProvider = aiProviderFor(v.getId());
+            Prefs.setAiProvider(SettingsActivity.this, aiProvider.id);
+            bindAiFields();
+        }
+    };
+
     private void configureProviderSelectors() {
         aiProvider = AiProvider.fromId(Prefs.aiProvider(this));
-        MaterialButtonToggleGroup aiGroup = findViewById(R.id.btnProviderGroup);
-        aiGroup.check(aiButtonFor(aiProvider));
-        aiGroup.addOnButtonCheckedListener(new MaterialButtonToggleGroup.OnButtonCheckedListener() {
-            @Override
-            public void onButtonChecked(MaterialButtonToggleGroup group, int checkedId,
-                                        boolean isChecked) {
-                if (!isChecked) return;
-                aiProvider = aiProviderFor(checkedId);
-                Prefs.setAiProvider(SettingsActivity.this, aiProvider.id);
-                bindAiFields();
-            }
-        });
+        int[] buttonIds = new int[] {
+            R.id.btnProviderAssistant, R.id.btnProviderGemini, R.id.btnProviderOpenai,
+            R.id.btnProviderClaude, R.id.btnProviderGroq, R.id.btnProviderNvidia,
+            R.id.btnProviderLocal
+        };
+        for (int id : buttonIds) {
+            View btn = findViewById(id);
+            if (btn != null) btn.setOnClickListener(providerClickListener);
+        }
 
         sttProvider = SttProvider.fromId(Prefs.sttProvider(this));
         MaterialButtonToggleGroup sttGroup = findViewById(R.id.btnSttProviderGroup);
@@ -210,6 +218,11 @@ public class SettingsActivity extends AppCompatActivity {
                         value.trim().equals(AiClient.DEFAULT_SYSTEM_PROMPT) ? "" : value);
             }
         });
+        if (chkIgnoreSsl != null) {
+            chkIgnoreSsl.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                Prefs.setIgnoreSsl(SettingsActivity.this, isChecked);
+            });
+        }
     }
 
     private void configureButtons() {
@@ -233,6 +246,29 @@ public class SettingsActivity extends AppCompatActivity {
     private void bindAiFields() {
         bindingAi = true;
         boolean local = aiProvider == AiProvider.LOCAL;
+        boolean assistant = aiProvider == AiProvider.ASSISTANT;
+
+        int selectedId = aiButtonFor(aiProvider);
+        int[] buttonIds = new int[] {
+            R.id.btnProviderAssistant, R.id.btnProviderGemini, R.id.btnProviderOpenai,
+            R.id.btnProviderClaude, R.id.btnProviderGroq, R.id.btnProviderNvidia,
+            R.id.btnProviderLocal
+        };
+        for (int id : buttonIds) {
+            com.google.android.material.button.MaterialButton btn = findViewById(id);
+            if (btn != null) {
+                btn.setAlpha(id == selectedId ? 1.0f : 0.45f);
+            }
+        }
+
+        layApiKey.setVisibility(assistant ? View.GONE : View.VISIBLE);
+        layModel.setVisibility(assistant ? View.GONE : View.VISIBLE);
+        layAiEndpoint.setVisibility(local ? View.VISIBLE : View.GONE);
+        if (chkIgnoreSsl != null) {
+            chkIgnoreSsl.setVisibility(local ? View.VISIBLE : View.GONE);
+            chkIgnoreSsl.setChecked(Prefs.ignoreSsl(this));
+        }
+
         layApiKey.setHint(aiProvider.label + " API key");
         layApiKey.setHelperText(local
                 ? "Optional Bearer token"
@@ -240,7 +276,6 @@ public class SettingsActivity extends AppCompatActivity {
         layModel.setHelperText(local
                 ? "Required; use a model id exposed by the local server"
                 : "Blank uses " + aiProvider.defaultModel);
-        layAiEndpoint.setVisibility(local ? View.VISIBLE : View.GONE);
         txtApiKey.setText(Prefs.aiApiKey(this, aiProvider.id));
         txtModel.setText(Prefs.aiModel(this, aiProvider.id));
         txtAiEndpoint.setText(Prefs.aiEndpoint(this, aiProvider.id));
@@ -332,6 +367,9 @@ public class SettingsActivity extends AppCompatActivity {
         switch (provider) {
             case OPENAI: return R.id.btnProviderOpenai;
             case GEMINI: return R.id.btnProviderGemini;
+            case GROQ: return R.id.btnProviderGroq;
+            case NVIDIA: return R.id.btnProviderNvidia;
+            case ASSISTANT: return R.id.btnProviderAssistant;
             case LOCAL: return R.id.btnProviderLocal;
             default: return R.id.btnProviderClaude;
         }
@@ -340,6 +378,9 @@ public class SettingsActivity extends AppCompatActivity {
     private static AiProvider aiProviderFor(int buttonId) {
         if (buttonId == R.id.btnProviderOpenai) return AiProvider.OPENAI;
         if (buttonId == R.id.btnProviderGemini) return AiProvider.GEMINI;
+        if (buttonId == R.id.btnProviderGroq) return AiProvider.GROQ;
+        if (buttonId == R.id.btnProviderNvidia) return AiProvider.NVIDIA;
+        if (buttonId == R.id.btnProviderAssistant) return AiProvider.ASSISTANT;
         if (buttonId == R.id.btnProviderLocal) return AiProvider.LOCAL;
         return AiProvider.CLAUDE;
     }

@@ -13,7 +13,11 @@ public final class LocalAiClient extends AiHttpClient {
     private final String configuredEndpoint;
 
     public LocalAiClient(String endpoint, String apiKey, String model, String systemPrompt) {
-        super(AiProvider.LOCAL, apiKey, model, systemPrompt);
+        this(endpoint, apiKey, model, systemPrompt, false);
+    }
+
+    public LocalAiClient(String endpoint, String apiKey, String model, String systemPrompt, boolean ignoreSsl) {
+        super(AiProvider.LOCAL, apiKey, model, systemPrompt, ignoreSsl);
         configuredEndpoint = endpoint == null ? "" : endpoint.trim();
     }
 
@@ -30,7 +34,10 @@ public final class LocalAiClient extends AiHttpClient {
     @Override
     protected void authorize(HttpURLConnection conn) {
         if (apiKey != null && !apiKey.trim().isEmpty()) {
-            conn.setRequestProperty("authorization", "Bearer " + apiKey.trim());
+            String key = apiKey.trim();
+            conn.setRequestProperty("authorization", "Bearer " + key);
+            conn.setRequestProperty("api-key", key);
+            conn.setRequestProperty("x-api-key", key);
         }
     }
 

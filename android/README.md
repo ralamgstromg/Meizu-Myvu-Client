@@ -56,9 +56,9 @@ SDK (`compileSdk 35`) — it fetches the pinned Gradle 8.14.3 itself:
 cd android
 ./gradlew :app:assembleDebug
 ./gradlew test
+./gradlew :app:assembleRelease
 
 # android/app/build/outputs/apk/release/app-release-unsigned.apk
-./gradlew :app:assembleRelease
 ```
 
 The APK lands in `app/build/outputs/apk/debug/`. Point the SDK location at your

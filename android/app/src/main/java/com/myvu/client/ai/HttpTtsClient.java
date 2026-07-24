@@ -41,6 +41,7 @@ public final class HttpTtsClient {
     private byte[] synthesizeOnce(String body) throws IOException {
         URL url = HttpEndpoint.parse(endpoint, "TTS endpoint");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        com.myvu.client.core.SslUtils.applySslBypass(conn);
         try {
             conn.setRequestMethod("POST");
             conn.setRequestProperty("content-type", "application/json");

@@ -181,6 +181,7 @@ public final class Osrm {
 
     private static String fetchDirect(String url) throws IOException {
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+        com.myvu.client.core.SslUtils.applySslBypass(conn);
         try {
             conn.setRequestMethod("GET");
             conn.setRequestProperty("User-Agent", USER_AGENT);

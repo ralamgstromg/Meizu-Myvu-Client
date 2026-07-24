@@ -31,15 +31,22 @@ public abstract class AiHttpClient implements AiClient {
     /** Never blank: a blank Settings override falls back to the provider default. */
     protected final String model;
     protected final String systemPrompt;
+    protected final boolean ignoreSsl;
 
     protected AiHttpClient(AiProvider provider, String apiKey, String model,
                            String systemPrompt) {
+        this(provider, apiKey, model, systemPrompt, false);
+    }
+
+    protected AiHttpClient(AiProvider provider, String apiKey, String model,
+                           String systemPrompt, boolean ignoreSsl) {
         this.provider = provider;
         this.apiKey = apiKey;
         this.model = (model == null || model.trim().isEmpty())
                 ? provider.defaultModel : model.trim();
         this.systemPrompt = (systemPrompt == null || systemPrompt.trim().isEmpty())
                 ? DEFAULT_SYSTEM_PROMPT : systemPrompt.trim();
+        this.ignoreSsl = ignoreSsl;
     }
 
     @Override
@@ -83,6 +90,9 @@ public abstract class AiHttpClient implements AiClient {
     private String askOnce(String body) throws IOException {
         URL url = HttpEndpoint.parse(endpoint(), provider.label + " endpoint");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        if (ignoreSsl) {
+            com.myvu.client.core.SslUtils.applySslBypass(conn);
+        }
         try {
             conn.setRequestMethod("POST");
             conn.setRequestProperty("content-type", "application/json");
@@ -136,5 +146,25 @@ public abstract class AiHttpClient implements AiClient {
         int n;
         while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
         return new String(out.toByteArray(), StandardCharsets.UTF_8);
+    }
+
+    private static void disableSslVerification(javax.net.ssl.HttpsURLConnection conn) {
+        try {
+            javax.net.ssl.TrustManager[] trustAllCerts = new javax.net.ssl.TrustManager[]{
+                new javax.net.ssl.X509TrustManager() {
+                    public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                        return new java.security.cert.X509Certificate[0];
+                    }
+                    public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                    public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                }
+            };
+            javax.net.ssl.SSLContext sc = javax.net.ssl.SSLContext.getInstance("TLS");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            conn.setSSLSocketFactory(sc.getSocketFactory());
+            conn.setHostnameVerifier((hostname, session) -> true);
+        } catch (Exception e) {
+            com.myvu.client.core.LogBus.error("could not disable SSL verification", e);
+        }
     }
 }

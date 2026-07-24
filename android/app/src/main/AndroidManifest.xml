@@ -48,6 +48,8 @@
       restricted permission needing justification, so it is deliberately avoided.
     -->
     <queries>
+        <package android:name="com.google.android.apps.bard" />
+        <package android:name="com.google.android.apps.googleassistant" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
@@ -56,6 +58,8 @@
 
     <application
         android:allowBackup="false"
+        android:icon="@drawable/ic_launcher_ar"
+        android:roundIcon="@drawable/ic_launcher_ar"
         android:label="MYVU Client"
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.Myvu">

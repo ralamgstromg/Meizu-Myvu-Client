@@ -515,6 +515,7 @@ public class AiConversation {
         // in Settings apply to the next question.
         final AiProvider provider = AiProvider.fromId(Prefs.aiProvider(context));
         final AiClient client = provider.newClient(
+                context,
                 Prefs.aiApiKey(context, provider.id),
                 Prefs.aiModel(context, provider.id),
                 Prefs.aiEndpoint(context, provider.id),

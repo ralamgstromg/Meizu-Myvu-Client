@@ -240,6 +240,14 @@ public final class Prefs {
         prefs(c).edit().putBoolean(KEY_WEATHER_ENABLED, enabled).apply();
     }
 
+    public static boolean ignoreSsl(Context c) {
+        return prefs(c).getBoolean("ai_ignore_ssl", false);
+    }
+
+    public static void setIgnoreSsl(Context c, boolean ignore) {
+        prefs(c).edit().putBoolean("ai_ignore_ssl", ignore).apply();
+    }
+
     /**
      * Optional place to report weather for -- a city name or "lat,lon". Blank
      * means "use the phone's location", which is the normal case; this exists
