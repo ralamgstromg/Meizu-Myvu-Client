@@ -108,7 +108,7 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
     private String sppUuid;
     /** True from the moment we open the relay socket until its session is ready. */
     private boolean relayEstablishing;
-    private static final long RELAY_ESTABLISH_TIMEOUT_MS = 15000;
+    private static final long RELAY_ESTABLISH_TIMEOUT_MS = 30000;
 
     private RelaySupervisor supervisor;
 
@@ -865,7 +865,7 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
             public void run() {
                 scheduleInitMessage(entries, index + 1, session, transport);
             }
-        }, 200);
+        }, transport != null ? 80 : 150);
     }
 
     private void onSessionReady(Transport transport) {
@@ -916,20 +916,36 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
      * sync_clone_data frames carry stale values and are filtered out).
      */
     private void applyDefaults() {
-        try {
-            sendActionNow(ClockSync.build());
-            sendActionNow(SystemSettings.setWearDetection(true));
-            sendActionNow(SystemSettings.setZenMode(false));
-            sendActionNow(SystemSettings.setScreenOffTime(10));
-        } catch (Exception e) {
-            LogBus.error("could not apply the default settings", e);
-        }
-        // Weather is fetched over the network, so it can't be part of the
-        // try-block above: a fetch failure must not stop the settings from
-        // being applied. start() pushes immediately and then self-schedules, so
-        // every connect -- including a relay reconnect -- lands fresh weather,
-        // like the clock and settings above.
-        weather().start();
+        conn.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                try { sendActionNow(ClockSync.build()); } catch (Exception ignored) {}
+            }
+        }, 100);
+        conn.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                try { sendActionNow(SystemSettings.setWearDetection(true)); } catch (Exception ignored) {}
+            }
+        }, 250);
+        conn.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                try { sendActionNow(SystemSettings.setZenMode(false)); } catch (Exception ignored) {}
+            }
+        }, 400);
+        conn.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                try { sendActionNow(SystemSettings.setScreenOffTime(10)); } catch (Exception ignored) {}
+            }
+        }, 550);
+        conn.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                weather().start();
+            }
+        }, 800);
     }
 
     // ------------------------------------------------- classic audio profiles

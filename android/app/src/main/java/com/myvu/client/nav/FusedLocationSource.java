@@ -84,6 +84,19 @@ public class FusedLocationSource implements LocationSource {
         };
 
         try {
+            client.getLastLocation().addOnSuccessListener(new com.google.android.gms.tasks.OnSuccessListener<Location>() {
+                @Override
+                public void onSuccess(Location l) {
+                    if (l != null && callback != null) {
+                        float speed = l.hasSpeed() ? l.getSpeed() : -1f;
+                        listener.onFix(
+                                l.getLatitude(),
+                                l.getLongitude(),
+                                speed,
+                                l.hasBearing() ? l.getBearing() : -1f);
+                    }
+                }
+            });
             client.requestLocationUpdates(request, callback, Looper.getMainLooper());
             LogBus.log("location updates started (fused, initial " + currentIntervalMs + "ms)");
         } catch (SecurityException e) {

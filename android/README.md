@@ -54,8 +54,8 @@ SDK (`compileSdk 35`) — it fetches the pinned Gradle 8.14.3 itself:
 
 ```sh
 cd android
-./gradlew :app:assembleDebug      # gradlew.bat on Windows
-./gradlew test                    # JVM unit tests (codec, crypto, protocol)
+./gradlew :app:assembleDebug
+./gradlew test
 
 # android/app/build/outputs/apk/release/app-release-unsigned.apk
 ./gradlew :app:assembleRelease

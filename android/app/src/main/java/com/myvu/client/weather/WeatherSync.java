@@ -33,7 +33,7 @@ public class WeatherSync {
     /** Its retry delay after a failed query. */
     private static final long RETRY_MS = 30 * 1000L;
     /** Bound on waiting for a location fix before giving up on this round. */
-    private static final long FIX_TIMEOUT_MS = 20 * 1000L;
+    private static final long FIX_TIMEOUT_MS = 5 * 1000L;
 
     public interface Sender {
         void send(String actionJson);
@@ -48,6 +48,7 @@ public class WeatherSync {
     private boolean running;
     /** Guards against two overlapping rounds (timer firing while one is in flight). */
     private boolean inFlight;
+    private String lastWeatherJson;
 
     public WeatherSync(Context context, Handler conn, Sender sender, LocationSource locationSource) {
         this.context = context.getApplicationContext();
@@ -171,6 +172,7 @@ public class WeatherSync {
             conn.post(new Runnable() {
                 @Override
                 public void run() {
+                    lastWeatherJson = json;
                     sender.send(json);
                     LogBus.log("weather synced: " + r.condition + " " + r.temp + "°C"
                             + (r.areaName == null ? "" : " (" + r.areaName + ")"));
@@ -188,6 +190,10 @@ public class WeatherSync {
             public void run() {
                 if (e != null) LogBus.warn(message + ": " + e);
                 else LogBus.warn(message);
+                if (lastWeatherJson != null) {
+                    sender.send(lastWeatherJson);
+                    LogBus.log("re-synced cached weather");
+                }
                 done(RETRY_MS);
             }
         });
