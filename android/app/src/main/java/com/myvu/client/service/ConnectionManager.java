@@ -132,6 +132,7 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
      * on shutdown. See AudioProfiles for the permission caveats.
      */
     private AudioProfiles audioProfiles;
+    private boolean audioProfilesAttempted;
     /**
      * The ECDH material from the BLE bond, retained so we can push an updated
      * DeviceInfo (WRITE_SWITCH_INFO) when the audio profiles connect after the
@@ -369,6 +370,7 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
         bondKey = null;
         bondIv = null;
         lastSentBtStatus = LinkCommands.BTSTATUS_DEFAULT;
+        audioProfilesAttempted = false;
     }
 
     private void closeRelay() {
@@ -891,7 +893,10 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
             // classic RFCOMM when transport != null; BLE otherwise), so it is
             // safe to page the audio profiles. This is what makes the glasses
             // show "phone connected"; the app relay alone never does.
-            if (audioProfiles != null) audioProfiles.connect(device);
+            if (audioProfiles != null && !audioProfilesAttempted) {
+                audioProfilesAttempted = true;
+                audioProfiles.connect(device);
+            }
         }
 
         if (transport == null) {

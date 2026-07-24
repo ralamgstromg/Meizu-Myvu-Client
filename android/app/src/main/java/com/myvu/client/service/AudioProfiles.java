@@ -104,6 +104,10 @@ public class AudioProfiles {
      */
     public void connect(BluetoothDevice device) {
         if (device == null) return;
+        if (currentBtStatus() != LinkCommands.BTSTATUS_CONNECTED_ACL) {
+            LogBus.trace("classic audio profiles already connected");
+            return;
+        }
         LogBus.log("connecting classic audio profiles (HFP + A2DP) to show the "
                 + "glasses as phone-connected");
         tryConnect("HFP", headset, device);
