@@ -32,55 +32,31 @@ public class AndroidAssistantClient implements AiClient {
             return "Solicitud vacía.";
         }
 
-        PackageManager pm = context.getPackageManager();
-
-        // 1. Try launching official Gemini app directly (com.google.android.apps.bard)
-        try {
-            Intent geminiIntent = pm.getLaunchIntentForPackage(GEMINI_PKG_BARD);
-            if (geminiIntent != null) {
-                geminiIntent.putExtra(SearchManager.QUERY, question);
-                geminiIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(geminiIntent);
-                LogBus.log("launched Gemini app directly for query: " + question);
-                return "Abriendo la app de Gemini: " + question;
-            }
-        } catch (Exception e) {
-            LogBus.warn("could not launch Gemini package directly");
-        }
-
-        // 2. Try launching Google Assistant / Gemini launcher (com.google.android.apps.googleassistant)
-        try {
-            Intent assistantIntent = pm.getLaunchIntentForPackage(GEMINI_PKG_ASSISTANT);
-            if (assistantIntent != null) {
-                assistantIntent.putExtra(SearchManager.QUERY, question);
-                assistantIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(assistantIntent);
-                LogBus.log("launched Google Assistant package for query: " + question);
-                return "Abriendo Asistente Gemini: " + question;
-            }
-        } catch (Exception e) {
-            LogBus.warn("could not launch Google Assistant package directly");
-        }
-
-        // 3. Fallback: VOICE_COMMAND with package explicitly set to Gemini or system voice command
+        // 1. Launch Google Assistant voice command directly
         try {
             Intent voiceIntent = new Intent(Intent.ACTION_VOICE_COMMAND);
-            voiceIntent.setPackage(GEMINI_PKG_BARD);
+            voiceIntent.setPackage("com.google.android.googlequicksearchbox");
+            voiceIntent.putExtra(SearchManager.QUERY, question);
+            voiceIntent.putExtra("query", question);
             voiceIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(voiceIntent);
-            LogBus.log("launched ACTION_VOICE_COMMAND for Gemini");
-            return "Abriendo Asistente de Voz Gemini.";
-        } catch (Exception e1) {
-            try {
-                Intent voiceIntent = new Intent(Intent.ACTION_VOICE_COMMAND);
-                voiceIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(voiceIntent);
-                LogBus.log("launched system ACTION_VOICE_COMMAND fallback");
-                return "Abriendo Asistente del sistema.";
-            } catch (Exception e2) {
-                LogBus.error("could not launch voice assistant", e2);
-                return "Error al abrir el asistente.";
-            }
+            LogBus.log("launched Google Assistant voice command for: " + question);
+            return "Abriendo Asistente de Google para: " + question;
+        } catch (Exception e) {
+            LogBus.warn("could not launch Google Assistant voice command: " + e.getMessage());
         }
+
+        // 2. Fallback to generic ACTION_VOICE_COMMAND
+        try {
+            Intent voiceIntent = new Intent(Intent.ACTION_VOICE_COMMAND);
+            voiceIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(voiceIntent);
+            LogBus.log("launched generic ACTION_VOICE_COMMAND");
+            return "Abriendo Asistente de Voz...";
+        } catch (Exception e) {
+            LogBus.warn("could not launch generic ACTION_VOICE_COMMAND: " + e.getMessage());
+        }
+
+        return "No se pudo abrir el Asistente de Android.";
     }
 }

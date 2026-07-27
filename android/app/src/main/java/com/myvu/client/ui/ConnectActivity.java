@@ -705,6 +705,8 @@ public class ConnectActivity extends AppCompatActivity implements LogBus.Listene
         }
         addIfMissing(needed, Manifest.permission.ACCESS_FINE_LOCATION);
         addIfMissing(needed, Manifest.permission.RECORD_AUDIO);
+        addIfMissing(needed, Manifest.permission.READ_CONTACTS);
+        addIfMissing(needed, Manifest.permission.CALL_PHONE);
         if (!needed.isEmpty()) {
             ActivityCompat.requestPermissions(this, needed.toArray(new String[0]), REQ_PERMISSIONS);
         }

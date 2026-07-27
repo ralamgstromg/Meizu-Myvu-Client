@@ -48,11 +48,10 @@ public class AiConversation {
 
     /**
      * How long the audio must stay quiet before the utterance is considered
-     * over. The official app's VadDetector uses setVadPause(600); a little more
-     * is used here because this is a plain energy threshold rather than their
-     * native VAD, and cutting someone off mid-sentence is worse than waiting.
+     * over. Lowered from 900ms to 650ms (matching official app's VadDetector)
+     * so end-of-speech is detected promptly without lingering.
      */
-    private static final long SILENCE_HOLD_MS = 900;
+    private static final long SILENCE_HOLD_MS = 650;
 
     /**
      * Mean sample amplitude above which a chunk counts as speech.
@@ -61,16 +60,12 @@ public class AiConversation {
      * included -- so there is no gap in the packet stream to detect. Energy is
      * the only signal available without a VAD model.
      */
-    private static final double SPEECH_ENERGY = 80.0;
+    private static final double SPEECH_ENERGY = 75.0;
 
     /**
      * Speech must exceed the measured noise floor by this factor.
-     *
-     * A fixed threshold fired before anyone spoke, because the absolute level
-     * depends on the microphone, its gain and the room. Calibrating against the
-     * first moments of each utterance adapts to all three.
      */
-    private static final double SPEECH_OVER_NOISE = 3.5;
+    private static final double SPEECH_OVER_NOISE = 2.8;
     /** Chunks sampled at the start of listening to establish the noise floor. */
     private static final int NOISE_CALIBRATION_CHUNKS = 12;
     /**
@@ -312,14 +307,20 @@ public class AiConversation {
                     }
                 });
             }
-        } else if (speechStarted
-                && System.currentTimeMillis() - lastSpeechAt > SILENCE_HOLD_MS) {
-            // Quiet for long enough after real speech: utterance over.
-            decoding = false;
-            main.post(new Runnable() {
-                @Override
-                public void run() { endUtterance(); }
-            });
+        } else {
+            // Adapt noise floor dynamically when user is quiet before speech starts
+            if (!speechStarted && noiseChunks >= NOISE_CALIBRATION_CHUNKS) {
+                noiseFloor = (noiseFloor * 0.95) + (level * 0.05);
+                speechThreshold = Math.max(SPEECH_ENERGY, noiseFloor * SPEECH_OVER_NOISE);
+            }
+            if (speechStarted && System.currentTimeMillis() - lastSpeechAt > SILENCE_HOLD_MS) {
+                // Quiet for long enough after real speech: utterance over.
+                decoding = false;
+                main.post(new Runnable() {
+                    @Override
+                    public void run() { endUtterance(); }
+                });
+            }
         }
     }
 

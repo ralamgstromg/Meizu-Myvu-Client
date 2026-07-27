@@ -56,45 +56,45 @@ public final class WeatherCodes {
      */
     public static Condition of(int wmo) {
         switch (wmo) {
-            case 0:  return new Condition(SUNNY, "Clear");
-            case 1:  return new Condition(CLOUDY, "Mainly clear");
-            case 2:  return new Condition(CLOUDY, "Partly cloudy");
-            case 3:  return new Condition(OVERCAST, "Overcast");
+            case 0:  return new Condition(SUNNY, "Despejado");
+            case 1:  return new Condition(CLOUDY, "Mayormente despejado");
+            case 2:  return new Condition(CLOUDY, "Parcialmente nublado");
+            case 3:  return new Condition(OVERCAST, "Nublado");
 
             case 45:
-            case 48: return new Condition(FOG, "Fog");
+            case 48: return new Condition(FOG, "Niebla");
 
-            case 51: return new Condition(LIGHT_RAIN, "Light drizzle");
-            case 53: return new Condition(LIGHT_RAIN, "Drizzle");
-            case 55: return new Condition(MODERATE_RAIN, "Heavy drizzle");
+            case 51: return new Condition(LIGHT_RAIN, "Llovizna ligera");
+            case 53: return new Condition(LIGHT_RAIN, "Llovizna");
+            case 55: return new Condition(MODERATE_RAIN, "Llovizna fuerte");
 
             case 56:
-            case 57: return new Condition(FREEZING_RAIN, "Freezing drizzle");
+            case 57: return new Condition(FREEZING_RAIN, "Llovizna helada");
 
-            case 61: return new Condition(LIGHT_RAIN, "Light rain");
-            case 63: return new Condition(MODERATE_RAIN, "Rain");
-            case 65: return new Condition(HEAVY_RAIN, "Heavy rain");
+            case 61: return new Condition(LIGHT_RAIN, "Lluvia ligera");
+            case 63: return new Condition(MODERATE_RAIN, "Lluvia");
+            case 65: return new Condition(HEAVY_RAIN, "Lluvia fuerte");
 
             case 66:
-            case 67: return new Condition(FREEZING_RAIN, "Freezing rain");
+            case 67: return new Condition(FREEZING_RAIN, "Lluvia helada");
 
-            case 71: return new Condition(LIGHT_SNOW, "Light snow");
-            case 73: return new Condition(MODERATE_SNOW, "Snow");
-            case 75: return new Condition(HEAVY_SNOW, "Heavy snow");
-            case 77: return new Condition(LIGHT_SNOW, "Snow grains");
+            case 71: return new Condition(LIGHT_SNOW, "Nieve ligera");
+            case 73: return new Condition(MODERATE_SNOW, "Nieve");
+            case 75: return new Condition(HEAVY_SNOW, "Nieve fuerte");
+            case 77: return new Condition(LIGHT_SNOW, "Granizo fino");
 
-            case 80: return new Condition(SHOWER, "Light showers");
-            case 81: return new Condition(SHOWER, "Showers");
-            case 82: return new Condition(STORM, "Violent showers");
+            case 80: return new Condition(SHOWER, "Chubascos ligeros");
+            case 81: return new Condition(SHOWER, "Chubascos");
+            case 82: return new Condition(STORM, "Tormenta fuerte");
 
-            case 85: return new Condition(SNOW_FLURRY, "Snow showers");
-            case 86: return new Condition(SNOW_FLURRY, "Heavy snow showers");
+            case 85: return new Condition(SNOW_FLURRY, "Chubascos de nieve");
+            case 86: return new Condition(SNOW_FLURRY, "Nieve fuerte");
 
-            case 95: return new Condition(THUNDERSHOWER, "Thunderstorm");
+            case 95: return new Condition(THUNDERSHOWER, "Tormenta eléctrica");
             case 96:
-            case 99: return new Condition(THUNDER_HAIL, "Thunderstorm with hail");
+            case 99: return new Condition(THUNDER_HAIL, "Tormenta con granizo");
 
-            default: return new Condition(CLOUDY, "Cloudy");
+            default: return new Condition(CLOUDY, "Nublado");
         }
     }
 }

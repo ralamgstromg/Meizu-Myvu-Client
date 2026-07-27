@@ -66,7 +66,7 @@ public final class OpenAiTranscriptionClient {
             DataOutputStream out = new DataOutputStream(conn.getOutputStream());
             writeFilePart(out, "file", "speech.wav", "audio/wav", wav);
             writeTextPart(out, "model", model);
-            writeTextPart(out, "language", "en");
+            writeTextPart(out, "language", "es");
             writeTextPart(out, "response_format", "json");
             out.writeBytes("--" + BOUNDARY + "--\r\n");
             out.flush();

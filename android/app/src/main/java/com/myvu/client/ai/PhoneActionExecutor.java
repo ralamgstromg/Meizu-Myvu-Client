@@ -93,11 +93,30 @@ public class PhoneActionExecutor {
 
     public void openWhatsApp(String text) {
         try {
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(Uri.parse("https://api.whatsapp.com/send?text=" + URLEncoder.encode(text, "UTF-8")));
+            if (text == null || text.trim().isEmpty()) return;
+            String recipient = null;
+            String message = text.trim();
+
+            if (text.contains(":") || text.contains("|")) {
+                String[] parts = text.split("[:|]", 2);
+                recipient = parts[0].trim();
+                message = parts[1].trim();
+            }
+
+            StringBuilder url = new StringBuilder("https://api.whatsapp.com/send?");
+            if (recipient != null && !recipient.isEmpty()) {
+                String number = lookupContactNumber(recipient);
+                if (number != null && !number.isEmpty()) {
+                    String cleanNum = number.replaceAll("[^0-9]", "");
+                    url.append("phone=").append(cleanNum).append("&");
+                }
+            }
+            url.append("text=").append(URLEncoder.encode(message, "UTF-8"));
+
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url.toString()));
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(intent);
-            LogBus.log("voice action -> opened WhatsApp with text: " + text);
+            LogBus.log("voice action -> opened WhatsApp (recipient=" + recipient + ") with text: " + message);
         } catch (Exception e) {
             LogBus.error("could not open WhatsApp", e);
         }
@@ -105,11 +124,14 @@ public class PhoneActionExecutor {
 
     public void openTelegram(String text) {
         try {
+            if (text == null || text.trim().isEmpty()) return;
+            String message = text.trim();
+
             Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(Uri.parse("tg://msg?text=" + URLEncoder.encode(text, "UTF-8")));
+            intent.setData(Uri.parse("tg://msg?text=" + URLEncoder.encode(message, "UTF-8")));
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(intent);
-            LogBus.log("voice action -> opened Telegram with text: " + text);
+            LogBus.log("voice action -> opened Telegram with text: " + message);
         } catch (Exception e) {
             LogBus.error("could not open Telegram", e);
         }
@@ -117,16 +139,86 @@ public class PhoneActionExecutor {
 
     public void makeCall(String target) {
         try {
-            Intent intent = new Intent(Intent.ACTION_DIAL);
-            if (target.matches("^[0-9+#* -]+$")) {
-                intent.setData(Uri.parse("tel:" + Uri.encode(target)));
+            if (target == null || target.trim().isEmpty()) return;
+            String cleanTarget = target.trim();
+            String number = null;
+
+            if (cleanTarget.matches("^[0-9+#* -]+$")) {
+                number = cleanTarget;
+            } else {
+                number = lookupContactNumber(cleanTarget);
+                if (number == null || number.isEmpty()) {
+                    // Try stripping common possessives or articles: "a mi ", "mi ", "a "
+                    String stripped = cleanTarget.replaceAll("(?i)^(a\\s+)?(mi\\s+)?", "").trim();
+                    if (!stripped.isEmpty() && !stripped.equalsIgnoreCase(cleanTarget)) {
+                        number = lookupContactNumber(stripped);
+                    }
+                }
+                if (number == null || number.isEmpty()) {
+                    // Fallback: try first word (e.g. "amor" from "amor hermosa")
+                    String[] parts = cleanTarget.split("\\s+");
+                    for (String part : parts) {
+                        if (part.length() >= 3) {
+                            number = lookupContactNumber(part);
+                            if (number != null && !number.isEmpty()) break;
+                        }
+                    }
+                }
             }
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(intent);
-            LogBus.log("voice action -> opened dialer for " + target);
+
+            Intent intent;
+            if (number != null && !number.isEmpty()) {
+                boolean hasCallPerm = context.checkSelfPermission(android.Manifest.permission.CALL_PHONE)
+                        == android.content.pm.PackageManager.PERMISSION_GRANTED;
+                if (hasCallPerm) {
+                    try {
+                        android.telecom.TelecomManager tm = (android.telecom.TelecomManager) context.getSystemService(Context.TELECOM_SERVICE);
+                        if (tm != null) {
+                            android.os.Bundle extras = new android.os.Bundle();
+                            extras.putBoolean(android.telecom.TelecomManager.EXTRA_START_CALL_WITH_SPEAKERPHONE, false);
+                            tm.placeCall(Uri.parse("tel:" + Uri.encode(number)), extras);
+                            LogBus.log("voice action -> TelecomManager placed direct call to " + target + " (" + number + ")");
+                            return;
+                        }
+                    } catch (Exception e) {
+                        LogBus.warn("TelecomManager placeCall failed: " + e.getMessage() + ", falling back to Intent");
+                    }
+                }
+                intent = new Intent(hasCallPerm ? Intent.ACTION_CALL : Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(number)));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(intent);
+                LogBus.log("voice action -> placing " + (hasCallPerm ? "direct call" : "dialer call") + " to " + target + " (" + number + ")");
+            } else {
+                intent = new Intent(Intent.ACTION_DIAL);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(intent);
+                LogBus.warn("voice action -> contact number not found for " + target + ", opening dialer");
+            }
         } catch (Exception e) {
-            LogBus.error("could not open dialer", e);
+            LogBus.error("could not place call for " + target, e);
         }
+    }
+
+    private String lookupContactNumber(String name) {
+        if (name == null || name.trim().isEmpty()) return null;
+        if (context.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            LogBus.warn("READ_CONTACTS permission not granted -- cannot lookup " + name);
+            return null;
+        }
+        try (android.database.Cursor cursor = context.getContentResolver().query(
+                android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                new String[]{android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER, android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME},
+                android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " LIKE ?",
+                new String[]{"%" + name.trim() + "%"},
+                null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                int idx = cursor.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER);
+                if (idx >= 0) return cursor.getString(idx);
+            }
+        } catch (Exception e) {
+            LogBus.warn("could not lookup contact: " + e.getMessage());
+        }
+        return null;
     }
 
     private String extractValue(String text, String tag) {
@@ -140,6 +232,15 @@ public class PhoneActionExecutor {
 
     private String stripActionTags(String text) {
         if (text == null) return "";
-        return text.replaceAll("(?i)ACTION:[A-Z_]+(=[^\n]*)?", "").trim();
+        // 1. Remove ACTION tags
+        String clean = text.replaceAll("(?i)ACTION:[A-Z_]+(=[^\n]*)?", "");
+        // 2. Remove markdown links [text](url) -> text
+        clean = clean.replaceAll("\\[([^\\]]+)\\]\\([^\\)]+\\)", "$1");
+        // 3. Remove markdown syntax symbols (*, _, `, ~, #, >)
+        clean = clean.replaceAll("[*_`~#>]", "");
+        // 4. Remove leading bullet dashes/asterisks on newlines
+        clean = clean.replaceAll("(?m)^[\\s*\\-]+\\s*", "");
+        // 5. Normalize whitespace
+        return clean.replaceAll("[ \\t]+", " ").trim();
     }
 }

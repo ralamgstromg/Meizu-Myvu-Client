@@ -939,6 +939,7 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
                 try { sendActionNow(SystemSettings.setMusicTpControl(Prefs.musicTouchPanelEnabled(context))); } catch (Exception ignored) {}
                 try { if (Prefs.airModeEnabled(context)) sendActionNow(SystemSettings.setAirMode(true)); } catch (Exception ignored) {}
                 try { sendActionNow(SystemSettings.toggleWifi(Prefs.wifiEnabled(context))); } catch (Exception ignored) {}
+                try { sendActionNow(SystemSettings.setLanguage("es", "ES")); } catch (Exception ignored) {}
             }
         }, 400);
         conn.postDelayed(new Runnable() {

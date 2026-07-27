@@ -109,7 +109,8 @@ public class SttSource {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                         RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                .putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-CO")
+                .putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "es-CO")
                 // Partials are what make the glasses' caption build up.
                 .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                 .putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.getPackageName());

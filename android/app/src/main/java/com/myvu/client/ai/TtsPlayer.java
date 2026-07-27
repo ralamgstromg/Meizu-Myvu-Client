@@ -62,7 +62,13 @@ public class TtsPlayer {
                     flushPending(false);
                     return;
                 }
-                tts.setLanguage(Locale.getDefault());
+                int result = tts.setLanguage(new Locale("es", "CO"));
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    result = tts.setLanguage(new Locale("es"));
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        tts.setLanguage(Locale.getDefault());
+                    }
+                }
                 tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                     @Override
                     public void onStart(String utteranceId) { }
