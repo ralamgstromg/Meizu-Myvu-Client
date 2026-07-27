@@ -70,6 +70,30 @@ public class PhoneActionExecutor {
             makeCall(target);
         }
 
+        // 6. Web Search
+        if (lower.contains("action:search=")) {
+            String query = extractValue(aiText, "ACTION:SEARCH=");
+            openWebSearch(query);
+        }
+
+        // 7. Alarms
+        if (lower.contains("action:alarm=")) {
+            String alarmVal = extractValue(aiText, "ACTION:ALARM=");
+            setAlarm(alarmVal);
+        }
+
+        // 8. Timers
+        if (lower.contains("action:timer=")) {
+            String timerVal = extractValue(aiText, "ACTION:TIMER=");
+            setTimer(timerVal);
+        }
+
+        // 9. GPS Navigation
+        if (lower.contains("action:navigate=")) {
+            String dest = extractValue(aiText, "ACTION:NAVIGATE=");
+            startNavigation(dest);
+        }
+
         return stripActionTags(aiText);
     }
 
@@ -219,6 +243,81 @@ public class PhoneActionExecutor {
             LogBus.warn("could not lookup contact: " + e.getMessage());
         }
         return null;
+    }
+
+    public void openWebSearch(String query) {
+        try {
+            if (query == null || query.trim().isEmpty()) return;
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=" + URLEncoder.encode(query.trim(), "UTF-8")));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            LogBus.log("voice action -> opened web search for: " + query);
+        } catch (Exception e) {
+            LogBus.error("could not open web search", e);
+        }
+    }
+
+    public void setAlarm(String val) {
+        try {
+            if (val == null || val.trim().isEmpty()) return;
+            String message = "Alarma";
+            String timeStr = val.trim();
+            if (val.contains(":") || val.contains("|")) {
+                String[] parts = val.split("[:|]", 2);
+                timeStr = parts[0].trim();
+                message = parts[1].trim();
+            }
+            String[] timeParts = timeStr.split("[:\\.]");
+            int hour = Integer.parseInt(timeParts[0].trim());
+            int minute = timeParts.length > 1 ? Integer.parseInt(timeParts[1].trim()) : 0;
+
+            Intent intent = new Intent(android.provider.AlarmClock.ACTION_SET_ALARM);
+            intent.putExtra(android.provider.AlarmClock.EXTRA_HOUR, hour);
+            intent.putExtra(android.provider.AlarmClock.EXTRA_MINUTES, minute);
+            intent.putExtra(android.provider.AlarmClock.EXTRA_MESSAGE, message);
+            intent.putExtra(android.provider.AlarmClock.EXTRA_SKIP_UI, true);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            LogBus.log("voice action -> alarm set for " + hour + ":" + minute + " message: " + message);
+        } catch (Exception e) {
+            LogBus.error("could not set alarm for " + val, e);
+        }
+    }
+
+    public void setTimer(String val) {
+        try {
+            if (val == null || val.trim().isEmpty()) return;
+            String message = "Temporizador";
+            String durationStr = val.trim();
+            if (val.contains(":") || val.contains("|")) {
+                String[] parts = val.split("[:|]", 2);
+                durationStr = parts[0].trim();
+                message = parts[1].trim();
+            }
+            int seconds = Integer.parseInt(durationStr.replaceAll("[^0-9]", ""));
+
+            Intent intent = new Intent(android.provider.AlarmClock.ACTION_SET_TIMER);
+            intent.putExtra(android.provider.AlarmClock.EXTRA_LENGTH, seconds);
+            intent.putExtra(android.provider.AlarmClock.EXTRA_MESSAGE, message);
+            intent.putExtra(android.provider.AlarmClock.EXTRA_SKIP_UI, true);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            LogBus.log("voice action -> timer set for " + seconds + "s message: " + message);
+        } catch (Exception e) {
+            LogBus.error("could not set timer for " + val, e);
+        }
+    }
+
+    public void startNavigation(String destination) {
+        try {
+            if (destination == null || destination.trim().isEmpty()) return;
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=" + URLEncoder.encode(destination.trim(), "UTF-8")));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            LogBus.log("voice action -> started GPS navigation to: " + destination);
+        } catch (Exception e) {
+            LogBus.error("could not start navigation for " + destination, e);
+        }
     }
 
     private String extractValue(String text, String tag) {

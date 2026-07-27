@@ -33,6 +33,7 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
 
     <!-- Keep the connection alive under Doze: a glasses link that dies when the
          phone sleeps is not useful. -->
