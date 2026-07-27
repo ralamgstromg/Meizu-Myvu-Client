@@ -16,7 +16,7 @@ import java.util.Map;
 public class NotificationFilter {
 
     public static final int DEFAULT_MAX_TEXT_LEN = 120;
-    public static final long DEFAULT_DEDUPE_WINDOW_MS = 3_000L; // 3 seconds
+    public static final long DEFAULT_DEDUPE_WINDOW_MS = 8_000L; // 8 seconds
     public static final int DEFAULT_MAX_PER_WINDOW = 10;
     public static final long DEFAULT_RATE_LIMIT_WINDOW_MS = 10_000L; // 10 seconds
 
