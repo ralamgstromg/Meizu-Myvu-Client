@@ -124,7 +124,7 @@ public class RfcommTransport implements Transport {
             LogBus.warn("secure RFCOMM connect failed (" + e.getMessage()
                     + ") -- retrying insecure after delay");
             try {
-                Thread.sleep(500);
+                Thread.sleep(1000);
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
                 throw new IOException("interrupted waiting for RFCOMM retry", ie);
@@ -144,7 +144,7 @@ public class RfcommTransport implements Transport {
             LogBus.warn("insecure RFCOMM connect failed (" + e.getMessage()
                     + ") -- retrying reflection channel");
             try {
-                Thread.sleep(500);
+                Thread.sleep(1000);
                 BluetoothSocket reflection = (BluetoothSocket) device.getClass()
                         .getMethod("createRfcommSocket", new Class[] { int.class })
                         .invoke(device, 13);

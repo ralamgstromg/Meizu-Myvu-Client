@@ -33,7 +33,7 @@ public class WeatherSync {
     /** Its retry delay after a failed query. */
     private static final long RETRY_MS = 30 * 1000L;
     /** Bound on waiting for a location fix before giving up on this round. */
-    private static final long FIX_TIMEOUT_MS = 5 * 1000L;
+    private static final long FIX_TIMEOUT_MS = 25 * 1000L;
 
     public interface Sender {
         void send(String actionJson);

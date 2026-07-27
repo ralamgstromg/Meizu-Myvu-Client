@@ -925,21 +925,14 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
         conn.postDelayed(new Runnable() {
             @Override
             public void run() {
-                try { sendActionNow(SystemSettings.setWearDetection(true)); } catch (Exception ignored) {}
+                try { sendActionNow(SystemSettings.setScreenOffTime(com.myvu.client.core.GlassesConfig.getScreenOffTime(context))); } catch (Exception ignored) {}
+                try { sendActionNow(SystemSettings.setBrightness(com.myvu.client.core.GlassesConfig.getBrightness(context))); } catch (Exception ignored) {}
+                try { sendActionNow(SystemSettings.setVolume(com.myvu.client.core.GlassesConfig.getVolume(context))); } catch (Exception ignored) {}
             }
         }, 250);
         conn.postDelayed(new Runnable() {
             @Override
             public void run() {
-                try { sendActionNow(SystemSettings.setZenMode(false)); } catch (Exception ignored) {}
-            }
-        }, 400);
-        conn.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                try { sendActionNow(SystemSettings.setScreenOffTime(com.myvu.client.core.GlassesConfig.getScreenOffTime(context))); } catch (Exception ignored) {}
-                try { sendActionNow(SystemSettings.setBrightness(com.myvu.client.core.GlassesConfig.getBrightness(context))); } catch (Exception ignored) {}
-                try { sendActionNow(SystemSettings.setVolume(com.myvu.client.core.GlassesConfig.getVolume(context))); } catch (Exception ignored) {}
                 try { sendActionNow(SystemSettings.setStandbyPosition(com.myvu.client.core.GlassesConfig.getStandbyPosition(context))); } catch (Exception ignored) {}
                 try { sendActionNow(SystemSettings.setZenMode(Prefs.zenModeEnabled(context))); } catch (Exception ignored) {}
                 try { sendActionNow(SystemSettings.setWearDetection(Prefs.wearDetectionEnabled(context))); } catch (Exception ignored) {}
@@ -947,7 +940,7 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
                 try { if (Prefs.airModeEnabled(context)) sendActionNow(SystemSettings.setAirMode(true)); } catch (Exception ignored) {}
                 try { sendActionNow(SystemSettings.toggleWifi(Prefs.wifiEnabled(context))); } catch (Exception ignored) {}
             }
-        }, 550);
+        }, 400);
         conn.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -955,7 +948,7 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
                     weather().start();
                 }
             }
-        }, 800);
+        }, 650);
     }
 
     // ------------------------------------------------- classic audio profiles
