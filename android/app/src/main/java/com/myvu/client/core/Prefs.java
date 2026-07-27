@@ -310,7 +310,7 @@ public final class Prefs {
     }
 
     public static boolean wearDetectionEnabled(Context c) {
-        return prefs(c).getBoolean("system_wear_detection_enabled", true);
+        return prefs(c).getBoolean("system_wear_detection_enabled", false);
     }
 
     public static void setWearDetectionEnabled(Context c, boolean enabled) {
