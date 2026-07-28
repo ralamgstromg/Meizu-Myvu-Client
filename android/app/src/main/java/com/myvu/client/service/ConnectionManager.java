@@ -189,6 +189,12 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
                 weather().refresh();
             }
         });
+        inbound.setBatteryUpdateListener(new InboundRouter.BatteryUpdateListener() {
+            @Override
+            public void onBatteryUpdated(int battery, boolean isCharging) {
+                updateGlassesBattery(battery);
+            }
+        });
     }
 
     public ConnectionManager(Context context, Listener listener) {
@@ -203,6 +209,46 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
     public ConnectionState state() { return state; }
     public DeviceInfo glassesInfo() { return glassesInfo; }
     public String sppUuid() { return sppUuid; }
+
+    private final Runnable batteryQueryTask = new Runnable() {
+        @Override
+        public void run() {
+            if (state == ConnectionState.READY) {
+                queryBatteryInfo();
+                conn.postDelayed(this, 15 * 60 * 1000L); // 15 min periodic check
+            }
+        }
+    };
+
+    public void queryBatteryInfo() {
+        if (state == ConnectionState.READY) {
+            try {
+                sendActionNow(SystemSettings.query("get_device_info"));
+            } catch (Exception e) {
+                LogBus.error("could not query battery info", e);
+            }
+        }
+    }
+
+    public void updateGlassesBattery(final int battery) {
+        if (battery < 0 || battery > 100) return;
+        conn.post(new Runnable() {
+            @Override
+            public void run() {
+                if (glassesInfo == null) {
+                    glassesInfo = new DeviceInfo("", "", "", "5001", "MYVU", battery, 0);
+                    LogBus.log("glasses battery set: " + battery + "%");
+                    if (listener != null) listener.onStateChanged(state);
+                } else if (glassesInfo.battery != battery) {
+                    glassesInfo = new DeviceInfo(glassesInfo.btMac, glassesInfo.companyId,
+                            glassesInfo.categoryId, glassesInfo.modelId, glassesInfo.name,
+                            battery, glassesInfo.btStatus);
+                    LogBus.log("glasses battery updated: " + battery + "%");
+                    if (listener != null) listener.onStateChanged(state);
+                }
+            }
+        });
+    }
 
     public void start(final String mac) {
         conn.post(new Runnable() {
@@ -950,6 +996,8 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
                 if (Prefs.weatherEnabled(context)) {
                     weather().start();
                 }
+                conn.removeCallbacks(batteryQueryTask);
+                conn.post(batteryQueryTask);
             }
         }, 650);
     }

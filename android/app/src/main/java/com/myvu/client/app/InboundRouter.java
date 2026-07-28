@@ -39,9 +39,15 @@ public class InboundRouter {
         void onWeatherRequested();
     }
 
+    /** Fired when the glasses send a battery status update. */
+    public interface BatteryUpdateListener {
+        void onBatteryUpdated(int battery, boolean isCharging);
+    }
+
     private final Sender sender;
     private AiTriggerListener aiListener;
     private WeatherRequestListener weatherListener;
+    private BatteryUpdateListener batteryListener;
 
     public InboundRouter(Sender sender) {
         this.sender = sender;
@@ -53,6 +59,10 @@ public class InboundRouter {
 
     public void setWeatherRequestListener(WeatherRequestListener listener) {
         this.weatherListener = listener;
+    }
+
+    public void setBatteryUpdateListener(BatteryUpdateListener listener) {
+        this.batteryListener = listener;
     }
 
     /** Inspects one inbound relay body and answers anything that needs answering. */
@@ -68,6 +78,7 @@ public class InboundRouter {
             checkTimeSyncRequest(obj);
             checkWeatherRequest(obj);
             checkAiTrigger(obj);
+            checkBatteryInfo(obj);
         }
     }
 
@@ -149,6 +160,60 @@ public class InboundRouter {
         LogBus.log("AI trigger: code=" + code
                 + (code == 3 ? " (button)" : " (wake word)"));
         if (aiListener != null) aiListener.onAiTrigger(code, payload);
+    }
+
+    /**
+     * Inspects inbound JSON messages for battery updates from the glasses
+     * (e.g. sync_glass_battery_info, get_air_glass_info, device_info).
+     */
+    private void checkBatteryInfo(JSONObject msg) {
+        if (batteryListener == null) return;
+
+        // 1. Action: sync_glass_battery_info
+        if ("sync_glass_battery_info".equals(msg.optString("action"))) {
+            parseValueBattery(msg.optString("value"));
+            return;
+        }
+
+        // 2. Action: air_ota -> data -> action: get_air_glass_info
+        if ("air_ota".equals(msg.optString("action"))) {
+            JSONObject data = msg.optJSONObject("data");
+            if (data != null) {
+                parseValueBattery(data.optString("value"));
+            }
+            return;
+        }
+
+        // 3. Top-level device_info
+        JSONObject devInfo = msg.optJSONObject("device_info");
+        if (devInfo != null && devInfo.has("battery")) {
+            int battery = devInfo.optInt("battery", -1);
+            if (battery >= 0) {
+                batteryListener.onBatteryUpdated(battery, devInfo.optBoolean("is_charging", false));
+            }
+            return;
+        }
+
+        // 4. Action containing battery or get_device_info
+        if (msg.has("action") && msg.optString("action").contains("battery")) {
+            parseValueBattery(msg.optString("value"));
+        }
+    }
+
+    private void parseValueBattery(String valueJson) {
+        if (valueJson == null || valueJson.isEmpty()) return;
+        try {
+            JSONObject val = new JSONObject(valueJson);
+            int battery = val.optInt("battery", -1);
+            if (battery < 0 && val.has("capacity")) {
+                battery = val.optInt("capacity", -1);
+            }
+            if (battery >= 0) {
+                boolean isCharging = val.optBoolean("isCharging", val.optBoolean("is_charging", false));
+                batteryListener.onBatteryUpdated(battery, isCharging);
+            }
+        } catch (JSONException ignored) {
+        }
     }
 
     /**

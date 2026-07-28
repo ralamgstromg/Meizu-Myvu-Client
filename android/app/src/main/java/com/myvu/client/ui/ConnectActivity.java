@@ -78,6 +78,9 @@ public class ConnectActivity extends AppCompatActivity implements LogBus.Listene
             service = ((MyvuService.LocalBinder) binder).getService();
             bound = true;
             render(service.connection().state());
+            if (service.connection().state() == ConnectionState.READY) {
+                service.connection().queryBatteryInfo();
+            }
         }
 
         @Override
@@ -204,6 +207,14 @@ public class ConnectActivity extends AppCompatActivity implements LogBus.Listene
         findViewById(R.id.btnTrackpad).setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 startActivity(new Intent(ConnectActivity.this, TrackpadActivity.class));
+            }
+        });
+        findViewById(R.id.cardStatus).setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                if (need()) {
+                    service.connection().queryBatteryInfo();
+                    LogBus.log("refreshing battery info...");
+                }
             }
         });
         View.OnClickListener openSettings = new View.OnClickListener() {

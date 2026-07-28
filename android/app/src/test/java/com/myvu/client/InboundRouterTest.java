@@ -157,6 +157,40 @@ public class InboundRouterTest {
         assertTrue(sent.isEmpty());
     }
 
+    // ---------------------------------------------------- battery updates
+
+    @Test
+    public void syncGlassBatteryInfoFiresListener() {
+        final List<Integer> levels = new ArrayList<>();
+        router.setBatteryUpdateListener(new InboundRouter.BatteryUpdateListener() {
+            @Override
+            public void onBatteryUpdated(int battery, boolean isCharging) {
+                levels.add(battery);
+            }
+        });
+
+        router.handle("{\"action\":\"sync_glass_battery_info\",\"value\":\"{\\\"isCharging\\\":false,\\\"battery\\\":21}\"}");
+
+        assertEquals(1, levels.size());
+        assertEquals(Integer.valueOf(21), levels.get(0));
+    }
+
+    @Test
+    public void getAirGlassInfoFiresListener() {
+        final List<Integer> levels = new ArrayList<>();
+        router.setBatteryUpdateListener(new InboundRouter.BatteryUpdateListener() {
+            @Override
+            public void onBatteryUpdated(int battery, boolean isCharging) {
+                levels.add(battery);
+            }
+        });
+
+        router.handle("{\"action\":\"air_ota\",\"data\":{\"action\":\"get_air_glass_info\",\"value\":\"{\\\"battery\\\":18}\"}}");
+
+        assertEquals(1, levels.size());
+        assertEquals(Integer.valueOf(18), levels.get(0));
+    }
+
     @Test
     public void malformedBodiesDoNotThrow() {
         router.handle("");
