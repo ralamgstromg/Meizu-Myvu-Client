@@ -28,12 +28,17 @@ import java.util.concurrent.Executors;
  */
 public class WeatherSync {
 
-    /** How often to refresh, matching the official app's WeatherMonitor. */
-    private static final long REFRESH_MS = 30 * 60 * 1000L;
-    /** Its retry delay after a failed query. */
-    private static final long RETRY_MS = 30 * 1000L;
+    /** Default refresh frequency: 60 minutes (1 hour). */
+    private static final long DEFAULT_REFRESH_MS = 60 * 60 * 1000L;
+    /** Retry delay after a failed query (5 minutes instead of 30 seconds). */
+    private static final long RETRY_MS = 5 * 60 * 1000L;
     /** Bound on waiting for a location fix before giving up on this round. */
     private static final long FIX_TIMEOUT_MS = 25 * 1000L;
+
+    public long getRefreshMs() {
+        int minutes = Prefs.weatherIntervalMinutes(context);
+        return Math.max(15, minutes) * 60 * 1000L;
+    }
 
     public interface Sender {
         void send(String actionJson);
@@ -176,7 +181,7 @@ public class WeatherSync {
                     sender.send(json);
                     LogBus.log("weather synced: " + r.condition + " " + r.temp + "°C"
                             + (r.areaName == null ? "" : " (" + r.areaName + ")"));
-                    done(REFRESH_MS);
+                    done(getRefreshMs());
                 }
             });
         } catch (Exception e) {
@@ -194,7 +199,7 @@ public class WeatherSync {
                     sender.send(lastWeatherJson);
                     LogBus.log("re-synced cached weather");
                 }
-                done(RETRY_MS);
+                done(Math.min(RETRY_MS, getRefreshMs()));
             }
         });
     }

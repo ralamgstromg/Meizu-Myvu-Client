@@ -107,6 +107,23 @@ public class AiProtocolTest {
     }
 
     @Test
+    public void assistantConfigDefaultsToDisablingLowPowerWakeup() throws Exception {
+        JSONObject m = parse(AiProtocol.assistantConfig());
+        assertEquals(2, m.getInt("code"));
+        JSONObject payload = m.getJSONObject("payload");
+        assertFalse(payload.getBoolean("isLowPowerWakeupEnable"));
+        assertFalse(payload.getBoolean("isLowPowerWakeupScreenOffEnable"));
+    }
+
+    @Test
+    public void assistantConfigCanEnableLowPowerWakeup() throws Exception {
+        JSONObject m = parse(AiProtocol.assistantConfig(true));
+        JSONObject payload = m.getJSONObject("payload");
+        assertTrue(payload.getBoolean("isLowPowerWakeupEnable"));
+        assertTrue(payload.getBoolean("isLowPowerWakeupScreenOffEnable"));
+    }
+
+    @Test
     public void constantsMatchTheDeviceEnums() {
         // From CmdCode.java / VrState.java in the decompiled app.
         assertEquals(3, AiProtocol.CODE_START_VR_REQ);

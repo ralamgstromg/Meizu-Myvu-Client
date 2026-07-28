@@ -10,6 +10,7 @@ import android.os.HandlerThread;
 import com.myvu.client.app.AppLayer;
 import com.myvu.client.app.InboundRouter;
 import com.myvu.client.app.RelaySession;
+import com.myvu.client.app.feature.AiProtocol;
 import com.myvu.client.app.feature.ClockSync;
 import com.myvu.client.app.feature.SystemSettings;
 import com.myvu.client.app.feature.Teleprompter;
@@ -940,6 +941,7 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
                 try { if (Prefs.airModeEnabled(context)) sendActionNow(SystemSettings.setAirMode(true)); } catch (Exception ignored) {}
                 try { sendActionNow(SystemSettings.toggleWifi(Prefs.wifiEnabled(context))); } catch (Exception ignored) {}
                 try { sendActionNow(SystemSettings.setLanguage("es", "ES")); } catch (Exception ignored) {}
+                try { sendActionNow(AiProtocol.assistantConfig(Prefs.voiceWakeupEnabled(context)), AiProtocol.PKG, AiProtocol.PKG); } catch (Exception ignored) {}
             }
         }, 400);
         conn.postDelayed(new Runnable() {

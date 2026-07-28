@@ -74,6 +74,10 @@ public final class AiProtocol {
      * start of each conversation, which is harmless to repeat.
      */
     public static String assistantConfig() {
+        return assistantConfig(false);
+    }
+
+    public static String assistantConfig(boolean lowPowerWakeupEnabled) {
         try {
             return message(CODE_ASSISTANT_CONFIG, new JSONObject()
                     .put("hasWakeupVoicePrint", false)
@@ -81,8 +85,8 @@ public final class AiProtocol {
                     .put("isChatGptCardDisplayEnable", true)
                     .put("isChatGptTTSPlayEnable", true)
                     .put("isContinuousDialogueEnable", true)
-                    .put("isLowPowerWakeupEnable", true)
-                    .put("isLowPowerWakeupScreenOffEnable", true)
+                    .put("isLowPowerWakeupEnable", lowPowerWakeupEnabled)
+                    .put("isLowPowerWakeupScreenOffEnable", lowPowerWakeupEnabled)
                     .put("isNetworkAvailable", true)
                     .put("isWakeupVoiceRecording", false)
                     .put("ttsTimbreValue", 0));

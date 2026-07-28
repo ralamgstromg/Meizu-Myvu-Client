@@ -431,9 +431,26 @@ public class SettingsActivity extends AppCompatActivity {
     private void wireWeather() {
         MaterialSwitch sw = findViewById(R.id.swWeather);
         TextInputEditText place = findViewById(R.id.txtWeatherPlace);
+        com.google.android.material.slider.Slider sliderInterval = findViewById(R.id.sliderWeatherInterval);
+        TextView lblInterval = findViewById(R.id.lblWeatherInterval);
 
         sw.setChecked(Prefs.weatherEnabled(this));
         place.setText(Prefs.weatherPlace(this));
+
+        int currentInterval = Prefs.weatherIntervalMinutes(this);
+        if (sliderInterval != null) {
+            sliderInterval.setValue(currentInterval);
+            if (lblInterval != null) {
+                lblInterval.setText("Sync interval: " + currentInterval + " min (Default: 60 min)");
+            }
+            sliderInterval.addOnChangeListener((slider, value, fromUser) -> {
+                int min = (int) value;
+                Prefs.setWeatherIntervalMinutes(SettingsActivity.this, min);
+                if (lblInterval != null) {
+                    lblInterval.setText("Sync interval: " + min + " min (Default: 60 min)");
+                }
+            });
+        }
 
         sw.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override

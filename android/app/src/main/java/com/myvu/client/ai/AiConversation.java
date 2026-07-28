@@ -332,7 +332,7 @@ public class AiConversation {
         turnCount = 0;
         // Configure the glasses' assistant (continuous dialogue, ChatGPT card)
         // before the first frame -- the config is what a follow-up needs.
-        send(AiProtocol.assistantConfig());
+        send(AiProtocol.assistantConfig(Prefs.voiceWakeupEnabled(context)));
         prepareTts();
         startListening(triggerCode == AiProtocol.CODE_START_VR_REQ ? "button" : "wake word");
     }
@@ -606,7 +606,7 @@ public class AiConversation {
                 stopRequested = false;
                 textMode = true;
                 turnCount = 0;
-                send(AiProtocol.assistantConfig());
+                send(AiProtocol.assistantConfig(Prefs.voiceWakeupEnabled(context)));
                 prepareTts();
                 sessionId = UUID.randomUUID().toString();
 

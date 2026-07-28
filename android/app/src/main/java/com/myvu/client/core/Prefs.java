@@ -345,4 +345,21 @@ public final class Prefs {
     public static void setWeatherPlace(Context c, String place) {
         prefs(c).edit().putString(KEY_WEATHER_PLACE, place).apply();
     }
+
+    public static boolean voiceWakeupEnabled(Context c) {
+        return prefs(c).getBoolean("voice_wakeup_enabled", false);
+    }
+
+    public static void setVoiceWakeupEnabled(Context c, boolean enabled) {
+        prefs(c).edit().putBoolean("voice_wakeup_enabled", enabled).apply();
+    }
+
+    public static int weatherIntervalMinutes(Context c) {
+        return prefs(c).getInt("weather_interval_minutes", 60);
+    }
+
+    public static void setWeatherIntervalMinutes(Context c, int minutes) {
+        int clamped = Math.max(15, Math.min(720, minutes));
+        prefs(c).edit().putInt("weather_interval_minutes", clamped).apply();
+    }
 }
