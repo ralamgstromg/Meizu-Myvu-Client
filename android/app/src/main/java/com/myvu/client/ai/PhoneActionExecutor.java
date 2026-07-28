@@ -43,11 +43,23 @@ public class PhoneActionExecutor {
             } catch (Exception ignored) {}
         }
 
-        // 2. Media control
-        if (lower.contains("action:media_next")) {
+        // 2. Media control & OpenTune Integration
+        if (lower.contains("action:opentune_play=")) {
+            String query = extractValue(aiText, "ACTION:OPENTUNE_PLAY=");
+            playFromSearchInOpenTune(query);
+        } else if (lower.contains("action:opentune_search=")) {
+            String query = extractValue(aiText, "ACTION:OPENTUNE_SEARCH=");
+            playFromSearchInOpenTune(query);
+        } else if (lower.contains("action:opentune_pause")) {
+            sendMediaKey(KeyEvent.KEYCODE_MEDIA_PAUSE);
+        } else if (lower.contains("action:opentune_resume")) {
+            sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY);
+        } else if (lower.contains("action:opentune_next") || lower.contains("action:media_next")) {
             sendMediaKey(KeyEvent.KEYCODE_MEDIA_NEXT);
-        } else if (lower.contains("action:media_prev")) {
+        } else if (lower.contains("action:opentune_prev") || lower.contains("action:media_prev")) {
             sendMediaKey(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+        } else if (lower.contains("action:opentune_repeat")) {
+            sendMediaKey(KeyEvent.KEYCODE_MEDIA_RECORD);
         } else if (lower.contains("action:media_play")) {
             sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
         }
@@ -94,6 +106,40 @@ public class PhoneActionExecutor {
             startNavigation(dest);
         }
 
+        // 10. Calendar Events (General & Specific Accounts)
+        if (lower.contains("action:calendar_outlook=")) {
+            String eventVal = extractValue(aiText, "ACTION:CALENDAR_OUTLOOK=");
+            addOutlookCalendarEvent(eventVal);
+        } else if (lower.contains("action:calendar_google=")) {
+            String eventVal = extractValue(aiText, "ACTION:CALENDAR_GOOGLE=");
+            addGoogleCalendarEvent(eventVal);
+        } else if (lower.contains("action:calendar=")) {
+            String eventVal = extractValue(aiText, "ACTION:CALENDAR=");
+            addCalendarEvent(eventVal);
+        }
+
+        // 11. Notes (Google Keep vs Quick Notes)
+        if (lower.contains("action:note_keep=")) {
+            String noteText = extractValue(aiText, "ACTION:NOTE_KEEP=");
+            createKeepNote(noteText);
+        } else if (lower.contains("action:note=")) {
+            String noteText = extractValue(aiText, "ACTION:NOTE=");
+            createNote(noteText);
+        }
+
+        // 12. Specific Reminders
+        if (lower.contains("action:reminder=")) {
+            String remVal = extractValue(aiText, "ACTION:REMINDER=");
+            createSpecificReminder(remVal);
+        }
+
+        // 13. Summarize pending unread notifications (Email, WhatsApp, Telegram, All)
+        if (lower.contains("action:summary=")) {
+            String cat = extractValue(aiText, "ACTION:SUMMARY=");
+            String summary = com.myvu.client.service.MirrorNotificationListener.getUnreadSummary(cat);
+            return stripActionTags(aiText) + "\n\n" + summary;
+        }
+
         return stripActionTags(aiText);
     }
 
@@ -113,6 +159,41 @@ public class PhoneActionExecutor {
         audioManager.dispatchMediaKeyEvent(down);
         audioManager.dispatchMediaKeyEvent(up);
         LogBus.log("voice action -> sent media key " + keyCode);
+    }
+
+    public void playFromSearchInOpenTune(String query) {
+        try {
+            if (query == null || query.trim().isEmpty()) {
+                sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY);
+                return;
+            }
+            Intent intent = new Intent(android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH);
+            intent.putExtra(android.app.SearchManager.QUERY, query.trim());
+            intent.putExtra(android.provider.MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            String[] openTunePkgs = new String[]{
+                "com.opentune.app", "org.opentune.android", "com.opentune.music",
+                "com.vibe.opentune", "com.github.opentune", "com.opentune"
+            };
+            boolean launched = false;
+            for (String pkg : openTunePkgs) {
+                try {
+                    Intent pkgIntent = new Intent(intent);
+                    pkgIntent.setPackage(pkg);
+                    context.startActivity(pkgIntent);
+                    LogBus.log("voice action -> launched OpenTune (" + pkg + ") search/play for: " + query);
+                    launched = true;
+                    break;
+                } catch (Exception ignored) {}
+            }
+            if (!launched) {
+                context.startActivity(intent);
+                LogBus.log("voice action -> launched generic media play from search for: " + query);
+            }
+        } catch (Exception e) {
+            LogBus.error("could not play in OpenTune for " + query, e);
+        }
     }
 
     public void openWhatsApp(String text) {
@@ -317,6 +398,140 @@ public class PhoneActionExecutor {
             LogBus.log("voice action -> started GPS navigation to: " + destination);
         } catch (Exception e) {
             LogBus.error("could not start navigation for " + destination, e);
+        }
+    }
+
+    public void addOutlookCalendarEvent(String val) {
+        try {
+            if (val == null || val.trim().isEmpty()) return;
+            String title = val.trim();
+            if (val.contains(":") || val.contains("|")) {
+                String[] parts = val.split("[:|]", 2);
+                title = parts[1].trim();
+            }
+
+            Intent intent = new Intent(Intent.ACTION_INSERT);
+            intent.setData(android.provider.CalendarContract.Events.CONTENT_URI);
+            intent.putExtra(android.provider.CalendarContract.Events.TITLE, title);
+            intent.setPackage("com.microsoft.office.outlook");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            try {
+                context.startActivity(intent);
+                LogBus.log("voice action -> added Outlook calendar event: " + title);
+            } catch (Exception e) {
+                // Fallback if Outlook package is not installed: open standard calendar chooser
+                addCalendarEvent(val);
+            }
+        } catch (Exception e) {
+            LogBus.error("could not add Outlook calendar event for " + val, e);
+        }
+    }
+
+    public void addGoogleCalendarEvent(String val) {
+        try {
+            if (val == null || val.trim().isEmpty()) return;
+            String title = val.trim();
+            if (val.contains(":") || val.contains("|")) {
+                String[] parts = val.split("[:|]", 2);
+                title = parts[1].trim();
+            }
+
+            Intent intent = new Intent(Intent.ACTION_INSERT);
+            intent.setData(android.provider.CalendarContract.Events.CONTENT_URI);
+            intent.putExtra(android.provider.CalendarContract.Events.TITLE, title);
+            intent.setPackage("com.google.android.calendar");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            try {
+                context.startActivity(intent);
+                LogBus.log("voice action -> added Google calendar event: " + title);
+            } catch (Exception e) {
+                addCalendarEvent(val);
+            }
+        } catch (Exception e) {
+            LogBus.error("could not add Google calendar event for " + val, e);
+        }
+    }
+
+    public void addCalendarEvent(String val) {
+        try {
+            if (val == null || val.trim().isEmpty()) return;
+            String title = val.trim();
+            if (val.contains(":") || val.contains("|")) {
+                String[] parts = val.split("[:|]", 2);
+                title = parts[1].trim();
+            }
+
+            Intent intent = new Intent(Intent.ACTION_INSERT);
+            intent.setData(android.provider.CalendarContract.Events.CONTENT_URI);
+            intent.putExtra(android.provider.CalendarContract.Events.TITLE, title);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            LogBus.log("voice action -> added calendar event: " + title);
+        } catch (Exception e) {
+            LogBus.error("could not add calendar event for " + val, e);
+        }
+    }
+
+    public void createKeepNote(String text) {
+        try {
+            if (text == null || text.trim().isEmpty()) return;
+            Intent intent = new Intent("com.google.android.keep.action.CREATE_NOTE");
+            intent.setPackage("com.google.android.keep");
+            intent.putExtra(Intent.EXTRA_TEXT, text.trim());
+            intent.setType("text/plain");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            try {
+                context.startActivity(intent);
+                LogBus.log("voice action -> created note in Google Keep: " + text);
+            } catch (Exception e) {
+                // Fallback if Keep package is not installed: create general note
+                createNote(text);
+            }
+        } catch (Exception e) {
+            LogBus.error("could not create Keep note for " + text, e);
+        }
+    }
+
+    public void createSpecificReminder(String val) {
+        try {
+            if (val == null || val.trim().isEmpty()) return;
+            String message = val.trim();
+            if (val.contains(":") || val.contains("|")) {
+                String[] parts = val.split("[:|]", 2);
+                message = parts[1].trim();
+            }
+
+            // Set a timer/alarm reminder via AlarmClock
+            Intent intent = new Intent(android.provider.AlarmClock.ACTION_SET_ALARM);
+            intent.putExtra(android.provider.AlarmClock.EXTRA_MESSAGE, message);
+            intent.putExtra(android.provider.AlarmClock.EXTRA_SKIP_UI, true);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            LogBus.log("voice action -> created specific reminder: " + message);
+        } catch (Exception e) {
+            LogBus.error("could not create reminder for " + val, e);
+        }
+    }
+
+    public void createNote(String text) {
+        try {
+            if (text == null || text.trim().isEmpty()) return;
+            Intent intent = new Intent("android.intent.action.CREATE_NOTE");
+            intent.putExtra(Intent.EXTRA_TEXT, text.trim());
+            intent.setType("text/plain");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            try {
+                context.startActivity(intent);
+            } catch (Exception e) {
+                Intent sendIntent = new Intent(Intent.ACTION_SEND);
+                sendIntent.putExtra(Intent.EXTRA_TEXT, text.trim());
+                sendIntent.setType("text/plain");
+                sendIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(Intent.createChooser(sendIntent, "Guardar nota").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            }
+            LogBus.log("voice action -> created quick note: " + text);
+        } catch (Exception e) {
+            LogBus.error("could not create note for " + text, e);
         }
     }
 

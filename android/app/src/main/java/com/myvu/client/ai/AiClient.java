@@ -29,13 +29,27 @@ public interface AiClient {
             + "- Reproducir/Pausar música: ACTION:MEDIA_PLAY\n"
             + "- Siguiente canción: ACTION:MEDIA_NEXT\n"
             + "- Canción anterior: ACTION:MEDIA_PREV\n"
+            + "- Controlar OpenTune (reproducir o buscar canción/artista): ACTION:OPENTUNE_PLAY=canción o artista\n"
+            + "- Buscar en OpenTune: ACTION:OPENTUNE_SEARCH=término de búsqueda\n"
+            + "- Pausar OpenTune: ACTION:OPENTUNE_PAUSE\n"
+            + "- Reanudar OpenTune: ACTION:OPENTUNE_RESUME\n"
+            + "- Siguiente en OpenTune: ACTION:OPENTUNE_NEXT\n"
+            + "- Anterior en OpenTune: ACTION:OPENTUNE_PREV\n"
+            + "- Repetir en OpenTune: ACTION:OPENTUNE_REPEAT\n"
             + "- Enviar WhatsApp: ACTION:WHATSAPP=contacto o teléfono: texto del mensaje\n"
             + "- Enviar Telegram: ACTION:TELEGRAM=contacto o teléfono: texto del mensaje\n"
             + "- Llamar a contacto: ACTION:CALL=nombre de contacto o teléfono\n"
             + "- Búsqueda en la web: ACTION:SEARCH=término de búsqueda\n"
             + "- Crear alarma: ACTION:ALARM=HH:MM: etiqueta de la alarma\n"
             + "- Crear temporizador: ACTION:TIMER=segundos: etiqueta\n"
-            + "- Navegación GPS: ACTION:NAVIGATE=dirección o lugar de destino";
+            + "- Navegación GPS: ACTION:NAVIGATE=dirección o lugar de destino\n"
+            + "- Agendar evento en Calendario (general): ACTION:CALENDAR=fecha u hora: título del evento\n"
+            + "- Agendar en Outlook / Office365: ACTION:CALENDAR_OUTLOOK=fecha u hora: título del evento\n"
+            + "- Agendar en Google Calendar: ACTION:CALENDAR_GOOGLE=fecha u hora: título del evento\n"
+            + "- Guardar nota en Google Keep: ACTION:NOTE_KEEP=texto de la nota\n"
+            + "- Guardar nota rápida: ACTION:NOTE=texto de la nota\n"
+            + "- Crear recordatorio específico: ACTION:REMINDER=fecha u hora: mensaje del recordatorio\n"
+            + "- Resumir notificaciones o mensajes pendientes (correo, whatsapp, telegram, todo): ACTION:SUMMARY=correo|whatsapp|telegram|all";
 
     /** False disables answering because required provider settings are missing. */
     boolean isConfigured();

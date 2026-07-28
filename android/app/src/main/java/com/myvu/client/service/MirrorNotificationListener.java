@@ -29,8 +29,23 @@ import org.json.JSONObject;
  */
 public class MirrorNotificationListener extends NotificationListenerService {
 
+    private static volatile MirrorNotificationListener instance;
+
     private final NotificationFilter notificationFilter = new NotificationFilter();
     private final android.os.Handler dismissHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+
+    @Override
+    public void onListenerConnected() {
+        super.onListenerConnected();
+        instance = this;
+        LogBus.log("MirrorNotificationListener connected");
+    }
+
+    @Override
+    public void onListenerDisconnected() {
+        super.onListenerDisconnected();
+        if (instance == this) instance = null;
+    }
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
@@ -185,6 +200,65 @@ public class MirrorNotificationListener extends NotificationListenerService {
             NotificationListenerService.requestRebind(cn);
         } catch (Exception e) {
             LogBus.trace("could not request a listener rebind: " + e);
+        }
+    }
+
+    public static String getUnreadSummary(String category) {
+        MirrorNotificationListener listener = instance;
+        if (listener == null) return "No hay acceso a las notificaciones del teléfono.";
+
+        try {
+            StatusBarNotification[] sbns = listener.getActiveNotifications();
+            if (sbns == null || sbns.length == 0) {
+                return "No tienes mensajes ni notificaciones pendientes.";
+            }
+
+            StringBuilder sb = new StringBuilder();
+            int count = 0;
+            String cat = category != null ? category.toLowerCase() : "";
+
+            for (StatusBarNotification sbn : sbns) {
+                if (sbn == null || sbn.getNotification() == null) continue;
+                String pkg = sbn.getPackageName();
+                if (pkg == null) continue;
+
+                boolean matches = false;
+                if (cat.contains("email") || cat.contains("correo")) {
+                    matches = pkg.contains("outlook") || pkg.contains("gm") || pkg.contains("mail");
+                } else if (cat.contains("whatsapp")) {
+                    matches = pkg.contains("whatsapp");
+                } else if (cat.contains("telegram")) {
+                    matches = pkg.contains("telegram");
+                } else {
+                    matches = true;
+                }
+
+                if (!matches) continue;
+
+                Notification n = sbn.getNotification();
+                Bundle extras = n.extras;
+                if (extras == null) continue;
+
+                CharSequence titleCs = extras.getCharSequence(Notification.EXTRA_TITLE);
+                CharSequence textCs = extras.getCharSequence(Notification.EXTRA_TEXT);
+
+                String title = titleCs != null ? titleCs.toString() : "";
+                String text = textCs != null ? textCs.toString() : "";
+
+                if (title.isEmpty() && text.isEmpty()) continue;
+
+                count++;
+                sb.append("- De ").append(title).append(": ").append(text).append("\n");
+                if (count >= 8) break;
+            }
+
+            if (count == 0) {
+                return "No tienes " + (cat.isEmpty() ? "notificaciones" : cat) + " pendientes por leer.";
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            LogBus.error("could not fetch active notifications", e);
+            return "Error al leer las notificaciones del teléfono.";
         }
     }
 

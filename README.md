@@ -27,7 +27,12 @@ Each folder has its own README with build/run details:
 - **Teleprompter**, **system settings** (volume, brightness, Wi-Fi, wear detection, zen mode, screen-off, standby position…), **clock sync**, and status **queries**.
 - **Navigation** — full turn-by-turn HUD (OSRM routing, Nominatim geocoding), driven by the phone's location.
 - **Trackpad** — the phone as a remote touchpad for the glasses' launcher (tap / double-tap / long-press / swipe).
-- **AI assistant** — press the glasses' button or type a question; speech-to-text, an LLM answer, and text-to-speech back to the glasses. On Android, STT, the answering provider, and TTS are independently selectable between hosted options and configurable local OpenAI-compatible endpoints; the Python client answers via Claude.
+- **AI assistant** — press the glasses' button or type a question; speech-to-text, an LLM answer, and text-to-speech back to the glasses. Includes a Colombian/Latin American Spanish plain-text engine with **450ms VAD end-of-speech detection** and native Android action execution:
+  - **Hands-Free Calling & Messaging**: Native background calls (`TelecomManager`), private WhatsApp chat deep-linking, Telegram messaging.
+  - **Multi-Account Calendars**: Schedule events directly in **Microsoft Outlook / Office 365** or **Google Calendar**.
+  - **Notes & Reminders**: Direct note taking in **Google Keep**, quick notes, and specific timed reminders.
+  - **Media & OpenTune Music Control**: Voice search, play, pause, next, previous, and repeat controls for the **OpenTune** music player app (`ACTION:OPENTUNE_PLAY`, `ACTION:OPENTUNE_SEARCH`, etc.).
+  - **System Controls & Tools**: Web search, native alarms & countdown timers, GPS navigation, real-time language translation, and currency conversions (COP/USD/EUR).
 
 ## How it works (short version)
 

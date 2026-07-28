@@ -17,8 +17,12 @@ Package `com.myvu.client`. Java, no Kotlin. `minSdk 26`, tested on API 31.
 - **Notifications** — manual, plus live mirroring of real phone notifications.
 - **Teleprompter, system settings, queries, clock sync.**
 - **Navigation** — OSRM routing + FusedLocation, rendered on the lens HUD.
-- **AI assistant** — glasses mic → selectable Groq or local STT → Claude,
-  ChatGPT, Gemini, or a local OpenAI-compatible LLM → selectable device or HTTP TTS.
+- **AI assistant** — glasses mic → selectable Groq or local STT → Claude, ChatGPT, Gemini, or a local OpenAI-compatible LLM → selectable device or HTTP TTS. Features **450ms VAD end-of-speech detection** and native phone action execution via action tags (`PhoneActionExecutor.java`):
+  - **Calls & Messages**: Hands-free background calls (`TelecomManager`), direct WhatsApp private chat launcher, Telegram text sender.
+  - **Multi-Account Calendars**: `ACTION:CALENDAR_OUTLOOK` (Microsoft Outlook / Office 365) and `ACTION:CALENDAR_GOOGLE` (Google Calendar).
+  - **Notes & Reminders**: `ACTION:NOTE_KEEP` (Google Keep), `ACTION:NOTE` (Quick Notes), `ACTION:REMINDER` (Timed System Reminders).
+  - **Media & OpenTune Music Control**: `ACTION:OPENTUNE_PLAY`, `ACTION:OPENTUNE_SEARCH`, `ACTION:OPENTUNE_PAUSE`, `ACTION:OPENTUNE_RESUME`, `ACTION:OPENTUNE_NEXT`, `ACTION:OPENTUNE_PREV`, `ACTION:OPENTUNE_REPEAT` — Full voice playback and search control for the OpenTune music app and media session.
+  - **Utilities**: `ACTION:SEARCH` (Web Search), `ACTION:ALARM` & `ACTION:TIMER` (Clock Alarms/Timers), `ACTION:NAVIGATE` (Google Maps GPS Navigation), Language Translation, and Currency Conversion ($ COP).
 
 ## Architecture
 

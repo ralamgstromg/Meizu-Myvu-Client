@@ -48,10 +48,9 @@ public class AiConversation {
 
     /**
      * How long the audio must stay quiet before the utterance is considered
-     * over. Lowered from 900ms to 650ms (matching official app's VadDetector)
-     * so end-of-speech is detected promptly without lingering.
+     * over. Lowered to 450ms so end-of-speech is detected promptly without lingering.
      */
-    private static final long SILENCE_HOLD_MS = 650;
+    private static final long SILENCE_HOLD_MS = 450;
 
     /**
      * Mean sample amplitude above which a chunk counts as speech.
