@@ -235,6 +235,7 @@ public class SettingsActivity extends AppCompatActivity {
         wireWeather();
         wireMirror();
         wireGlassesSettings();
+        wireLogging();
         findViewById(R.id.btnPickApps).setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View view) {
                 startActivity(new Intent(SettingsActivity.this, NotificationAppsActivity.class));
@@ -243,6 +244,16 @@ public class SettingsActivity extends AppCompatActivity {
         findViewById(R.id.btnSettingsBack).setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View view) { finish(); }
         });
+    }
+
+    private void wireLogging() {
+        MaterialSwitch sw = findViewById(R.id.swLogging);
+        if (sw != null) {
+            sw.setChecked(Prefs.loggingEnabled(this));
+            sw.setOnCheckedChangeListener((b, checked) -> {
+                Prefs.setLoggingEnabled(SettingsActivity.this, checked);
+            });
+        }
     }
 
     private void wireMirror() {

@@ -142,6 +142,7 @@ public class ConnectActivity extends AppCompatActivity implements LogBus.Listene
     @Override
     protected void onStart() {
         super.onStart();
+        Prefs.loggingEnabled(this);
         logAdapter.setAll(LogBus.history());
         scrollToBottom();
         LogBus.addListener(this);

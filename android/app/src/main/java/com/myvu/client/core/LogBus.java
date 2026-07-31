@@ -52,17 +52,33 @@ public final class LogBus {
         }
     }
 
+    private static volatile boolean enabled = true;
+
+    public static boolean isEnabled() {
+        return enabled;
+    }
+
+    public static void setEnabled(boolean value) {
+        enabled = value;
+        if (!enabled) {
+            clear();
+        }
+    }
+
     public static void log(String msg) {
+        if (!enabled) return;
         androidLog(Log.INFO, msg, null);
         emit(stamp() + "  " + msg);
     }
 
     public static void warn(String msg) {
+        if (!enabled) return;
         androidLog(Log.WARN, msg, null);
         emit(stamp() + "  !! " + msg);
     }
 
     public static void error(String msg, Throwable t) {
+        if (!enabled) return;
         androidLog(Log.ERROR, msg, t);
         String detail = t == null ? msg
                 : msg + ": " + t.getClass().getSimpleName() + ": " + t.getMessage();
@@ -71,6 +87,7 @@ public final class LogBus {
 
     /** Verbose frame-level detail: goes to logcat only, never the on-screen buffer. */
     public static void trace(String msg) {
+        if (!enabled) return;
         androidLog(Log.DEBUG, msg, null);
     }
 

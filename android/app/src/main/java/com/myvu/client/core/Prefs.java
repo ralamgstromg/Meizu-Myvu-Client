@@ -362,4 +362,15 @@ public final class Prefs {
         int clamped = Math.max(15, Math.min(720, minutes));
         prefs(c).edit().putInt("weather_interval_minutes", clamped).apply();
     }
+
+    public static boolean loggingEnabled(Context c) {
+        boolean enabled = prefs(c).getBoolean("logging_enabled", true);
+        LogBus.setEnabled(enabled);
+        return enabled;
+    }
+
+    public static void setLoggingEnabled(Context c, boolean enabled) {
+        prefs(c).edit().putBoolean("logging_enabled", enabled).apply();
+        LogBus.setEnabled(enabled);
+    }
 }

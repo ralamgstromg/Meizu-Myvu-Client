@@ -677,6 +677,41 @@
                         android:text="Reset to default" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== Application Logging ===== -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Card.Myvu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView style="@style/CardTitle.Myvu"
+                            android:layout_width="0dp" android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Application logging" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/swLogging"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                    </LinearLayout>
+
+                    <TextView style="@style/Label.Myvu"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Enable or completely disable application logging and on-screen log buffer." />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </LinearLayout>

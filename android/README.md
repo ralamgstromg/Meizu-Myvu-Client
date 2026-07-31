@@ -72,8 +72,54 @@ that file is deliberately untracked.
 Release builds (`:app:assembleRelease`) are signed only when
 `android/keystore.properties` points at a local keystore (see the comment in
 `app/build.gradle`); both files are untracked secrets, so a fresh clone still
-builds — it just produces an unsigned release APK. Signed APKs are published on
-the GitHub releases page. **Keep the keystore and keystore.properties backed
+builds — it just produces an unsigned release APK (`app-release-unsigned.apk`).
+Attempting to install an unsigned APK will result in an "App not installed" /
+"Package corrupt" error on Android.
+
+### Signing the Release APK
+
+#### Option 1: Automatic signing via `keystore.properties` (Recommended)
+Create `android/keystore.properties` with your keystore credentials:
+
+```properties
+storeFile=release.jks
+storePassword=your_store_password
+keyAlias=your_key_alias
+keyPassword=your_key_password
+```
+
+Running `./gradlew :app:assembleRelease` will then produce a signed APK automatically.
+
+#### Option 2: Manual signing with `zipalign` & `apksigner`
+If you built an unsigned release APK (`app-release-unsigned.apk`), sign it manually with the Android SDK build tools:
+
+1. **Generate a keystore** (if you do not have one):
+   ```sh
+   keytool -genkey -v -keystore release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-alias
+   ```
+
+2. **Align the APK**:
+   ```sh
+   $ANDROID_HOME/build-tools/34.0.0/zipalign -v -p 4 \
+     app/build/outputs/apk/release/app-release-unsigned.apk \
+     app/build/outputs/apk/release/app-release-aligned.apk
+   ```
+
+3. **Sign with `apksigner`**:
+   ```sh
+   $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+     --ks release.jks \
+     --ks-key-alias my-alias \
+     --out app/build/outputs/apk/release/app-release-signed.apk \
+     app/build/outputs/apk/release/app-release-aligned.apk
+   ```
+
+4. **Verify signature**:
+   ```sh
+   $ANDROID_HOME/build-tools/34.0.0/apksigner verify -v app/build/outputs/apk/release/app-release-signed.apk
+   ```
+
+Signed APKs are published on the GitHub releases page. **Keep the keystore and keystore.properties backed
 up outside the repo**: Android only installs an update over an existing app
 when it is signed with the same key, so losing them strands every installed
 copy on its current version.

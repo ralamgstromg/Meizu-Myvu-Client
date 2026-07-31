@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.IBinder;
 
 import com.myvu.client.core.LogBus;
+import com.myvu.client.core.Prefs;
 import com.myvu.client.ui.ConnectActivity;
 
 /**
@@ -57,6 +58,7 @@ public class MyvuService extends Service implements ConnectionManager.Listener {
     @Override
     public void onCreate() {
         super.onCreate();
+        Prefs.loggingEnabled(this);
         createNotificationChannel();
         connection = new ConnectionManager(this, this);
         active = connection;
