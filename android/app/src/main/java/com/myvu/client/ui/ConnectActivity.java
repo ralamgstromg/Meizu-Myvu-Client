@@ -398,10 +398,17 @@ public class ConnectActivity extends AppCompatActivity implements LogBus.Listene
         imgCheck.setVisibility(View.GONE);
         pairButtons.setVisibility(View.GONE);
         btnPairDone.setVisibility(View.GONE);
-        imgGlasses.setAlpha(0.5f);
-        pairTitle.setText("Searching for your glasses");
-        pairSubtitle.setText("Make sure they are powered on and nearby");
-        startRings();
+
+        ConnectionState current = (bound && service != null) ? service.connection().state() : ConnectionState.CONNECTING;
+        if (current == ConnectionState.READY) {
+            updatePairing(ConnectionState.READY);
+        } else {
+            imgGlasses.setAlpha(0.5f);
+            pairTitle.setText("Searching for your glasses");
+            pairSubtitle.setText("Make sure they are powered on and nearby");
+            startRings();
+            updatePairing(current);
+        }
     }
 
     private void dismissPairing() {

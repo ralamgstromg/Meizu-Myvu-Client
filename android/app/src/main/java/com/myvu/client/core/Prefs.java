@@ -373,4 +373,28 @@ public final class Prefs {
         prefs(c).edit().putBoolean("logging_enabled", enabled).apply();
         LogBus.setEnabled(enabled);
     }
+
+    public static String touchpadDoubleTapAction(Context c) {
+        return prefs(c).getString("touchpad_double_tap_action", "media_play_pause");
+    }
+
+    public static void setTouchpadDoubleTapAction(Context c, String action) {
+        prefs(c).edit().putString("touchpad_double_tap_action", action).apply();
+    }
+
+    public static String touchpadTripleTapAction(Context c) {
+        return prefs(c).getString("touchpad_triple_tap_action", "ai_assistant");
+    }
+
+    public static void setTouchpadTripleTapAction(Context c, String action) {
+        prefs(c).edit().putString("touchpad_triple_tap_action", action).apply();
+    }
+
+    public static String touchpadLongPressAction(Context c) {
+        return prefs(c).getString("touchpad_long_press_action", "ai_assistant");
+    }
+
+    public static void setTouchpadLongPressAction(Context c, String action) {
+        prefs(c).edit().putString("touchpad_long_press_action", action).apply();
+    }
 }

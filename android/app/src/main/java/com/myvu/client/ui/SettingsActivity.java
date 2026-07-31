@@ -236,6 +236,7 @@ public class SettingsActivity extends AppCompatActivity {
         wireMirror();
         wireGlassesSettings();
         wireLogging();
+        wireTouchpad();
         findViewById(R.id.btnPickApps).setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View view) {
                 startActivity(new Intent(SettingsActivity.this, NotificationAppsActivity.class));
@@ -243,6 +244,35 @@ public class SettingsActivity extends AppCompatActivity {
         });
         findViewById(R.id.btnSettingsBack).setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View view) { finish(); }
+        });
+    }
+
+    private void wireTouchpad() {
+        MaterialButtonToggleGroup grp = findViewById(R.id.btnTouchpadGroup);
+        if (grp == null) return;
+
+        String action = Prefs.touchpadLongPressAction(this);
+        int checkedId = R.id.btnTouchpadAi;
+        if (com.myvu.client.app.feature.TouchGestureManager.ACTION_MEDIA_PLAY_PAUSE.equals(action)) {
+            checkedId = R.id.btnTouchpadMedia;
+        } else if (com.myvu.client.app.feature.TouchGestureManager.ACTION_WEATHER_SYNC.equals(action)) {
+            checkedId = R.id.btnTouchpadWeather;
+        } else if (com.myvu.client.app.feature.TouchGestureManager.ACTION_TOGGLE_MIRROR.equals(action)) {
+            checkedId = R.id.btnTouchpadMirror;
+        }
+        grp.check(checkedId);
+
+        grp.addOnButtonCheckedListener((group, id, isChecked) -> {
+            if (!isChecked) return;
+            String selectedAction = com.myvu.client.app.feature.TouchGestureManager.ACTION_AI_ASSISTANT;
+            if (id == R.id.btnTouchpadMedia) {
+                selectedAction = com.myvu.client.app.feature.TouchGestureManager.ACTION_MEDIA_PLAY_PAUSE;
+            } else if (id == R.id.btnTouchpadWeather) {
+                selectedAction = com.myvu.client.app.feature.TouchGestureManager.ACTION_WEATHER_SYNC;
+            } else if (id == R.id.btnTouchpadMirror) {
+                selectedAction = com.myvu.client.app.feature.TouchGestureManager.ACTION_TOGGLE_MIRROR;
+            }
+            Prefs.setTouchpadLongPressAction(SettingsActivity.this, selectedAction);
         });
     }
 

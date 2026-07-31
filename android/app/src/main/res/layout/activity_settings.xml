@@ -712,6 +712,73 @@
                         android:text="Enable or completely disable application logging and on-screen log buffer." />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== Touchpad / Button Gesture Mapping ===== -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Card.Myvu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView style="@style/CardTitle.Myvu"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Acción del Botón / Pulsación Larga (3s)" />
+
+                    <TextView style="@style/Label.Myvu"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Acción a disparar al mantener presionado el botón de las gafas:" />
+
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/btnTouchpadGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        app:singleSelection="true"
+                        app:selectionRequired="true">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnTouchpadAi"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:textSize="10sp"
+                            android:text="AI Voice" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnTouchpadMedia"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:textSize="10sp"
+                            android:text="Música" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnTouchpadWeather"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:textSize="10sp"
+                            android:text="Clima" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnTouchpadMirror"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:textSize="10sp"
+                            android:text="Espejo Notif." />
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </LinearLayout>

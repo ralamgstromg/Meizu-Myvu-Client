@@ -146,10 +146,11 @@ public class InboundRouter {
         }
     }
 
+    private long lastTouchTriggerTime = 0;
+
     /**
-     * AI assistant triggers: code 3 is the hardware button, code 7 the wake
-     * word. Phase 8 drives the conversation from here; for now the trigger is
-     * surfaced to whoever is listening.
+     * AI assistant and hardware triggers: code 3 is the hardware button/deep touch,
+     * code 7 is the wake word.
      */
     private void checkAiTrigger(JSONObject msg) {
         if (!msg.has("code")) return;
@@ -157,8 +158,8 @@ public class InboundRouter {
         if (code != 3 && code != 7) return;
 
         JSONObject payload = msg.optJSONObject("payload");
-        LogBus.log("AI trigger: code=" + code
-                + (code == 3 ? " (button)" : " (wake word)"));
+        LogBus.log("Hardware trigger: code=" + code
+                + (code == 3 ? " (button/deep-touch)" : " (wake word)"));
         if (aiListener != null) aiListener.onAiTrigger(code, payload);
     }
 

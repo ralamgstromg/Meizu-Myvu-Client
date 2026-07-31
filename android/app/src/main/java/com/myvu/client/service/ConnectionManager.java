@@ -12,8 +12,10 @@ import com.myvu.client.app.InboundRouter;
 import com.myvu.client.app.RelaySession;
 import com.myvu.client.app.feature.AiProtocol;
 import com.myvu.client.app.feature.ClockSync;
+import com.myvu.client.app.feature.Notifications;
 import com.myvu.client.app.feature.SystemSettings;
 import com.myvu.client.app.feature.Teleprompter;
+import com.myvu.client.app.feature.TouchGestureManager;
 import com.myvu.client.app.feature.Trackpad;
 import com.myvu.client.core.Hex;
 import com.myvu.client.core.Prefs;
@@ -180,7 +182,49 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
                 // nothing and timed out with "0 packets in" -- so treat the
                 // press like the glasses asking for the relay back.
                 if (supervisor != null) supervisor.wake();
-                ai().onTrigger(code);
+
+                TouchGestureManager.handleTrigger(context, code, new TouchGestureManager.ActionExecutor() {
+                    @Override
+                    public void executeAiAssistant(int triggerCode) {
+                        ai().onTrigger(triggerCode);
+                    }
+
+                    @Override
+                    public void executeWeatherSync() {
+                        weather().refresh();
+                        try {
+                            sendAction(Notifications.buildShow("MYVU", "Actualizando clima..."));
+                        } catch (Exception ignored) {}
+                    }
+
+                    @Override
+                    public void executeToggleMirror() {
+                        boolean enabled = !Prefs.mirrorEnabled(context);
+                        Prefs.setMirrorEnabled(context, enabled);
+                        LogBus.log("Touchpad gesture -> Notification mirroring " + (enabled ? "ON" : "OFF"));
+                        try {
+                            sendAction(Notifications.buildShow("MYVU", "Espejo notificaciones: " + (enabled ? "Activado" : "Desactivado")));
+                        } catch (Exception ignored) {}
+                    }
+
+                    @Override
+                    public void executeMediaPlayPause() {
+                        LogBus.log("Touchpad gesture -> Media Play/Pause");
+                        try {
+                            android.media.AudioManager am = (android.media.AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+                            if (am != null) {
+                                long now = android.os.SystemClock.uptimeMillis();
+                                am.dispatchMediaKeyEvent(new android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0));
+                                am.dispatchMediaKeyEvent(new android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0));
+                            }
+                        } catch (Exception e) {
+                            LogBus.error("could not send media play/pause key event", e);
+                        }
+                        try {
+                            sendAction(Notifications.buildShow("MYVU", "Música: Play / Pausa"));
+                        } catch (Exception ignored) {}
+                    }
+                });
             }
         });
         inbound.setWeatherRequestListener(new InboundRouter.WeatherRequestListener() {
@@ -259,6 +303,7 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
                 // same glasses -- they accept one central at a time.
                 if (state != ConnectionState.IDLE && state != ConnectionState.FAILED) {
                     LogBus.trace("connect ignored: already " + state);
+                    if (listener != null) listener.onStateChanged(state);
                     return;
                 }
                 userStopped = false;
@@ -281,6 +326,7 @@ public class ConnectionManager implements BleTransport.Listener, RelaySupervisor
             public void run() {
                 if (state != ConnectionState.IDLE && state != ConnectionState.FAILED) {
                     LogBus.trace("auto-search ignored: already " + state);
+                    if (listener != null) listener.onStateChanged(state);
                     return;
                 }
                 userStopped = false;
