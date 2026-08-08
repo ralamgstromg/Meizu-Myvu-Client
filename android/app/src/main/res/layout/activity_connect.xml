@@ -197,6 +197,14 @@
                             android:layout_marginTop="6dp"
                             app:icon="@drawable/ic_trackpad"
                             android:text="Open trackpad" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnNotes"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="Notas y Recordatorios" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

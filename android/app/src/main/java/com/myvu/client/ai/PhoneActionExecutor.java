@@ -495,43 +495,41 @@ public class PhoneActionExecutor {
     public void createSpecificReminder(String val) {
         try {
             if (val == null || val.trim().isEmpty()) return;
-            String message = val.trim();
+            String rawTime = val.trim();
+            String message = "Recordatorio";
+
             if (val.contains(":") || val.contains("|")) {
                 String[] parts = val.split("[:|]", 2);
+                rawTime = parts[0].trim();
                 message = parts[1].trim();
             }
 
-            // Set a timer/alarm reminder via AlarmClock
-            Intent intent = new Intent(android.provider.AlarmClock.ACTION_SET_ALARM);
-            intent.putExtra(android.provider.AlarmClock.EXTRA_MESSAGE, message);
-            intent.putExtra(android.provider.AlarmClock.EXTRA_SKIP_UI, true);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(intent);
-            LogBus.log("voice action -> created specific reminder: " + message);
+            long triggerAt = com.myvu.client.reminder.ReminderTimeParser.parseTimeToMillis(rawTime);
+            int requestCode = (int) (System.currentTimeMillis() & 0x7FFFFFFF);
+
+            com.myvu.client.database.ReminderRepository repo = new com.myvu.client.database.ReminderRepository(context);
+            long id = repo.insertReminder(message, triggerAt, requestCode);
+
+            if (id != -1) {
+                boolean scheduled = com.myvu.client.reminder.ReminderScheduler.scheduleReminder(context, id, triggerAt, requestCode);
+                if (!scheduled) {
+                    repo.updateReminderState(id, "FAILED");
+                }
+                LogBus.log("voice action -> created local reminder #" + id + ": " + message + " at " + triggerAt);
+            }
         } catch (Exception e) {
-            LogBus.error("could not create reminder for " + val, e);
+            LogBus.error("could not create local reminder for " + val, e);
         }
     }
 
     public void createNote(String text) {
         try {
             if (text == null || text.trim().isEmpty()) return;
-            Intent intent = new Intent("android.intent.action.CREATE_NOTE");
-            intent.putExtra(Intent.EXTRA_TEXT, text.trim());
-            intent.setType("text/plain");
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            try {
-                context.startActivity(intent);
-            } catch (Exception e) {
-                Intent sendIntent = new Intent(Intent.ACTION_SEND);
-                sendIntent.putExtra(Intent.EXTRA_TEXT, text.trim());
-                sendIntent.setType("text/plain");
-                sendIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(Intent.createChooser(sendIntent, "Guardar nota").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            }
-            LogBus.log("voice action -> created quick note: " + text);
+            com.myvu.client.database.NoteRepository repo = new com.myvu.client.database.NoteRepository(context);
+            long id = repo.insertNote(text.trim());
+            LogBus.log("voice action -> created local note #" + id + ": " + text);
         } catch (Exception e) {
-            LogBus.error("could not create note for " + text, e);
+            LogBus.error("could not create local note for " + text, e);
         }
     }
 

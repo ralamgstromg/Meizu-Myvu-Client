@@ -210,6 +210,11 @@ public class ConnectActivity extends AppCompatActivity implements LogBus.Listene
                 startActivity(new Intent(ConnectActivity.this, TrackpadActivity.class));
             }
         });
+        findViewById(R.id.btnNotes).setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                startActivity(new Intent(ConnectActivity.this, NotesActivity.class));
+            }
+        });
         findViewById(R.id.cardStatus).setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 if (need()) {
