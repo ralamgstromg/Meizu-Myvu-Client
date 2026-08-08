@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
@@ -92,13 +93,15 @@ public class GlassesScanner {
         };
 
         ScanSettings settings = new ScanSettings.Builder()
-                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .setScanMode(ScanSettings.SCAN_MODE_BALANCED)
                 .build();
         active = true;
         try {
-            // Null filters = report everything; we match in the callback.
-            scanner.startScan(null, settings, scanCallback);
-            LogBus.log("scanning for glasses...");
+            List<ScanFilter> filters = new java.util.ArrayList<>();
+            filters.add(new ScanFilter.Builder().setServiceUuid(new ParcelUuid(ADV_SERVICE)).build());
+            filters.add(new ScanFilter.Builder().setServiceUuid(new ParcelUuid(GATT_SERVICE)).build());
+            scanner.startScan(filters, settings, scanCallback);
+            LogBus.log("scanning for glasses with hardware filters...");
         } catch (SecurityException e) {
             active = false;
             cb.onError("missing the Bluetooth scan permission");

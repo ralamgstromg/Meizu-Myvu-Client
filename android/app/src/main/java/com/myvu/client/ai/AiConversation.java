@@ -73,8 +73,8 @@ public class AiConversation {
      */
     private static final int CALIBRATION_LOUD_STREAK = 3;
 
-    /** Give up if the glasses never send anything loud enough to be speech. */
-    private static final long NO_SPEECH_TIMEOUT_MS = 10000;
+    /** Give up if the glasses never send anything loud enough to be speech. Reduced to 5s for battery saving. */
+    private static final long NO_SPEECH_TIMEOUT_MS = 5000;
     /** Hard cap on one utterance, in case the stream never goes quiet. */
     private static final long MAX_UTTERANCE_MS = 20000;
     /** Spacing for the simulated growing caption (Whisper returns text at once). */
