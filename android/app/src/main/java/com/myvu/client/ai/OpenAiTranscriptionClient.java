@@ -21,13 +21,20 @@ public final class OpenAiTranscriptionClient {
     private final String model;
     private final String apiKey;
     private final String serviceLabel;
+    private final boolean ignoreSsl;
 
     public OpenAiTranscriptionClient(String endpoint, String model, String apiKey,
                                      String serviceLabel) {
+        this(endpoint, model, apiKey, serviceLabel, false);
+    }
+
+    public OpenAiTranscriptionClient(String endpoint, String model, String apiKey,
+                                     String serviceLabel, boolean ignoreSsl) {
         this.endpoint = endpoint == null ? "" : endpoint.trim();
         this.model = model == null ? "" : model.trim();
         this.apiKey = apiKey == null ? "" : apiKey.trim();
         this.serviceLabel = serviceLabel;
+        this.ignoreSsl = ignoreSsl;
     }
 
     public boolean isConfigured() {
@@ -52,7 +59,9 @@ public final class OpenAiTranscriptionClient {
     private String transcribeOnce(byte[] wav) throws IOException {
         URL url = HttpEndpoint.parse(endpoint, serviceLabel + " endpoint");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        com.myvu.client.core.SslUtils.applySslBypass(conn);
+        if (ignoreSsl) {
+            com.myvu.client.core.SslUtils.applySslBypass(conn);
+        }
         try {
             conn.setRequestMethod("POST");
             if (!apiKey.isEmpty()) {

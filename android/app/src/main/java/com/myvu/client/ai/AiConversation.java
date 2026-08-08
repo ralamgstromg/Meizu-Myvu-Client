@@ -446,7 +446,7 @@ public class AiConversation {
         String storedEndpoint = Prefs.sttEndpoint(context, provider.id).trim();
         final String endpoint = storedEndpoint.isEmpty() ? provider.defaultEndpoint : storedEndpoint;
         final OpenAiTranscriptionClient client = new OpenAiTranscriptionClient(
-                endpoint, model, apiKey, provider.label);
+                endpoint, model, apiKey, provider.label, Prefs.ignoreSsl(context));
         if (!client.isConfigured()) {
             LogBus.warn(provider.label + " is not fully configured");
             finish();
