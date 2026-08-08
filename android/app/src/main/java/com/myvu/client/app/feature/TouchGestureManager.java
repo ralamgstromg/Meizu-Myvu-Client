@@ -23,6 +23,9 @@ public final class TouchGestureManager {
         void executeMediaPlayPause();
     }
 
+    private static final long DEBOUNCE_MS = 400L;
+    private static long lastTriggerTime = 0L;
+
     private TouchGestureManager() {}
 
     /**
@@ -30,6 +33,13 @@ public final class TouchGestureManager {
      */
     public static void handleTrigger(Context context, int code, ActionExecutor executor) {
         if (executor == null) return;
+
+        long now = System.currentTimeMillis();
+        if (now - lastTriggerTime < DEBOUNCE_MS) {
+            LogBus.trace("Touchpad / Button trigger ignored -- debounce (" + (now - lastTriggerTime) + "ms)");
+            return;
+        }
+        lastTriggerTime = now;
 
         String action = context != null ? Prefs.touchpadLongPressAction(context) : ACTION_AI_ASSISTANT;
         LogBus.log("Touchpad / Button trigger received (code=" + code + ") -> Action: " + action);

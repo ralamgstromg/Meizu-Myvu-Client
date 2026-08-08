@@ -115,11 +115,24 @@ public final class Prefs {
      * before this setting existed survive.
      */
     public static String aiApiKey(Context c, String providerId) {
-        return prefs(c).getString(providerId + "_api_key", "");
+        String key = providerId + "_api_key";
+        String val = SecurePrefs.getSecret(c, key, "");
+        if (val.isEmpty()) {
+            // Migration fallback from plain SharedPreferences
+            String oldVal = prefs(c).getString(key, "");
+            if (!oldVal.isEmpty()) {
+                SecurePrefs.setSecret(c, key, oldVal);
+                prefs(c).edit().remove(key).apply();
+                return oldVal;
+            }
+        }
+        return val;
     }
 
     public static void setAiApiKey(Context c, String providerId, String key) {
-        prefs(c).edit().putString(providerId + "_api_key", key).apply();
+        String prefKey = providerId + "_api_key";
+        SecurePrefs.setSecret(c, prefKey, key);
+        prefs(c).edit().remove(prefKey).apply();
     }
 
     /** Per-provider model override. Empty means the provider's shipped default. */
@@ -151,13 +164,23 @@ public final class Prefs {
     public static String sttApiKey(Context c, String providerId) {
         String key = "groq".equals(providerId) ? "groq_api_key"
                 : "stt_" + providerId + "_api_key";
-        return prefs(c).getString(key, "");
+        String val = SecurePrefs.getSecret(c, key, "");
+        if (val.isEmpty()) {
+            String oldVal = prefs(c).getString(key, "");
+            if (!oldVal.isEmpty()) {
+                SecurePrefs.setSecret(c, key, oldVal);
+                prefs(c).edit().remove(key).apply();
+                return oldVal;
+            }
+        }
+        return val;
     }
 
     public static void setSttApiKey(Context c, String providerId, String key) {
         String prefName = "groq".equals(providerId) ? "groq_api_key"
                 : "stt_" + providerId + "_api_key";
-        prefs(c).edit().putString(prefName, key).apply();
+        SecurePrefs.setSecret(c, prefName, key);
+        prefs(c).edit().remove(prefName).apply();
     }
 
     public static String sttEndpoint(Context c, String providerId) {
@@ -194,11 +217,23 @@ public final class Prefs {
     }
 
     public static String ttsApiKey(Context c) {
-        return prefs(c).getString("tts_http_api_key", "");
+        String key = "tts_http_api_key";
+        String val = SecurePrefs.getSecret(c, key, "");
+        if (val.isEmpty()) {
+            String oldVal = prefs(c).getString(key, "");
+            if (!oldVal.isEmpty()) {
+                SecurePrefs.setSecret(c, key, oldVal);
+                prefs(c).edit().remove(key).apply();
+                return oldVal;
+            }
+        }
+        return val;
     }
 
     public static void setTtsApiKey(Context c, String key) {
-        prefs(c).edit().putString("tts_http_api_key", key).apply();
+        String prefKey = "tts_http_api_key";
+        SecurePrefs.setSecret(c, prefKey, key);
+        prefs(c).edit().remove(prefKey).apply();
     }
 
     public static String ttsModel(Context c) {
