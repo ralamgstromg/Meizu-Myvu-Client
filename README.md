@@ -6,14 +6,14 @@
 A reverse-engineered client for the **Meizu MYVU (Star Air, model `XGA010C`)**
 AR glasses. It speaks the glasses' own Bluetooth protocol directly — no official
 app required — to pair, drive the on-lens UI, push notifications, run a
-teleprompter and turn-by-turn navigation, act as a remote trackpad, and host a
+teleprompter and turn-by-turn navigation, act as a remote trackpad, customizable gesture controls, and host a
 voice assistant that uses the glasses' built-in microphone.
 
 There are two implementations of the same protocol:
 
 | Folder | What it is | Runs on |
 |---|---|---|
-| [`android/`](android/) | Full-featured Java Android app (`com.myvu.client`). **The stable client — start here.** | Android (minSdk 26, tested on API 31) |
+| [`android/`](android/) | Full-featured Java Android app (`com.myvu.client`). **The stable client — start here.** | Android (minSdk 26, tested on API 31+) |
 | [`python/`](python/) | The original reverse-engineering reference the Android port was built from. **Rough and not stable** — kept as-is for protocol study, not as a polished tool. | Windows (uses WinRT for BLE + classic-BT) |
 
 Each folder has its own README with build/run details:
@@ -21,13 +21,21 @@ Each folder has its own README with build/run details:
 
 ## What works
 
-- **Connection** — BLE bring-up + ECDH bond, then the classic-Bluetooth app relay. Optional **auto-search** discovers the glasses over a BLE scan, so you don't need the MAC.
+- **Connection** — BLE bring-up + ECDH bond, then the classic-Bluetooth app relay. Optional **auto-search** discovers the glasses over a BLE scan, so you don't need the MAC address. Features configurable connection retries and automatic background reconnection.
 - **"Phone connected" state** — connects the standard HFP/A2DP profiles so the glasses light their own connected indicator, not just the app relay.
-- **Notifications** — send your own, or mirror real phone notifications to the lens.
+- **Notifications** — send your own, or mirror real phone notifications to the lens with per-app filters and custom vibration alerts.
 - **Teleprompter**, **system settings** (volume, brightness, Wi-Fi, wear detection, zen mode, screen-off, standby position…), **clock sync**, and status **queries**.
+- **Weather Sync** — manual and periodic weather data fetching via Open-Meteo API, updating the glasses' weather widget on the lens HUD.
+- **Custom Touch & Gesture Controls (`TouchGestureManager`)** — map the glasses' temple touch/button long-press trigger to customizable phone actions:
+  - Launch AI Assistant
+  - Force Weather Sync
+  - Toggle Notification Mirroring
+  - Media Play / Pause
+  - None (disabled)
 - **Navigation** — full turn-by-turn HUD (OSRM routing, Nominatim geocoding), driven by the phone's location.
 - **Trackpad** — the phone as a remote touchpad for the glasses' launcher (tap / double-tap / long-press / swipe).
-- **AI assistant** — press the glasses' button or type a question; speech-to-text, an LLM answer, and text-to-speech back to the glasses. Includes a Colombian/Latin American Spanish plain-text engine with **450ms VAD end-of-speech detection** and native Android action execution:
+- **Diagnostics & Live Logging (`LogBus`)** — centralized thread-safe log bus delivering real-time diagnostics to the app UI and sharing capabilities for troubleshooting.
+- **AI assistant** — press the glasses' button or type a question; speech-to-text, an LLM answer, and text-to-speech back to the glasses. Includes Spanish/Latin American language optimization with **450ms VAD end-of-speech detection** and native Android action execution:
   - **Hands-Free Calling & Messaging**: Native background calls (`TelecomManager`), private WhatsApp chat deep-linking, Telegram messaging.
   - **Multi-Account Calendars**: Schedule events directly in **Microsoft Outlook / Office 365** or **Google Calendar**.
   - **Notes & Reminders**: Direct note taking in **Google Keep**, quick notes, and specific timed reminders.
@@ -50,7 +58,7 @@ The glasses require **two Bluetooth links at once**:
    on the glasses (e.g. `com.upuphone.star.launcher`).
 
 The glasses' microphone streams back as Opus frames; navigation, the trackpad
-("phonepad"), and the assistant are all just JSON actions over the same relay.
+("phonepad"), weather, gestures, and the assistant are all JSON actions over the same relay.
 
 ## Hardware / prerequisites
 

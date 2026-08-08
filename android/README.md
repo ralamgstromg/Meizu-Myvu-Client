@@ -6,16 +6,23 @@
 A Java Android client for the Meizu MYVU (Star Air, model XGA010C) AR glasses,
 reverse-engineered from the official app and a working Python reference client
 (`../myvu_client`). It pairs, drives every documented feature, mirrors real
-phone notifications, runs turn-by-turn navigation, and hosts a voice assistant
-that uses the glasses' own microphone.
+phone notifications, runs turn-by-turn navigation, provides customizable temple touch gestures, updates weather telemetry, and hosts a voice assistant that uses the glasses' own microphone.
 
-Package `com.myvu.client`. Java, no Kotlin. `minSdk 26`, tested on API 31.
+Package `com.myvu.client`. Java, no Kotlin. `minSdk 26`, tested on API 31+.
 
 ## What works
 
-- **Connection** — BLE bring-up + ECDH bond, then the classic-BT app relay.
-- **Notifications** — manual, plus live mirroring of real phone notifications.
+- **Connection** — BLE bring-up + ECDH bond, then the classic-BT app relay. Features auto-discovery via BLE scanning, configurable retry attempts, and automatic background reconnection.
+- **Notifications** — manual sending, plus live mirroring of real phone notifications with per-app filters.
 - **Teleprompter, system settings, queries, clock sync.**
+- **Weather Sync** — manual and automatic periodic updates (Open-Meteo API) pushed to the glasses' HUD weather widget.
+- **Custom Touch & Gesture Controls (`TouchGestureManager`)** — handles hardware button / temple touch triggers (`code: 3`) with customizable target actions:
+  - Launch AI Assistant
+  - Weather Sync
+  - Toggle Notification Mirroring
+  - Media Play / Pause
+  - Disabled (None)
+- **Live Diagnostics & Logging (`LogBus`)** — thread-safe log bus feeding a real-time diagnostic log view (`LogAdapter`) with export/share capabilities.
 - **Navigation** — OSRM routing + FusedLocation, rendered on the lens HUD.
 - **AI assistant** — glasses mic → selectable Groq or local STT → Claude, ChatGPT, Gemini, or a local OpenAI-compatible LLM → selectable device or HTTP TTS. Features **450ms VAD end-of-speech detection** and native phone action execution via action tags (`PhoneActionExecutor.java`):
   - **Calls & Messages**: Hands-free background calls (`TelecomManager`), direct WhatsApp private chat launcher, Telegram text sender.
@@ -41,14 +48,16 @@ RunAsOne session handshake, and every feature. All protocol state lives on one
 thread (`myvu-conn`), so `protocol/` and `app/` need no locking.
 
 ```
-transport/ble   GATT, packet codec, message channel, ECDH pairing, heartbeat
+transport/ble   GATT, packet codec, message channel, ECDH pairing, heartbeat, GlassesScanner
 transport/bt    RFCOMM framing + the per-session-UUID socket
 protocol        TLV, protobuf, relay, session, init burst
-app             StMessage envelope, InboundRouter, feature builders
-service         foreground service, ConnectionManager, RelaySupervisor
-ai              glasses-mic capture, Opus decode, STT/LLM/TTS clients
+app             StMessage envelope, InboundRouter, feature builders (TouchGestureManager, Weather, SystemSettings, Teleprompter...)
+core            LogBus, Prefs, BufferPool, GlassesConfig, HttpCache, SslUtils
+service         foreground service (MyvuService), ConnectionManager, RelaySupervisor, Bonding, MirrorNotificationListener
+ai              glasses-mic capture, Opus decode, STT/LLM/TTS clients, PhoneActionExecutor
 nav             OSRM, RouteTracker, FusedLocation, HUD frames
-ui              connect screen + live log
+weather         OpenMeteo API client, WeatherCodes parser, WeatherSync scheduler
+ui              connect screen, live log (LogAdapter), settings activity, trackpad view, notification apps filter
 ```
 
 ## Building
@@ -129,12 +138,13 @@ copy on its current version.
 1. **Turn off the glasses' other central.** They accept one BLE central at a
    time. Force-stop the official app (`com.upuphone.star.launcher.intl`) and
    disconnect any other paired phone, or BLE pairing will be rejected ~1s in.
-2. Enter the glasses' MAC and configure the assistant services. Cloud providers
+2. Enter the glasses' MAC (or use auto-search) and configure the assistant services. Cloud providers
    require their API keys; local OpenAI-compatible services accept a configurable
    endpoint, model, and optional Bearer token. Settings are stored in
    `SharedPreferences` only — never in source.
-3. Grant notification access (for mirroring) via the in-app button.
-4. Connect. The link lives in a foreground service and survives backgrounding.
+3. Configure **Touch Gesture Action** (AI Assistant, Weather Sync, Toggle Mirror, Media Play/Pause) and **Weather Refresh Interval** in Settings if desired.
+4. Grant notification access (for mirroring) via the in-app button.
+5. Connect. The link lives in a foreground service (`MyvuService`) and survives backgrounding.
 
 Long-press **Clear log** to share the diagnostic log.
 
@@ -155,19 +165,7 @@ returned by that server's `GET /v1/models`. The local STT model defaults to
 `whisper`. HTTP TTS model and voice fields are optional and are omitted from the
 request when blank.
 
-For the companion servers in this repository's parent `servers` directory, the
-pre-filled endpoint values are:
-
-```text
-AI:  http://10.0.0.2:1234/v1/chat/completions
-STT: http://10.0.0.2:1235/v1/audio/transcriptions
-TTS: http://10.0.0.2:1236/v1/audio/speech
-```
-
-Change the host or port in Settings when the servers run elsewhere. HTTPS is
-accepted for any host; cleartext HTTP is restricted to literal private-LAN or
-loopback addresses so prompts, microphone audio, and credentials are not sent
-unencrypted to a public host. Provider, endpoint, key, model, voice, and system
+For companion servers running locally, pre-filled endpoint patterns are provided in settings. Provider, endpoint, key, model, voice, gesture, and system
 prompt settings are re-read for each turn, so changes do not require a reconnect.
 
 ## Gotchas learned the hard way
