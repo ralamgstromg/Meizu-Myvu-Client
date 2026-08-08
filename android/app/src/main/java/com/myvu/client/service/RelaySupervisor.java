@@ -14,7 +14,8 @@ import com.myvu.client.core.LogBus;
  */
 public class RelaySupervisor {
 
-    private static final long POLL_MS = 3000;
+    private static final long CONNECTED_POLL_MS = 60000;
+    private static final long DISCONNECTED_POLL_MS = 3000;
     private static final long BACKOFF_MS = 3000;
     private static final int MAX_ATTEMPTS = 6;
 
@@ -38,8 +39,8 @@ public class RelaySupervisor {
         @Override
         public void run() {
             if (!running) return;
-            check();
-            conn.postDelayed(this, POLL_MS);
+            boolean connected = check();
+            conn.postDelayed(this, connected ? CONNECTED_POLL_MS : DISCONNECTED_POLL_MS);
         }
     };
 
@@ -52,7 +53,7 @@ public class RelaySupervisor {
         if (running) return;
         running = true;
         attempt = 0;
-        conn.postDelayed(poll, POLL_MS);
+        conn.postDelayed(poll, DISCONNECTED_POLL_MS);
     }
 
     public void stop() {
@@ -76,15 +77,15 @@ public class RelaySupervisor {
 
     private static final long RESET_ATTEMPTS_AFTER_MS = 30000;
 
-    private void check() {
-        if (!running) return;
+    private boolean check() {
+        if (!running) return false;
         if (delegate.isRelayConnected()) {
             attempt = 0;
-            return;
+            return true;
         }
         if (!delegate.canConnectRelay()) {
             // No UUID yet; the glasses will sync one over BLE shortly.
-            return;
+            return false;
         }
         // Hard rate limit. The glasses emit bursts of state-change messages and
         // each one wakes us; without this the retries collapsed into a tight
@@ -93,8 +94,8 @@ public class RelaySupervisor {
         if (now - lastAttemptAt > RESET_ATTEMPTS_AFTER_MS) {
             attempt = 0; // Reset retry budget after cooldown
         }
-        if (now - lastAttemptAt < BACKOFF_MS) return;
-        if (attempt >= MAX_ATTEMPTS) return;
+        if (now - lastAttemptAt < BACKOFF_MS) return false;
+        if (attempt >= MAX_ATTEMPTS) return false;
 
         attempt++;
         lastAttemptAt = now;
@@ -106,6 +107,7 @@ public class RelaySupervisor {
             LogBus.warn("relay reconnect gave up after " + MAX_ATTEMPTS
                     + " attempts; will retry on next notification or cooldown");
         }
+        return false;
     }
 
     /** Backoff spacing, exposed so the caller can schedule its own retry. */
