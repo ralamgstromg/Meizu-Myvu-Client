@@ -112,7 +112,9 @@ public final class Weather {
 
     /** True when the glasses are asking us to push fresh weather. */
     public static boolean isSyncRequest(JSONObject action) {
-        return action != null && SYNC_REQUEST_ACTION.equals(action.optString("action"));
+        if (action == null) return false;
+        String act = action.optString("action");
+        return SYNC_REQUEST_ACTION.equals(act) || "query_weather".equals(act);
     }
 
     /** Mirrors Gson's default: a null value is left off the wire entirely. */

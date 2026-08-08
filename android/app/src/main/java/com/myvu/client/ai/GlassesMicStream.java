@@ -1,5 +1,6 @@
 package com.myvu.client.ai;
 
+import com.myvu.client.core.BufferPool;
 import com.myvu.client.core.LogBus;
 import com.myvu.client.protocol.Pb;
 import com.myvu.client.protocol.PbValue;
@@ -7,6 +8,7 @@ import com.myvu.client.protocol.PbValue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Collects the glasses' microphone stream.
@@ -25,6 +27,38 @@ import java.util.Map;
  */
 public class GlassesMicStream {
 
+    public static final class AudioFrame {
+        private final byte[] buffer;
+        public final int length;
+        private final AtomicInteger refCount = new AtomicInteger(1);
+
+        public AudioFrame(byte[] buffer, int length) {
+            this.buffer = buffer;
+            this.length = length;
+        }
+
+        public byte[] buffer() {
+            return buffer;
+        }
+
+        public void retain() {
+            refCount.incrementAndGet();
+        }
+
+        public void release() {
+            if (refCount.decrementAndGet() == 0 && buffer != null) {
+                BufferPool.recycle(buffer);
+            }
+        }
+
+        public byte[] copyBytes() {
+            if (buffer == null || length <= 0) return new byte[0];
+            byte[] copy = new byte[length];
+            System.arraycopy(buffer, 0, copy, 0, length);
+            return copy;
+        }
+    }
+
     /** Packet sizes the device actually emits, per OpusDecoder.Companion.a(). */
     private static final int[] KNOWN_PACKET_SIZES = { 40, 83, 120, 240 };
 
@@ -34,18 +68,21 @@ public class GlassesMicStream {
     /** Guards against unbounded growth if an utterance never ends. */
     private static final int MAX_PACKETS = 2000; // ~40s at 20ms per packet
 
-    private final List<byte[]> packets = new ArrayList<>();
+    private final List<AudioFrame> packets = new ArrayList<>();
     private boolean capturing;
-    private volatile byte[] lastPacket;
-    private final List<byte[]> justAdded = new ArrayList<>();
+    private volatile AudioFrame lastFrame;
+    private final List<AudioFrame> justAdded = new ArrayList<>();
     private int unknownSizeCount;
     /** Distinct payload sizes seen, to learn what the device really sends. */
     private final java.util.Set<Integer> observedSizes = new java.util.TreeSet<>();
 
     /** Begins a new utterance, discarding anything previously buffered. */
     public void start() {
+        for (AudioFrame frame : packets) {
+            frame.release();
+        }
         packets.clear();
-        lastPacket = null;
+        lastFrame = null;
         justAdded.clear();
         unknownSizeCount = 0;
         observedSizes.clear();
@@ -73,34 +110,28 @@ public class GlassesMicStream {
     public boolean offer(byte[] relayBody) {
         byte[] field5 = extractAudio(relayBody);
         if (field5 == null) {
-            // The caller already identified this as code:109, so failing here
-            // means field 5 is not where we think the audio lives.
             rejected++;
             return false;
         }
         if (!capturing) return true; // recognised, but deliberately discarded
 
-        // field 5 is NOT a raw Opus packet: it is one or more Opus frames each
-        // prefixed with a 2-byte big-endian length, matching the official
-        // encoder's pack format (OpusCodec byteList2ByteArr). Feeding the whole
-        // blob -- length bytes included -- to MediaCodec corrupted every packet
-        // and produced speech-shaped gibberish. Strip the prefixes here.
         justAdded.clear();
         int i = 0;
         while (i + 2 <= field5.length) {
             int len = ((field5[i] & 0xFF) << 8) | (field5[i + 1] & 0xFF);
             i += 2;
             if (len <= 0 || i + len > field5.length) {
-                // Not the framing we expect; fall back to the raw blob so at
-                // least something is captured, and record it for diagnosis.
                 unknownSizeCount++;
                 break;
             }
-            byte[] frame = java.util.Arrays.copyOfRange(field5, i, i + len);
+            byte[] poolBuf = BufferPool.obtain(len);
+            System.arraycopy(field5, i, poolBuf, 0, len);
+            AudioFrame frame = new AudioFrame(poolBuf, len);
             i += len;
 
             if (packets.size() >= MAX_PACKETS) {
                 LogBus.warn("glasses mic buffer full (" + MAX_PACKETS + ") -- stopping");
+                frame.release();
                 capturing = false;
                 break;
             }
@@ -108,23 +139,35 @@ public class GlassesMicStream {
             packets.add(frame);
             justAdded.add(frame);
         }
-        if (!justAdded.isEmpty()) lastPacket = justAdded.get(justAdded.size() - 1);
+        if (!justAdded.isEmpty()) lastFrame = justAdded.get(justAdded.size() - 1);
         return true;
     }
 
     /** The Opus frames extracted from the most recent payload. */
-    public List<byte[]> justAdded() {
+    public List<AudioFrame> justAddedFrames() {
         return justAdded;
+    }
+
+    public List<byte[]> justAdded() {
+        List<byte[]> list = new ArrayList<>();
+        for (AudioFrame frame : justAdded) {
+            list.add(frame.copyBytes());
+        }
+        return list;
     }
 
     /** The most recently accepted frame, for incremental decoding. */
     public byte[] lastPacket() {
-        return lastPacket;
+        return lastFrame != null ? lastFrame.copyBytes() : null;
     }
 
     /** The Opus packets captured so far, oldest first. */
     public List<byte[]> packets() {
-        return new ArrayList<>(packets);
+        List<byte[]> list = new ArrayList<>();
+        for (AudioFrame frame : packets) {
+            list.add(frame.copyBytes());
+        }
+        return list;
     }
 
     public int unknownSizeCount() {

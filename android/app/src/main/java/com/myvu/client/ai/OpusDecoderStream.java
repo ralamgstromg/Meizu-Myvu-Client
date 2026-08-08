@@ -40,6 +40,14 @@ public class OpusDecoderStream {
     private long presentationUs;
     private final ByteArrayOutputStream all = new ByteArrayOutputStream();
 
+    private static final byte[] EMPTY_PCM = new byte[0];
+
+    public interface PcmConsumer {
+        void onPcm(byte[] buffer, int length);
+    }
+
+    private final MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+
     public void start() throws Exception {
         stop();
         MediaFormat format = MediaFormat.createAudioFormat(
@@ -67,7 +75,11 @@ public class OpusDecoderStream {
      * drains output to free buffers and keeps trying until the packet is queued.
      */
     public byte[] feed(byte[] packet) {
-        if (codec == null) return new byte[0];
+        return feed(packet, packet != null ? packet.length : 0);
+    }
+
+    public byte[] feed(byte[] packet, int length) {
+        if (codec == null || packet == null || length <= 0) return EMPTY_PCM;
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             boolean queued = false;
@@ -76,8 +88,8 @@ public class OpusDecoderStream {
                 if (inIndex >= 0) {
                     ByteBuffer in = codec.getInputBuffer(inIndex);
                     in.clear();
-                    in.put(packet);
-                    codec.queueInputBuffer(inIndex, 0, packet.length, presentationUs, 0);
+                    in.put(packet, 0, length);
+                    codec.queueInputBuffer(inIndex, 0, length, presentationUs, 0);
                     presentationUs += 20000; // 20ms per packet at 16 kHz
                     queued = true;
                 }
@@ -89,7 +101,29 @@ public class OpusDecoderStream {
             return out.toByteArray();
         } catch (Exception e) {
             LogBus.error("Opus decode failed", e);
-            return new byte[0];
+            return EMPTY_PCM;
+        }
+    }
+
+    public void feed(byte[] packet, int length, PcmConsumer consumer) {
+        if (codec == null || packet == null || length <= 0) return;
+        try {
+            boolean queued = false;
+            for (int attempt = 0; attempt < 100 && !queued; attempt++) {
+                int inIndex = codec.dequeueInputBuffer(DEQUEUE_TIMEOUT_US);
+                if (inIndex >= 0) {
+                    ByteBuffer in = codec.getInputBuffer(inIndex);
+                    in.clear();
+                    in.put(packet, 0, length);
+                    codec.queueInputBuffer(inIndex, 0, length, presentationUs, 0);
+                    presentationUs += 20000;
+                    queued = true;
+                }
+                drainToConsumer(consumer);
+            }
+            if (!queued) LogBus.warn("Opus decoder never freed an input buffer -- packet lost");
+        } catch (Exception e) {
+            LogBus.error("Opus decode failed", e);
         }
     }
 
@@ -135,9 +169,8 @@ public class OpusDecoderStream {
 
     private byte[] drain() {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         while (true) {
-            int outIndex = codec.dequeueOutputBuffer(info, 0);
+            int outIndex = codec.dequeueOutputBuffer(bufferInfo, 0);
             if (outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                 MediaFormat actual = codec.getOutputFormat();
                 outputSampleRate = actual.getInteger(MediaFormat.KEY_SAMPLE_RATE);
@@ -149,18 +182,47 @@ public class OpusDecoderStream {
                 continue;
             }
             if (outIndex < 0) break;
-            if (info.size > 0) {
+            if (bufferInfo.size > 0) {
                 ByteBuffer buf = codec.getOutputBuffer(outIndex);
-                byte[] chunk = BufferPool.obtain(info.size);
-                buf.position(info.offset);
-                buf.get(chunk, 0, info.size);
-                out.write(chunk, 0, info.size);
-                all.write(chunk, 0, info.size);
+                byte[] chunk = BufferPool.obtain(bufferInfo.size);
+                buf.position(bufferInfo.offset);
+                buf.get(chunk, 0, bufferInfo.size);
+                out.write(chunk, 0, bufferInfo.size);
+                all.write(chunk, 0, bufferInfo.size);
                 BufferPool.recycle(chunk);
             }
             codec.releaseOutputBuffer(outIndex, false);
         }
         return out.toByteArray();
+    }
+
+    private void drainToConsumer(PcmConsumer consumer) {
+        while (true) {
+            int outIndex = codec.dequeueOutputBuffer(bufferInfo, 0);
+            if (outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                MediaFormat actual = codec.getOutputFormat();
+                outputSampleRate = actual.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+                outputChannels = actual.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+                LogBus.log("Opus decoder output: " + outputSampleRate + "Hz, "
+                        + outputChannels + "ch"
+                        + (outputSampleRate != OpusStream.SAMPLE_RATE
+                           ? " (NOT the declared " + OpusStream.SAMPLE_RATE + "Hz)" : ""));
+                continue;
+            }
+            if (outIndex < 0) break;
+            if (bufferInfo.size > 0) {
+                ByteBuffer buf = codec.getOutputBuffer(outIndex);
+                byte[] chunk = BufferPool.obtain(bufferInfo.size);
+                buf.position(bufferInfo.offset);
+                buf.get(chunk, 0, bufferInfo.size);
+                all.write(chunk, 0, bufferInfo.size);
+                if (consumer != null) {
+                    consumer.onPcm(chunk, bufferInfo.size);
+                }
+                BufferPool.recycle(chunk);
+            }
+            codec.releaseOutputBuffer(outIndex, false);
+        }
     }
 
     /** Everything decoded since {@link #start()}. */

@@ -158,6 +158,9 @@ public class InboundRouter {
         if (code != 3 && code != 7) return;
 
         JSONObject payload = msg.optJSONObject("payload");
+        if (payload == null) {
+            payload = msg.optJSONObject("data");
+        }
         LogBus.log("Hardware trigger: code=" + code
                 + (code == 3 ? " (button/deep-touch)" : " (wake word)"));
         if (aiListener != null) aiListener.onAiTrigger(code, payload);
@@ -197,6 +200,15 @@ public class InboundRouter {
 
         // 4. Action containing battery or get_device_info
         if (msg.has("action") && msg.optString("action").contains("battery")) {
+            JSONObject data = msg.optJSONObject("data");
+            if (data != null && data.has("battery")) {
+                int battery = data.optInt("battery", -1);
+                if (battery >= 0) {
+                    boolean isCharging = data.optBoolean("is_charging", data.optBoolean("isCharging", false));
+                    batteryListener.onBatteryUpdated(battery, isCharging);
+                    return;
+                }
+            }
             parseValueBattery(msg.optString("value"));
         }
     }

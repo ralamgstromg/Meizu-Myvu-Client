@@ -38,3 +38,4 @@ scratch_*.png
 *.swp
 .DS_Store
 Thumbs.db
+.codegraph

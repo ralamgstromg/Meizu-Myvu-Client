@@ -59,10 +59,14 @@ public class GlassesScanner {
     }
 
     public void start(Callback cb) {
-        start(cb, DEFAULT_TIMEOUT_MS);
+        start(cb, DEFAULT_TIMEOUT_MS, 1);
     }
 
-    public void start(final Callback cb, long timeoutMs) {
+    public void start(Callback cb, long timeoutMs) {
+        start(cb, timeoutMs, 1);
+    }
+
+    public void start(final Callback cb, long timeoutMs, int attemptCount) {
         this.callback = cb;
         scanner = adapter.getBluetoothLeScanner();
         if (scanner == null) {
@@ -91,14 +95,23 @@ public class GlassesScanner {
             }
         };
 
+        int mode;
+        if (attemptCount <= 1) {
+            mode = ScanSettings.SCAN_MODE_LOW_LATENCY;
+        } else if (attemptCount <= 3) {
+            mode = ScanSettings.SCAN_MODE_BALANCED;
+        } else {
+            mode = ScanSettings.SCAN_MODE_LOW_POWER;
+        }
+
         ScanSettings settings = new ScanSettings.Builder()
-                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .setScanMode(mode)
                 .build();
         active = true;
         try {
             // Null filters = report everything; we match in the callback.
             scanner.startScan(null, settings, scanCallback);
-            LogBus.log("scanning for glasses...");
+            LogBus.log("scanning for glasses (mode=" + mode + ", attempt=" + attemptCount + ")...");
         } catch (SecurityException e) {
             active = false;
             cb.onError("missing the Bluetooth scan permission");

@@ -131,14 +131,22 @@ public class AiConversation {
     private final Context context;
     private final Sender sender;
     private final Handler main = new Handler(Looper.getMainLooper());
-    private final ExecutorService worker = Executors.newSingleThreadExecutor();
+    private final ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "ai-worker");
+        t.setDaemon(true);
+        return t;
+    });
 
     private final GlassesMicStream mic = new GlassesMicStream();
     private final OpusDecoderStream decoder = new OpusDecoderStream();
     private final TtsPlayer tts;
     private final PhoneActionExecutor actionExecutor;
     /** Decoding runs off the connection thread; audio arrives faster than realtime. */
-    private final ExecutorService audio = Executors.newSingleThreadExecutor();
+    private final ExecutorService audio = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "ai-audio");
+        t.setDaemon(true);
+        return t;
+    });
 
     private volatile long lastSpeechAt;
     private volatile boolean decoding;
@@ -234,24 +242,35 @@ public class AiConversation {
         if (!mic.isCapturing()) return true;
 
         // A payload can carry more than one Opus frame; decode every one.
-        final java.util.List<byte[]> frames = new java.util.ArrayList<>(mic.justAdded());
+        final java.util.List<GlassesMicStream.AudioFrame> frames = new java.util.ArrayList<>(mic.justAddedFrames());
         if (frames.isEmpty()) return true;
+
+        for (GlassesMicStream.AudioFrame f : frames) {
+            f.retain();
+        }
 
         // Decode off the connection thread: audio arrives faster than realtime
         // and MediaCodec must never block the relay.
         audio.execute(new Runnable() {
             @Override
             public void run() {
-                for (byte[] frame : frames) {
-                    if (!decoding) return;
-                    byte[] pcm = decoder.feed(frame);
-                    if (pcm.length == 0) continue;
-
-                    decodedBytes += pcm.length;
-                    double level = OpusDecoderStream.energy(pcm);
-                    if (level > peakEnergy) peakEnergy = level;
-
-                    consume(level);
+                try {
+                    for (GlassesMicStream.AudioFrame frame : frames) {
+                        if (!decoding) return;
+                        decoder.feed(frame.buffer(), frame.length, new OpusDecoderStream.PcmConsumer() {
+                            @Override
+                            public void onPcm(byte[] pcmChunk, int length) {
+                                decodedBytes += length;
+                                double level = OpusDecoderStream.energy(pcmChunk);
+                                if (level > peakEnergy) peakEnergy = level;
+                                consume(level);
+                            }
+                        });
+                    }
+                } finally {
+                    for (GlassesMicStream.AudioFrame f : frames) {
+                        f.release();
+                    }
                 }
             }
         });
