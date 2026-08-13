@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A circular 14dp orb with Cyber Teal default tint, updated per connection state at runtime. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/cyber_teal" />
+    <size android:width="14dp" android:height="14dp" />
+</shape>
+

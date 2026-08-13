@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hollow ring with #3B494B stroke and subtle #00F0FF glow opacity for Kinetic Obsidian theme -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <stroke android:width="2dp" android:color="@color/outline_variant_obsidian" />
+    <solid android:color="#1400F0FF" />
+    <size android:width="220dp" android:height="220dp" />
+</shape>
+
