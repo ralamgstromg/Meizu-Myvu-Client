@@ -12,6 +12,7 @@ import com.myvu.client.database.ReminderRepository
 import com.myvu.client.reminder.ReminderScheduler
 import com.myvu.client.reminder.ReminderTimeParser
 import com.myvu.client.service.MirrorNotificationListener
+import com.myvu.client.service.MyvuService
 import java.net.URLEncoder
 
 /**
@@ -113,22 +114,43 @@ class PhoneActionExecutor(context: Context) {
             addCalendarEvent(eventVal)
         }
 
-        // 11. Notes (Google Keep vs Quick Notes)
+        // 11. Notes (Google Keep vs Notes with Tags vs Quick Notes)
         if (lower.contains("action:note_keep=")) {
             val noteText = extractValue(aiText, "ACTION:NOTE_KEEP=")
             createKeepNote(noteText)
+        } else if (lower.contains("action:note_tags=")) {
+            val noteVal = extractValue(aiText, "ACTION:NOTE_TAGS=")
+            createNoteWithTags(noteVal)
         } else if (lower.contains("action:note=")) {
             val noteText = extractValue(aiText, "ACTION:NOTE=")
             createNote(noteText)
         }
 
-        // 12. Specific Reminders
+        // 12. Search Notes
+        if (lower.contains("action:search_notes=")) {
+            val query = extractValue(aiText, "ACTION:SEARCH_NOTES=")
+            val searchResults = searchNotesSummary(query)
+            return stripActionTags(aiText) + "\n\n" + searchResults
+        }
+
+        // 13. Teleprompter
+        if (lower.contains("action:teleprompter=")) {
+            val promptText = extractValue(aiText, "ACTION:TELEPROMPTER=")
+            openTeleprompter(promptText)
+        }
+
+        // 14. Weather Refresh
+        if (lower.contains("action:weather_refresh")) {
+            refreshWeather()
+        }
+
+        // 15. Specific Reminders
         if (lower.contains("action:reminder=")) {
             val remVal = extractValue(aiText, "ACTION:REMINDER=")
             createSpecificReminder(remVal)
         }
 
-        // 13. Summarize pending unread notifications (Email, WhatsApp, Telegram, All)
+        // 16. Summarize pending unread notifications (Email, WhatsApp, Telegram, All)
         if (lower.contains("action:summary=")) {
             val cat = extractValue(aiText, "ACTION:SUMMARY=")
             val summary = MirrorNotificationListener.getUnreadSummary(cat)
@@ -524,6 +546,94 @@ class PhoneActionExecutor(context: Context) {
             LogBus.log("voice action -> created local note #$id: $text")
         } catch (e: Exception) {
             LogBus.error("could not create local note for $text", e)
+        }
+    }
+
+    fun createNoteWithTags(valStr: String?) {
+        try {
+            if (valStr.isNullOrBlank()) return
+            val parts = valStr.split("|")
+            val title: String
+            val body: String
+            val tags: String
+            when {
+                parts.size >= 3 -> {
+                    title = parts[0].trim()
+                    body = parts[1].trim()
+                    tags = parts[2].trim()
+                }
+                parts.size == 2 -> {
+                    title = parts[0].trim()
+                    body = parts[1].trim()
+                    tags = ""
+                }
+                else -> {
+                    title = ""
+                    body = valStr.trim()
+                    tags = ""
+                }
+            }
+            val repo = NoteRepository(context)
+            val id = repo.createNote(title = title, body = body, tags = tags)
+            LogBus.log("voice action -> created local note with tags #$id title='$title', tags='$tags'")
+        } catch (e: Exception) {
+            LogBus.error("could not create note with tags for $valStr", e)
+        }
+    }
+
+    fun searchNotesSummary(query: String?): String {
+        try {
+            if (query.isNullOrBlank()) return "No se especificó término de búsqueda."
+            val repo = NoteRepository(context)
+            val notes = repo.search(query.trim())
+            if (notes.isEmpty()) {
+                return "No se encontraron notas para: '$query'."
+            }
+            val sb = StringBuilder("Notas encontradas (${notes.size}):\n")
+            notes.take(5).forEachIndexed { index, note ->
+                val titleStr = if (note.title.isNotBlank()) "[${note.title}] " else ""
+                val tagsStr = if (note.tags.isNotBlank()) " (${note.tags})" else ""
+                sb.append("${index + 1}. $titleStr${note.body}$tagsStr\n")
+            }
+            return sb.toString().trim()
+        } catch (e: Exception) {
+            LogBus.error("could not search notes for $query", e)
+            return "Error al buscar notas."
+        }
+    }
+
+    fun openTeleprompter(text: String?) {
+        try {
+            if (text.isNullOrBlank()) return
+            val cleanText = text.trim()
+            val conn = MyvuService.activeConnection()
+            if (conn != null) {
+                conn.openTeleprompter(cleanText, "Prompter")
+                LogBus.log("voice action -> opened teleprompter via MyvuService with text: $cleanText")
+            } else {
+                val intent = Intent("com.myvu.client.ACTION_TELEPROMPTER")
+                intent.putExtra("text", cleanText)
+                context.sendBroadcast(intent)
+                LogBus.warn("voice action -> active connection null, sent teleprompter broadcast: $cleanText")
+            }
+        } catch (e: Exception) {
+            LogBus.error("could not open teleprompter for $text", e)
+        }
+    }
+
+    fun refreshWeather() {
+        try {
+            val conn = MyvuService.activeConnection()
+            if (conn != null) {
+                conn.weather().refresh()
+                LogBus.log("voice action -> triggered weather refresh via active connection")
+            } else {
+                val intent = Intent("com.myvu.client.ACTION_REFRESH_WEATHER")
+                context.sendBroadcast(intent)
+                LogBus.log("voice action -> sent weather refresh broadcast")
+            }
+        } catch (e: Exception) {
+            LogBus.error("could not refresh weather", e)
         }
     }
 
