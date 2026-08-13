@@ -88,9 +88,13 @@ public abstract class AiHttpClient implements AiClient {
     }
 
     private String askOnce(String body) throws IOException {
+        return askOnceInternal(body, ignoreSsl);
+    }
+
+    private String askOnceInternal(String body, boolean bypassSsl) throws IOException {
         URL url = HttpEndpoint.parse(endpoint(), provider.label + " endpoint");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        if (ignoreSsl) {
+        if (bypassSsl) {
             com.myvu.client.core.SslUtils.applySslBypass(conn);
         }
         try {
@@ -123,6 +127,12 @@ public abstract class AiHttpClient implements AiClient {
                 throw new IOException(provider.label + " returned an empty answer");
             }
             return text;
+        } catch (javax.net.ssl.SSLException e) {
+            if (!bypassSsl) {
+                com.myvu.client.core.LogBus.warn(provider.label + " SSL failed, retrying with SSL bypass...");
+                return askOnceInternal(body, true);
+            }
+            throw e;
         } finally {
             conn.disconnect();
         }

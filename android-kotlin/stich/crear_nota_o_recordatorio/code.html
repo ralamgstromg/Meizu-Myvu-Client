@@ -1,0 +1,251 @@
+<!DOCTYPE html><html class="dark" lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Crear Nota - MYVU Sync</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed-dim": "#00dbe9",
+                        "surface": "#121416",
+                        "on-tertiary-fixed-variant": "#5e289b",
+                        "surface-container-low": "#1a1c1e",
+                        "on-tertiary": "#460283",
+                        "surface-dim": "#121416",
+                        "primary": "#dbfcff",
+                        "on-tertiary-container": "#7743b5",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#bac9cd",
+                        "on-surface-variant": "#b9cacb",
+                        "error-container": "#93000a",
+                        "outline-variant": "#3b494b",
+                        "inverse-surface": "#e2e2e5",
+                        "secondary-fixed": "#d6e5e9",
+                        "tertiary-fixed-dim": "#dab9ff",
+                        "surface-container-high": "#282a2c",
+                        "inverse-primary": "#006970",
+                        "secondary": "#bac9cd",
+                        "on-background": "#e2e2e5",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-container": "#e7d0ff",
+                        "primary-fixed": "#7df4ff",
+                        "surface-container-lowest": "#0c0e10",
+                        "on-secondary-fixed-variant": "#3c494d",
+                        "primary-container": "#00f0ff",
+                        "surface-container": "#1e2022",
+                        "tertiary-fixed": "#eedbff",
+                        "on-surface": "#e2e2e5",
+                        "surface-container-highest": "#333537",
+                        "error": "#ffb4ab",
+                        "surface-variant": "#333537",
+                        "on-primary-container": "#006970",
+                        "surface-tint": "#00dbe9",
+                        "outline": "#849495",
+                        "inverse-on-surface": "#2f3133",
+                        "on-primary": "#00363a",
+                        "secondary-container": "#3e4b4f",
+                        "on-primary-fixed-variant": "#004f54",
+                        "tertiary": "#fcf2ff",
+                        "surface-bright": "#37393b",
+                        "on-tertiary-fixed": "#2a0053",
+                        "background": "#121416",
+                        "on-secondary": "#253336",
+                        "on-primary-fixed": "#002022",
+                        "on-secondary-fixed": "#101e21",
+                        "on-secondary-container": "#acbbbf"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "stack-md": "12px",
+                        "stack-sm": "4px",
+                        "container-padding": "24px",
+                        "base": "8px",
+                        "stack-lg": "24px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["JetBrains Mono"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500" }],
+                        "display-lg": ["57px", { "lineHeight": "64px", "letterSpacing": "-0.25px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0.5px", "fontWeight": "400" }],
+                        "headline-sm": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.25px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        .type-toggle-active {
+            background-color: theme('colors.primary');
+            color: theme('colors.on-primary');
+        }
+        
+        .type-toggle-inactive {
+            background-color: theme('colors.surface-container-high');
+            color: theme('colors.on-surface-variant');
+        }
+
+        .input-glow:focus-within {
+            box-shadow: 0 0 16px -2px rgba(0, 240, 255, 0.2);
+            border-color: theme('colors.primary');
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-body-md antialiased pt-16 pb-20 md:pb-0">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-background/80 dark:bg-background/80 backdrop-blur-xl bg-surface-container-low/80 border-b border-outline-variant/20">
+<div class="flex justify-between items-center h-16 px-gutter w-full">
+<button class="flex items-center text-primary dark:text-primary-fixed-dim hover:bg-surface-container-high/50 transition-colors rounded-full p-2 active:scale-95 transition-transform" onclick="window.history.back()">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm font-bold text-on-surface dark:text-on-surface">Crear</h1>
+<div class="flex items-center text-primary dark:text-primary-fixed-dim">
+<span class="font-label-md text-label-md mr-1">85%</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">battery_full</span>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-3xl w-full mx-auto p-container-padding flex flex-col gap-stack-lg">
+<!-- Toggle -->
+<div class="flex bg-surface-container-high rounded-full p-1 mx-auto shadow-inner">
+<button class="type-toggle-active rounded-full px-6 py-2 font-label-md text-label-md transition-all duration-300" id="btn-nota" onclick="switchType('nota')">
+                Nota
+            </button>
+<button class="type-toggle-inactive rounded-full px-6 py-2 font-label-md text-label-md transition-all duration-300" id="btn-recordatorio" onclick="switchType('recordatorio')">
+                Recordatorio
+            </button>
+</div>
+<!-- Form Area -->
+<div class="flex-1 flex flex-col gap-stack-md bg-surface-container-low p-container-padding rounded-[28px] border border-outline-variant/20 shadow-lg relative overflow-hidden">
+<!-- Ambient Glow -->
+<div class="absolute -top-20 -right-20 w-64 h-64 bg-primary/5 rounded-full blur-[64px] pointer-events-none"></div>
+<!-- Title -->
+<div class="input-glow flex items-center bg-surface-container-high rounded-lg px-4 py-2 border-b-2 border-transparent transition-all duration-300">
+<input class="w-full bg-transparent border-none text-on-surface font-headline-sm text-headline-sm focus:ring-0 placeholder:text-on-surface-variant/50" placeholder="Título" type="text">
+</div>
+<!-- Note Content (Visible by default) -->
+<div class="flex-1 flex flex-col gap-stack-md animate-fade-in" id="section-nota">
+<textarea class="input-glow flex-1 w-full bg-surface-container-high rounded-lg p-4 border-b-2 border-transparent text-on-surface font-body-lg text-body-lg focus:ring-0 placeholder:text-on-surface-variant/50 resize-none min-h-[200px] transition-all duration-300" placeholder="Empieza a escribir o dicta..."></textarea>
+<div class="flex items-center justify-between bg-surface-container-high rounded-lg px-4 py-3 border border-outline-variant/20 mb-stack-sm">
+    <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary-fixed-dim">psychology</span>
+        <span class="font-label-md text-label-md text-on-surface">Procesar con IA (STT)</span>
+    </div>
+    <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" class="sr-only peer" checked="">
+        <div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+    </label>
+</div><div class="flex gap-stack-sm mt-auto">
+<button class="flex-1 flex items-center justify-center gap-2 bg-surface-container-highest hover:bg-surface-variant text-primary-fixed-dim py-3 rounded-lg border border-outline-variant/30 transition-colors">
+<span class="material-symbols-outlined">mic</span>
+<span class="font-label-md text-label-md">Audio AR</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-2 bg-surface-container-highest hover:bg-surface-variant text-primary-fixed-dim py-3 rounded-lg border border-outline-variant/30 transition-colors">
+<span class="material-symbols-outlined">view_in_ar</span>
+<span class="font-label-md text-label-md">Captura AR</span>
+</button>
+</div>
+</div>
+<!-- Reminder Content (Hidden by default) -->
+<div class="flex-1 flex flex-col gap-stack-lg hidden animate-fade-in" id="section-recordatorio">
+<div class="grid grid-cols-2 gap-stack-sm">
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface-variant">Fecha</label>
+<div class="input-glow flex items-center bg-surface-container-high rounded-lg px-4 py-3 border-b-2 border-transparent">
+<span class="material-symbols-outlined text-outline mr-2">calendar_today</span>
+<input class="w-full bg-transparent border-none text-on-surface focus:ring-0 font-body-md text-body-md" style="color-scheme: dark;" type="date">
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface-variant">Hora</label>
+<div class="input-glow flex items-center bg-surface-container-high rounded-lg px-4 py-3 border-b-2 border-transparent">
+<span class="material-symbols-outlined text-outline mr-2">schedule</span>
+<input class="w-full bg-transparent border-none text-on-surface focus:ring-0 font-body-md text-body-md" style="color-scheme: dark;" type="time">
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface-variant">Prioridad</label>
+<div class="flex gap-2">
+<button class="flex-1 bg-surface-container-high hover:bg-surface-variant text-on-surface py-2 rounded-lg border border-outline-variant/30 font-label-md text-label-md transition-colors focus:ring-2 ring-primary">Baja</button>
+<button class="flex-1 bg-surface-container-high hover:bg-surface-variant text-on-surface py-2 rounded-lg border border-outline-variant/30 font-label-md text-label-md transition-colors focus:ring-2 ring-primary">Media</button>
+<button class="flex-1 bg-surface-container-high hover:bg-surface-variant text-error-container py-2 rounded-lg border border-error/50 font-label-md text-label-md transition-colors focus:ring-2 ring-error">Alta</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Area -->
+<div class="pt-4 flex justify-end">
+<button class="bg-primary text-on-primary font-label-md text-label-md px-8 py-4 rounded-full flex items-center gap-2 hover:bg-primary-fixed transition-colors active:scale-95 shadow-[0_0_20px_rgba(0,240,255,0.2)]">
+<span class="material-symbols-outlined">save</span>
+                Guardar
+            </button>
+</div>
+</main>
+<!-- BottomNavBar (Hidden on Desktop) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 rounded-t-xl bg-surface-container-low/90 dark:bg-surface-container-lowest/90 backdrop-blur-xl bg-surface-container dark:bg-surface-container-lowest border-t border-outline-variant/10 shadow-lg flex justify-around items-center h-20 pb-safe px-4">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:text-primary transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:text-primary transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span class="font-label-md text-label-md mt-1">AI Config</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container dark:bg-on-primary-fixed-variant text-on-primary-container dark:text-primary-fixed rounded-full px-5 py-1 hover:text-primary transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-md text-label-md mt-1">Notes</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:text-primary transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span class="font-label-md text-label-md mt-1">Logs</span>
+</a>
+</nav>
+<script>
+        function switchType(type) {
+            const btnNota = document.getElementById('btn-nota');
+            const btnRecordatorio = document.getElementById('btn-recordatorio');
+            const secNota = document.getElementById('section-nota');
+            const secRecordatorio = document.getElementById('section-recordatorio');
+
+            if (type === 'nota') {
+                btnNota.className = 'type-toggle-active rounded-full px-6 py-2 font-label-md text-label-md transition-all duration-300';
+                btnRecordatorio.className = 'type-toggle-inactive rounded-full px-6 py-2 font-label-md text-label-md transition-all duration-300';
+                secNota.classList.remove('hidden');
+                secRecordatorio.classList.add('hidden');
+            } else {
+                btnRecordatorio.className = 'type-toggle-active rounded-full px-6 py-2 font-label-md text-label-md transition-all duration-300';
+                btnNota.className = 'type-toggle-inactive rounded-full px-6 py-2 font-label-md text-label-md transition-all duration-300';
+                secRecordatorio.classList.remove('hidden');
+                secNota.classList.add('hidden');
+            }
+        }
+    </script>
+
+
+</body></html>

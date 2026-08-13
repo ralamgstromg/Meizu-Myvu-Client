@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MYVU Sync - AR Navigation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline-variant": "#3b494b",
+                    "on-primary-fixed-variant": "#004f54",
+                    "on-tertiary-fixed-variant": "#5e289b",
+                    "secondary-fixed": "#d6e5e9",
+                    "inverse-primary": "#006970",
+                    "primary": "#dbfcff",
+                    "primary-container": "#00f0ff",
+                    "on-tertiary-container": "#7743b5",
+                    "surface-container": "#1e2022",
+                    "on-secondary": "#253336",
+                    "surface-variant": "#333537",
+                    "on-secondary-container": "#acbbbf",
+                    "tertiary": "#fcf2ff",
+                    "tertiary-fixed": "#eedbff",
+                    "primary-fixed": "#7df4ff",
+                    "on-primary-container": "#006970",
+                    "outline": "#849495",
+                    "on-secondary-fixed-variant": "#3c494d",
+                    "error-container": "#93000a",
+                    "on-tertiary": "#460283",
+                    "inverse-surface": "#e2e2e5",
+                    "surface-container-low": "#1a1c1e",
+                    "on-error": "#690005",
+                    "surface-dim": "#121416",
+                    "inverse-on-surface": "#2f3133",
+                    "surface-container-lowest": "#0c0e10",
+                    "error": "#ffb4ab",
+                    "tertiary-fixed-dim": "#dab9ff",
+                    "surface": "#121416",
+                    "secondary": "#bac9cd",
+                    "surface-container-highest": "#333537",
+                    "background": "#121416",
+                    "tertiary-container": "#e7d0ff",
+                    "on-error-container": "#ffdad6",
+                    "on-tertiary-fixed": "#2a0053",
+                    "on-primary-fixed": "#002022",
+                    "on-background": "#e2e2e5",
+                    "on-secondary-fixed": "#101e21",
+                    "secondary-container": "#3e4b4f",
+                    "surface-container-high": "#282a2c",
+                    "surface-bright": "#37393b",
+                    "primary-fixed-dim": "#00dbe9",
+                    "surface-tint": "#00dbe9",
+                    "on-surface-variant": "#b9cacb",
+                    "on-surface": "#e2e2e5",
+                    "secondary-fixed-dim": "#bac9cd",
+                    "on-primary": "#00363a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "container-padding": "24px",
+                    "gutter": "16px",
+                    "stack-lg": "24px",
+                    "base": "8px",
+                    "stack-sm": "4px",
+                    "stack-md": "12px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Hanken Grotesk"],
+                    "display-lg": ["Hanken Grotesk"],
+                    "headline-sm": ["Hanken Grotesk"],
+                    "body-lg": ["Hanken Grotesk"],
+                    "body-md": ["Hanken Grotesk"],
+                    "label-md": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "display-lg": ["57px", {"lineHeight": "64px", "letterSpacing": "-0.25px", "fontWeight": "700"}],
+                    "headline-sm": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "0.5px", "fontWeight": "400"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.25px", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500"}]
+            }
+          },
+        }
+      }
+    </script>
+<style>
+        .pulse-border {
+            animation: pulse-border 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgba(0, 240, 255, 0.2); box-shadow: 0 0 0 0 rgba(0, 240, 255, 0); }
+            50% { border-color: rgba(0, 240, 255, 0.8); box-shadow: 0 0 15px 0 rgba(0, 240, 255, 0.3); }
+        }
+        .map-overlay {
+            background: linear-gradient(to bottom, rgba(18,20,22,0.8) 0%, rgba(18,20,22,0) 20%, rgba(18,20,22,0) 70%, rgba(18,20,22,1) 100%);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-lg overflow-x-hidden flex flex-col antialiased">
+<!-- TopAppBar (from JSON) -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-low/80 backdrop-blur-xl border-b border-outline-variant/10">
+<div class="flex items-center justify-between px-container-padding h-16">
+<div class="flex items-center gap-4 cursor-pointer hover:bg-surface-variant/50 transition-colors active:scale-95 duration-200 p-2 rounded-full text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</div>
+<div class="font-headline-sm text-headline-sm font-bold text-primary-container">MYVU Sync</div>
+<div class="flex items-center justify-center w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant/20 overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A futuristic minimalist avatar profile image for a high-tech AR glasses user interface, featuring abstract glowing neon cyan lines against a deep charcoal background, exuding a sense of advanced technology and digital identity, high quality, 8k resolution, cinematic lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPKJ11KiAbkYoFPgo2jL8_uXKAYbn-adPyihG0DMEKjkBAvp5fntoIQSbeoG5-0NZkbHB_V0I0t9kLN0xU8WI5CDWpoA_w4pd40ufscNmYU4JI81Sct8q6oJGfP51sCx7VEYKJ-kiiLkcSpD92iBQpE6E9W8uwPj95hi0l0omd1ef7LTbby_z27tZ5Y5w2ewALMzuUkKlNen53Y43FDoyYFUJShF2upbq5wzagqWl9BZzlHc2_8vCG"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-16 pb-32 md:pb-8 flex flex-col relative h-[100dvh]">
+<!-- Simplified Map Background -->
+<div class="absolute inset-0 z-0">
+<div class="w-full h-full bg-surface-container-low overflow-hidden relative">
+<!-- Abstract Dark Map Representation -->
+<img alt="AR Navigation Map" class="w-full h-full object-cover opacity-60 mix-blend-screen" data-alt="A highly stylized, minimalist dark mode digital map of a sprawling futuristic city like Tokyo, designed for an augmented reality interface. The map features deep charcoal and obsidian black backgrounds with subtle, glowing cyber-teal geometric lines representing roads and pathways. No text or labels are visible, focusing entirely on the sleek, abstract, high-tech navigational aesthetic." data-location="Tokyo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdKAaD5YXZs6lQUvuOq0l7MQ6qL-8sxzcrsvN_n6zZj-lWuVnq1eHMxNJQR05NR0xL2FyzZkn7nx9T0CZc13QS7zKZfDrjzQK-c0XxxvzHBuON-fjatM_JqtRwtqSlQOaCoo0ZjqpZi7Ai4-9oDtYvSZHNxdejwgnr54VwPUTUn9lf59npY1_LqQPj7La3D5Y1UuI5MoNRLIx35-Rc1QLBafZlsB6tQXGAzBnUgJr3O8B_8iSVAu0S"/>
+<div class="absolute inset-0 map-overlay"></div>
+<!-- Simulated AR Route Path -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" preserveaspectratio="none">
+<path class="stroke-primary-container" d="M 20 80 Q 40 60 60 70 T 80 30" fill="none" opacity="0.8" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" style="vector-effect: non-scaling-stroke; stroke-dasharray: 8, 8;"></path>
+</svg>
+</div>
+</div>
+<!-- Foreground Interactive Elements -->
+<div class="relative z-10 flex flex-col h-full justify-between p-container-padding pointer-events-none">
+<!-- Top Section: Search & Destination -->
+<div class="w-full max-w-md mx-auto pointer-events-auto mt-4 space-y-4">
+<!-- Search Field -->
+<div class="relative w-full group">
+<div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</div>
+<input class="w-full h-14 pl-12 pr-4 bg-surface-container-high/90 backdrop-blur-md text-on-surface font-body-lg text-body-lg rounded-xl border border-outline-variant/30 focus:border-primary-container/80 focus:ring-0 focus:outline-none shadow-lg transition-all duration-300 placeholder:text-on-surface-variant/70" placeholder="Where to?" type="text"/>
+<div class="absolute inset-x-0 bottom-0 h-[2px] bg-primary-container scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left rounded-b-xl"></div>
+</div>
+<!-- Suggested / Recent Destination Chip -->
+<div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+<button class="flex items-center gap-2 bg-surface-container-high/80 backdrop-blur-sm border border-outline-variant/50 px-4 py-2 rounded-full hover:bg-surface-variant transition-colors whitespace-nowrap">
+<span class="material-symbols-outlined text-[18px] text-primary-container" data-icon="location_on">location_on</span>
+<span class="font-label-md text-label-md text-on-surface">Shibuya Crossing</span>
+</button>
+<button class="flex items-center gap-2 bg-surface-container-high/80 backdrop-blur-sm border border-outline-variant/50 px-4 py-2 rounded-full hover:bg-surface-variant transition-colors whitespace-nowrap">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant" data-icon="home">home</span>
+<span class="font-label-md text-label-md text-on-surface">Home base</span>
+</button>
+</div>
+</div>
+<!-- Bottom Section: Navigation Details & Controls -->
+<div class="w-full max-w-md mx-auto pointer-events-auto space-y-4">
+<!-- Route Info Card -->
+<div class="bg-surface-container/90 backdrop-blur-xl rounded-2xl p-6 border border-outline-variant/20 shadow-2xl pulse-border relative overflow-hidden group">
+<!-- Glow Effect -->
+<div class="absolute -inset-1 bg-gradient-to-r from-primary-container/0 via-primary-container/10 to-primary-container/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
+<div class="relative z-10">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">18 <span class="text-headline-sm text-on-surface-variant font-normal">min</span></h2>
+<p class="font-body-md text-body-md text-primary-container mt-1">1.2 km away</p>
+</div>
+<div class="text-right">
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-1">ETA</p>
+<p class="font-headline-sm text-headline-sm text-on-surface">14:32</p>
+</div>
+</div>
+<!-- Mode Selection -->
+<div class="flex gap-4 mb-6">
+<button class="flex-1 flex flex-col items-center justify-center py-3 bg-primary-container/20 text-primary-container border border-primary-container/50 rounded-xl transition-all shadow-[0_0_12px_rgba(0,240,255,0.15)]">
+<span class="material-symbols-outlined mb-1" data-icon="directions_walk">directions_walk</span>
+<span class="font-label-md text-label-md">Caminar</span>
+</button>
+<button class="flex-1 flex flex-col items-center justify-center py-3 bg-surface-container-highest text-on-surface-variant border border-outline-variant/30 rounded-xl hover:bg-surface-variant hover:text-on-surface transition-all">
+<span class="material-symbols-outlined mb-1" data-icon="pedal_bike">pedal_bike</span>
+<span class="font-label-md text-label-md">Bicicleta</span>
+</button>
+</div>
+<!-- Main Action Button -->
+<button class="w-full flex items-center justify-center gap-3 bg-primary-container text-on-primary-fixed py-4 rounded-xl font-headline-sm text-headline-sm font-semibold hover:bg-primary-fixed transition-colors active:scale-[0.98] duration-150">
+<span class="material-symbols-outlined" data-icon="glasses">qr_code_2</span>
+                            Enviar Ruta a Lentes
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (from JSON) - Rendered only for mobile/md:hidden context as per logic, though the prompt implies a top-level dest -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 pb-safe bg-surface-container-low/90 backdrop-blur-2xl border-t border-outline-variant/10 shadow-[0_-4px_24px_rgba(0,240,255,0.05)] flex justify-around items-center h-20 px-4">
+<div class="flex flex-col items-center justify-center bg-primary-container/20 text-primary-container rounded-xl px-6 py-2 shadow-[0_0_8px_rgba(0,240,255,0.2)] active:scale-90 duration-150 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="dashboard" data-weight="fill" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-md text-label-md mt-1">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:text-primary transition-all active:scale-90 duration-150 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="smart_toy">smart_toy</span>
+<span class="font-label-md text-label-md mt-1">AI</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:text-primary transition-all active:scale-90 duration-150 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-md text-label-md mt-1">Notes</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:text-primary transition-all active:scale-90 duration-150 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+<span class="font-label-md text-label-md mt-1">Logs</span>
+</div>
+</nav>
+</body></html>

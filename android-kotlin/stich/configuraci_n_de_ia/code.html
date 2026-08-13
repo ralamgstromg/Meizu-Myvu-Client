@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MYVU Sync - AI Configuration</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed": "#eedbff",
+                    "primary-container": "#00f0ff",
+                    "on-primary-container": "#006970",
+                    "surface-container-lowest": "#0c0e10",
+                    "surface-container": "#1e2022",
+                    "outline": "#849495",
+                    "on-surface-variant": "#b9cacb",
+                    "surface-container-high": "#282a2c",
+                    "on-surface": "#e2e2e5",
+                    "on-error": "#690005",
+                    "surface-container-highest": "#333537",
+                    "surface-tint": "#00dbe9",
+                    "on-error-container": "#ffdad6",
+                    "on-primary-fixed-variant": "#004f54",
+                    "tertiary-container": "#e7d0ff",
+                    "on-primary-fixed": "#002022",
+                    "error": "#ffb4ab",
+                    "background": "#121416",
+                    "inverse-surface": "#e2e2e5",
+                    "on-primary": "#00363a",
+                    "outline-variant": "#3b494b",
+                    "secondary": "#bac9cd",
+                    "error-container": "#93000a",
+                    "on-tertiary-fixed": "#2a0053",
+                    "inverse-primary": "#006970",
+                    "surface-bright": "#37393b",
+                    "tertiary-fixed-dim": "#dab9ff",
+                    "secondary-fixed-dim": "#bac9cd",
+                    "on-secondary": "#253336",
+                    "secondary-fixed": "#d6e5e9",
+                    "primary-fixed-dim": "#00dbe9",
+                    "surface-dim": "#121416",
+                    "on-secondary-container": "#acbbbf",
+                    "secondary-container": "#3e4b4f",
+                    "on-tertiary-fixed-variant": "#5e289b",
+                    "on-tertiary": "#460283",
+                    "on-secondary-fixed-variant": "#3c494d",
+                    "tertiary": "#fcf2ff",
+                    "on-secondary-fixed": "#101e21",
+                    "on-tertiary-container": "#7743b5",
+                    "surface": "#121416",
+                    "primary": "#dbfcff",
+                    "primary-fixed": "#7df4ff",
+                    "surface-variant": "#333537",
+                    "on-background": "#e2e2e5",
+                    "inverse-on-surface": "#2f3133",
+                    "surface-container-low": "#1a1c1e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "base": "8px",
+                    "stack-lg": "24px",
+                    "container-padding": "24px",
+                    "stack-sm": "4px",
+                    "stack-md": "12px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Hanken Grotesk"],
+                    "display-lg": ["Hanken Grotesk"],
+                    "headline-sm": ["Hanken Grotesk"],
+                    "body-md": ["Hanken Grotesk"],
+                    "body-lg": ["Hanken Grotesk"],
+                    "label-md": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "display-lg": ["57px", {"lineHeight": "64px", "letterSpacing": "-0.25px", "fontWeight": "700"}],
+                    "headline-sm": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.25px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "0.5px", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        /* Custom Toggle Switch Styles */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: theme('colors.primary-container');
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: theme('colors.primary-container');
+        }
+        .toggle-checkbox:checked + .toggle-label:after {
+            transform: translateX(100%);
+            border-color: theme('colors.primary-container');
+        }
+        .toggle-label {
+            width: 48px;
+            height: 24px;
+            background-color: theme('colors.surface-container-highest');
+            border-radius: 9999px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .toggle-label:after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background-color: theme('colors.background');
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-background/80 dark:bg-background/80 backdrop-blur-xl bg-surface-container-low/80 backdrop-blur-md border-b border-outline-variant/20">
+<div class="flex justify-between items-center h-16 px-gutter w-full">
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high/50 transition-colors active:scale-95 transition-transform p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="settings_input_antenna">settings_input_antenna</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm font-bold text-on-surface dark:text-on-surface">MYVU Sync</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md text-primary dark:text-primary-fixed-dim">85%</span>
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" data-icon="battery_full">battery_full</span>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="pt-24 px-container-padding max-w-3xl mx-auto space-y-8">
+<!-- Header Section -->
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-background mb-2">AI Configuration</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Manage your primary intelligence engine and system interaction protocols for the MYVU lens.</p>
+</div>
+<!-- Primary AI Model Selector -->
+<section class="bg-surface-container-low rounded-xl p-6 border border-outline-variant/20 shadow-lg">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">psychology</span>
+                Primary Intelligence Engine
+            </h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Option 1: ChatGPT -->
+<label class="relative cursor-pointer">
+<input checked="" class="peer sr-only" name="ai_model" type="radio" value="chatgpt"/>
+<div class="rounded-lg border-2 border-surface-container-highest bg-surface-container p-4 hover:bg-surface-container-high transition-colors peer-checked:border-primary-container peer-checked:bg-primary-container/10">
+<div class="flex flex-col items-center gap-2 text-center">
+<span class="material-symbols-outlined text-3xl text-on-surface peer-checked:text-primary-container">forum</span>
+<span class="font-label-md text-label-md text-on-surface">ChatGPT</span>
+</div>
+</div>
+</label>
+<!-- Option 2: Claude -->
+<label class="relative cursor-pointer">
+<input class="peer sr-only" name="ai_model" type="radio" value="claude"/>
+<div class="rounded-lg border-2 border-surface-container-highest bg-surface-container p-4 hover:bg-surface-container-high transition-colors peer-checked:border-primary-container peer-checked:bg-primary-container/10">
+<div class="flex flex-col items-center gap-2 text-center">
+<span class="material-symbols-outlined text-3xl text-on-surface peer-checked:text-primary-container">psychiatry</span>
+<span class="font-label-md text-label-md text-on-surface">Claude</span>
+</div>
+</div>
+</label>
+<!-- Option 3: Gemini -->
+<label class="relative cursor-pointer">
+<input class="peer sr-only" name="ai_model" type="radio" value="gemini"/>
+<div class="rounded-lg border-2 border-surface-container-highest bg-surface-container p-4 hover:bg-surface-container-high transition-colors peer-checked:border-primary-container peer-checked:bg-primary-container/10">
+<div class="flex flex-col items-center gap-2 text-center">
+<span class="material-symbols-outlined text-3xl text-on-surface peer-checked:text-primary-container">smart_toy</span>
+<span class="font-label-md text-label-md text-on-surface">Gemini</span>
+</div>
+</div>
+</label>
+</div>
+</section>
+<!-- Custom OpenAI API Details -->
+<section class="bg-surface-container-low rounded-xl p-6 border border-outline-variant/20 shadow-lg">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">api</span>
+                Custom Endpoint Configuration
+            </h3>
+<div class="space-y-4">
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface-variant" for="base_url">Base URL (Local or Specific)</label>
+<input class="bg-surface-container-high border-none rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface placeholder:text-outline focus:ring-2 focus:ring-primary-container focus:bg-surface-container-highest transition-colors" id="base_url" placeholder="https://api.openai.com/v1" type="text"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface-variant" for="api_key">API Key</label>
+<div class="relative">
+<input class="w-full bg-surface-container-high border-none rounded-lg px-4 py-3 pr-10 font-body-md text-body-md text-on-surface placeholder:text-outline focus:ring-2 focus:ring-primary-container focus:bg-surface-container-highest transition-colors" id="api_key" placeholder="sk-..." type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- System Interactions -->
+<section class="bg-surface-container-low rounded-xl p-6 border border-outline-variant/20 shadow-lg">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">toggle_on</span>
+                System Interaction Protocols
+            </h3>
+<div class="space-y-6">
+<!-- Toggle: System Interaction -->
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-body-lg text-body-lg text-on-surface font-medium">Environmental Context</span>
+<span class="font-body-md text-body-md text-on-surface-variant">Allow AI to access camera and microphone streams for context.</span>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="toggle_system" name="toggle_system" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container-highest cursor-pointer" for="toggle_system"></label>
+</div>
+</div>
+<div class="h-px bg-outline-variant/20 w-full"></div>
+<!-- Toggle: Voice Actions -->
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-body-lg text-body-lg text-on-surface font-medium">Always-On Voice Commands</span>
+<span class="font-body-md text-body-md text-on-surface-variant">Enable wake word detection ("Hey MYVU") for immediate action.</span>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="toggle_voice" name="toggle_voice" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container-highest cursor-pointer" for="toggle_voice"></label>
+</div>
+</div>
+</div>
+</section>
+<div class="flex justify-end pt-4 pb-8">
+<button class="bg-primary-container text-on-primary-container font-label-md text-label-md px-6 py-3 rounded-full hover:bg-primary transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-lg" data-icon="save">save</span>
+                Save Configuration
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-xl bg-surface-container-low/90 dark:bg-surface-container-lowest/90 backdrop-blur-xl bg-surface-container dark:bg-surface-container-lowest border-t border-outline-variant/10 shadow-lg md:hidden">
+<div class="flex justify-around items-center h-20 pb-safe px-4 w-full">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:text-primary transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined mb-1" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container dark:bg-on-primary-fixed-variant text-on-primary-container dark:text-primary-fixed rounded-full px-5 py-1 hover:text-primary transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined mb-1" data-icon="psychology" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-label-md text-label-md">AI Config</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:text-primary transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined mb-1" data-icon="description">description</span>
+<span class="font-label-md text-label-md">Notes</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:text-primary transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined mb-1" data-icon="terminal">terminal</span>
+<span class="font-label-md text-label-md">Logs</span>
+</button>
+</div>
+</nav>
+</body></html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MYVU Sync - Logs</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Hanken Grotesk & JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed": "#eedbff",
+                    "primary-container": "#00f0ff",
+                    "on-primary-container": "#006970",
+                    "surface-container-lowest": "#0c0e10",
+                    "surface-container": "#1e2022",
+                    "outline": "#849495",
+                    "on-surface-variant": "#b9cacb",
+                    "surface-container-high": "#282a2c",
+                    "on-surface": "#e2e2e5",
+                    "on-error": "#690005",
+                    "surface-container-highest": "#333537",
+                    "surface-tint": "#00dbe9",
+                    "on-error-container": "#ffdad6",
+                    "on-primary-fixed-variant": "#004f54",
+                    "tertiary-container": "#e7d0ff",
+                    "on-primary-fixed": "#002022",
+                    "error": "#ffb4ab",
+                    "background": "#121416",
+                    "inverse-surface": "#e2e2e5",
+                    "on-primary": "#00363a",
+                    "outline-variant": "#3b494b",
+                    "secondary": "#bac9cd",
+                    "error-container": "#93000a",
+                    "on-tertiary-fixed": "#2a0053",
+                    "inverse-primary": "#006970",
+                    "surface-bright": "#37393b",
+                    "tertiary-fixed-dim": "#dab9ff",
+                    "secondary-fixed-dim": "#bac9cd",
+                    "on-secondary": "#253336",
+                    "secondary-fixed": "#d6e5e9",
+                    "primary-fixed-dim": "#00dbe9",
+                    "surface-dim": "#121416",
+                    "on-secondary-container": "#acbbbf",
+                    "secondary-container": "#3e4b4f",
+                    "on-tertiary-fixed-variant": "#5e289b",
+                    "on-tertiary": "#460283",
+                    "on-secondary-fixed-variant": "#3c494d",
+                    "tertiary": "#fcf2ff",
+                    "on-secondary-fixed": "#101e21",
+                    "on-tertiary-container": "#7743b5",
+                    "surface": "#121416",
+                    "primary": "#dbfcff",
+                    "primary-fixed": "#7df4ff",
+                    "surface-variant": "#333537",
+                    "on-background": "#e2e2e5",
+                    "inverse-on-surface": "#2f3133",
+                    "surface-container-low": "#1a1c1e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "base": "8px",
+                    "stack-lg": "24px",
+                    "container-padding": "24px",
+                    "stack-sm": "4px",
+                    "stack-md": "12px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Hanken Grotesk"],
+                    "display-lg": ["Hanken Grotesk"],
+                    "headline-sm": ["Hanken Grotesk"],
+                    "body-md": ["Hanken Grotesk"],
+                    "body-lg": ["Hanken Grotesk"],
+                    "label-md": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "display-lg": ["57px", {"lineHeight": "64px", "letterSpacing": "-0.25px", "fontWeight": "700"}],
+                    "headline-sm": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.25px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "0.5px", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        /* Pulse animation for active log indicator */
+        @keyframes pulse-primary {
+            0% { box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(0, 240, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 240, 255, 0); }
+        }
+        .animate-pulse-primary {
+            animation: pulse-primary 2s infinite;
+        }
+        
+        /* Custom Scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333537; /* surface-variant */
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-background/80 dark:bg-background/80 backdrop-blur-xl bg-surface-container-low/80 border-b border-outline-variant/20 flex justify-between items-center h-16 px-gutter">
+<div class="flex items-center gap-3 active:scale-95 transition-transform cursor-pointer text-primary dark:text-primary-fixed-dim hover:bg-surface-container-high/50 p-2 rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings_input_antenna</span>
+</div>
+<div class="font-headline-sm text-headline-sm font-bold text-on-surface dark:text-on-surface">
+            MYVU Sync
+        </div>
+<div class="flex items-center gap-1 font-label-md text-label-md text-primary dark:text-primary-fixed-dim bg-surface-container-high px-3 py-1 rounded-full border border-outline-variant/30">
+<span>85%</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">battery_full</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-24 pb-32 px-gutter max-w-3xl mx-auto w-full">
+<!-- Page Header -->
+<div class="mb-stack-lg">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">System Logs</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Real-time device and AI interaction history.</p>
+</div>
+<!-- Settings Section: Enable Logging Toggle -->
+<section class="bg-surface-container-low rounded-xl p-4 mb-stack-lg border border-outline-variant/20 flex items-center justify-between">
+<div>
+<h2 class="font-body-lg text-body-lg font-semibold text-on-surface">Enable Logging</h2>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">Record diagnostic data and queries.</p>
+</div>
+<!-- Custom Toggle Switch -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-variant rounded-full peer peer-focus:ring-2 peer-focus:ring-primary-container peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-on-surface after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</section>
+<!-- Timeline Log Feed -->
+<section class="relative">
+<!-- Vertical Line -->
+<div class="absolute left-[15px] top-4 bottom-8 w-[2px] bg-outline-variant/30 z-0"></div>
+<!-- Log Item: Live Connection (Active) -->
+<div class="relative pl-10 mb-stack-md z-10">
+<!-- Dot -->
+<div class="absolute left-[11px] top-1.5 w-[10px] h-[10px] bg-primary-container rounded-full border-2 border-surface animate-pulse-primary"></div>
+<!-- Card -->
+<div class="bg-surface-container hover:bg-surface-container-high transition-colors rounded-xl p-4 border border-outline-variant/10 shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-md text-label-md text-primary-container">SYS_SYNC_01</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Just now</span>
+</div>
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary" style="font-variation-settings: 'FILL' 1;">bluetooth_connected</span>
+                        Connection Stable
+                    </h3>
+<p class="font-label-md text-label-md text-on-surface-variant mt-2 bg-surface-container-lowest p-2 rounded border border-outline-variant/20 overflow-x-auto">
+                        Latency: 12ms | Bandwidth: Optimal
+                    </p>
+</div>
+</div>
+<!-- Log Item: AI Query -->
+<div class="relative pl-10 mb-stack-md z-10">
+<div class="absolute left-[11px] top-1.5 w-[10px] h-[10px] bg-tertiary-fixed-dim rounded-full border-2 border-surface"></div>
+<div class="bg-surface-container hover:bg-surface-container-high transition-colors rounded-xl p-4 border border-outline-variant/10">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-md text-label-md text-tertiary-fixed-dim">AI_QUERY_24</span>
+<span class="font-label-md text-label-md text-on-surface-variant">10:42 AM</span>
+</div>
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-tertiary-fixed-dim" style="font-variation-settings: 'FILL' 1;">psychology</span>
+                        Visual Object Recognition Request
+                    </h3>
+<div class="mt-2 font-body-md text-body-md text-on-surface-variant bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/20 border-l-2 border-l-tertiary-fixed-dim">
+                        "Identify the architectural style of the building ahead."
+                        <div class="mt-2 text-tertiary-fixed-dim font-label-md text-label-md">&gt; Response generated in 450ms. Confidence: 94%</div>
+</div>
+</div>
+</div>
+<!-- Log Item: System Action (Warning) -->
+<div class="relative pl-10 mb-stack-md z-10">
+<div class="absolute left-[11px] top-1.5 w-[10px] h-[10px] bg-error rounded-full border-2 border-surface"></div>
+<div class="bg-surface-container hover:bg-surface-container-high transition-colors rounded-xl p-4 border border-outline-variant/10">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-md text-label-md text-error">SYS_WARN_05</span>
+<span class="font-label-md text-label-md text-on-surface-variant">09:15 AM</span>
+</div>
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+                        Thermal Threshold Approaching
+                    </h3>
+<p class="font-label-md text-label-md text-on-surface-variant mt-2 bg-surface-container-lowest p-2 rounded border border-outline-variant/20">
+                        Device temp: 42°C. Initiating power management protocol alpha.
+                    </p>
+</div>
+</div>
+<!-- Log Item: Routine Event -->
+<div class="relative pl-10 mb-stack-md z-10">
+<div class="absolute left-[11px] top-1.5 w-[10px] h-[10px] bg-outline rounded-full border-2 border-surface"></div>
+<div class="bg-surface-container hover:bg-surface-container-high transition-colors rounded-xl p-4 border border-outline-variant/10">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-md text-label-md text-outline">SYS_INIT_00</span>
+<span class="font-label-md text-label-md text-on-surface-variant">08:00 AM</span>
+</div>
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-outline" style="font-variation-settings: 'FILL' 0;">power_settings_new</span>
+                        Session Started
+                    </h3>
+<p class="font-label-md text-label-md text-on-surface-variant mt-2 bg-surface-container-lowest p-2 rounded border border-outline-variant/20">
+                        Firmware v2.4.1 | Lens: Calibrated
+                    </p>
+</div>
+</div>
+</section>
+<!-- Primary Action: Share & Export -->
+<div class="mt-stack-lg flex justify-center w-full">
+<button class="w-full max-w-md bg-primary-container text-on-primary-container font-body-lg text-body-lg font-semibold py-4 rounded-xl flex justify-center items-center gap-2 hover:bg-primary transition-colors active:scale-95 shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">ios_share</span>
+                Share &amp; Export Logs
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-xl bg-surface-container-low/90 dark:bg-surface-container-lowest/90 backdrop-blur-xl bg-surface-container dark:bg-surface-container-lowest border-t border-outline-variant/10 shadow-lg flex justify-around items-center h-20 pb-safe px-4 md:hidden">
+<!-- Tab 1: Dashboard (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:text-primary transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<!-- Tab 2: AI Config (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:text-primary transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">psychology</span>
+<span class="font-label-md text-label-md">AI Config</span>
+</a>
+<!-- Tab 3: Notes (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:text-primary transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">description</span>
+<span class="font-label-md text-label-md">Notes</span>
+</a>
+<!-- Tab 4: Logs (ACTIVE) -->
+<a class="flex flex-col items-center justify-center bg-primary-container dark:bg-on-primary-fixed-variant text-on-primary-container dark:text-primary-fixed rounded-full px-5 py-1 active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">terminal</span>
+<span class="font-label-md text-label-md">Logs</span>
+</a>
+</nav>
+<!-- Desktop Side Nav structural hint (Hidden on mobile, just for comprehensive layout mapping if expanded) -->
+<div class="hidden md:flex fixed bottom-0 left-0 w-full bg-surface-container dark:bg-surface-container-lowest border-t border-outline-variant/10 p-4 justify-center gap-8 z-50">
+<a class="text-on-surface-variant hover:text-primary flex items-center gap-2" href="#"><span class="material-symbols-outlined">dashboard</span> Dashboard</a>
+<a class="text-on-surface-variant hover:text-primary flex items-center gap-2" href="#"><span class="material-symbols-outlined">psychology</span> AI Config</a>
+<a class="text-on-surface-variant hover:text-primary flex items-center gap-2" href="#"><span class="material-symbols-outlined">description</span> Notes</a>
+<a class="text-primary-container flex items-center gap-2 font-bold" href="#"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">terminal</span> Logs</a>
+</div>
+</body></html>

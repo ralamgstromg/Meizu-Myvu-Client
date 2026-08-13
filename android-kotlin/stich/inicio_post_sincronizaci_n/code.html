@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MYVU Sync Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "outline-variant": "#3b494b",
+                        "on-primary-fixed-variant": "#004f54",
+                        "on-tertiary-fixed-variant": "#5e289b",
+                        "secondary-fixed": "#d6e5e9",
+                        "inverse-primary": "#006970",
+                        "primary": "#dbfcff",
+                        "primary-container": "#00f0ff",
+                        "on-tertiary-container": "#7743b5",
+                        "surface-container": "#1e2022",
+                        "on-secondary": "#253336",
+                        "surface-variant": "#333537",
+                        "on-secondary-container": "#acbbbf",
+                        "tertiary": "#fcf2ff",
+                        "tertiary-fixed": "#eedbff",
+                        "primary-fixed": "#7df4ff",
+                        "on-primary-container": "#006970",
+                        "outline": "#849495",
+                        "on-secondary-fixed-variant": "#3c494d",
+                        "error-container": "#93000a",
+                        "on-tertiary": "#460283",
+                        "inverse-surface": "#e2e2e5",
+                        "surface-container-low": "#1a1c1e",
+                        "on-error": "#690005",
+                        "surface-dim": "#121416",
+                        "inverse-on-surface": "#2f3133",
+                        "surface-container-lowest": "#0c0e10",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed-dim": "#dab9ff",
+                        "surface": "#121416",
+                        "secondary": "#bac9cd",
+                        "surface-container-highest": "#333537",
+                        "background": "#121416",
+                        "tertiary-container": "#e7d0ff",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#2a0053",
+                        "on-primary-fixed": "#002022",
+                        "on-background": "#e2e2e5",
+                        "on-secondary-fixed": "#101e21",
+                        "secondary-container": "#3e4b4f",
+                        "surface-container-high": "#282a2c",
+                        "surface-bright": "#37393b",
+                        "primary-fixed-dim": "#00dbe9",
+                        "surface-tint": "#00dbe9",
+                        "on-surface-variant": "#b9cacb",
+                        "on-surface": "#e2e2e5",
+                        "secondary-fixed-dim": "#bac9cd",
+                        "on-primary": "#00363a"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "container-padding": "24px",
+                        "gutter": "16px",
+                        "stack-lg": "24px",
+                        "base": "8px",
+                        "stack-sm": "4px",
+                        "stack-md": "12px"
+                    },
+                    fontFamily: {
+                        "headline-lg": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "label-md": ["JetBrains Mono"]
+                    },
+                    fontSize: {
+                        "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "600" }],
+                        "display-lg": ["57px", { lineHeight: "64px", letterSpacing: "-0.25px", fontWeight: "700" }],
+                        "headline-sm": ["24px", { lineHeight: "32px", fontWeight: "500" }],
+                        "body-lg": ["16px", { lineHeight: "24px", letterSpacing: "0.5px", fontWeight: "400" }],
+                        "body-md": ["14px", { lineHeight: "20px", letterSpacing: "0.25px", fontWeight: "400" }],
+                        "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.5px", fontWeight: "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        .glass-card {
+            background: linear-gradient(135deg, rgba(40, 42, 44, 0.7) 0%, rgba(30, 32, 34, 0.4) 100%);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glow-active {
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-24 md:pl-80 pt-16 md:pt-0 selection:bg-primary-container selection:text-on-primary-container">
+<!-- NavigationDrawer (Desktop/Tablet) -->
+<aside class="hidden md:flex bg-surface-container h-full w-80 rounded-r-xl bg-surface-container-high shadow-xl transition-all duration-300 ease-in-out fixed inset-y-0 left-0 z-[60] flex-col overflow-y-auto">
+<div class="p-container-padding pb-8">
+<div class="flex items-center gap-gutter mb-8">
+<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary-container shadow-[0_0_12px_rgba(0,240,255,0.3)]">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A futuristic avatar with neon cyan accents against a dark obsidian background, stylized cybernetic elements, high tech, glowing, sharp details." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPqi-8rPZ4bze5YsOZj9CVVPh8OYdSiRkyqd88olbq460gq6HY7AGLPyQ7hyH1BCydW8khWaZIBI2EvXhW0S195a3GxZBgaUYDpXr2F13sM-PVX0sHeHlVSz04WBY3hJwhUb575NNxXwTKqI2tIsX15Ghkwhrj-4V2ApJZN5bowHIgLb0My84VbWCMVi3htvAxjZlUPLJb_chFFVkKNAnWHGrZWNGYqQVCRlwaDROQ4vBZFq_Fgrmg"/>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-primary-container">MYVU Explorer</h2>
+<p class="font-label-md text-label-md text-primary">Connected: MYVU Air G1</p>
+<p class="font-label-md text-label-md text-on-surface-variant text-xs mt-1">v2.1.0-beta</p>
+</div>
+</div>
+<nav class="flex flex-col gap-base mt-stack-lg">
+<a class="flex items-center gap-4 bg-secondary-container text-on-secondary-container rounded-full mx-2 px-4 py-3 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+                    Device Settings
+                </a>
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 hover:bg-surface-variant rounded-full font-body-lg text-body-lg transition-colors" href="#">
+<span class="material-symbols-outlined">bluetooth_connected</span>
+                    Connectivity
+                </a>
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 hover:bg-surface-variant rounded-full font-body-lg text-body-lg transition-colors" href="#">
+<span class="material-symbols-outlined">tune</span>
+                    Display Calibration
+                </a>
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 hover:bg-surface-variant rounded-full font-body-lg text-body-lg transition-colors" href="#">
+<span class="material-symbols-outlined">system_update</span>
+                    Firmware Update
+                </a>
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 hover:bg-surface-variant rounded-full font-body-lg text-body-lg transition-colors mt-auto pt-8 border-t border-outline-variant/20" href="#">
+<span class="material-symbols-outlined">help</span>
+                    Help &amp; Support
+                </a>
+</nav>
+</div>
+</aside>
+<!-- TopAppBar (Mobile) -->
+<header class="md:hidden bg-surface-container-low/80 backdrop-blur-xl border-b border-outline-variant/10 fixed top-0 w-full z-50 flex items-center justify-between px-container-padding h-16">
+<button class="text-on-surface-variant hover:bg-surface-variant/50 transition-colors active:scale-95 duration-200 p-2 rounded-full -ml-2">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary-container">MYVU Sync</h1>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/30">
+<img alt="user_profile_avatar" class="w-full h-full object-cover" data-alt="A small futuristic avatar placeholder image, deep blacks, subtle cyan highlights, digital art style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAM0m79pEEhcjgbXpU6Vf_uqez67AgQGzJQADJe0nafkgpmGrPu0PbOJsg3xoE63PgdtCsNrVDEGKNAp5fM9TCoTAXKQn2UKYI75jb57mlQHXzNDXR-ZUSRukYkw18m__hL2caf-TAldjJ8o1NGoXKer2sdpWlaLAOMgBL04JqHFGPJLPM5D1iiHNykvKM93H0tmF7vIcO_XWEIeXfcXhSqWmTRvWweScKt33Az6lL5-gc18niFNRkt"/>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="p-container-padding max-w-7xl mx-auto md:py-12">
+<!-- Welcome Banner -->
+<section class="mb-stack-lg relative overflow-hidden rounded-[28px] p-8 glass-card border border-primary-container/20 glow-active">
+<div class="absolute inset-0 bg-gradient-to-r from-primary-container/10 to-transparent pointer-events-none"></div>
+<div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+<div>
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-container/10 border border-primary-container/30 mb-4">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+<span class="font-label-md text-label-md text-primary-container uppercase tracking-wider">Sync Complete</span>
+</div>
+<h2 class="font-display-lg text-display-lg text-primary mb-2">¡Conexión Exitosa!</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+                        Tus lentes MYVU Air G1 están sincronizados y listos para usar. Todos los sistemas operativos al máximo rendimiento.
+                    </p>
+</div>
+<div class="w-32 h-32 flex-shrink-0 relative hidden md:block">
+<div class="absolute inset-0 bg-primary-container/20 blur-xl rounded-full"></div>
+<span class="material-symbols-outlined text-[100px] text-primary-container relative z-10 w-full h-full flex items-center justify-center font-light" style="font-variation-settings: 'FILL' 0, 'wght' 200;">ar_on_you</span>
+</div>
+</div>
+</section>
+<!-- Quick Status Overview Bento -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-stack-lg">
+<div class="glass-card rounded-2xl p-6 flex flex-col justify-between min-h-[140px] hover:border-primary-container/40 transition-colors cursor-pointer group">
+<div class="flex items-center justify-between mb-4">
+<span class="material-symbols-outlined text-green-400 group-hover:scale-110 transition-transform">battery_charging_full</span>
+<span class="font-label-md text-label-md text-green-400 bg-green-400/10 px-2 py-0.5 rounded">100%</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Batería</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Carga completa. ~8h restantes.</p>
+</div>
+</div>
+<div class="glass-card rounded-2xl p-6 flex flex-col justify-between min-h-[140px] hover:border-primary-container/40 transition-colors cursor-pointer group">
+<div class="flex items-center justify-between mb-4">
+<span class="material-symbols-outlined text-primary-container group-hover:scale-110 transition-transform">sd_storage</span>
+<span class="font-label-md text-label-md text-primary-container bg-primary-container/10 px-2 py-0.5 rounded">24GB Libre</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Almacenamiento</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Sincronización en la nube activa.</p>
+</div>
+</div>
+<div class="glass-card rounded-2xl p-6 flex flex-col justify-between min-h-[140px] hover:border-primary-container/40 transition-colors cursor-pointer group">
+<div class="flex items-center justify-between mb-4">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">explore</span>
+<span class="font-label-md text-label-md text-primary bg-primary/10 px-2 py-0.5 rounded">OK</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Sensores</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">IMU y giroscopio calibrados.</p>
+</div>
+</div>
+</section>
+<!-- Main Functions Grid -->
+<section class="mb-stack-lg">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container text-sm">grid_view</span> 
+                Accesos Directos
+            </h3>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-gutter">
+<!-- Action Card 1 -->
+<button class="glass-card rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-4 hover:bg-surface-container-high transition-all active:scale-95 group min-h-[160px]">
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant/30 group-hover:border-primary-container/50 group-hover:shadow-[0_0_15px_rgba(0,240,255,0.2)] transition-all">
+<span class="material-symbols-outlined text-3xl text-on-surface-variant group-hover:text-primary-container transition-colors">notes</span>
+</div>
+<span class="font-headline-sm text-[18px] font-medium text-on-surface">Teleprompter</span>
+</button>
+<!-- Action Card 2 -->
+<button class="glass-card rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-4 hover:bg-surface-container-high transition-all active:scale-95 group min-h-[160px]">
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant/30 group-hover:border-primary-container/50 group-hover:shadow-[0_0_15px_rgba(0,240,255,0.2)] transition-all">
+<span class="material-symbols-outlined text-3xl text-on-surface-variant group-hover:text-primary-container transition-colors">translate</span>
+</div>
+<span class="font-headline-sm text-[18px] font-medium text-on-surface">Traducción</span>
+</button>
+<!-- Action Card 3 -->
+<button class="glass-card rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-4 hover:bg-surface-container-high transition-all active:scale-95 group min-h-[160px]">
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant/30 group-hover:border-primary-container/50 group-hover:shadow-[0_0_15px_rgba(0,240,255,0.2)] transition-all">
+<span class="material-symbols-outlined text-3xl text-on-surface-variant group-hover:text-primary-container transition-colors">near_me</span>
+</div>
+<span class="font-headline-sm text-[18px] font-medium text-on-surface">Navegación</span>
+</button>
+<!-- Action Card 4 -->
+<button class="glass-card rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-4 hover:bg-surface-container-high transition-all active:scale-95 group min-h-[160px] relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-primary-container/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center border border-primary-container/30 group-hover:border-primary-container group-hover:shadow-[0_0_20px_rgba(0,240,255,0.4)] transition-all relative z-10">
+<span class="material-symbols-outlined text-3xl text-primary-container" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<span class="font-headline-sm text-[18px] font-medium text-primary-container relative z-10">Control IA</span>
+</button>
+</div>
+</section>
+<!-- Tip of the Day -->
+<section>
+<div class="glass-card rounded-[24px] p-6 flex items-start gap-4 border-l-4 border-l-primary-container bg-gradient-to-r from-primary-container/5 to-transparent">
+<span class="material-symbols-outlined text-primary-container mt-1">lightbulb</span>
+<div>
+<h4 class="font-headline-sm text-[18px] text-on-surface mb-2">Tip del Día</h4>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">
+                        Toca dos veces la patilla derecha y di <span class="font-label-md text-primary-container px-2 py-1 bg-surface-container-high rounded border border-outline-variant/30">"Oye MYVU, inicia navegación a casa"</span> para una ruta sin usar tus manos.
+                    </p>
+<button class="text-primary-container font-label-md text-label-md hover:underline flex items-center gap-1">
+                        Ver más comandos <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating AI Bar (Desktop focus, hides on small mobile behind bottom nav) -->
+<div class="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-40 w-[90%] md:w-[400px]">
+<div class="glass-card rounded-full p-2 flex items-center gap-2 border border-primary-container/30 shadow-[0_8px_32px_rgba(0,0,0,0.4)] glow-active">
+<button class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary-container hover:bg-primary-container/20 transition-colors">
+<span class="material-symbols-outlined text-lg">mic</span>
+</button>
+<input class="bg-transparent border-none focus:ring-0 text-body-md text-on-surface placeholder-on-surface-variant flex-1 px-2 h-full" placeholder="Pregúntale a la IA o usa comandos..." type="text"/>
+<button class="px-4 py-2 bg-primary-container text-on-primary-container font-label-md rounded-full hover:bg-primary-fixed transition-colors">
+                Enviar
+            </button>
+</div>
+</div>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden bg-surface-container-low/90 backdrop-blur-2xl fixed bottom-0 w-full z-50 pb-safe shadow-[0_-4px_24px_rgba(0,240,255,0.05)] border-t border-outline-variant/10 flex justify-around items-center h-20 px-4">
+<a class="flex flex-col items-center justify-center bg-primary-container/20 text-primary-container rounded-xl px-6 py-2 shadow-[0_0_8px_rgba(0,240,255,0.2)] active:scale-90 duration-150 group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-md text-label-md mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:text-primary transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">smart_toy</span>
+<span class="font-label-md text-label-md mt-1">AI</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:text-primary transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-md text-label-md mt-1">Notes</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:text-primary transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span class="font-label-md text-label-md mt-1">Logs</span>
+</a>
+</nav>
+</body></html>

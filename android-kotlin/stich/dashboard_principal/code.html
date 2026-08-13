@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MYVU Sync - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#eedbff",
+                        "primary-container": "#00f0ff",
+                        "on-primary-container": "#006970",
+                        "surface-container-lowest": "#0c0e10",
+                        "surface-container": "#1e2022",
+                        "outline": "#849495",
+                        "on-surface-variant": "#b9cacb",
+                        "surface-container-high": "#282a2c",
+                        "on-surface": "#e2e2e5",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#333537",
+                        "surface-tint": "#00dbe9",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#004f54",
+                        "tertiary-container": "#e7d0ff",
+                        "on-primary-fixed": "#002022",
+                        "error": "#ffb4ab",
+                        "background": "#121416",
+                        "inverse-surface": "#e2e2e5",
+                        "on-primary": "#00363a",
+                        "outline-variant": "#3b494b",
+                        "secondary": "#bac9cd",
+                        "error-container": "#93000a",
+                        "on-tertiary-fixed": "#2a0053",
+                        "inverse-primary": "#006970",
+                        "surface-bright": "#37393b",
+                        "tertiary-fixed-dim": "#dab9ff",
+                        "secondary-fixed-dim": "#bac9cd",
+                        "on-secondary": "#253336",
+                        "secondary-fixed": "#d6e5e9",
+                        "primary-fixed-dim": "#00dbe9",
+                        "surface-dim": "#121416",
+                        "on-secondary-container": "#acbbbf",
+                        "secondary-container": "#3e4b4f",
+                        "on-tertiary-fixed-variant": "#5e289b",
+                        "on-tertiary": "#460283",
+                        "on-secondary-fixed-variant": "#3c494d",
+                        "tertiary": "#fcf2ff",
+                        "on-secondary-fixed": "#101e21",
+                        "on-tertiary-container": "#7743b5",
+                        "surface": "#121416",
+                        "primary": "#dbfcff",
+                        "primary-fixed": "#7df4ff",
+                        "surface-variant": "#333537",
+                        "on-background": "#e2e2e5",
+                        "inverse-on-surface": "#2f3133",
+                        "surface-container-low": "#1a1c1e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "base": "8px",
+                        "stack-lg": "24px",
+                        "container-padding": "24px",
+                        "stack-sm": "4px",
+                        "stack-md": "12px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "label-md": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "display-lg": ["57px", { "lineHeight": "64px", "letterSpacing": "-0.25px", "fontWeight": "700" }],
+                        "headline-sm": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.25px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0.5px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .pulse-border {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 240, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 240, 255, 0); }
+        }
+        .ai-glow {
+            box-shadow: 0 0 16px rgba(0, 240, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-32 pt-20">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-background/80 dark:bg-background/80 backdrop-blur-xl bg-surface-container-low/80 border-b border-outline-variant/20 flex justify-between items-center h-16 px-gutter w-full transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" data-icon="settings_input_antenna">settings_input_antenna</span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface dark:text-on-surface">MYVU Sync</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-high hover:bg-surface-container-high/50 transition-colors active:scale-95 transition-transform">
+<span class="font-label-md text-label-md text-primary dark:text-primary-fixed-dim">85%</span>
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim text-sm" data-icon="battery_full">battery_full</span>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-container-padding grid grid-cols-1 md:grid-cols-12 gap-stack-lg">
+<!-- Central Visual & Core Action (Left/Top Col) -->
+<div class="md:col-span-8 flex flex-col gap-stack-lg">
+<!-- Connection Card -->
+<div class="relative w-full h-[400px] rounded-[28px] bg-surface-container-low overflow-hidden border border-outline-variant/30 flex flex-col items-center justify-center p-stack-lg">
+<div class="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"></div>
+<div class="relative w-48 h-48 rounded-full border border-primary/30 pulse-border flex items-center justify-center mb-8 bg-surface-container-high shadow-lg">
+<span class="material-symbols-outlined text-6xl text-primary" data-icon="glasses">qr_code_2</span>
+<!-- Status dots -->
+<div class="absolute top-4 right-4 w-3 h-3 rounded-full bg-primary ai-glow"></div>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-primary mb-2 text-center">MYVU AR Lenses Connected</h2>
+<p class="font-body-md text-body-md text-on-surface-variant text-center max-w-md">Streaming telemetry and localized AI context. Real-time inference active.</p>
+</div>
+<!-- Voice Control Button -->
+<button class="w-full h-24 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center gap-4 hover:opacity-90 active:scale-[0.98] transition-all shadow-[0_0_24px_rgba(0,240,255,0.15)] group">
+<div class="w-12 h-12 rounded-full bg-on-primary-container/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl" data-icon="mic" style="font-variation-settings: 'FILL' 1;">mic</span>
+</div>
+<div class="text-left">
+<span class="block font-headline-sm text-headline-sm font-semibold">Initialize Voice Control</span>
+<span class="block font-body-md text-body-md opacity-80">Tap to start secure audio stream</span>
+</div>
+</button>
+</div>
+<!-- Sidebar Stats & Widgets (Right/Bottom Col) -->
+<div class="md:col-span-4 flex flex-col gap-stack-lg">
+<!-- Quick Stats Bento -->
+<div class="grid grid-cols-2 gap-base">
+<div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/20 hover:border-outline-variant/40 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant mb-2" data-icon="battery_charging_full">battery_charging_full</span>
+<div class="font-headline-sm text-headline-sm text-on-surface">85%</div>
+<div class="font-label-md text-label-md text-primary mt-1">Discharging</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/20 hover:border-outline-variant/40 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant mb-2" data-icon="schedule">schedule</span>
+<div class="font-headline-sm text-headline-sm text-on-surface">14h 2m</div>
+<div class="font-label-md text-label-md text-primary mt-1">Uptime</div>
+</div>
+<div class="col-span-2 bg-surface-container-low p-4 rounded-xl border border-outline-variant/20 flex justify-between items-center">
+<div>
+<div class="font-body-md text-body-md text-on-surface-variant">Active Intelligence</div>
+<div class="font-headline-sm text-headline-sm text-on-surface mt-1">GPT-4o Vision</div>
+</div>
+<span class="material-symbols-outlined text-primary text-3xl ai-glow rounded-full p-2 bg-primary/10" data-icon="psychology">psychology</span>
+</div>
+</div>
+<!-- Recent Notes -->
+<div class="bg-surface-container-low rounded-xl border border-outline-variant/20 p-stack-lg flex flex-col gap-stack-md">
+<div class="flex justify-between items-center mb-2">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Recent Notes</h3>
+<button class="text-primary hover:text-primary-fixed transition-colors"><span class="material-symbols-outlined text-sm" data-icon="open_in_new">open_in_new</span></button>
+</div>
+<div class="p-3 bg-surface-container-highest rounded-lg border border-transparent hover:border-outline-variant/30 transition-all cursor-pointer">
+<div class="font-label-md text-label-md text-on-surface-variant mb-1">10:42 AM • Transcribed</div>
+<p class="font-body-md text-body-md text-on-surface truncate">Meeting with Design Team regarding spatial UI patterns.</p>
+</div>
+<div class="p-3 bg-surface-container-highest rounded-lg border border-transparent hover:border-outline-variant/30 transition-all cursor-pointer">
+<div class="font-label-md text-label-md text-on-surface-variant mb-1">Yesterday • Voice Memo</div>
+<p class="font-body-md text-body-md text-on-surface truncate">Remember to order new prototyping filament.</p>
+</div>
+</div>
+<!-- Reminders -->
+<div class="bg-surface-container-low rounded-xl border border-outline-variant/20 p-stack-lg flex flex-col gap-stack-md">
+<div class="flex justify-between items-center mb-2">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Upcoming</h3>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+</div>
+<div class="flex items-start gap-3 p-3 bg-surface-container-highest/50 rounded-lg">
+<div class="w-2 h-2 rounded-full bg-error mt-2"></div>
+<div>
+<div class="font-body-lg text-body-lg text-on-surface">Sync Firmware Update</div>
+<div class="font-label-md text-label-md text-error mt-1">Due in 2 hours</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 rounded-t-xl bg-surface-container-low/90 dark:bg-surface-container-lowest/90 backdrop-blur-xl bg-surface-container dark:bg-surface-container-lowest border-t border-outline-variant/10 shadow-lg flex justify-around items-center h-20 pb-safe px-4 w-full">
+<!-- Dashboard (Active) -->
+<button class="flex flex-col items-center justify-center bg-primary-container dark:bg-on-primary-fixed-variant text-on-primary-container dark:text-primary-fixed rounded-full px-5 py-1 hover:text-primary transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined mb-1" data-icon="dashboard" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</button>
+<!-- AI Config -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:text-primary transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined mb-1" data-icon="psychology">psychology</span>
+<span class="font-label-md text-label-md">AI Config</span>
+</button>
+<!-- Notes -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:text-primary transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined mb-1" data-icon="description">description</span>
+<span class="font-label-md text-label-md">Notes</span>
+</button>
+<!-- Logs -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:text-primary transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined mb-1" data-icon="terminal">terminal</span>
+<span class="font-label-md text-label-md">Logs</span>
+</button>
+</nav>
+<!-- AI Interaction Bar (Floating Desktop) -->
+<div class="hidden md:flex fixed bottom-stack-lg left-1/2 transform -translate-x-1/2 w-full max-w-2xl bg-surface-container-high/90 backdrop-blur-md rounded-full shadow-lg border border-outline-variant/20 p-2 items-center z-40">
+<div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center ml-2 mr-4 ai-glow">
+<span class="material-symbols-outlined text-primary" data-icon="graphic_eq">graphic_eq</span>
+</div>
+<input class="bg-transparent border-none text-on-surface font-body-lg text-body-lg flex-1 focus:ring-0 placeholder:text-on-surface-variant outline-none" placeholder="Ask AI or type command..." type="text"/>
+<button class="px-6 py-2 rounded-full bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-fixed transition-colors">Submit</button>
+</div>
+</body></html>
