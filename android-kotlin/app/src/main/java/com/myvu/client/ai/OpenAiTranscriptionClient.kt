@@ -5,12 +5,13 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.nio.charset.StandardCharsets
 
-/** Uploads a WAV file to an OpenAI-compatible audio-transcription endpoint. */
+/** Uploads a WAV or audio file to an OpenAI-compatible audio-transcription endpoint. */
 class OpenAiTranscriptionClient @JvmOverloads constructor(
     endpoint: String?,
     model: String?,
@@ -35,12 +36,37 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
 
         val wav = OpusStream.toWav(pcm, sampleRate, channels)
         return HttpRetry.execute(serviceLabel) {
-            transcribeOnce(wav)
+            transcribeOnce(wav, "speech.wav", "audio/wav")
         }
     }
 
     @Throws(IOException::class)
-    private fun transcribeOnce(wav: ByteArray): String {
+    fun transcribeAudioFile(file: File): String {
+        if (!isConfigured()) {
+            throw IOException("$serviceLabel is not fully configured")
+        }
+        if (!file.exists() || file.length() == 0L) return ""
+
+        val audioBytes = file.readBytes()
+        val filename = file.name
+        val contentType = when {
+            filename.endsWith(".m4a", ignoreCase = true) -> "audio/m4a"
+            filename.endsWith(".mp3", ignoreCase = true) -> "audio/mp3"
+            filename.endsWith(".wav", ignoreCase = true) -> "audio/wav"
+            filename.endsWith(".aac", ignoreCase = true) -> "audio/aac"
+            else -> "audio/m4a"
+        }
+        return HttpRetry.execute(serviceLabel) {
+            transcribeOnce(audioBytes, filename, contentType)
+        }
+    }
+
+    @Throws(IOException::class)
+    private fun transcribeOnce(
+        audioData: ByteArray,
+        filename: String = "speech.wav",
+        contentType: String = "audio/wav"
+    ): String {
         val url = HttpEndpoint.parse(endpoint, "$serviceLabel endpoint")
         val conn = url.openConnection() as HttpURLConnection
         if (ignoreSsl) {
@@ -57,7 +83,7 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
             conn.doOutput = true
 
             DataOutputStream(conn.outputStream).use { out ->
-                writeFilePart(out, "file", "speech.wav", "audio/wav", wav)
+                writeFilePart(out, "file", filename, contentType, audioData)
                 writeTextPart(out, "model", model)
                 writeTextPart(out, "language", "es")
                 writeTextPart(out, "response_format", "json")
