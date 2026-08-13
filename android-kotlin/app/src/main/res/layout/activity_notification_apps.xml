@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/obsidian_bg"
+    android:fitsSystemWindows="true">
+
+    <!-- Top bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAppsBack"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/cyber_teal"
+            app:cornerRadius="16dp"
+            android:text="‹ Back" />
+
+        <TextView
+            style="@style/CardTitle.Myvu"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textSize="20sp"
+            android:text="Mirrored apps" />
+
+        <Space
+            android:layout_width="72dp"
+            android:layout_height="1dp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/txtAppsSummary"
+        style="@style/Label.Myvu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="8dp"
+        android:text="Only the apps you switch on here send notifications to the glasses." />
+
+    <!-- Search bar input (#282A2C background, 16dp rounded input) -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/laySearch"
+        style="@style/Input.Myvu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="8dp"
+        android:hint="Search apps..."
+        app:startIconDrawable="@android:drawable/ic_menu_search"
+        app:startIconTint="@color/cyber_teal">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/txtSearch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:textColor="@color/on_surface_obsidian"
+            android:importantForAutofill="no"
+            android:maxLines="1" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <ProgressBar
+        android:id="@+id/appsProgress"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="32dp"
+        android:indeterminateTint="@color/cyber_teal" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvApps"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="16dp"
+        android:clipToPadding="false"
+        android:scrollbars="vertical" />
+</LinearLayout>
