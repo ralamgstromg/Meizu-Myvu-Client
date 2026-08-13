@@ -6,6 +6,11 @@ import android.os.Looper
 import com.myvu.client.app.feature.AiProtocol
 import com.myvu.client.core.LogBus
 import com.myvu.client.core.Prefs
+import com.myvu.client.database.ReminderRepository
+import com.myvu.client.service.ConnectionState
+import com.myvu.client.service.MyvuService
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ExecutorService
@@ -322,6 +327,29 @@ class AiConversation(
         }, CAPTION_WORD_MS)
     }
 
+    private fun buildContextPayload(): String {
+        val sdf = SimpleDateFormat("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", Locale("es", "CO"))
+        val currentDateTime = sdf.format(Date()).replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale("es", "CO")) else it.toString() }
+        val conn = MyvuService.activeConnection()
+        val batteryInfo = if (conn?.state == ConnectionState.READY) {
+            val batt = conn.glassesInfo()?.battery?.takeIf { it > 0 } ?: 85
+            "Gafas AR MYVU Conectadas (Batería: $batt%)"
+        } else {
+            "Gafas AR Desconectadas"
+        }
+
+        val reminderRepo = ReminderRepository(context)
+        val upcoming = reminderRepo.getPendingReminders()
+            .filter { it.triggerAt > System.currentTimeMillis() }
+            .take(2)
+            .joinToString("; ") {
+                val text = it.title.ifBlank { it.body }
+                "$text a las ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(it.triggerAt))}"
+            }
+
+        return "[Contexto del Sistema: $currentDateTime | $batteryInfo | Próximos recordatorios: ${upcoming.ifEmpty { "Ninguno" }}]\n"
+    }
+
     private fun askAi(question: String) {
         val aiProviderId = Prefs.aiProvider(context)
         val client = OpenAiClient(
@@ -335,9 +363,12 @@ class AiConversation(
             return
         }
         worker.execute {
+            val contextPayload = buildContextPayload()
+            val fullPrompt = contextPayload + question
+            LogBus.log("AI prompt with context: $fullPrompt")
             val answer: String?
             try {
-                answer = client.ask(question)
+                answer = client.ask(fullPrompt)
             } catch (e: Exception) {
                 LogBus.error("$aiProviderId request failed", e)
                 main.post { finish() }
