@@ -162,6 +162,16 @@ class VoiceNoteRecorder(private val context: Context) {
     }
 
     /**
+     * Releases all resources held by this recorder.
+     * Call from Activity.onDestroy() to prevent thread leaks.
+     */
+    fun shutdown() {
+        cancelRecording()
+        stopPlayback()
+        executor.shutdownNow()
+    }
+
+    /**
      * Returns the duration of the current recording in seconds.
      */
     fun getRecordingDurationSeconds(): Int {
@@ -248,22 +258,29 @@ class VoiceNoteRecorder(private val context: Context) {
             }
 
             return try {
-                MediaPlayer().apply {
-                    setDataSource(audioPath)
-                    prepare()
-                    setOnCompletionListener {
+                val player = MediaPlayer()
+                try {
+                    player.setDataSource(audioPath)
+                    player.prepare()
+                    player.setOnCompletionListener {
                         onCompletion?.invoke()
-                        release()
+                        it.release()
                     }
-                    setOnErrorListener { _, _, _ ->
+                    player.setOnErrorListener { mp, _, _ ->
                         onCompletion?.invoke()
-                        release()
+                        mp.release()
                         true
                     }
-                    start()
+                    player.start()
+                    player
+                } catch (e: Exception) {
+                    LogBus.error("VoiceNoteRecorder: Failed to play audio at $audioPath", e)
+                    player.release()
+                    onCompletion?.invoke()
+                    null
                 }
             } catch (e: Exception) {
-                LogBus.error("VoiceNoteRecorder: Failed to play audio at $audioPath", e)
+                LogBus.error("VoiceNoteRecorder: Failed to create MediaPlayer for $audioPath", e)
                 onCompletion?.invoke()
                 null
             }

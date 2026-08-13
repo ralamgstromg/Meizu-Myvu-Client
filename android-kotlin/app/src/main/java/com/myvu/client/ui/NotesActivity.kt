@@ -162,6 +162,11 @@ class NotesActivity : AppCompatActivity() {
         handleIntent(intent)
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        voiceRecorder.shutdown()
+    }
+
     private fun handleIntent(intent: Intent?) {
         if (intent == null) return
         if (intent.getBooleanExtra("SHOW_REMINDERS", false) || intent.getStringExtra("EXTRA_FILTER") == "REMINDERS") {
