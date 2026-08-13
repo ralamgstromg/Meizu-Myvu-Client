@@ -409,9 +409,15 @@ class ConnectionManager(
 
     private fun teardown() {
         scanner?.stop()
+        // Fully release AI conversation (executor threads + TTS engine binding)
+        ai?.shutdown()
+        ai = null
+        // Release weather sync
         weather?.stop()
+        weather = null
+        // Release navigation session
         nav?.stop()
-        ai?.stop()
+        nav = null
         supervisor?.stop()
         supervisor = null
         closeRelay()
