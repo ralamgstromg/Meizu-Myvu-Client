@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/obsidian_bg">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbarNotes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/obsidian_bg"
+        app:title="Notas y Recordatorios"
+        app:titleTextColor="@color/on_surface_obsidian"
+        app:navigationIconTint="@color/cyber_teal" />
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabsNotes"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@color/obsidian_bg"
+        app:tabMode="fixed"
+        app:tabGravity="fill"
+        app:tabIndicatorColor="@color/cyber_teal"
+        app:tabIndicatorHeight="3dp"
+        app:tabSelectedTextColor="@color/cyber_teal"
+        app:tabTextColor="@color/on_surface_variant_obsidian"
+        app:tabRippleColor="#2000F0FF">
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Notas" />
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Recordatorios" />
+    </com.google.android.material.tabs.TabLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- Page 1: Notes -->
+        <LinearLayout
+            android:id="@+id/pageNotes"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    app:boxStrokeColor="@color/cyber_teal"
+                    app:hintTextColor="@color/cyber_teal"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    android:hint="Escribe una nueva nota...">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/txtNewNote"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/on_surface_obsidian"
+                        android:maxLines="3"
+                        android:importantForAutofill="no" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAddNote"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="8dp"
+                    app:cornerRadius="16dp"
+                    app:backgroundTint="@color/cyber_teal"
+                    android:textColor="@color/on_cyber_teal"
+                    android:textStyle="bold"
+                    android:text="Guardar" />
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvNotes"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="12dp"
+                android:clipToPadding="false"
+                android:paddingBottom="16dp" />
+        </LinearLayout>
+
+        <!-- Page 2: Reminders -->
+        <LinearLayout
+            android:id="@+id/pageReminders"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:boxStrokeColor="@color/cyber_teal"
+                    app:hintTextColor="@color/cyber_teal"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    android:hint="Texto del recordatorio...">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/txtNewReminder"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/on_surface_obsidian"
+                        android:maxLines="3"
+                        android:importantForAutofill="no" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPickTime"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        app:cornerRadius="16dp"
+                        app:strokeColor="@color/outline_variant_obsidian"
+                        android:textColor="@color/cyber_teal"
+                        android:text="Seleccionar Hora" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAddReminder"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        app:cornerRadius="16dp"
+                        app:backgroundTint="@color/cyber_teal"
+                        android:textColor="@color/on_cyber_teal"
+                        android:textStyle="bold"
+                        android:text="Programar" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvReminders"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="12dp"
+                android:clipToPadding="false"
+                android:paddingBottom="16dp" />
+        </LinearLayout>
+
+    </FrameLayout>
+</LinearLayout>
