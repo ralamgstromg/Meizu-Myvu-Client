@@ -11,6 +11,10 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:allowBackup="false"
@@ -18,10 +22,11 @@
         android:roundIcon="@drawable/ic_launcher_ar"
         android:label="MYVU Client"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
-        
+        android:theme="@style/Theme.Myvu">
+
+        <!-- Launcher Activity -->
         <activity
-            android:name=".ui.MainActivity"
+            android:name=".ui.ConnectActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -29,6 +34,24 @@
             </intent-filter>
         </activity>
 
+        <!-- Secondary Activities -->
+        <activity
+            android:name=".ui.SettingsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.NotesActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.TrackpadActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.NotificationAppsActivity"
+            android:exported="false" />
+
+        <!-- Foreground & Background Services -->
         <service
             android:name=".service.MyvuService"
             android:exported="false"
@@ -43,5 +66,24 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <!-- Reminder Broadcast Receivers -->
+        <receiver
+            android:name=".reminder.ReminderReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".reminder.ReminderActionReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".reminder.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>
