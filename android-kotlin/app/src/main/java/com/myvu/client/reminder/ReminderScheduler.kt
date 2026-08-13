@@ -6,8 +6,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import com.myvu.client.core.LogBus
+import com.myvu.client.database.Reminder
 
 object ReminderScheduler {
+
+    @JvmStatic
+    fun scheduleReminder(context: Context, reminder: Reminder): Boolean {
+        return scheduleReminder(context, reminder.id, reminder.triggerAt, reminder.alarmRequestCode)
+    }
 
     @JvmStatic
     fun scheduleReminder(context: Context, reminderId: Long, triggerAtMillis: Long, requestCode: Int): Boolean {
@@ -31,7 +37,12 @@ object ReminderScheduler {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (alarmManager.canScheduleExactAlarms()) {
-                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                    try {
+                        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                    } catch (se: SecurityException) {
+                        LogBus.warn("ReminderScheduler -> Exact alarm permission missing, falling back: ${se.message}")
+                        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                    }
                 } else {
                     alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
                 }
@@ -46,6 +57,11 @@ object ReminderScheduler {
             LogBus.error("ReminderScheduler -> failed to schedule reminder #$reminderId", e)
             return false
         }
+    }
+
+    @JvmStatic
+    fun cancelReminder(context: Context, reminder: Reminder) {
+        cancelReminder(context, reminder.alarmRequestCode)
     }
 
     @JvmStatic
@@ -64,3 +80,4 @@ object ReminderScheduler {
         LogBus.log("ReminderScheduler -> cancelled reminder requestCode #$requestCode")
     }
 }
+

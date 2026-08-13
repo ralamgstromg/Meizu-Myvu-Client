@@ -38,11 +38,15 @@ object ReminderNotifier {
         }
         val pSnooze = PendingIntent.getBroadcast(context, notificationId * 10 + 2, snoozeIntent, flags)
 
+        val title = if (reminder.title.isNotBlank()) reminder.title else "Recordatorio MYVU"
+        val body = if (reminder.body.isNotBlank()) reminder.body else reminder.title
+
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
-            .setContentTitle("Recordatorio MYVU")
-            .setContentText(reminder.body)
+            .setContentTitle(title)
+            .setContentText(body)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Completar", pComplete)
             .addAction(android.R.drawable.ic_menu_recent_history, "Posponer 10m", pSnooze)
@@ -70,8 +74,8 @@ object ReminderNotifier {
         try {
             val conn = MyvuService.activeConnection()
             if (conn != null) {
-                val title = "Recordatorio"
-                val body = reminder.body
+                val title = if (reminder.title.isNotBlank()) reminder.title else "Recordatorio"
+                val body = if (reminder.body.isNotBlank()) reminder.body else reminder.title
                 val now = System.currentTimeMillis()
 
                 val entry = Notifications.entry(
@@ -100,9 +104,11 @@ object ReminderNotifier {
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Canal de notificaciones de recordatorios locales"
+                enableVibration(true)
             }
             val nm = context.getSystemService(NotificationManager::class.java)
             nm?.createNotificationChannel(channel)
         }
     }
 }
+
