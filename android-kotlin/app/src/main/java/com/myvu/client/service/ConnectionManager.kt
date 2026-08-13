@@ -90,14 +90,28 @@ class ConnectionManager(
     private val _stateFlow = MutableStateFlow(ConnectionState.IDLE)
     val stateFlow: StateFlow<ConnectionState> = _stateFlow.asStateFlow()
 
+    private var sessionStartTimeMs: Long = 0L
+
     var state: ConnectionState
         get() = _stateFlow.value
         private set(s) {
+            if (s == ConnectionState.READY && _stateFlow.value != ConnectionState.READY) {
+                sessionStartTimeMs = android.os.SystemClock.elapsedRealtime()
+            } else if (s != ConnectionState.READY) {
+                sessionStartTimeMs = 0L
+            }
             _stateFlow.value = s
             listener?.onStateChanged(s)
         }
 
     fun state(): ConnectionState = state
+
+    fun connectedUptimeMs(): Long {
+        if (state == ConnectionState.READY && sessionStartTimeMs > 0L) {
+            return android.os.SystemClock.elapsedRealtime() - sessionStartTimeMs
+        }
+        return 0L
+    }
 
     private var targetMac: String? = null
     private var device: BluetoothDevice? = null

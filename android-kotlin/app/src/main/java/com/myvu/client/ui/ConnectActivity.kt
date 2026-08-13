@@ -739,31 +739,39 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
     }
 
     private fun updateDashboardData() {
-        // 1. Update Battery Stat
-        try {
-            val bm = getSystemService(Context.BATTERY_SERVICE) as? android.os.BatteryManager
-            val level = bm?.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: -1
-            val isCharging = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                bm?.isCharging == true
-            } else false
+        val conn = service?.connection()
+        val isConnected = bound && conn != null && conn.state() == ConnectionState.READY
 
-            val batteryStr = if (level in 0..100) {
-                if (isCharging) "$level% ⚡" else "$level%"
+        // 1. Update Glasses Battery Stat
+        val txtBattery = findViewById<TextView>(R.id.txtBatteryStat)
+        if (isConnected) {
+            val glassesInfo = conn?.glassesInfo()
+            val batteryLevel = glassesInfo?.battery ?: -1
+            if (batteryLevel >= 0) {
+                txtBattery?.text = "$batteryLevel%"
             } else {
-                "85%"
+                txtBattery?.text = "..."
+                conn?.queryBatteryInfo()
             }
-            findViewById<TextView>(R.id.txtBatteryStat)?.text = batteryStr
-        } catch (e: Exception) {
-            findViewById<TextView>(R.id.txtBatteryStat)?.text = "85%"
+        } else {
+            txtBattery?.text = "--"
         }
 
-        // 2. Update System Uptime Stat
-        val uptimeMs = android.os.SystemClock.elapsedRealtime()
-        val totalMinutes = uptimeMs / (1000 * 60)
-        val hours = totalMinutes / 60
-        val mins = totalMinutes % 60
-        val uptimeStr = if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
-        findViewById<TextView>(R.id.txtUptimeStat)?.text = uptimeStr
+        // 2. Update Glasses Session Uptime Stat
+        val txtUptime = findViewById<TextView>(R.id.txtUptimeStat)
+        if (isConnected) {
+            val uptimeMs = conn?.connectedUptimeMs() ?: 0L
+            if (uptimeMs > 0) {
+                val totalMinutes = uptimeMs / (1000 * 60)
+                val hours = totalMinutes / 60
+                val mins = totalMinutes % 60
+                txtUptime?.text = if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
+            } else {
+                txtUptime?.text = "0m"
+            }
+        } else {
+            txtUptime?.text = "--"
+        }
 
         // 3. Fetch recent notes
         val noteRepo = NoteRepository(this)
