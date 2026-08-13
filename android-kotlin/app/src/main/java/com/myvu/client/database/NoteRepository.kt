@@ -118,10 +118,12 @@ class NoteRepository(context: Context) {
 
         val cleanQuery = query.trim()
         if (cleanQuery.isNotEmpty()) {
-            selectionParts.add("(title LIKE ? OR body LIKE ? OR tags LIKE ?)")
+            val queryWithoutHash = if (cleanQuery.startsWith("#")) cleanQuery.substring(1) else cleanQuery
+            selectionParts.add("(title LIKE ? OR body LIKE ? OR tags LIKE ? OR tags LIKE ?)")
             selectionArgs.add("%$cleanQuery%")
             selectionArgs.add("%$cleanQuery%")
             selectionArgs.add("%$cleanQuery%")
+            selectionArgs.add("%$queryWithoutHash%")
         }
 
         if (!filter.isNullOrBlank() && !filter.equals("ALL", ignoreCase = true) && !filter.equals("TODAS", ignoreCase = true)) {

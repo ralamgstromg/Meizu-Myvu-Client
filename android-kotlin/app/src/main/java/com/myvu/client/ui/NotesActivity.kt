@@ -23,7 +23,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
+import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.textfield.TextInputEditText
 import com.myvu.client.R
@@ -53,6 +55,13 @@ class NotesActivity : AppCompatActivity() {
     private lateinit var btnPickTime: MaterialButton
     private lateinit var rvNotes: RecyclerView
     private lateinit var rvReminders: RecyclerView
+
+    private var isFabMenuOpen = false
+    private lateinit var fabMain: FloatingActionButton
+    private lateinit var fabMenu: View
+    private lateinit var fabNewText: View
+    private lateinit var fabNewVoice: View
+    private lateinit var fabNewReminder: View
 
     private val noteAdapter = NoteAdapter()
     private val reminderAdapter = ReminderAdapter()
@@ -99,9 +108,52 @@ class NotesActivity : AppCompatActivity() {
         setupTabs()
         setupSearchAndFilter()
         setupActions()
+        setupSpeedDialFab()
         loadData()
 
         handleIntent(intent)
+    }
+
+    private fun setupSpeedDialFab() {
+        fabMain = findViewById(R.id.fabMain)
+        fabMenu = findViewById(R.id.fabMenu)
+        fabNewText = findViewById(R.id.fabNewText)
+        fabNewVoice = findViewById(R.id.fabNewVoice)
+        fabNewReminder = findViewById(R.id.fabNewReminder)
+
+        fabMain.setOnClickListener {
+            isFabMenuOpen = !isFabMenuOpen
+            if (isFabMenuOpen) {
+                fabMenu.visibility = View.VISIBLE
+                fabMain.animate().rotation(45f).setDuration(200).start()
+            } else {
+                fabMenu.visibility = View.GONE
+                fabMain.animate().rotation(0f).setDuration(200).start()
+            }
+        }
+
+        fabNewText.setOnClickListener {
+            closeFabMenu()
+            showNoteDialog(startInVoiceMode = false)
+        }
+
+        fabNewVoice.setOnClickListener {
+            closeFabMenu()
+            showNoteDialog(startInVoiceMode = true)
+        }
+
+        fabNewReminder.setOnClickListener {
+            closeFabMenu()
+            showReminderDialog()
+        }
+    }
+
+    private fun closeFabMenu() {
+        if (isFabMenuOpen) {
+            isFabMenuOpen = false
+            fabMenu.visibility = View.GONE
+            fabMain.animate().rotation(0f).setDuration(200).start()
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -247,6 +299,8 @@ class NotesActivity : AppCompatActivity() {
             .create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
+        var currentNote: Note? = existingNote
+
         val lblTitle: TextView = view.findViewById(R.id.lblDialogNoteTitle)
         val txtTitle: TextInputEditText = view.findViewById(R.id.txtNoteTitle)
         val toggleType: MaterialButtonToggleGroup = view.findViewById(R.id.toggleNoteType)
@@ -257,18 +311,20 @@ class NotesActivity : AppCompatActivity() {
         val btnPlayAudio: MaterialButton = view.findViewById(R.id.btnPlayAudio)
         val lblVoiceStatus: TextView = view.findViewById(R.id.lblVoiceStatus)
         val txtBody: TextInputEditText = view.findViewById(R.id.txtNoteBody)
+        val txtTags: TextInputEditText = view.findViewById(R.id.txtNoteTags)
         val btnDelete: MaterialButton = view.findViewById(R.id.btnDeleteNote)
         val btnCancel: MaterialButton = view.findViewById(R.id.btnCancelNote)
         val btnSave: MaterialButton = view.findViewById(R.id.btnSaveNote)
 
-        var audioPath: String? = existingNote?.audioPath
-        var durationSec: Int = existingNote?.durationSec ?: 0
+        var audioPath: String? = currentNote?.audioPath
+        var durationSec: Int = currentNote?.durationSec ?: 0
 
-        lblTitle.text = if (existingNote == null || existingNote.id == 0L) "Nueva Nota" else "Editar Nota"
-        txtTitle.setText(existingNote?.title ?: "")
-        txtBody.setText(existingNote?.body ?: "")
+        lblTitle.text = if (currentNote == null || currentNote!!.id == 0L) "Nueva Nota" else "Editar Nota"
+        txtTitle.setText(currentNote?.title ?: "")
+        txtBody.setText(currentNote?.body ?: "")
+        txtTags.setText(currentNote?.tags ?: "")
 
-        if (existingNote?.type == "VOICE" || (existingNote == null && startInVoiceMode)) {
+        if (currentNote?.type == "VOICE" || (currentNote == null && startInVoiceMode)) {
             toggleType.check(R.id.btnTypeVoice)
             layoutVoice.visibility = View.VISIBLE
         } else {
@@ -281,7 +337,7 @@ class NotesActivity : AppCompatActivity() {
             lblVoiceStatus.text = "Nota de voz grabada"
         }
 
-        btnDelete.visibility = if (existingNote == null || existingNote.id == 0L) View.GONE else View.VISIBLE
+        btnDelete.visibility = if (currentNote == null || currentNote!!.id == 0L) View.GONE else View.VISIBLE
 
         toggleType.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
@@ -305,10 +361,46 @@ class NotesActivity : AppCompatActivity() {
                 voiceRecorder.stopRecording { path, transcript ->
                     audioPath = path
                     durationSec = voiceRecorder.getRecordingDurationSeconds()
+                    val newBody: String
                     if (transcript.isNotBlank()) {
                         val currentText = txtBody.text?.toString() ?: ""
-                        txtBody.setText(if (currentText.isBlank()) transcript else "$currentText\n$transcript")
+                        newBody = if (currentText.isBlank()) transcript else "$currentText\n$transcript"
+                        txtBody.setText(newBody)
+                    } else {
+                        newBody = txtBody.text?.toString() ?: ""
                     }
+
+                    // Auto-save STT transcription to SQLite
+                    val title = txtTitle.text?.toString()?.trim() ?: ""
+                    val tags = txtTags.text?.toString()?.trim() ?: ""
+                    val type = "VOICE"
+
+                    if (currentNote == null || currentNote!!.id == 0L) {
+                        val createdId = noteRepo.createNote(
+                            title = title,
+                            body = newBody,
+                            type = type,
+                            audioPath = audioPath,
+                            durationSec = durationSec,
+                            tags = tags
+                        )
+                        if (createdId != -1L) {
+                            currentNote = noteRepo.getById(createdId)
+                        }
+                    } else {
+                        currentNote?.let { n ->
+                            n.title = title
+                            n.body = newBody
+                            n.type = type
+                            n.audioPath = audioPath
+                            n.durationSec = durationSec
+                            n.tags = tags
+                            noteRepo.update(n)
+                        }
+                    }
+
+                    loadNotes()
+
                     btnRecordVoice.text = "Grabar Voz"
                     btnRecordVoice.isEnabled = true
                     lblVoiceStatus.text = "Transcripción completada"
@@ -338,8 +430,8 @@ class NotesActivity : AppCompatActivity() {
         }
 
         btnDelete.setOnClickListener {
-            if (existingNote != null && existingNote.id != 0L) {
-                noteRepo.deleteNote(existingNote.id)
+            if (currentNote != null && currentNote!!.id != 0L) {
+                noteRepo.deleteNote(currentNote!!.id)
                 loadNotes()
                 Toast.makeText(this, "Nota eliminada", Toast.LENGTH_SHORT).show()
             }
@@ -357,6 +449,7 @@ class NotesActivity : AppCompatActivity() {
         btnSave.setOnClickListener {
             val title = txtTitle.text?.toString()?.trim() ?: ""
             val body = txtBody.text?.toString()?.trim() ?: ""
+            val tags = txtTags.text?.toString()?.trim() ?: ""
             val isVoice = toggleType.checkedButtonId == R.id.btnTypeVoice
             val type = if (isVoice) "VOICE" else "TEXT"
 
@@ -365,21 +458,25 @@ class NotesActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            if (existingNote == null || existingNote.id == 0L) {
+            if (currentNote == null || currentNote!!.id == 0L) {
                 noteRepo.createNote(
                     title = title,
                     body = body,
                     type = type,
                     audioPath = audioPath,
-                    durationSec = durationSec
+                    durationSec = durationSec,
+                    tags = tags
                 )
             } else {
-                existingNote.title = title
-                existingNote.body = body
-                existingNote.type = type
-                existingNote.audioPath = audioPath
-                existingNote.durationSec = durationSec
-                noteRepo.update(existingNote)
+                currentNote?.let { n ->
+                    n.title = title
+                    n.body = body
+                    n.type = type
+                    n.audioPath = audioPath
+                    n.durationSec = durationSec
+                    n.tags = tags
+                    noteRepo.update(n)
+                }
             }
 
             loadNotes()
@@ -397,7 +494,7 @@ class NotesActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    fun showReminderDialog(existingReminder: Reminder?) {
+    fun showReminderDialog(existingReminder: Reminder? = null) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_edit_reminder, null)
         val dialog = AlertDialog.Builder(this)
             .setView(view)
@@ -555,6 +652,34 @@ class NotesActivity : AppCompatActivity() {
                 holder.btnPlayAudio.visibility = View.GONE
             }
 
+            holder.chipGroupTags.removeAllViews()
+            if (n.tags.isNotBlank()) {
+                val tagList = n.tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                if (tagList.isNotEmpty()) {
+                    holder.chipGroupTags.visibility = View.VISIBLE
+                    for (rawTag in tagList) {
+                        val displayTag = if (rawTag.startsWith("#")) rawTag else "#$rawTag"
+                        val chip = Chip(this@NotesActivity).apply {
+                            text = displayTag
+                            isClickable = true
+                            isCheckable = false
+                            setChipBackgroundColorResource(R.color.obsidian_container_high)
+                            setTextColor(ContextCompat.getColor(context, R.color.cyber_teal))
+                            setOnClickListener {
+                                txtSearchNotes.setText(displayTag)
+                                txtSearchNotes.setSelection(txtSearchNotes.text?.length ?: 0)
+                                performSearch()
+                            }
+                        }
+                        holder.chipGroupTags.addView(chip)
+                    }
+                } else {
+                    holder.chipGroupTags.visibility = View.GONE
+                }
+            } else {
+                holder.chipGroupTags.visibility = View.GONE
+            }
+
             holder.btnEdit.setOnClickListener {
                 showNoteDialog(n)
             }
@@ -577,6 +702,7 @@ class NotesActivity : AppCompatActivity() {
             val lblTitle: TextView = itemView.findViewById(R.id.lblNoteTitle)
             val lblBody: TextView = itemView.findViewById(R.id.lblNoteBody)
             val lblDate: TextView = itemView.findViewById(R.id.lblNoteDate)
+            val chipGroupTags: ChipGroup = itemView.findViewById(R.id.chipGroupTags)
             val btnPlayAudio: ImageButton = itemView.findViewById(R.id.btnPlayAudio)
             val btnEdit: ImageButton = itemView.findViewById(R.id.btnEditNote)
             val btnDelete: ImageButton = itemView.findViewById(R.id.btnDeleteNote)
