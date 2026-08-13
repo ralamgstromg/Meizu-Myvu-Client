@@ -27,6 +27,10 @@ import android.view.animation.OvershootInterpolator
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
@@ -742,56 +746,43 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         val conn = service?.connection()
         val isConnected = bound && conn != null && conn.state() == ConnectionState.READY
 
-        // 1. Update Glasses Battery Stat
+        // Battery stat (no DB — safe on main thread)
         val txtBattery = findViewById<TextView>(R.id.txtBatteryStat)
         if (isConnected) {
-            val glassesInfo = conn?.glassesInfo()
-            val batteryLevel = glassesInfo?.battery ?: -1
-            if (batteryLevel >= 0) {
-                txtBattery?.text = "$batteryLevel%"
-            } else {
-                txtBattery?.text = "..."
-                conn?.queryBatteryInfo()
-            }
-        } else {
-            txtBattery?.text = "--"
-        }
+            val batteryLevel = conn?.glassesInfo()?.battery ?: -1
+            if (batteryLevel >= 0) txtBattery?.text = "$batteryLevel%"
+            else { txtBattery?.text = "..."; conn?.queryBatteryInfo() }
+        } else txtBattery?.text = "--"
 
-        // 2. Update Glasses Session Uptime Stat
+        // Uptime stat (no DB — safe on main thread)
         val txtUptime = findViewById<TextView>(R.id.txtUptimeStat)
         if (isConnected) {
             val uptimeMs = conn?.connectedUptimeMs() ?: 0L
-            if (uptimeMs > 0) {
-                val totalMinutes = uptimeMs / (1000 * 60)
-                val hours = totalMinutes / 60
-                val mins = totalMinutes % 60
-                txtUptime?.text = if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
-            } else {
-                txtUptime?.text = "0m"
-            }
-        } else {
-            txtUptime?.text = "--"
-        }
+            val totalMinutes = uptimeMs / (1000 * 60)
+            val h = totalMinutes / 60; val m = totalMinutes % 60
+            txtUptime?.text = if (uptimeMs > 0) (if (h > 0) "${h}h ${m}m" else "${m}m") else "0m"
+        } else txtUptime?.text = "--"
 
-        // 3. Fetch recent notes
-        val noteRepo = NoteRepository(this)
-        val recentNotes = noteRepo.getAllNotes().take(2)
-        populateRecentNotesWidget(recentNotes)
-
-        // 4. Fetch upcoming pending reminders
-        val reminderRepo = ReminderRepository(this)
-        val upcomingReminders = reminderRepo.getPendingReminders()
-            .filter { it.triggerAt > System.currentTimeMillis() }
-            .take(2)
-        populateUpcomingRemindersWidget(upcomingReminders)
-
-        // 5. Fetch active AI Model provider info
+        // AI model stat (no DB — safe on main thread)
         val provider = Prefs.aiProvider(this)
         findViewById<TextView>(R.id.txtAiModelStat)?.text = when (provider.lowercase(Locale.ROOT)) {
             "gemini" -> "Google Gemini 1.5"
             "claude" -> "Anthropic Claude 3.5"
             "local" -> "AI Local / Ollama"
             else -> "OpenAI / GPT-4o"
+        }
+
+        // DB reads: off main thread
+        lifecycleScope.launch {
+            val recentNotes = withContext(Dispatchers.IO) {
+                NoteRepository(this@ConnectActivity).getAllNotes().take(2)
+            }
+            val upcoming = withContext(Dispatchers.IO) {
+                ReminderRepository(this@ConnectActivity).getPendingReminders()
+                    .filter { it.triggerAt > System.currentTimeMillis() }.take(2)
+            }
+            populateRecentNotesWidget(recentNotes)
+            populateUpcomingRemindersWidget(upcoming)
         }
     }
 

@@ -69,6 +69,7 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.material)
     implementation(libs.play.services.location)
     implementation(libs.kotlinx.coroutines.android)
