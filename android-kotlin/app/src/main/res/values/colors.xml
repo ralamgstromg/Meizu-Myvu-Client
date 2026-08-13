@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Kinetic Obsidian Palette -->
+    <color name="obsidian_bg">#121416</color>
+    <color name="obsidian_surface_dim">#121416</color>
+    <color name="obsidian_surface_bright">#37393B</color>
+    <color name="obsidian_container_lowest">#0C0E10</color>
+    <color name="obsidian_container_low">#1A1C1E</color>
+    <color name="obsidian_container">#1E2022</color>
+    <color name="obsidian_container_high">#282A2C</color>
+    <color name="obsidian_container_highest">#333537</color>
+
+    <color name="cyber_teal">#00F0FF</color>
+    <color name="cyber_teal_dim">#00DBE9</color>
+    <color name="cyber_teal_light">#DBFCFF</color>
+    <color name="on_cyber_teal">#00363A</color>
+    <color name="on_cyber_teal_container">#006970</color>
+
+    <color name="on_surface_obsidian">#E2E2E5</color>
+    <color name="on_surface_variant_obsidian">#B9CACB</color>
+    <color name="outline_obsidian">#849495</color>
+    <color name="outline_variant_obsidian">#3B494B</color>
+
+    <!-- Legacy alias compatibility mapping -->
+    <color name="brand">#00F0FF</color>
+    <color name="brand_dark">#00DBE9</color>
+    <color name="brand_light">#DBFCFF</color>
+    <color name="brand_container">#1E2022</color>
+    <color name="on_brand_container">#E2E2E5</color>
+
+    <color name="bg_dark">#121416</color>
+    <color name="surface_dark">#1A1C1E</color>
+    <color name="surface_dark_high">#282A2C</color>
+    <color name="on_surface_dark">#E2E2E5</color>
+    <color name="on_surface_variant_dark">#B9CACB</color>
+    <color name="outline_dark">#3B494B</color>
+
+    <color name="state_idle">#849495</color>
+    <color name="state_connecting">#00F0FF</color>
+    <color name="state_ready">#2ECC71</color>
+    <color name="state_failed">#FFB4AB</color>
+</resources>

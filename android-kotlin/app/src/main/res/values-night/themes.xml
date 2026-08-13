@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.Myvu" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/cyber_teal</item>
+        <item name="colorOnPrimary">@color/on_cyber_teal</item>
+        <item name="colorPrimaryContainer">@color/obsidian_container</item>
+        <item name="colorOnPrimaryContainer">@color/on_cyber_teal_container</item>
+
+        <item name="android:colorBackground">@color/obsidian_bg</item>
+        <item name="colorSurface">@color/obsidian_container_low</item>
+        <item name="colorOnSurface">@color/on_surface_obsidian</item>
+        <item name="colorOnSurfaceVariant">@color/on_surface_variant_obsidian</item>
+        <item name="colorOutline">@color/outline_variant_obsidian</item>
+
+        <item name="android:statusBarColor">@color/obsidian_bg</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
+    </style>
+
+    <style name="Card.Myvu" parent="Widget.Material3.CardView.Filled">
+        <item name="cardCornerRadius">28dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="contentPadding">18dp</item>
+        <item name="cardBackgroundColor">@color/obsidian_container_low</item>
+        <item name="strokeColor">@color/outline_variant_obsidian</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="android:layout_marginBottom">12dp</item>
+    </style>
+</resources>
