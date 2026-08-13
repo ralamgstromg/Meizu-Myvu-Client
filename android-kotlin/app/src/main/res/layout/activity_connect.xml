@@ -1,27 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
+<androidx.drawerlayout.widget.DrawerLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/obsidian_bg">
 
-    <LinearLayout
+    <!-- Main screen layout container -->
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="match_parent">
 
-        <!-- ===== Top bar ===== -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="20dp"
-            android:paddingBottom="12dp">
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
+            <!-- ===== Top bar ===== -->
             <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="20dp"
+                android:paddingTop="20dp"
+                android:paddingBottom="12dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnNavigationDrawer"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="12dp"
+                    android:contentDescription="Navigation Drawer"
+                    app:icon="@drawable/ic_menu_hamburger"
+                    app:iconTint="@color/on_surface_obsidian" />
+
+                <LinearLayout
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
@@ -877,4 +893,20 @@
                 android:visibility="gone" />
         </LinearLayout>
     </FrameLayout>
-</FrameLayout>
+    </FrameLayout>
+
+    <!-- Navigation View (Drawer) -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navigationView"
+        android:layout_width="280dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="@color/obsidian_container_low"
+        app:headerLayout="@layout/nav_header_drawer"
+        app:menu="@menu/menu_navigation_drawer"
+        app:itemIconTint="@color/cyber_teal"
+        app:itemTextColor="@color/on_surface_obsidian"
+        app:itemShapeInsetStart="12dp"
+        app:itemShapeInsetEnd="12dp" />
+
+</androidx.drawerlayout.widget.DrawerLayout>
