@@ -15,6 +15,95 @@
         app:titleTextColor="@color/on_surface_obsidian"
         app:navigationIconTint="@color/cyber_teal" />
 
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutSearchNotes"
+        style="@style/Input.Myvu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="4dp"
+        android:hint="Buscar notas o recordatorios..."
+        app:startIconDrawable="@android:drawable/ic_menu_search"
+        app:startIconTint="@color/cyber_teal"
+        app:boxCornerRadiusTopStart="16dp"
+        app:boxCornerRadiusTopEnd="16dp"
+        app:boxCornerRadiusBottomStart="16dp"
+        app:boxCornerRadiusBottomEnd="16dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/txtSearchNotes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/on_surface_obsidian"
+            android:inputType="text"
+            android:maxLines="1"
+            android:importantForAutofill="no" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="8dp">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupFilter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:singleSelection="true"
+            app:selectionRequired="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFilterAll"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="Todas"
+                app:chipBackgroundColor="@color/obsidian_container"
+                android:textColor="@color/on_surface_obsidian" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFilterText"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Texto"
+                app:chipBackgroundColor="@color/obsidian_container"
+                android:textColor="@color/on_surface_obsidian" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFilterVoice"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Voz"
+                app:chipBackgroundColor="@color/obsidian_container"
+                android:textColor="@color/on_surface_obsidian" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFilterReminders"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Recordatorios"
+                app:chipBackgroundColor="@color/obsidian_container"
+                android:textColor="@color/on_surface_obsidian" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFilterPending"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pendientes"
+                app:chipBackgroundColor="@color/obsidian_container"
+                android:textColor="@color/on_surface_obsidian" />
+
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
+
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabsNotes"
         android:layout_width="match_parent"

@@ -24,6 +24,7 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/lblNoteCategory"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="6dp"
@@ -32,10 +33,19 @@
                 android:letterSpacing="0.05"
                 android:paddingHorizontal="8dp"
                 android:paddingVertical="3dp"
-                android:text="AI NOTE"
+                android:text="TEXTO"
                 android:textColor="@color/cyber_teal"
                 android:textSize="11sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/lblNoteTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/on_surface_obsidian"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/lblNoteBody"
@@ -56,10 +66,31 @@
         </LinearLayout>
 
         <ImageButton
-            android:id="@+id/btnDeleteNote"
+            android:id="@+id/btnPlayAudio"
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Play Audio"
+            android:src="@android:drawable/ic_media_play"
+            android:visibility="gone"
+            app:tint="@color/cyber_teal" />
+
+        <ImageButton
+            android:id="@+id/btnEditNote"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Edit Note"
+            android:src="@android:drawable/ic_menu_edit"
+            app:tint="@color/cyber_teal" />
+
+        <ImageButton
+            android:id="@+id/btnDeleteNote"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="4dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Delete Note"
             android:src="@android:drawable/ic_menu_delete"

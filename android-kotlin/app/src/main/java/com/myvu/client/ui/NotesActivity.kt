@@ -16,10 +16,13 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.widget.doOnTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
+import com.google.android.material.chip.ChipGroup
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.textfield.TextInputEditText
 import com.myvu.client.R
@@ -42,6 +45,8 @@ class NotesActivity : AppCompatActivity() {
 
     private lateinit var pageNotes: View
     private lateinit var pageReminders: View
+    private lateinit var txtSearchNotes: TextInputEditText
+    private lateinit var chipGroupFilter: ChipGroup
     private lateinit var txtNewNote: TextInputEditText
     private lateinit var txtNewReminder: TextInputEditText
     private lateinit var btnPickTime: MaterialButton
@@ -57,12 +62,17 @@ class NotesActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_notes)
 
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbarNotes)
+        toolbar.setNavigationOnClickListener { finish() }
+
         noteRepo = NoteRepository(this)
         reminderRepo = ReminderRepository(this)
         voiceRecorder = VoiceNoteRecorder(this)
 
         pageNotes = findViewById(R.id.pageNotes)
         pageReminders = findViewById(R.id.pageReminders)
+        txtSearchNotes = findViewById(R.id.txtSearchNotes)
+        chipGroupFilter = findViewById(R.id.chipGroupFilter)
         txtNewNote = findViewById(R.id.txtNewNote)
         txtNewReminder = findViewById(R.id.txtNewReminder)
         btnPickTime = findViewById(R.id.btnPickTime)
@@ -77,6 +87,7 @@ class NotesActivity : AppCompatActivity() {
         rvReminders.adapter = reminderAdapter
 
         setupTabs()
+        setupSearchAndFilter()
         setupActions()
         loadData()
     }
@@ -96,6 +107,57 @@ class NotesActivity : AppCompatActivity() {
             override fun onTabUnselected(tab: TabLayout.Tab) {}
             override fun onTabReselected(tab: TabLayout.Tab) {}
         })
+    }
+
+    private fun setupSearchAndFilter() {
+        txtSearchNotes.doOnTextChanged { _, _, _, _ ->
+            performSearch()
+        }
+
+        chipGroupFilter.setOnCheckedStateChangeListener { _, _ ->
+            performSearch()
+        }
+    }
+
+    private fun performSearch() {
+        val query = txtSearchNotes.text?.toString()?.trim() ?: ""
+        val checkedId = chipGroupFilter.checkedChipId
+
+        val notes: List<Note>
+        val reminders: List<Reminder>
+
+        when (checkedId) {
+            R.id.chipFilterText -> {
+                notes = noteRepo.search(query, "TEXT")
+                reminders = emptyList()
+            }
+            R.id.chipFilterVoice -> {
+                notes = noteRepo.search(query, "VOICE")
+                reminders = emptyList()
+            }
+            R.id.chipFilterReminders -> {
+                notes = emptyList()
+                reminders = reminderRepo.search(query, "ALL")
+            }
+            R.id.chipFilterPending -> {
+                notes = emptyList()
+                reminders = reminderRepo.search(query, "PENDING")
+            }
+            else -> { // chipFilterAll or default
+                notes = noteRepo.search(query, "ALL")
+                reminders = reminderRepo.search(query, "ALL")
+            }
+        }
+
+        val tabs: TabLayout = findViewById(R.id.tabsNotes)
+        if (checkedId == R.id.chipFilterReminders || checkedId == R.id.chipFilterPending) {
+            tabs.getTabAt(1)?.select()
+        } else if (checkedId == R.id.chipFilterText || checkedId == R.id.chipFilterVoice) {
+            tabs.getTabAt(0)?.select()
+        }
+
+        noteAdapter.setNotes(notes)
+        reminderAdapter.setReminders(reminders)
     }
 
     private fun setupActions() {
@@ -138,16 +200,15 @@ class NotesActivity : AppCompatActivity() {
     }
 
     private fun loadData() {
-        loadNotes()
-        loadReminders()
+        performSearch()
     }
 
     private fun loadNotes() {
-        noteAdapter.setNotes(noteRepo.getAllNotes())
+        performSearch()
     }
 
     private fun loadReminders() {
-        reminderAdapter.setReminders(reminderRepo.getPendingReminders())
+        performSearch()
     }
 
     fun showNoteDialog(existingNote: Note?) {
@@ -436,10 +497,38 @@ class NotesActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: NoteVH, position: Int) {
             val n = list[position]
-            val textDisplay = if (n.title.isNotBlank()) "${n.title}\n${n.body}" else n.body
-            holder.lblBody.text = textDisplay
+
+            if (n.type == "VOICE") {
+                holder.lblCategory.text = "VOZ"
+            } else {
+                holder.lblCategory.text = "TEXTO"
+            }
+
+            if (n.title.isNotBlank()) {
+                holder.lblTitle.text = n.title
+                holder.lblTitle.visibility = View.VISIBLE
+            } else {
+                holder.lblTitle.visibility = View.GONE
+            }
+
+            holder.lblBody.text = n.body
             val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
             holder.lblDate.text = sdf.format(Date(n.updatedAt))
+
+            if (!n.audioPath.isNullOrEmpty()) {
+                holder.btnPlayAudio.visibility = View.VISIBLE
+                holder.btnPlayAudio.setOnClickListener {
+                    voiceRecorder.playAudio(n.audioPath!!) {
+                        // Playback finished
+                    }
+                }
+            } else {
+                holder.btnPlayAudio.visibility = View.GONE
+            }
+
+            holder.btnEdit.setOnClickListener {
+                showNoteDialog(n)
+            }
 
             holder.itemView.setOnClickListener {
                 showNoteDialog(n)
@@ -455,8 +544,12 @@ class NotesActivity : AppCompatActivity() {
         override fun getItemCount(): Int = list.size
 
         inner class NoteVH(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val lblCategory: TextView = itemView.findViewById(R.id.lblNoteCategory)
+            val lblTitle: TextView = itemView.findViewById(R.id.lblNoteTitle)
             val lblBody: TextView = itemView.findViewById(R.id.lblNoteBody)
             val lblDate: TextView = itemView.findViewById(R.id.lblNoteDate)
+            val btnPlayAudio: ImageButton = itemView.findViewById(R.id.btnPlayAudio)
+            val btnEdit: ImageButton = itemView.findViewById(R.id.btnEditNote)
             val btnDelete: ImageButton = itemView.findViewById(R.id.btnDeleteNote)
         }
     }
@@ -476,11 +569,26 @@ class NotesActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ReminderVH, position: Int) {
             val r = list[position]
-            val textDisplay = if (r.title.isNotBlank()) "${r.title}\n${r.body}" else r.body
-            holder.lblBody.text = textDisplay
+
+            holder.lblCategory.text = "HUD SYNC"
+
+            if (r.title.isNotBlank()) {
+                holder.lblTitle.text = r.title
+                holder.lblTitle.visibility = View.VISIBLE
+            } else {
+                holder.lblTitle.visibility = View.GONE
+            }
+
+            holder.lblBody.text = r.body
             val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
             holder.lblTime.text = "Programado: " + sdf.format(Date(r.triggerAt))
             holder.lblState.text = "Estado: " + r.state
+
+            holder.btnPlayAudio.visibility = View.GONE
+
+            holder.btnEdit.setOnClickListener {
+                showReminderDialog(r)
+            }
 
             holder.itemView.setOnClickListener {
                 showReminderDialog(r)
@@ -497,9 +605,13 @@ class NotesActivity : AppCompatActivity() {
         override fun getItemCount(): Int = list.size
 
         inner class ReminderVH(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val lblCategory: TextView = itemView.findViewById(R.id.lblReminderCategory)
+            val lblTitle: TextView = itemView.findViewById(R.id.lblReminderTitle)
             val lblBody: TextView = itemView.findViewById(R.id.lblReminderBody)
             val lblTime: TextView = itemView.findViewById(R.id.lblReminderTime)
             val lblState: TextView = itemView.findViewById(R.id.lblReminderState)
+            val btnPlayAudio: ImageButton = itemView.findViewById(R.id.btnPlayAudio)
+            val btnEdit: ImageButton = itemView.findViewById(R.id.btnEditReminder)
             val btnDelete: ImageButton = itemView.findViewById(R.id.btnDeleteReminder)
         }
     }

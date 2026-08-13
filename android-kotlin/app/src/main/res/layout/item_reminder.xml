@@ -24,6 +24,7 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/lblReminderCategory"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="6dp"
@@ -36,6 +37,15 @@
                 android:textColor="@color/cyber_teal"
                 android:textSize="11sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/lblReminderTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/on_surface_obsidian"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/lblReminderBody"
@@ -64,10 +74,31 @@
         </LinearLayout>
 
         <ImageButton
-            android:id="@+id/btnDeleteReminder"
+            android:id="@+id/btnPlayAudio"
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Play Audio"
+            android:src="@android:drawable/ic_media_play"
+            android:visibility="gone"
+            app:tint="@color/cyber_teal" />
+
+        <ImageButton
+            android:id="@+id/btnEditReminder"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Edit Reminder"
+            android:src="@android:drawable/ic_menu_edit"
+            app:tint="@color/cyber_teal" />
+
+        <ImageButton
+            android:id="@+id/btnDeleteReminder"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="4dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Delete Reminder"
             android:src="@android:drawable/ic_menu_delete"
