@@ -101,8 +101,23 @@ class NotesActivity : AppCompatActivity() {
         setupActions()
         loadData()
 
+        handleIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent == null) return
         if (intent.getBooleanExtra("SHOW_REMINDERS", false) || intent.getStringExtra("EXTRA_FILTER") == "REMINDERS") {
             chipGroupFilter.check(R.id.chipFilterReminders)
+        }
+        if (intent.getBooleanExtra("AUTO_RECORD_VOICE", false)) {
+            intent.putExtra("AUTO_RECORD_VOICE", false)
+            showNoteDialog(startInVoiceMode = true)
         }
     }
 
@@ -225,7 +240,7 @@ class NotesActivity : AppCompatActivity() {
         performSearch()
     }
 
-    fun showNoteDialog(existingNote: Note?) {
+    fun showNoteDialog(existingNote: Note? = null, startInVoiceMode: Boolean = false) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_edit_note, null)
         val dialog = AlertDialog.Builder(this)
             .setView(view)
@@ -253,7 +268,7 @@ class NotesActivity : AppCompatActivity() {
         txtTitle.setText(existingNote?.title ?: "")
         txtBody.setText(existingNote?.body ?: "")
 
-        if (existingNote?.type == "VOICE") {
+        if (existingNote?.type == "VOICE" || (existingNote == null && startInVoiceMode)) {
             toggleType.check(R.id.btnTypeVoice)
             layoutVoice.visibility = View.VISIBLE
         } else {

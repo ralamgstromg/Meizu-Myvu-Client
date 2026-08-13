@@ -249,6 +249,12 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         val openNotes = View.OnClickListener {
             startActivity(Intent(this, NotesActivity::class.java))
         }
+        val openVoiceControl = View.OnClickListener {
+            val intent = Intent(this, NotesActivity::class.java).apply {
+                putExtra("AUTO_RECORD_VOICE", true)
+            }
+            startActivity(intent)
+        }
         val openReminders = View.OnClickListener {
             val intent = Intent(this, NotesActivity::class.java).apply {
                 putExtra("EXTRA_FILTER", "REMINDERS")
@@ -256,6 +262,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
             }
             startActivity(intent)
         }
+        findViewById<View>(R.id.btnVoiceControl)?.setOnClickListener(openVoiceControl)
         findViewById<View>(R.id.btnNotes).setOnClickListener(openNotes)
         findViewById<View>(R.id.btnOpenAllNotes)?.setOnClickListener(openNotes)
         findViewById<View>(R.id.cardRecentNotes)?.setOnClickListener(openNotes)
