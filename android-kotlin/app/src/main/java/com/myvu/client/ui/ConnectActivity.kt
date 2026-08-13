@@ -29,10 +29,13 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.materialswitch.MaterialSwitch
+import com.google.android.material.navigation.NavigationView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.textfield.TextInputEditText
 import com.myvu.client.R
@@ -137,6 +140,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         wireConnection()
         wireFeatures()
         wireSettings()
+        wireNavigationDrawer()
         animateEntrance()
         requestNeededPermissions()
     }
@@ -160,6 +164,41 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         if (bound) {
             unbindService(serviceConnection)
             bound = false
+        }
+    }
+
+    private fun wireNavigationDrawer() {
+        val drawerLayout: DrawerLayout = findViewById(R.id.drawerLayout)
+        val navigationView: NavigationView = findViewById(R.id.navigationView)
+        val tabs: TabLayout = findViewById(R.id.tabs)
+
+        findViewById<View>(R.id.btnNavigationDrawer)?.setOnClickListener {
+            drawerLayout.openDrawer(GravityCompat.START)
+        }
+
+        navigationView.setNavigationItemSelectedListener { menuItem ->
+            drawerLayout.closeDrawer(GravityCompat.START)
+            when (menuItem.itemId) {
+                R.id.nav_dashboard -> {
+                    // Dashboard (current activity)
+                }
+                R.id.nav_notes -> {
+                    startActivity(Intent(this, NotesActivity::class.java))
+                }
+                R.id.nav_ai_config -> {
+                    startActivity(Intent(this, SettingsActivity::class.java))
+                }
+                R.id.nav_trackpad -> {
+                    startActivity(Intent(this, TrackpadActivity::class.java))
+                }
+                R.id.nav_notifications -> {
+                    startActivity(Intent(this, NotificationAppsActivity::class.java))
+                }
+                R.id.nav_logs -> {
+                    tabs.getTabAt(1)?.select()
+                }
+            }
+            true
         }
     }
 
