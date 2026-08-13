@@ -768,6 +768,7 @@
                         android:text="Shapes how the assistant replies. Answers are spoken aloud, so keep them short and free of markdown, lists and emoji. Applies to your next question — no reconnect needed." />
 
                     <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/laySystemPrompt"
                         style="@style/Input.Myvu"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -786,12 +787,12 @@
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnResetPrompt"
+                        android:id="@+id/btnResetSystemPrompt"
                         style="@style/Button.Myvu.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="Reset to default" />
+                        android:text="Restablecer Prompt AR" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

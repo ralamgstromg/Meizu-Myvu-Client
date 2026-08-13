@@ -251,12 +251,18 @@ object Prefs {
 
     @JvmStatic
     fun systemPrompt(c: Context): String {
-        return prefs(c).getString(KEY_SYSTEM_PROMPT, "") ?: ""
+        val custom = prefs(c).getString("custom_system_prompt", null)
+            ?: prefs(c).getString(KEY_SYSTEM_PROMPT, null)
+        return if (!custom.isNullOrBlank()) custom else com.myvu.client.ai.AiClient.DEFAULT_SYSTEM_PROMPT
     }
 
     @JvmStatic
     fun setSystemPrompt(c: Context, prompt: String) {
-        prefs(c).edit().putString(KEY_SYSTEM_PROMPT, prompt).apply()
+        val trimmed = prompt.trim()
+        prefs(c).edit()
+            .putString("custom_system_prompt", trimmed)
+            .putString(KEY_SYSTEM_PROMPT, trimmed)
+            .apply()
     }
 
     @JvmStatic

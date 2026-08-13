@@ -135,8 +135,7 @@ class SettingsActivity : AppCompatActivity() {
         bindAiFields()
         bindSttFields()
         bindTtsFields()
-        val prompt = Prefs.systemPrompt(this)
-        txtSystemPrompt.setText(if (prompt.isEmpty()) AiClient.DEFAULT_SYSTEM_PROMPT else prompt)
+        txtSystemPrompt.setText(Prefs.systemPrompt(this))
     }
 
     private fun configurePersistence() {
@@ -171,10 +170,7 @@ class SettingsActivity : AppCompatActivity() {
             if (!bindingTts) Prefs.setTtsVoice(this, value.trim())
         }
         persist(txtSystemPrompt) { value ->
-            Prefs.setSystemPrompt(
-                this,
-                if (value.trim() == AiClient.DEFAULT_SYSTEM_PROMPT) "" else value
-            )
+            Prefs.setSystemPrompt(this, value)
         }
         chkIgnoreSsl?.setOnCheckedChangeListener { _, isChecked ->
             Prefs.setIgnoreSsl(this, isChecked)
@@ -182,9 +178,10 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun configureButtons() {
-        findViewById<View>(R.id.btnResetPrompt).setOnClickListener {
+        val btnResetPrompt = findViewById<View>(R.id.btnResetSystemPrompt)
+        btnResetPrompt?.setOnClickListener {
             txtSystemPrompt.setText(AiClient.DEFAULT_SYSTEM_PROMPT)
-            Prefs.setSystemPrompt(this, "")
+            Prefs.setSystemPrompt(this, AiClient.DEFAULT_SYSTEM_PROMPT)
         }
         wireWeather()
         wireMirror()

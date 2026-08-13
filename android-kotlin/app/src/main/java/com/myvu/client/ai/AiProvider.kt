@@ -35,15 +35,20 @@ enum class AiProvider(
         endpoint: String,
         systemPrompt: String
     ): AiClient {
+        val effectivePrompt = if (systemPrompt.isNotBlank()) {
+            systemPrompt
+        } else {
+            context?.let { Prefs.systemPrompt(it) } ?: AiClient.DEFAULT_SYSTEM_PROMPT
+        }
         val ignoreSsl = context != null && Prefs.ignoreSsl(context)
         return when (this) {
-            OPENAI -> OpenAiClient(apiKey, model, systemPrompt)
-            GEMINI -> GeminiClient(apiKey, model, systemPrompt)
-            GROQ -> LocalAiClient("https://api.groq.com/openai/v1/chat/completions", apiKey, model, systemPrompt, false)
-            NVIDIA -> LocalAiClient("https://integrate.api.nvidia.com/v1/chat/completions", apiKey, model, systemPrompt, false)
+            OPENAI -> OpenAiClient(apiKey, model, effectivePrompt)
+            GEMINI -> GeminiClient(apiKey, model, effectivePrompt)
+            GROQ -> LocalAiClient("https://api.groq.com/openai/v1/chat/completions", apiKey, model, effectivePrompt, false)
+            NVIDIA -> LocalAiClient("https://integrate.api.nvidia.com/v1/chat/completions", apiKey, model, effectivePrompt, false)
             ASSISTANT -> AndroidAssistantClient(context!!)
-            LOCAL -> LocalAiClient(endpoint, apiKey, model, systemPrompt, ignoreSsl)
-            else -> ClaudeClient(apiKey, model, systemPrompt)
+            LOCAL -> LocalAiClient(endpoint, apiKey, model, effectivePrompt, ignoreSsl)
+            else -> ClaudeClient(apiKey, model, effectivePrompt)
         }
     }
 

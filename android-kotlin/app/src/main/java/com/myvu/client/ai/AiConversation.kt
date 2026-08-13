@@ -352,11 +352,12 @@ class AiConversation(
 
     private fun askAi(question: String) {
         val aiProviderId = Prefs.aiProvider(context)
-        val client = OpenAiClient(
-            Prefs.aiApiKey(context, aiProviderId),
-            Prefs.aiModel(context, aiProviderId),
-            Prefs.systemPrompt(context)
-        )
+        val provider = AiProvider.fromId(aiProviderId)
+        val apiKey = Prefs.aiApiKey(context, aiProviderId)
+        val model = Prefs.aiModel(context, aiProviderId)
+        val endpoint = Prefs.aiEndpoint(context, aiProviderId)
+        val prompt = Prefs.systemPrompt(context)
+        val client = provider.newClient(context, apiKey, model, endpoint, prompt)
         if (!client.isConfigured()) {
             LogBus.warn("$aiProviderId is not fully configured -- check Settings")
             finish()
