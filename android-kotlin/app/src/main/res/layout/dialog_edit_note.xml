@@ -143,7 +143,7 @@
                 style="@style/Input.Myvu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
+                android:layout_marginBottom="12dp"
                 android:hint="Contenido / Transcripción">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -154,6 +154,24 @@
                     android:importantForAutofill="no"
                     android:inputType="textMultiLine"
                     android:minLines="4"
+                    android:textColor="@color/on_surface_obsidian" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Tags Input -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Input.Myvu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                android:hint="Etiquetas / Tags (p.ej: trabajo, idea)">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/txtNoteTags"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:importantForAutofill="no"
+                    android:inputType="text"
+                    android:maxLines="1"
                     android:textColor="@color/on_surface_obsidian" />
             </com.google.android.material.textfield.TextInputLayout>
 
