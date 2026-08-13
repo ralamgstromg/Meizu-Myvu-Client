@@ -129,8 +129,8 @@ class TtsPlayer(private val context: Context) {
         try {
             cleanupMediaPlayer()
             val temp = File.createTempFile("tts_", ".wav", context.cacheDir)
-            FileOutputStream(temp).use { out -> out.write(wav) }
             mediaFile = temp
+            FileOutputStream(temp).use { out -> out.write(wav) }
 
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(temp.absolutePath)

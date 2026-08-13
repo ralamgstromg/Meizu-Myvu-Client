@@ -122,13 +122,7 @@ abstract class AiHttpClient @JvmOverloads constructor(
 
         private fun readAll(input: InputStream?): String {
             if (input == null) return ""
-            val out = ByteArrayOutputStream()
-            val buf = ByteArray(8192)
-            var n: Int
-            while (input.read(buf).also { n = it } > 0) {
-                out.write(buf, 0, n)
-            }
-            return String(out.toByteArray(), StandardCharsets.UTF_8)
+            return input.use { String(it.readBytes(), StandardCharsets.UTF_8) }
         }
     }
 }
