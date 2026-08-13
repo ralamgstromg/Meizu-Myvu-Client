@@ -16,6 +16,7 @@ import com.myvu.client.app.feature.Notifications
 import com.myvu.client.core.GlassesConfig
 import com.myvu.client.core.LogBus
 import com.myvu.client.core.Prefs
+import java.lang.ref.WeakReference
 import org.json.JSONObject
 
 /**
@@ -35,13 +36,13 @@ class MirrorNotificationListener : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
-        instance = this
+        _instance = WeakReference(this)
         LogBus.log("MirrorNotificationListener connected")
     }
 
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
-        if (instance === this) instance = null
+        _instance = null
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
@@ -161,7 +162,10 @@ class MirrorNotificationListener : NotificationListenerService() {
 
     companion object {
         @Volatile
-        private var instance: MirrorNotificationListener? = null
+        private var _instance: WeakReference<MirrorNotificationListener>? = null
+
+        val instance: MirrorNotificationListener?
+            get() = _instance?.get()
 
         /**
          * Notification access is granted in system settings, not by a runtime

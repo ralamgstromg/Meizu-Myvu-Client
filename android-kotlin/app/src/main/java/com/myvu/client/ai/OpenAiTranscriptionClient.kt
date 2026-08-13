@@ -6,6 +6,7 @@ import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.io.File
+import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -36,7 +37,9 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
 
         val wav = OpusStream.toWav(pcm, sampleRate, channels)
         return HttpRetry.execute(serviceLabel) {
-            transcribeOnce(wav, "speech.wav", "audio/wav")
+            transcribeWithWriter { out ->
+                writeFilePart(out, "file", "speech.wav", "audio/wav", wav)
+            }
         }
     }
 
@@ -47,7 +50,6 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
         }
         if (!file.exists() || file.length() == 0L) return ""
 
-        val audioBytes = file.readBytes()
         val filename = file.name
         val contentType = when {
             filename.endsWith(".m4a", ignoreCase = true) -> "audio/m4a"
@@ -57,15 +59,15 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
             else -> "audio/m4a"
         }
         return HttpRetry.execute(serviceLabel) {
-            transcribeOnce(audioBytes, filename, contentType)
+            transcribeWithWriter { out ->
+                writeFileStreamPart(out, "file", filename, contentType, file)
+            }
         }
     }
 
     @Throws(IOException::class)
-    private fun transcribeOnce(
-        audioData: ByteArray,
-        filename: String = "speech.wav",
-        contentType: String = "audio/wav"
+    private fun transcribeWithWriter(
+        writeAudioPart: (DataOutputStream) -> Unit
     ): String {
         val url = HttpEndpoint.parse(endpoint, "$serviceLabel endpoint")
         val conn = url.openConnection() as HttpURLConnection
@@ -83,7 +85,7 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
             conn.doOutput = true
 
             DataOutputStream(conn.outputStream).use { out ->
-                writeFilePart(out, "file", filename, contentType, audioData)
+                writeAudioPart(out)
                 writeTextPart(out, "model", model)
                 writeTextPart(out, "language", "es")
                 writeTextPart(out, "response_format", "json")
@@ -131,6 +133,27 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
             out.writeBytes("Content-Disposition: form-data; name=\"$name\"; filename=\"$filename\"\r\n")
             out.writeBytes("Content-Type: $contentType\r\n\r\n")
             out.write(data)
+            out.writeBytes("\r\n")
+        }
+
+        @Throws(IOException::class)
+        private fun writeFileStreamPart(
+            out: DataOutputStream,
+            name: String,
+            filename: String,
+            contentType: String,
+            file: File
+        ) {
+            out.writeBytes("--$BOUNDARY\r\n")
+            out.writeBytes("Content-Disposition: form-data; name=\"$name\"; filename=\"$filename\"\r\n")
+            out.writeBytes("Content-Type: $contentType\r\n\r\n")
+            FileInputStream(file).use { fis ->
+                val buffer = ByteArray(8192)
+                var bytesRead: Int
+                while (fis.read(buffer).also { bytesRead = it } != -1) {
+                    out.write(buffer, 0, bytesRead)
+                }
+            }
             out.writeBytes("\r\n")
         }
 
