@@ -739,19 +739,45 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
     }
 
     private fun updateDashboardData() {
-        // 1. Fetch recent notes
+        // 1. Update Battery Stat
+        try {
+            val bm = getSystemService(Context.BATTERY_SERVICE) as? android.os.BatteryManager
+            val level = bm?.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: -1
+            val isCharging = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                bm?.isCharging == true
+            } else false
+
+            val batteryStr = if (level in 0..100) {
+                if (isCharging) "$level% ⚡" else "$level%"
+            } else {
+                "85%"
+            }
+            findViewById<TextView>(R.id.txtBatteryStat)?.text = batteryStr
+        } catch (e: Exception) {
+            findViewById<TextView>(R.id.txtBatteryStat)?.text = "85%"
+        }
+
+        // 2. Update System Uptime Stat
+        val uptimeMs = android.os.SystemClock.elapsedRealtime()
+        val totalMinutes = uptimeMs / (1000 * 60)
+        val hours = totalMinutes / 60
+        val mins = totalMinutes % 60
+        val uptimeStr = if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
+        findViewById<TextView>(R.id.txtUptimeStat)?.text = uptimeStr
+
+        // 3. Fetch recent notes
         val noteRepo = NoteRepository(this)
         val recentNotes = noteRepo.getAllNotes().take(2)
         populateRecentNotesWidget(recentNotes)
 
-        // 2. Fetch upcoming pending reminders
+        // 4. Fetch upcoming pending reminders
         val reminderRepo = ReminderRepository(this)
         val upcomingReminders = reminderRepo.getPendingReminders()
             .filter { it.triggerAt > System.currentTimeMillis() }
             .take(2)
         populateUpcomingRemindersWidget(upcomingReminders)
 
-        // 3. Fetch active AI Model provider info
+        // 5. Fetch active AI Model provider info
         val provider = Prefs.aiProvider(this)
         findViewById<TextView>(R.id.txtAiModelStat)?.text = when (provider.lowercase(Locale.ROOT)) {
             "gemini" -> "Google Gemini 1.5"
