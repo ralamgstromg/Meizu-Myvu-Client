@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        app:cardBackgroundColor="@color/obsidian_container"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="8dp"
+        app:strokeColor="@color/outline_variant_obsidian"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView
+                android:id="@+id/lblDialogReminderTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:text="Editar Recordatorio"
+                android:textColor="@color/on_surface_obsidian"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <!-- Title Input (16dp radius via Input.Myvu style) -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Input.Myvu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:hint="Título del recordatorio (opcional)">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/txtReminderTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:importantForAutofill="no"
+                    android:inputType="textCapSentences"
+                    android:maxLines="1"
+                    android:textColor="@color/on_surface_obsidian" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Description Input -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Input.Myvu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="Descripción del recordatorio">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/txtReminderBody"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="top|start"
+                    android:importantForAutofill="no"
+                    android:inputType="textMultiLine"
+                    android:minLines="3"
+                    android:textColor="@color/on_surface_obsidian" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Date & Time Pickers Trigger Buttons -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:text="Programación de alarma"
+                android:textColor="@color/on_surface_variant_obsidian"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPickDate"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="Fecha: --/--/----"
+                    android:textColor="@color/cyber_teal"
+                    app:cornerRadius="16dp"
+                    app:strokeColor="@color/outline_variant_obsidian" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPickReminderTime"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="Hora: --:--"
+                    android:textColor="@color/cyber_teal"
+                    app:cornerRadius="16dp"
+                    app:strokeColor="@color/outline_variant_obsidian" />
+            </LinearLayout>
+
+            <!-- Action buttons: Delete, Cancel, Save -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDeleteReminder"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Eliminar"
+                    android:textColor="#FF5252"
+                    app:cornerRadius="16dp"
+                    app:strokeColor="#FF5252" />
+
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCancelReminder"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="8dp"
+                    android:text="Cancelar"
+                    android:textColor="@color/on_surface_variant_obsidian"
+                    app:cornerRadius="16dp"
+                    app:strokeColor="@color/outline_variant_obsidian" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveReminder"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Guardar"
+                    android:textColor="@color/on_cyber_teal"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/cyber_teal"
+                    app:cornerRadius="16dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</ScrollView>

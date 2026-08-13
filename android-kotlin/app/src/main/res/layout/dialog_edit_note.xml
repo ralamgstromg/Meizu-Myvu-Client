@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        app:cardBackgroundColor="@color/obsidian_container"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="8dp"
+        app:strokeColor="@color/outline_variant_obsidian"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView
+                android:id="@+id/lblDialogNoteTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:text="Editar Nota"
+                android:textColor="@color/on_surface_obsidian"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <!-- Title Input (16dp radius via Input.Myvu style) -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Input.Myvu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:hint="Título de la nota (opcional)">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/txtNoteTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:importantForAutofill="no"
+                    android:inputType="textCapSentences"
+                    android:maxLines="1"
+                    android:textColor="@color/on_surface_obsidian" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Text / Voice Selector -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:text="Tipo de nota"
+                android:textColor="@color/on_surface_variant_obsidian"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/toggleNoteType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:checkedButton="@id/btnTypeText"
+                app:singleSelection="true">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTypeText"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="Texto"
+                    android:textColor="@color/on_surface_obsidian"
+                    app:cornerRadius="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTypeVoice"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="Voz (STT)"
+                    android:textColor="@color/on_surface_obsidian"
+                    app:cornerRadius="16dp" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <!-- Voice Recording Panel -->
+            <LinearLayout
+                android:id="@+id/layoutVoiceSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@color/obsidian_container_high"
+                android:orientation="vertical"
+                android:padding="12dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRecordVoice"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:text="Grabar Voz"
+                        android:textColor="@color/on_cyber_teal"
+                        app:backgroundTint="@color/cyber_teal"
+                        app:cornerRadius="16dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPlayAudio"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:text="Reproducir"
+                        android:textColor="@color/cyber_teal"
+                        android:visibility="gone"
+                        app:cornerRadius="16dp"
+                        app:strokeColor="@color/cyber_teal" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/lblVoiceStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:text="Presiona para grabar audio y transcribir"
+                    android:textColor="@color/on_surface_variant_obsidian"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- Transcribed body editor -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Input.Myvu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                android:hint="Contenido / Transcripción">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/txtNoteBody"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="top|start"
+                    android:importantForAutofill="no"
+                    android:inputType="textMultiLine"
+                    android:minLines="4"
+                    android:textColor="@color/on_surface_obsidian" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Action buttons: Delete, Cancel, Save -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDeleteNote"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Eliminar"
+                    android:textColor="#FF5252"
+                    app:cornerRadius="16dp"
+                    app:strokeColor="#FF5252" />
+
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCancelNote"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="8dp"
+                    android:text="Cancelar"
+                    android:textColor="@color/on_surface_variant_obsidian"
+                    app:cornerRadius="16dp"
+                    app:strokeColor="@color/outline_variant_obsidian" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveNote"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Guardar"
+                    android:textColor="@color/on_cyber_teal"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/cyber_teal"
+                    app:cornerRadius="16dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</ScrollView>
