@@ -16,6 +16,7 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(context.applicationCont
                     "body TEXT NOT NULL, " +
                     "audio_path TEXT, " +
                     "duration_sec INTEGER NOT NULL DEFAULT 0, " +
+                    "tags TEXT NOT NULL DEFAULT '', " +
                     "created_at INTEGER NOT NULL, " +
                     "updated_at INTEGER NOT NULL);"
         )
@@ -32,7 +33,7 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(context.applicationCont
                     "alarm_request_code INTEGER NOT NULL);"
         )
 
-        LogBus.log("LocalDatabase -> Created notes and reminders tables (v2)")
+        LogBus.log("LocalDatabase -> Created notes and reminders tables (v3)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -52,11 +53,19 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(context.applicationCont
                 onCreate(db)
             }
         }
+        if (oldVersion < 3) {
+            try {
+                db.execSQL("ALTER TABLE notes ADD COLUMN tags TEXT DEFAULT ''")
+                LogBus.log("LocalDatabase -> Migrated database to v3 (added tags column)")
+            } catch (e: Exception) {
+                LogBus.error("LocalDatabase -> Migration to v3 failed", e)
+            }
+        }
     }
 
     companion object {
         const val DATABASE_NAME = "myvu_client.db"
-        const val DATABASE_VERSION = 2
+        const val DATABASE_VERSION = 3
 
         @Volatile
         private var instance: LocalDatabase? = null

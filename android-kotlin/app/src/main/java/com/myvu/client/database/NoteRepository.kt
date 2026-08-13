@@ -18,7 +18,8 @@ class NoteRepository(context: Context) {
         body: String,
         type: String = "TEXT",
         audioPath: String? = null,
-        durationSec: Int = 0
+        durationSec: Int = 0,
+        tags: String = ""
     ): Long {
         val now = System.currentTimeMillis()
         val note = Note(
@@ -27,6 +28,7 @@ class NoteRepository(context: Context) {
             body = body,
             audioPath = audioPath,
             durationSec = durationSec,
+            tags = tags,
             createdAt = now,
             updatedAt = now
         )
@@ -43,6 +45,7 @@ class NoteRepository(context: Context) {
             put("body", note.body)
             put("audio_path", note.audioPath)
             put("duration_sec", note.durationSec)
+            put("tags", note.tags)
             put("created_at", now)
             put("updated_at", updated)
         }
@@ -66,6 +69,7 @@ class NoteRepository(context: Context) {
             put("body", note.body)
             put("audio_path", note.audioPath)
             put("duration_sec", note.durationSec)
+            put("tags", note.tags)
             put("updated_at", now)
         }
         val rows = db.update("notes", values, "id = ?", arrayOf(note.id.toString()))
@@ -114,7 +118,8 @@ class NoteRepository(context: Context) {
 
         val cleanQuery = query.trim()
         if (cleanQuery.isNotEmpty()) {
-            selectionParts.add("(title LIKE ? OR body LIKE ?)")
+            selectionParts.add("(title LIKE ? OR body LIKE ? OR tags LIKE ?)")
+            selectionArgs.add("%$cleanQuery%")
             selectionArgs.add("%$cleanQuery%")
             selectionArgs.add("%$cleanQuery%")
         }
@@ -163,6 +168,9 @@ class NoteRepository(context: Context) {
         val durationIdx = c.getColumnIndex("duration_sec")
         val durationSec = if (durationIdx != -1 && !c.isNull(durationIdx)) c.getInt(durationIdx) else 0
 
+        val tagsIdx = c.getColumnIndex("tags")
+        val tags = if (tagsIdx != -1 && !c.isNull(tagsIdx)) c.getString(tagsIdx) else ""
+
         return Note(
             id = c.getLong(c.getColumnIndexOrThrow("id")),
             type = type,
@@ -170,6 +178,7 @@ class NoteRepository(context: Context) {
             body = c.getString(c.getColumnIndexOrThrow("body")),
             audioPath = audioPath,
             durationSec = durationSec,
+            tags = tags,
             createdAt = c.getLong(c.getColumnIndexOrThrow("created_at")),
             updatedAt = c.getLong(c.getColumnIndexOrThrow("updated_at"))
         )

@@ -7,6 +7,7 @@ data class Note(
     var body: String = "",
     var audioPath: String? = null,
     var durationSec: Int = 0,
+    val tags: String = "",
     var createdAt: Long = 0,
     var updatedAt: Long = 0
 )
