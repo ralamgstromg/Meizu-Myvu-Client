@@ -40,7 +40,9 @@ open class BtTransport @JvmOverloads constructor(
     private val closing = AtomicBoolean(false)
     private val disconnectReported = AtomicBoolean(false)
 
-    private val txChannel = Channel<ByteArray>(Channel.UNLIMITED)
+    // Bounded to 256 frames. Excess frames are dropped with a warning log
+    // rather than accumulating indefinitely under RFCOMM congestion.
+    private val txChannel = Channel<ByteArray>(256)
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private val _payloadFlow = MutableSharedFlow<ByteArray>()
@@ -165,7 +167,10 @@ open class BtTransport @JvmOverloads constructor(
             LogBus.warn("send on a closed RFCOMM link -- dropping ${payload.size}B")
             return
         }
-        txChannel.trySend(payload)
+        val sendResult = txChannel.trySend(payload)
+        if (sendResult.isFailure) {
+            LogBus.warn("BtTransport: TX queue full -- dropping frame (RFCOMM congested)")
+        }
     }
 
     override fun close() {
