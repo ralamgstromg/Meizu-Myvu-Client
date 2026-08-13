@@ -100,6 +100,10 @@ class NotesActivity : AppCompatActivity() {
         setupSearchAndFilter()
         setupActions()
         loadData()
+
+        if (intent.getBooleanExtra("SHOW_REMINDERS", false) || intent.getStringExtra("EXTRA_FILTER") == "REMINDERS") {
+            chipGroupFilter.check(R.id.chipFilterReminders)
+        }
     }
 
     private fun setupTabs() {

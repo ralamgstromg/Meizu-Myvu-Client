@@ -42,11 +42,18 @@ import com.myvu.client.R
 import com.myvu.client.app.feature.NavCommands
 import com.myvu.client.core.LogBus
 import com.myvu.client.core.Prefs
+import com.myvu.client.database.Note
+import com.myvu.client.database.NoteRepository
+import com.myvu.client.database.Reminder
+import com.myvu.client.database.ReminderRepository
 import com.myvu.client.service.ConnectionManager
 import com.myvu.client.service.ConnectionState
 import com.myvu.client.service.MirrorNotificationListener
 import com.myvu.client.service.MyvuService
+import java.text.SimpleDateFormat
 import java.util.ArrayList
+import java.util.Date
+import java.util.Locale
 
 class ConnectActivity : AppCompatActivity(), LogBus.Listener {
 
@@ -158,6 +165,11 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         MirrorNotificationListener.requestRebindIfEnabled(this)
     }
 
+    override fun onResume() {
+        super.onResume()
+        updateDashboardData()
+    }
+
     override fun onStop() {
         super.onStop()
         LogBus.removeListener(this)
@@ -234,9 +246,26 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         findViewById<View>(R.id.btnTrackpad).setOnClickListener {
             startActivity(Intent(this, TrackpadActivity::class.java))
         }
-        findViewById<View>(R.id.btnNotes).setOnClickListener {
+        val openNotes = View.OnClickListener {
             startActivity(Intent(this, NotesActivity::class.java))
         }
+        val openReminders = View.OnClickListener {
+            val intent = Intent(this, NotesActivity::class.java).apply {
+                putExtra("EXTRA_FILTER", "REMINDERS")
+                putExtra("SHOW_REMINDERS", true)
+            }
+            startActivity(intent)
+        }
+        findViewById<View>(R.id.btnNotes).setOnClickListener(openNotes)
+        findViewById<View>(R.id.btnOpenAllNotes)?.setOnClickListener(openNotes)
+        findViewById<View>(R.id.cardRecentNotes)?.setOnClickListener(openNotes)
+        (findViewById<TextView>(R.id.txtRecentNote1Title)?.parent as? View)?.setOnClickListener(openNotes)
+        (findViewById<TextView>(R.id.txtRecentNote2Title)?.parent as? View)?.setOnClickListener(openNotes)
+
+        findViewById<View>(R.id.cardUpcomingReminders)?.setOnClickListener(openReminders)
+        (findViewById<TextView>(R.id.txtReminder1Title)?.parent as? View)?.setOnClickListener(openReminders)
+        (findViewById<TextView>(R.id.txtReminder2Title)?.parent as? View)?.setOnClickListener(openReminders)
+
         findViewById<View>(R.id.cardStatus).setOnClickListener {
             if (need()) {
                 service?.connection()?.queryBatteryInfo()
@@ -699,6 +728,111 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         private fun text(field: TextInputEditText): String {
             val c = field.text
             return c?.toString()?.trim() ?: ""
+        }
+    }
+
+    private fun updateDashboardData() {
+        // 1. Fetch recent notes
+        val noteRepo = NoteRepository(this)
+        val recentNotes = noteRepo.getAllNotes().take(2)
+        populateRecentNotesWidget(recentNotes)
+
+        // 2. Fetch upcoming pending reminders
+        val reminderRepo = ReminderRepository(this)
+        val upcomingReminders = reminderRepo.getPendingReminders()
+            .filter { it.triggerAt > System.currentTimeMillis() }
+            .take(2)
+        populateUpcomingRemindersWidget(upcomingReminders)
+
+        // 3. Fetch active AI Model provider info
+        val provider = Prefs.aiProvider(this)
+        findViewById<TextView>(R.id.txtAiModelStat)?.text = when (provider.lowercase(Locale.ROOT)) {
+            "gemini" -> "Google Gemini 1.5"
+            "claude" -> "Anthropic Claude 3.5"
+            "local" -> "AI Local / Ollama"
+            else -> "OpenAI / GPT-4o"
+        }
+    }
+
+    private fun populateRecentNotesWidget(notes: List<Note>) {
+        val txtTitle1 = findViewById<TextView>(R.id.txtRecentNote1Title) ?: return
+        val txtBody1 = findViewById<TextView>(R.id.txtRecentNote1Body)
+        val txtTitle2 = findViewById<TextView>(R.id.txtRecentNote2Title)
+        val txtBody2 = findViewById<TextView>(R.id.txtRecentNote2Body)
+
+        val sdf = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
+
+        if (notes.isNotEmpty()) {
+            val n1 = notes[0]
+            txtTitle1.text = if (n1.title.isNotBlank()) n1.title else (if (n1.type == "VOICE") "Nota de voz" else "Nota sin título")
+            val dateStr1 = if (n1.updatedAt > 0) sdf.format(Date(n1.updatedAt)) else ""
+            txtBody1?.text = if (n1.body.isNotBlank()) {
+                if (dateStr1.isNotEmpty()) "${n1.body} • $dateStr1" else n1.body
+            } else {
+                dateStr1.ifEmpty { "Sin contenido" }
+            }
+
+            if (notes.size > 1) {
+                val n2 = notes[1]
+                txtTitle2?.text = if (n2.title.isNotBlank()) n2.title else (if (n2.type == "VOICE") "Nota de voz" else "Nota sin título")
+                val dateStr2 = if (n2.updatedAt > 0) sdf.format(Date(n2.updatedAt)) else ""
+                txtBody2?.text = if (n2.body.isNotBlank()) {
+                    if (dateStr2.isNotEmpty()) "${n2.body} • $dateStr2" else n2.body
+                } else {
+                    dateStr2.ifEmpty { "Sin contenido" }
+                }
+            } else {
+                txtTitle2?.text = "--"
+                txtBody2?.text = "Sin más notas recientes"
+            }
+        } else {
+            txtTitle1.text = "Sin notas recientes"
+            txtBody1?.text = "Sin contenido reciente"
+            txtTitle2?.text = "--"
+            txtBody2?.text = "--"
+        }
+    }
+
+    private fun populateUpcomingRemindersWidget(reminders: List<Reminder>) {
+        val txtTitle1 = findViewById<TextView>(R.id.txtReminder1Title) ?: return
+        val txtTime1 = findViewById<TextView>(R.id.txtReminder1Time)
+        val txtTitle2 = findViewById<TextView>(R.id.txtReminder2Title)
+        val txtTime2 = findViewById<TextView>(R.id.txtReminder2Time)
+
+        if (reminders.isNotEmpty()) {
+            val r1 = reminders[0]
+            txtTitle1.text = if (r1.title.isNotBlank()) r1.title else r1.body.ifBlank { "Recordatorio" }
+            txtTime1?.text = formatTriggerTime(r1.triggerAt)
+
+            if (reminders.size > 1) {
+                val r2 = reminders[1]
+                txtTitle2?.text = if (r2.title.isNotBlank()) r2.title else r2.body.ifBlank { "Recordatorio" }
+                txtTime2?.text = formatTriggerTime(r2.triggerAt)
+            } else {
+                txtTitle2?.text = "--"
+                txtTime2?.text = "--:--"
+            }
+        } else {
+            txtTitle1.text = "Sin recordatorios pendientes"
+            txtTime1?.text = "--:--"
+            txtTitle2?.text = "--"
+            txtTime2?.text = "--:--"
+        }
+    }
+
+    private fun formatTriggerTime(triggerAt: Long): String {
+        val diffMs = triggerAt - System.currentTimeMillis()
+        if (diffMs <= 0) return "Ahora"
+        val diffMinutes = diffMs / (1000 * 60)
+        val diffHours = diffMinutes / 60
+
+        return when {
+            diffMinutes < 60 -> "Vence en ${diffMinutes}m"
+            diffHours < 24 -> "Vence en ${diffHours}h ${diffMinutes % 60}m"
+            else -> {
+                val sdf = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
+                sdf.format(Date(triggerAt))
+            }
         }
     }
 }
