@@ -16,6 +16,15 @@
         android:paddingHorizontal="16dp">
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSettingsDrawer"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="Navigation Menu"
+            app:icon="@drawable/ic_menu_hamburger"
+            app:iconTint="@color/cyber_teal" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSettingsBack"
             style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
@@ -34,7 +43,7 @@
             android:text="Settings" />
 
         <Space
-            android:layout_width="72dp"
+            android:layout_width="48dp"
             android:layout_height="1dp" />
     </LinearLayout>
 

@@ -3,6 +3,7 @@ package com.myvu.client.ui
 import android.Manifest
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -63,7 +64,16 @@ class NotesActivity : AppCompatActivity() {
         setContentView(R.layout.activity_notes)
 
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbarNotes)
-        toolbar.setNavigationOnClickListener { finish() }
+        val navigateToDashboard = {
+            if (isTaskRoot) {
+                val intent = Intent(this, ConnectActivity::class.java)
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                startActivity(intent)
+            }
+            finish()
+        }
+        toolbar.setNavigationOnClickListener { navigateToDashboard() }
+        findViewById<View?>(R.id.btnNotesDrawer)?.setOnClickListener { navigateToDashboard() }
 
         noteRepo = NoteRepository(this)
         reminderRepo = ReminderRepository(this)

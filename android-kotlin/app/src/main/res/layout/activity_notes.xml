@@ -13,7 +13,19 @@
         android:background="@color/obsidian_bg"
         app:title="Notas y Recordatorios"
         app:titleTextColor="@color/on_surface_obsidian"
-        app:navigationIconTint="@color/cyber_teal" />
+        app:navigationIcon="@drawable/ic_menu_hamburger"
+        app:navigationIconTint="@color/cyber_teal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNotesDrawer"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="end"
+            android:contentDescription="Navigation Menu"
+            app:icon="@drawable/ic_menu_hamburger"
+            app:iconTint="@color/cyber_teal" />
+    </com.google.android.material.appbar.MaterialToolbar>
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/layoutSearchNotes"

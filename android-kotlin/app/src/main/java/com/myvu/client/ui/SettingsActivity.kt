@@ -194,7 +194,16 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnPickApps).setOnClickListener {
             startActivity(Intent(this, NotificationAppsActivity::class.java))
         }
-        findViewById<View>(R.id.btnSettingsBack).setOnClickListener { finish() }
+        val navigateToDashboard = {
+            if (isTaskRoot) {
+                val intent = Intent(this, ConnectActivity::class.java)
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                startActivity(intent)
+            }
+            finish()
+        }
+        findViewById<View>(R.id.btnSettingsBack).setOnClickListener { navigateToDashboard() }
+        findViewById<View?>(R.id.btnSettingsDrawer)?.setOnClickListener { navigateToDashboard() }
     }
 
     private fun wireTouchpad() {
