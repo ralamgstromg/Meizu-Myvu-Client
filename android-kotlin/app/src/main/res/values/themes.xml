@@ -37,4 +37,34 @@
     <style name="Label.Myvu" parent="TextAppearance.Material3.BodyMedium">
         <item name="android:textColor">@color/on_surface_variant_obsidian</item>
     </style>
+
+    <style name="Input.Myvu" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">16dp</item>
+        <item name="boxCornerRadiusTopEnd">16dp</item>
+        <item name="boxCornerRadiusBottomStart">16dp</item>
+        <item name="boxCornerRadiusBottomEnd">16dp</item>
+        <item name="boxBackgroundColor">@color/obsidian_container_high</item>
+        <item name="boxStrokeColor">@color/input_box_stroke</item>
+        <item name="hintTextColor">@color/cyber_teal</item>
+        <item name="android:textColorHint">@color/on_surface_variant_obsidian</item>
+    </style>
+
+    <style name="Button.Myvu.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="cornerRadius">16dp</item>
+        <item name="strokeColor">@color/outline_variant_obsidian</item>
+        <item name="android:textColor">@color/on_surface_obsidian</item>
+        <item name="rippleColor">#3300F0FF</item>
+    </style>
+
+    <style name="Switch.Myvu" parent="Widget.Material3.CompoundButton.MaterialSwitch">
+        <item name="thumbTint">@color/switch_thumb_tint</item>
+        <item name="trackTint">@color/switch_track_tint</item>
+    </style>
+
+    <style name="Slider.Myvu" parent="Widget.Material3.Slider">
+        <item name="thumbColor">@color/cyber_teal</item>
+        <item name="trackColorActive">@color/cyber_teal</item>
+        <item name="trackColorInactive">@color/obsidian_container_highest</item>
+        <item name="haloColor">#3300F0FF</item>
+    </style>
 </resources>
