@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="176dp"
+    android:background="@color/obsidian_container_low"
+    android:gravity="bottom"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <ImageView
+        android:id="@+id/imgHeaderGlasses"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginBottom="12dp"
+        android:contentDescription="MYVU Smart Glasses"
+        android:src="@drawable/ic_glasses"
+        app:tint="@color/cyber_teal" />
+
+    <TextView
+        android:id="@+id/txtHeaderTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="MYVU Sync"
+        android:textColor="@color/on_surface_obsidian"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/imgHeaderStatusDot"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:layout_marginEnd="6dp"
+            android:contentDescription="Status Dot"
+            android:src="@drawable/status_dot" />
+
+        <TextView
+            android:id="@+id/txtHeaderStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Conectado • 85% Batería"
+            android:textColor="@color/on_surface_variant_obsidian"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+</LinearLayout>
