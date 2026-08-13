@@ -156,16 +156,10 @@
                                 android:visibility="gone" />
 
                             <com.google.android.material.textfield.TextInputLayout
-                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                style="@style/Input.Myvu"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="16dp"
-                                app:boxStrokeColor="@color/cyber_teal"
-                                app:hintTextColor="@color/cyber_teal"
-                                app:boxCornerRadiusTopStart="12dp"
-                                app:boxCornerRadiusTopEnd="12dp"
-                                app:boxCornerRadiusBottomStart="12dp"
-                                app:boxCornerRadiusBottomEnd="12dp"
                                 app:helperTextEnabled="true"
                                 app:helperText="Leave blank to auto-search"
                                 app:helperTextTextColor="@color/on_surface_variant_obsidian"
@@ -256,16 +250,10 @@
                                 android:text="Notifications" />
 
                             <com.google.android.material.textfield.TextInputLayout
-                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                style="@style/Input.Myvu"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="12dp"
-                                app:boxStrokeColor="@color/cyber_teal"
-                                app:hintTextColor="@color/cyber_teal"
-                                app:boxCornerRadiusTopStart="12dp"
-                                app:boxCornerRadiusTopEnd="12dp"
-                                app:boxCornerRadiusBottomStart="12dp"
-                                app:boxCornerRadiusBottomEnd="12dp"
                                 android:hint="Title (optional)">
 
                                 <com.google.android.material.textfield.TextInputEditText
@@ -278,16 +266,10 @@
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
-                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                style="@style/Input.Myvu"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="8dp"
-                                app:boxStrokeColor="@color/cyber_teal"
-                                app:hintTextColor="@color/cyber_teal"
-                                app:boxCornerRadiusTopStart="12dp"
-                                app:boxCornerRadiusTopEnd="12dp"
-                                app:boxCornerRadiusBottomStart="12dp"
-                                app:boxCornerRadiusBottomEnd="12dp"
                                 android:hint="Message">
 
                                 <com.google.android.material.textfield.TextInputEditText
@@ -375,16 +357,10 @@
                                 android:text="Press the glasses button and speak, or type below" />
 
                             <com.google.android.material.textfield.TextInputLayout
-                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                style="@style/Input.Myvu"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="12dp"
-                                app:boxStrokeColor="@color/cyber_teal"
-                                app:hintTextColor="@color/cyber_teal"
-                                app:boxCornerRadiusTopStart="12dp"
-                                app:boxCornerRadiusTopEnd="12dp"
-                                app:boxCornerRadiusBottomStart="12dp"
-                                app:boxCornerRadiusBottomEnd="12dp"
                                 android:hint="Ask a question">
 
                                 <com.google.android.material.textfield.TextInputEditText
@@ -438,16 +414,10 @@
                                 android:text="Teleprompter" />
 
                             <com.google.android.material.textfield.TextInputLayout
-                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                style="@style/Input.Myvu"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="12dp"
-                                app:boxStrokeColor="@color/cyber_teal"
-                                app:hintTextColor="@color/cyber_teal"
-                                app:boxCornerRadiusTopStart="12dp"
-                                app:boxCornerRadiusTopEnd="12dp"
-                                app:boxCornerRadiusBottomStart="12dp"
-                                app:boxCornerRadiusBottomEnd="12dp"
                                 android:hint="Script text">
 
                                 <com.google.android.material.textfield.TextInputEditText
@@ -660,16 +630,10 @@
                                 android:text="Navigation" />
 
                             <com.google.android.material.textfield.TextInputLayout
-                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                style="@style/Input.Myvu"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="12dp"
-                                app:boxStrokeColor="@color/cyber_teal"
-                                app:hintTextColor="@color/cyber_teal"
-                                app:boxCornerRadiusTopStart="12dp"
-                                app:boxCornerRadiusTopEnd="12dp"
-                                app:boxCornerRadiusBottomStart="12dp"
-                                app:boxCornerRadiusBottomEnd="12dp"
                                 android:hint="Destination (place or lat,lon)">
 
                                 <com.google.android.material.textfield.TextInputEditText
