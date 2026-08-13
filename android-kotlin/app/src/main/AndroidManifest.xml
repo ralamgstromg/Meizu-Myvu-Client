@@ -24,6 +24,7 @@
     </queries>
 
     <application
+        android:name=".app.MyApp"
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher_ar"
         android:roundIcon="@drawable/ic_launcher_ar"
