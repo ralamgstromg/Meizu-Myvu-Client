@@ -429,9 +429,7 @@ class AiConversation(
             val answer: String?
             try {
                 if (provider == AiProvider.GEMINI_ANDROID) {
-                    val hybrid = client as? GeminiHybridClient
-                    val availability = hybrid?.availability()
-                    LogBus.log("AI_GEMINI_BACKEND_SELECTED backend=${availability?.state ?: "UNKNOWN"} sessionId=$sessionId")
+                    LogBus.log("AI_GEMINI_BACKEND_SELECTED provider=gemini_android sessionId=$sessionId")
                 }
                 answer = client.ask(fullPrompt)
             } catch (e: Exception) {

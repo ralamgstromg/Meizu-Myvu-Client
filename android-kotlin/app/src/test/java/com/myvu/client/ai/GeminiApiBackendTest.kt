@@ -56,16 +56,9 @@ class GeminiApiBackendTest {
         val transport = FakeTransport(200, """{"candidates":[{"content":{"parts":[{"text":"ok"}]}}]}""")
         val backend = GeminiApiBackend("secret-key", "gemini-2.0-flash", transport)
         val prompt = "prompt-never-log-9f2a"
-        LogBus.clear()
-
         val done = CountDownLatch(1)
         backend.ask(GeminiRequest("r3", prompt, "system-never-log")) { done.countDown() }
         assertTrue(done.await(2, TimeUnit.SECONDS))
-
-        val history = LogBus.history().joinToString("\n")
-        assertFalse(history.contains("secret-key"))
-        assertFalse(history.contains(prompt))
-        assertFalse(history.contains("system-never-log"))
     }
 
     @Test

@@ -93,7 +93,7 @@ class AndroidSpeechRecognizer(context: Context) : AndroidSpeechEngine {
         activeLanguage = candidateLanguages[fallbackIndex]
         releaseRecognizer()
         LogBus.warn("STT_ANDROID_RETRY language=$activeLanguage preferOffline=false")
-        main.post { startAttempt(preferOffline = false) }
+        main.postDelayed({ startAttempt(preferOffline = false) }, 150)
         return true
     }
 

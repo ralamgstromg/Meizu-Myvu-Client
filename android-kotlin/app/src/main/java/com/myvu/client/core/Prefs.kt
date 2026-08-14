@@ -21,6 +21,10 @@ object Prefs {
     private const val KEY_GEMINI_MODEL = "gemini_model"
     const val DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
     private const val KEY_GEMINI_FALLBACK_POLICY = "gemini_fallback_policy"
+    private const val KEY_USE_LOCAL_GEMMA = "use_local_gemma"
+    private const val KEY_GEMMA_MODEL_ID = "gemma_model_id"
+    private const val KEY_GEMMA_HF_TOKEN = "gemma_hf_token"
+    private const val KEY_GEMMA_CUSTOM_URL = "gemma_custom_url"
 
     const val DEFAULT_MAC = "2C:6F:4E:00:DC:47"
     const val DEFAULT_LOCAL_AI_ENDPOINT = "http://10.0.0.2:1234/v1/chat/completions"
@@ -103,6 +107,46 @@ object Prefs {
     @JvmStatic
     fun setGeminiFallbackPolicy(c: Context, policyId: String) {
         prefs(c).edit().putString(KEY_GEMINI_FALLBACK_POLICY, policyId).apply()
+    }
+
+    @JvmStatic
+    fun useLocalGemmaIfAvailable(c: Context): Boolean {
+        return prefs(c).getBoolean(KEY_USE_LOCAL_GEMMA, false)
+    }
+
+    @JvmStatic
+    fun setUseLocalGemmaIfAvailable(c: Context, enable: Boolean) {
+        prefs(c).edit().putBoolean(KEY_USE_LOCAL_GEMMA, enable).apply()
+    }
+
+    @JvmStatic
+    fun gemmaModelId(c: Context): String {
+        return prefs(c).getString(KEY_GEMMA_MODEL_ID, "gemma-4-e2b-it-int4") ?: "gemma-4-e2b-it-int4"
+    }
+
+    @JvmStatic
+    fun setGemmaModelId(c: Context, id: String) {
+        prefs(c).edit().putString(KEY_GEMMA_MODEL_ID, id).apply()
+    }
+
+    @JvmStatic
+    fun gemmaHfToken(c: Context): String {
+        return SecurePrefs.getSecret(c, KEY_GEMMA_HF_TOKEN, "")
+    }
+
+    @JvmStatic
+    fun setGemmaHfToken(c: Context, token: String) {
+        SecurePrefs.setSecret(c, KEY_GEMMA_HF_TOKEN, token)
+    }
+
+    @JvmStatic
+    fun gemmaCustomUrl(c: Context): String {
+        return prefs(c).getString(KEY_GEMMA_CUSTOM_URL, "") ?: ""
+    }
+
+    @JvmStatic
+    fun setGemmaCustomUrl(c: Context, url: String) {
+        prefs(c).edit().putString(KEY_GEMMA_CUSTOM_URL, url).apply()
     }
 
     @JvmStatic

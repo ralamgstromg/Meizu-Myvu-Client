@@ -11,14 +11,14 @@ import java.util.concurrent.atomic.AtomicInteger
 class GeminiHybridClientTest {
 
     private class FakeBackend(
-        override val backendId: String,
+        val id: String,
         private var avail: GeminiAvailability = GeminiAvailability(GeminiAvailability.State.AVAILABLE)
     ) : GeminiBackend {
         var askCount = 0
         var cancelCount = 0
         var shouldSucceed = true
         var errorToThrow: Throwable? = null
-        var answerToReturn = "Answer from $backendId"
+        var answerToReturn = "Answer from $id"
 
         override fun availability(): GeminiAvailability = avail
 
@@ -28,9 +28,9 @@ class GeminiHybridClientTest {
             if (err != null) {
                 callback(Result.failure(err))
             } else if (shouldSucceed) {
-                callback(Result.success(GeminiResult(request.requestId, answerToReturn, backendId)))
+                callback(Result.success(GeminiResult(request.requestId, answerToReturn, id)))
             } else {
-                callback(Result.failure(IOException("Backend $backendId failed")))
+                callback(Result.failure(IOException("Backend $id failed")))
             }
         }
 

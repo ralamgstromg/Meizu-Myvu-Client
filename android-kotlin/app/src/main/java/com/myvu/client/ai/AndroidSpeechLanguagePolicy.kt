@@ -6,12 +6,15 @@ object AndroidSpeechLanguagePolicy {
     private val fallbackLanguages = listOf("es-CO", "es", "en-US", "en")
 
     fun candidates(requested: String?): List<String> {
-        val normalized = requested.orEmpty().trim().replace('_', '-')
+        val raw = requested.orEmpty().trim().replace('_', '-')
+        val sanitized = if (raw.contains("-u-")) raw.substringBefore("-u-") else raw
+        val clean = sanitized.substringBefore("-x-").trim()
+
         val values = ArrayList<String>()
-        if (normalized.isNotEmpty()) {
-            values += normalized
-            val base = normalized.substringBefore('-')
-            if (base != normalized) values += base
+        if (clean.isNotEmpty()) {
+            values += clean
+            val base = clean.substringBefore('-')
+            if (base != clean) values += base
         }
         values += fallbackLanguages
         return values.map { it.lowercase(Locale.US) }
@@ -25,5 +28,5 @@ object AndroidSpeechLanguagePolicy {
 }
 
 object AndroidSpeechErrorPolicy {
-    fun isLanguageFallbackError(code: Int): Boolean = code == 11 || code == 12
+    fun isLanguageFallbackError(code: Int): Boolean = code == 11 || code == 12 || code == 7
 }

@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -41,6 +42,16 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var lblGeminiNanoStatus: TextView
     private lateinit var btnGeminiFallbackGroup: MaterialButtonToggleGroup
     private lateinit var btnCheckGeminiCapability: MaterialButton
+
+    private lateinit var swUseLocalGemma: MaterialSwitch
+    private lateinit var btnGemmaModelVersionGroup: MaterialButtonToggleGroup
+    private lateinit var txtGemmaHfToken: TextInputEditText
+    private lateinit var txtGemmaCustomUrl: TextInputEditText
+    private lateinit var lblGemmaModelStatus: TextView
+    private lateinit var progressGemmaDownload: com.google.android.material.progressindicator.LinearProgressIndicator
+    private lateinit var btnDownloadGemmaModel: MaterialButton
+    private lateinit var btnDeleteGemmaModel: MaterialButton
+    private var gemmaDownloader: com.myvu.client.ai.GemmaModelDownloader? = null
 
     private lateinit var txtApiKey: TextInputEditText
     private lateinit var txtModel: TextInputEditText
@@ -97,10 +108,21 @@ class SettingsActivity : AppCompatActivity() {
         txtTtsModel = findViewById(R.id.txtTtsModel)
         txtTtsVoice = findViewById(R.id.txtTtsVoice)
         txtSystemPrompt = findViewById(R.id.txtSystemPrompt)
-        layGeminiAndroidControls = findViewById(R.id.layGeminiAndroidControls)
+        layGeminiAndroidControls = findViewById<LinearLayout>(R.id.layGeminiAndroidControls)
         lblGeminiNanoStatus = findViewById(R.id.lblGeminiNanoStatus)
         btnGeminiFallbackGroup = findViewById(R.id.btnGeminiFallbackGroup)
         btnCheckGeminiCapability = findViewById(R.id.btnCheckGeminiCapability)
+
+        swUseLocalGemma = findViewById(R.id.swUseLocalGemma)
+        btnGemmaModelVersionGroup = findViewById(R.id.btnGemmaModelVersionGroup)
+        txtGemmaHfToken = findViewById(R.id.txtGemmaHfToken)
+        txtGemmaCustomUrl = findViewById(R.id.txtGemmaCustomUrl)
+        lblGemmaModelStatus = findViewById(R.id.lblGemmaModelStatus)
+        progressGemmaDownload = findViewById(R.id.progressGemmaDownload)
+        btnDownloadGemmaModel = findViewById(R.id.btnDownloadGemmaModel)
+        btnDeleteGemmaModel = findViewById(R.id.btnDeleteGemmaModel)
+        val selectedOption = com.myvu.client.ai.GemmaLocalClient.findOption(Prefs.gemmaModelId(this))
+        gemmaDownloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption)
     }
 
     private val providerClickListener = View.OnClickListener { v ->
@@ -121,6 +143,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         configureGeminiAndroidControls()
+        configureGemmaLocalControls()
 
         sttProvider = SttProvider.fromId(Prefs.sttProvider(this))
         val sttGroup: MaterialButtonToggleGroup = findViewById(R.id.btnSttProviderGroup)
@@ -216,6 +239,12 @@ class SettingsActivity : AppCompatActivity() {
         }
         persist(txtSystemPrompt) { value ->
             Prefs.setSystemPrompt(this, value)
+        }
+        persist(txtGemmaHfToken) { value ->
+            Prefs.setGemmaHfToken(this, value)
+        }
+        persist(txtGemmaCustomUrl) { value ->
+            Prefs.setGemmaCustomUrl(this, value)
         }
         chkIgnoreSsl?.setOnCheckedChangeListener { _, isChecked ->
             Prefs.setIgnoreSsl(this, isChecked)
@@ -386,6 +415,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         val isGeminiAndroid = aiProvider == AiProvider.GEMINI_ANDROID
+
         layGeminiAndroidControls.visibility = if (isGeminiAndroid) View.VISIBLE else View.GONE
 
         if (isGeminiAndroid) {
@@ -512,6 +542,91 @@ class SettingsActivity : AppCompatActivity() {
         if (announce) Toast.makeText(this, "Syncing weather…", Toast.LENGTH_SHORT).show()
     }
 
+    private fun configureGemmaLocalControls() {
+        swUseLocalGemma.isChecked = Prefs.useLocalGemmaIfAvailable(this)
+        swUseLocalGemma.setOnCheckedChangeListener { _, isChecked ->
+            Prefs.setUseLocalGemmaIfAvailable(this, isChecked)
+        }
+
+        txtGemmaHfToken.setText(Prefs.gemmaHfToken(this))
+        txtGemmaCustomUrl.setText(Prefs.gemmaCustomUrl(this))
+
+        val currentModelId = Prefs.gemmaModelId(this)
+        btnGemmaModelVersionGroup.check(
+            if (currentModelId == com.myvu.client.ai.GemmaLocalClient.GEMMA_E4B.id) R.id.btnGemma4B else R.id.btnGemma2B
+        )
+
+        btnGemmaModelVersionGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            val selectedOption = if (checkedId == R.id.btnGemma4B) {
+                com.myvu.client.ai.GemmaLocalClient.GEMMA_E4B
+            } else {
+                com.myvu.client.ai.GemmaLocalClient.GEMMA_E2B
+            }
+            Prefs.setGemmaModelId(this, selectedOption.id)
+            gemmaDownloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption)
+            updateGemmaModelStatus()
+        }
+
+        btnDownloadGemmaModel.setOnClickListener {
+            val selectedOption = com.myvu.client.ai.GemmaLocalClient.findOption(Prefs.gemmaModelId(this))
+            val downloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption).also { gemmaDownloader = it }
+            btnDownloadGemmaModel.isEnabled = false
+            progressGemmaDownload.visibility = View.VISIBLE
+
+            downloader.startDownload { state ->
+                runOnUiThread {
+                    when (state) {
+                        is com.myvu.client.ai.GemmaDownloadState.Downloading -> {
+                            progressGemmaDownload.progress = state.progressPercent
+                            lblGemmaModelStatus.text = "Descargando ${selectedOption.name}: ${state.progressPercent}% (${state.downloadedBytes / (1024 * 1024)}MB / ${state.totalBytes / (1024 * 1024)}MB)"
+                        }
+                        is com.myvu.client.ai.GemmaDownloadState.Completed -> {
+                            btnDownloadGemmaModel.isEnabled = true
+                            progressGemmaDownload.visibility = View.GONE
+                            lblGemmaModelStatus.text = "Modelo ${selectedOption.name}: Listo para uso offline"
+                            Toast.makeText(this, "Modelo descargado correctamente", Toast.LENGTH_SHORT).show()
+                        }
+                        is com.myvu.client.ai.GemmaDownloadState.Error -> {
+                            btnDownloadGemmaModel.isEnabled = true
+                            progressGemmaDownload.visibility = View.GONE
+                            lblGemmaModelStatus.text = "Error al descargar: ${state.message}"
+                            Toast.makeText(this, "Error de descarga: ${state.message}", Toast.LENGTH_LONG).show()
+                        }
+                        else -> {
+                            btnDownloadGemmaModel.isEnabled = true
+                            progressGemmaDownload.visibility = View.GONE
+                            lblGemmaModelStatus.text = "Modelo ${selectedOption.name}: No descargado"
+                        }
+                    }
+                }
+            }
+        }
+
+        btnDeleteGemmaModel.setOnClickListener {
+            val selectedOption = com.myvu.client.ai.GemmaLocalClient.findOption(Prefs.gemmaModelId(this))
+            val downloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption).also { gemmaDownloader = it }
+            val deleted = downloader.deleteModel()
+            progressGemmaDownload.visibility = View.GONE
+            btnDownloadGemmaModel.isEnabled = true
+            updateGemmaModelStatus()
+            val msg = if (deleted) "Modelo eliminado" else "No se pudo eliminar el archivo del modelo"
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+        }
+
+        updateGemmaModelStatus()
+    }
+
+    private fun updateGemmaModelStatus() {
+        val selectedOption = com.myvu.client.ai.GemmaLocalClient.findOption(Prefs.gemmaModelId(this))
+        val downloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption).also { gemmaDownloader = it }
+        val state = downloader.getInitialState()
+        lblGemmaModelStatus.text = when (state) {
+            is com.myvu.client.ai.GemmaDownloadState.Completed -> "Modelo ${selectedOption.name}: Listo para uso offline"
+            else -> "Modelo ${selectedOption.name}: No descargado"
+        }
+    }
+
     private fun configureGeminiAndroidControls() {
         btnGeminiFallbackGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
@@ -531,7 +646,11 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun updateGeminiNanoStatus() {
-        val detector = com.myvu.client.ai.GeminiCapabilityDetector(this)
+        val detector = object : com.myvu.client.ai.GeminiCapabilityDetector {
+            override fun detect(): com.myvu.client.ai.GeminiAvailability {
+                return com.myvu.client.ai.GeminiAvailability(com.myvu.client.ai.GeminiAvailability.State.UNAVAILABLE, "not_supported")
+            }
+        }
         val availability = detector.detect()
         lblGeminiNanoStatus.text = when (availability.state) {
             com.myvu.client.ai.GeminiAvailability.State.AVAILABLE -> "Estado Gemini Nano: Disponible en el dispositivo"

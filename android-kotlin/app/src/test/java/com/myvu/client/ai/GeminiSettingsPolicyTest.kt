@@ -1,26 +1,11 @@
 package com.myvu.client.ai
 
-import android.content.Context
-import com.myvu.client.core.Prefs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
-import org.mockito.ArgumentMatchers.anyString
-import org.mockito.ArgumentMatchers.eq
-import org.mockito.Mockito.`when`
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.verify
 
 class GeminiSettingsPolicyTest {
-
-    private lateinit var mockContext: Context
-
-    @Before
-    fun setUp() {
-        mockContext = mock(Context::class.java)
-    }
 
     @Test
     fun defaultGeminiFallbackPolicyIsNanoThenApi() {
