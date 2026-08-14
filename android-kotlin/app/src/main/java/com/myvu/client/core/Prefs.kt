@@ -17,6 +17,9 @@ object Prefs {
     private const val KEY_SYSTEM_PROMPT = "ai_system_prompt"
     private const val KEY_WEATHER_ENABLED = "weather_enabled"
     private const val KEY_WEATHER_PLACE = "weather_place"
+    private const val KEY_GEMINI_API_KEY = "gemini_api_key"
+    private const val KEY_GEMINI_MODEL = "gemini_model"
+    const val DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
     private const val KEY_GEMINI_FALLBACK_POLICY = "gemini_fallback_policy"
 
     const val DEFAULT_MAC = "2C:6F:4E:00:DC:47"
@@ -100,6 +103,37 @@ object Prefs {
     @JvmStatic
     fun setGeminiFallbackPolicy(c: Context, policyId: String) {
         prefs(c).edit().putString(KEY_GEMINI_FALLBACK_POLICY, policyId).apply()
+    }
+
+    @JvmStatic
+    fun geminiApiKey(c: Context): String {
+        val value = SecurePrefs.getSecret(c, KEY_GEMINI_API_KEY, "")
+        if (value.isNotEmpty()) return value
+        val legacy = prefs(c).getString(KEY_GEMINI_API_KEY, "") ?: ""
+        if (legacy.isNotEmpty()) {
+            SecurePrefs.setSecret(c, KEY_GEMINI_API_KEY, legacy)
+            prefs(c).edit().remove(KEY_GEMINI_API_KEY).apply()
+        }
+        return legacy
+    }
+
+    @JvmStatic
+    fun setGeminiApiKey(c: Context, value: String) {
+        SecurePrefs.setSecret(c, KEY_GEMINI_API_KEY, value)
+        prefs(c).edit().remove(KEY_GEMINI_API_KEY).apply()
+    }
+
+    @JvmStatic
+    fun geminiModel(c: Context): String {
+        return prefs(c).getString(KEY_GEMINI_MODEL, DEFAULT_GEMINI_MODEL)
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?: DEFAULT_GEMINI_MODEL
+    }
+
+    @JvmStatic
+    fun setGeminiModel(c: Context, model: String) {
+        prefs(c).edit().putString(KEY_GEMINI_MODEL, model.trim()).apply()
     }
 
     @JvmStatic
