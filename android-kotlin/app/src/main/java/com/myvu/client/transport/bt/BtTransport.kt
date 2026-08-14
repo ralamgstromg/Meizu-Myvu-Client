@@ -21,6 +21,7 @@ import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
+@android.annotation.SuppressLint("MissingPermission")
 open class BtTransport @JvmOverloads constructor(
     private val device: BluetoothDevice,
     private val serviceUuid: UUID = DEFAULT_SPP_UUID,

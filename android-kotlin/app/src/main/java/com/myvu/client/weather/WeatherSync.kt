@@ -63,6 +63,78 @@ class WeatherSync(
         }
     }
 
+    /** Fetches a one-shot reading for an AI query without changing sync scheduling. */
+    fun query(callback: QueryCallback) {
+        val place = Prefs.weatherPlace(context).trim()
+        if (place.isNotEmpty()) {
+            net.execute {
+                try {
+                    val point = Osrm.parsePoint(place)
+                    val reading = OpenMeteo.fetch(point[0], point[1], place)
+                    conn.post { callback.onSuccess(reading) }
+                } catch (e: Exception) {
+                    conn.post { callback.onFailure(e) }
+                }
+            }
+        } else {
+            queryCurrentLocation(callback)
+        }
+    }
+
+    private fun queryCurrentLocation(callback: QueryCallback) {
+        val done = booleanArrayOf(false)
+        val timeout = Runnable {
+            if (done[0]) return@Runnable
+            done[0] = true
+            locationSource.stop()
+            callback.onFailure(IllegalStateException("no location fix for weather"))
+        }
+        conn.postDelayed(timeout, FIX_TIMEOUT_MS)
+
+        locationSource.start(object : LocationSource.Listener {
+            override fun onFix(lat: Double, lon: Double, speedMps: Float, bearing: Float) {
+                if (done[0]) return
+                done[0] = true
+                conn.removeCallbacks(timeout)
+                locationSource.stop()
+                net.execute {
+                    try {
+                        val reading = OpenMeteo.fetch(lat, lon, null)
+                        conn.post { callback.onSuccess(reading) }
+                    } catch (e: Exception) {
+                        conn.post { callback.onFailure(e) }
+                    }
+                }
+            }
+
+            override fun onUnavailable(reason: String) {
+                if (done[0]) return
+                done[0] = true
+                conn.removeCallbacks(timeout)
+                locationSource.stop()
+                callback.onFailure(IllegalStateException("location unavailable for weather: $reason"))
+            }
+        })
+    }
+
+    fun syncReading(reading: Weather.Reading) {
+        conn.post {
+            val json = Weather.build(reading)
+            lastWeatherJson = json
+            sender.send(json)
+            LogBus.log(
+                "weather synced: ${reading.condition} ${reading.temp}°C" +
+                        if (reading.areaName == null) "" else " (${reading.areaName})"
+            )
+        }
+    }
+
+    interface QueryCallback {
+        fun onSuccess(reading: Weather.Reading)
+
+        fun onFailure(error: Exception)
+    }
+
     private fun fetchForPlace(place: String) {
         net.execute {
             try {

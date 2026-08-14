@@ -112,13 +112,24 @@ class SettingsActivity : AppCompatActivity() {
 
         sttProvider = SttProvider.fromId(Prefs.sttProvider(this))
         val sttGroup: MaterialButtonToggleGroup = findViewById(R.id.btnSttProviderGroup)
-        sttGroup.check(if (sttProvider == SttProvider.LOCAL) R.id.btnSttLocal else R.id.btnSttGroq)
+        sttGroup.check(
+            when (sttProvider) {
+                SttProvider.LOCAL -> R.id.btnSttLocal
+                SttProvider.ANDROID -> R.id.btnSttAndroid
+                else -> R.id.btnSttGroq
+            }
+        )
         sttGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
-            sttProvider = if (checkedId == R.id.btnSttLocal) SttProvider.LOCAL else SttProvider.GROQ
+            sttProvider = when (checkedId) {
+                R.id.btnSttLocal -> SttProvider.LOCAL
+                R.id.btnSttAndroid -> SttProvider.ANDROID
+                else -> SttProvider.GROQ
+            }
             Prefs.setSttProvider(this, sttProvider.id)
             bindSttFields()
         }
+        bindSttFields()
 
         ttsProvider = TtsProvider.fromId(Prefs.ttsProvider(this))
         val ttsGroup: MaterialButtonToggleGroup = findViewById(R.id.btnTtsProviderGroup)
@@ -359,14 +370,24 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun bindSttFields() {
         bindingStt = true
+        val native = sttProvider.isNative
         val local = sttProvider == SttProvider.LOCAL
-        laySttApiKey.hint = sttProvider.label + " API key"
-        laySttApiKey.helperText = if (local) "Optional Bearer token" else "Create one at console.groq.com"
+        val visibility = if (native) View.GONE else View.VISIBLE
+        laySttApiKey.visibility = visibility
+        laySttModel.visibility = visibility
         laySttEndpoint.visibility = if (local) View.VISIBLE else View.GONE
-        laySttModel.helperText = "Blank uses " + sttProvider.defaultModel
-        txtSttApiKey.setText(Prefs.sttApiKey(this, sttProvider.id))
-        txtSttEndpoint.setText(Prefs.sttEndpoint(this, sttProvider.id))
-        txtSttModel.setText(Prefs.sttModel(this, sttProvider.id))
+        laySttApiKey.hint = sttProvider.label + " API key"
+        laySttApiKey.helperText = if (native) {
+            "Uses Android speech services and phone microphone"
+        } else if (local) {
+            "Optional Bearer token"
+        } else {
+            "Create one at console.groq.com"
+        }
+        laySttModel.helperText = if (native) "Not used by Android speech services" else "Blank uses " + sttProvider.defaultModel
+        txtSttApiKey.setText(if (native) "" else Prefs.sttApiKey(this, sttProvider.id))
+        txtSttEndpoint.setText(if (native) "" else Prefs.sttEndpoint(this, sttProvider.id))
+        txtSttModel.setText(if (native) "" else Prefs.sttModel(this, sttProvider.id))
         bindingStt = false
     }
 

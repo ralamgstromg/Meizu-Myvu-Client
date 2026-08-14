@@ -28,6 +28,10 @@ class VoiceNoteRecorder(private val context: Context) {
     private var isRecording: Boolean = false
     private var recordingStartTime: Long = 0L
     private var mediaPlayer: MediaPlayer? = null
+    private val androidSpeech: AndroidSpeechEngine = AndroidSpeechRecognizer(context)
+    private var nativeTranscript: String? = null
+    private var nativeFinished = false
+    private var pendingNativeResult: ((String, String) -> Unit)? = null
 
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -74,6 +78,29 @@ class VoiceNoteRecorder(private val context: Context) {
             currentAudioFile = file
             isRecording = true
             recordingStartTime = System.currentTimeMillis()
+
+            if (SttProvider.fromId(Prefs.sttProvider(context)).isNative) {
+                nativeTranscript = null
+                nativeFinished = false
+                val started = androidSpeech.start(
+                    java.util.Locale.getDefault().toLanguageTag(),
+                    onResult = { text ->
+                        nativeTranscript = text.trim().ifEmpty { FALLBACK_TRANSCRIPT }
+                        nativeFinished = true
+                        completeNativeIfReady()
+                    },
+                    onError = { _, message ->
+                        LogBus.warn("VoiceNoteRecorder: Android STT failed: $message")
+                        nativeTranscript = FALLBACK_TRANSCRIPT
+                        nativeFinished = true
+                        completeNativeIfReady()
+                    }
+                )
+                if (!started) {
+                    nativeTranscript = FALLBACK_TRANSCRIPT
+                    nativeFinished = true
+                }
+            }
 
             LogBus.log("VoiceNoteRecorder: Recording started -> ${file.name}")
             file
@@ -126,6 +153,11 @@ class VoiceNoteRecorder(private val context: Context) {
         }
 
         val audioPath = file.absolutePath
+        if (SttProvider.fromId(Prefs.sttProvider(context)).isNative) {
+            pendingNativeResult = onResult
+            completeNativeIfReady(audioPath)
+            return
+        }
 
         executor.execute {
             val transcript = performSttTranscription(file)
@@ -135,10 +167,20 @@ class VoiceNoteRecorder(private val context: Context) {
         }
     }
 
+    private fun completeNativeIfReady(audioPath: String = currentAudioFile?.absolutePath ?: "") {
+        if (!nativeFinished || pendingNativeResult == null) return
+        val callback = pendingNativeResult ?: return
+        pendingNativeResult = null
+        callback(audioPath, nativeTranscript ?: FALLBACK_TRANSCRIPT)
+    }
+
     /**
      * Cancels recording and deletes the temporary audio file if it exists.
      */
     fun cancelRecording() {
+        androidSpeech.cancel()
+        pendingNativeResult = null
+        nativeFinished = false
         if (isRecording) {
             try {
                 mediaRecorder?.stop()
@@ -168,6 +210,7 @@ class VoiceNoteRecorder(private val context: Context) {
     fun shutdown() {
         cancelRecording()
         stopPlayback()
+        androidSpeech.destroy()
         executor.shutdownNow()
     }
 

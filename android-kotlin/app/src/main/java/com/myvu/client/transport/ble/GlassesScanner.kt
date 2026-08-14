@@ -14,6 +14,7 @@ import com.myvu.client.core.LogBus
 import java.util.Locale
 import java.util.UUID
 
+@android.annotation.SuppressLint("MissingPermission")
 class GlassesScanner(
     private val adapter: BluetoothAdapter,
     private val handler: Handler

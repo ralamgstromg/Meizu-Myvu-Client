@@ -20,7 +20,19 @@ enum class SttProvider(
         "http://10.0.0.2:1235/v1/audio/transcriptions",
         "whisper",
         false
+    ),
+    ANDROID(
+        "android",
+        "Android",
+        "",
+        "",
+        false
     );
+
+    val isNative: Boolean get() = this == ANDROID
+    val requiresEndpoint: Boolean get() = !isNative
+    val requiresModel: Boolean get() = !isNative
+    val requiresApiKey: Boolean get() = apiKeyRequired && !isNative;
 
     val displayName: String get() = label
 

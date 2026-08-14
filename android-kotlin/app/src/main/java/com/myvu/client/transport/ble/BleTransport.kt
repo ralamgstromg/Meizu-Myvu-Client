@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import java.util.UUID
 
+@android.annotation.SuppressLint("MissingPermission")
 open class BleTransport(
     private val context: Context,
     private val device: BluetoothDevice,

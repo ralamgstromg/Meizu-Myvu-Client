@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit
  * Kept because it encodes the exact hidden-API call the official app uses, in
  * case a device or firmware turns up that does require an explicit bond.
  */
+@android.annotation.SuppressLint("MissingPermission")
 class Bonding(private val context: Context) {
 
     /** Size-1 queue: the first bond outcome wins, later ones are ignored. */

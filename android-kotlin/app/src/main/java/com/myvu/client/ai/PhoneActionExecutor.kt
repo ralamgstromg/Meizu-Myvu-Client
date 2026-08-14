@@ -13,12 +13,14 @@ import com.myvu.client.reminder.ReminderScheduler
 import com.myvu.client.reminder.ReminderTimeParser
 import com.myvu.client.service.MirrorNotificationListener
 import com.myvu.client.service.MyvuService
+import com.myvu.client.app.feature.Weather
 import java.net.URLEncoder
 
 /**
  * Executes system & phone actions requested by voice via Gemini / AI.
  * Supports volume adjustments, media control, WhatsApp, Telegram, calls, and SMS.
  */
+@android.annotation.SuppressLint("MissingPermission")
 class PhoneActionExecutor(context: Context) {
 
     private val context: Context = context.applicationContext
@@ -260,6 +262,11 @@ class PhoneActionExecutor(context: Context) {
         }
     }
 
+    @android.annotation.SuppressLint("MissingPermission")
+    private fun placeCall(tm: android.telecom.TelecomManager, number: String, extras: android.os.Bundle) {
+        tm.placeCall(Uri.parse("tel:" + Uri.encode(number)), extras)
+    }
+
     fun makeCall(target: String?) {
         try {
             if (target.isNullOrBlank()) return
@@ -296,7 +303,8 @@ class PhoneActionExecutor(context: Context) {
                         if (tm != null) {
                             val extras = android.os.Bundle()
                             extras.putBoolean(android.telecom.TelecomManager.EXTRA_START_CALL_WITH_SPEAKERPHONE, false)
-                            tm.placeCall(Uri.parse("tel:" + Uri.encode(number)), extras)
+                            @android.annotation.SuppressLint("MissingPermission")
+                            placeCall(tm, number, extras)
                             LogBus.log("voice action -> TelecomManager placed direct call to $target ($number)")
                             return
                         }
@@ -635,6 +643,40 @@ class PhoneActionExecutor(context: Context) {
         } catch (e: Exception) {
             LogBus.error("could not refresh weather", e)
         }
+    }
+
+    fun queryWeather(callback: (String, Boolean) -> Unit) {
+        try {
+            val conn = MyvuService.activeConnection()
+            if (conn == null) {
+                callback("No hay conexión activa para consultar el clima.", false)
+                return
+            }
+            conn.weather().query(object : com.myvu.client.weather.WeatherSync.QueryCallback {
+                override fun onSuccess(reading: Weather.Reading) {
+                    conn.weather().syncReading(reading)
+                    callback(formatWeather(reading), true)
+                }
+
+                override fun onFailure(error: Exception) {
+                    LogBus.warn("weather query failed: ${error.message}")
+                    callback("No pude consultar el clima en este momento.", false)
+                }
+            })
+        } catch (e: Exception) {
+            LogBus.error("could not query weather", e)
+            callback("No pude consultar el clima en este momento.", false)
+        }
+    }
+
+    private fun formatWeather(reading: Weather.Reading): String {
+        val place = reading.areaName?.takeIf { it.isNotBlank() }?.let { " en $it" } ?: ""
+        val current = reading.temp?.let { "Temperatura actual$place: $it °C" }
+        val range = if (reading.dayTempMax != null && reading.dayTempMin != null) {
+            "Máxima ${reading.dayTempMax} °C y mínima ${reading.dayTempMin} °C"
+        } else null
+        val condition = reading.condition?.takeIf { it.isNotBlank() }
+        return listOfNotNull(current, range, condition?.let { "Cielo $it" }).joinToString(". ") + "."
     }
 
     private fun extractValue(text: String, tag: String): String {

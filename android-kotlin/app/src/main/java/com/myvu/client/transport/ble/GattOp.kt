@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothGattDescriptor
 import android.os.Build
 import java.util.UUID
 
+@android.annotation.SuppressLint("MissingPermission", "WrongConstant")
 abstract class GattOp {
     abstract fun execute(gatt: BluetoothGatt): Boolean
     abstract fun describe(): String

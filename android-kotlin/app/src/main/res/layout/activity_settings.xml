@@ -291,6 +291,14 @@
                             android:layout_weight="1"
                             android:layout_height="wrap_content"
                             android:text="Local" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSttAndroid"
+                            style="@style/Button.Myvu.Outlined"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Android" />
                     </com.google.android.material.button.MaterialButtonToggleGroup>
 
                     <com.google.android.material.textfield.TextInputLayout

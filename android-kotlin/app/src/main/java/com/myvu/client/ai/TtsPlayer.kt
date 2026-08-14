@@ -32,6 +32,9 @@ class TtsPlayer(private val context: Context) {
     private var pending: Callback? = null
     private var pendingText: String? = null
     private var requestGeneration = 0
+    private var callbackGeneration = 0
+    private var activeCallbackGeneration = 0
+    private var activeUtteranceId: String? = null
 
     fun init() {
         if (tts != null) return
@@ -50,21 +53,31 @@ class TtsPlayer(private val context: Context) {
                 }
             }
             tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(utteranceId: String?) {}
+                override fun onStart(utteranceId: String?) {
+                    if (utteranceId == activeUtteranceId) {
+                        LogBus.log("TTS_PLAYBACK_STARTED generation=$activeCallbackGeneration")
+                    }
+                }
 
                 override fun onDone(utteranceId: String?) {
+                    if (utteranceId != activeUtteranceId) return
+                    LogBus.log("TTS_PLAYBACK_FINISHED generation=$activeCallbackGeneration success=true")
                     flushPending(true)
                 }
 
                 override fun onError(utteranceId: String?) {
+                    if (utteranceId != activeUtteranceId) return
                     LogBus.warn("text-to-speech failed for $utteranceId")
+                    LogBus.log("TTS_PLAYBACK_FINISHED generation=$activeCallbackGeneration success=false")
                     flushPending(false)
                 }
             })
             if (pendingText != null) {
                 val text = pendingText!!
+                val callback = pending
                 pendingText = null
-                speak(text, pending)
+                pending = null
+                speak(text, callback)
             }
         }
     }
@@ -77,10 +90,13 @@ class TtsPlayer(private val context: Context) {
             return
         }
 
-        stop()
+        stop(notify = false)
         pending = cb
         requestGeneration++
+        callbackGeneration++
         val gen = requestGeneration
+        val callbackGen = callbackGeneration
+        activeCallbackGeneration = callbackGen
 
         val provider = Prefs.ttsProvider(context)
         if (provider != "system") {
@@ -117,7 +133,10 @@ class TtsPlayer(private val context: Context) {
             flushPending(false)
             return
         }
+        val generation = activeCallbackGeneration
         val id = UUID.randomUUID().toString()
+        activeUtteranceId = id
+        LogBus.log("TTS_REQUEST_STARTED generation=$generation textLength=${text.length} provider=system")
         val result = tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, id)
         if (result != TextToSpeech.SUCCESS) {
             LogBus.warn("tts.speak returned $result")
@@ -126,6 +145,8 @@ class TtsPlayer(private val context: Context) {
     }
 
     private fun playWavBytes(wav: ByteArray) {
+        val generation = activeCallbackGeneration
+        LogBus.log("TTS_REQUEST_STARTED generation=$generation textLength=${wav.size} provider=http")
         try {
             cleanupMediaPlayer()
             val temp = File.createTempFile("tts_", ".wav", context.cacheDir)
@@ -136,16 +157,19 @@ class TtsPlayer(private val context: Context) {
                 setDataSource(temp.absolutePath)
                 setOnCompletionListener {
                     cleanupMediaPlayer()
+                    LogBus.log("TTS_PLAYBACK_FINISHED generation=$generation success=true")
                     flushPending(true)
                 }
                 setOnErrorListener { _, what, extra ->
                     LogBus.warn("MediaPlayer error ($what, $extra)")
                     cleanupMediaPlayer()
+                    LogBus.log("TTS_PLAYBACK_FINISHED generation=$generation success=false")
                     flushPending(false)
                     true
                 }
                 prepare()
                 start()
+                LogBus.log("TTS_PLAYBACK_STARTED generation=$generation")
             }
         } catch (e: IOException) {
             LogBus.warn("could not play HTTP TTS audio: ${e.message}")
@@ -173,8 +197,9 @@ class TtsPlayer(private val context: Context) {
         mediaFile = null
     }
 
-    fun stop() {
+    fun stop(notify: Boolean = true) {
         requestGeneration++
+        activeUtteranceId = null
         cleanupMediaPlayer()
         if (tts != null && ready) {
             try {
@@ -182,7 +207,7 @@ class TtsPlayer(private val context: Context) {
             } catch (ignored: Exception) {
             }
         }
-        flushPending(false)
+        if (notify) flushPending(false)
     }
 
     fun shutdown() {

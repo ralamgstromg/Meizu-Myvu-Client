@@ -35,7 +35,28 @@ class AiConversation(
     }
     private val mic = GlassesMicStream()
     private val decoder = OpusDecoderStream()
+    private val androidSpeech: AndroidSpeechEngine = AndroidSpeechRecognizer(this.context)
+    private var nativeSpeechSessionId: String? = null
+
+    private val usesAndroidSpeech: Boolean
+        get() = SttProvider.fromId(Prefs.sttProvider(context)).isNative
     private val tts = TtsPlayer(this.context)
+    private val responseDelivery = AiResponseDelivery(
+        sender = ::send,
+        tts = object : AiResponseDelivery.Speaker {
+            override fun speak(text: String, callback: (Boolean) -> Unit) {
+                tts.speak(text, TtsPlayer.Callback(callback))
+            }
+
+            override fun stop() {
+                tts.stop()
+            }
+        },
+        isSessionActive = { id -> active && id == sessionId },
+        onFinished = { _ ->
+            if (textMode || !SPOKEN_FOLLOW_UP_TURNS) finish() else nextTurn()
+        }
+    )
     private val actionExecutor = PhoneActionExecutor(this.context)
     private val audio: ExecutorService = Executors.newSingleThreadExecutor { r ->
         Thread(r, "ai-audio").apply { isDaemon = true }
@@ -66,6 +87,7 @@ class AiConversation(
     private var speechStarted: Boolean = false
     private var lastTriggerAt: Long = 0
     private var textMode: Boolean = false
+    private var pendingWeatherResponse = false
 
     private val silenceTimeout = Runnable { endUtterance() }
     private val utteranceCap = Runnable {
@@ -203,15 +225,36 @@ class AiConversation(
         noiseChunks = 0
         loudStreak = 0
         speechThreshold = SPEECH_ENERGY
-        try {
-            decoder.start()
-            decoding = true
-        } catch (e: Exception) {
-            LogBus.error("could not start the Opus decoder", e)
-            finish()
-            return
+        if (usesAndroidSpeech) {
+            nativeSpeechSessionId = sessionId
+            val started = androidSpeech.start(
+                Locale.getDefault().toLanguageTag(),
+                onResult = { text ->
+                    if (active && nativeSpeechSessionId == sessionId) onTranscript(text)
+                },
+                onError = { _, message ->
+                    if (active && nativeSpeechSessionId == sessionId) {
+                        LogBus.warn("AI native STT failed: $message")
+                        finish()
+                    }
+                }
+            )
+            if (!started) {
+                LogBus.warn("AI native STT could not start")
+                finish()
+                return
+            }
+        } else {
+            try {
+                decoder.start()
+                decoding = true
+            } catch (e: Exception) {
+                LogBus.error("could not start the Opus decoder", e)
+                finish()
+                return
+            }
+            mic.start()
         }
-        mic.start()
 
         send(AiProtocol.sessionAck(sessionId))
         LogBus.log("AI listening ($why)")
@@ -223,6 +266,10 @@ class AiConversation(
     }
 
     private fun endUtterance() {
+        if (usesAndroidSpeech) {
+            if (active) androidSpeech.stop()
+            return
+        }
         if (!active || !mic.isCapturing()) return
         main.removeCallbacks(silenceTimeout)
         main.removeCallbacks(utteranceCap)
@@ -351,6 +398,7 @@ class AiConversation(
     }
 
     private fun askAi(question: String) {
+        LogBus.log("AI_REQUEST_STARTED sessionId=$sessionId provider=${Prefs.aiProvider(context)} questionLength=${question.length}")
         val aiProviderId = Prefs.aiProvider(context)
         val provider = AiProvider.fromId(aiProviderId)
         val apiKey = Prefs.aiApiKey(context, aiProviderId)
@@ -360,45 +408,83 @@ class AiConversation(
         val client = provider.newClient(context, apiKey, model, endpoint, prompt)
         if (!client.isConfigured()) {
             LogBus.warn("$aiProviderId is not fully configured -- check Settings")
-            finish()
+            deliverError("El agente no está configurado. Revisa los ajustes.")
             return
         }
         worker.execute {
             val contextPayload = buildContextPayload()
             val fullPrompt = contextPayload + question
-            LogBus.log("AI prompt with context: $fullPrompt")
+            LogBus.log("AI prompt prepared sessionId=$sessionId contextLength=${contextPayload.length} questionLength=${question.length}")
             val answer: String?
             try {
                 answer = client.ask(fullPrompt)
             } catch (e: Exception) {
                 LogBus.error("$aiProviderId request failed", e)
-                main.post { finish() }
+                main.post { deliverError("No pude consultar el agente en este momento.") }
                 return@execute
             }
+            LogBus.log("AI_RESPONSE_RECEIVED sessionId=$sessionId answerLength=${answer?.length ?: 0}")
             main.post { deliver(answer) }
         }
     }
 
     private fun deliver(rawAnswer: String?) {
         if (!active) return
-        var answer = actionExecutor.processAndExecute(rawAnswer)
-        if (answer.isBlank()) {
-            answer = "Acción ejecutada en el teléfono."
+        val weatherAction = rawAnswer?.contains("ACTION:WEATHER_REFRESH", ignoreCase = true) == true
+        val answer = actionExecutor.processAndExecute(rawAnswer)
+        if (weatherAction) {
+            pendingWeatherResponse = true
+            LogBus.log("AI_WEATHER_QUERY_STARTED sessionId=$sessionId")
+            actionExecutor.queryWeather { text, success ->
+                main.post {
+                    if (!active || !pendingWeatherResponse) return@post
+                    pendingWeatherResponse = false
+                    deliverFinal(
+                        text,
+                        if (success) AiResponse.Source.WEATHER else AiResponse.Source.ERROR
+                    )
+                }
+            }
+            return
         }
-        LogBus.log("AI answer: $answer")
-
-        send(AiProtocol.chatAnswer(sessionId, answer, 1))
-        send(AiProtocol.chatAnswer(sessionId, answer, 2))
-        send(AiProtocol.playState(AiProtocol.PLAY_STATE_START))
-
-        val callback = TtsPlayer.Callback { success ->
-            send(AiProtocol.playState(AiProtocol.PLAY_STATE_END))
-            send(AiProtocol.endTurn())
-            if (!success) LogBus.warn("the answer could not be spoken aloud")
-            if (textMode || !SPOKEN_FOLLOW_UP_TURNS) finish() else nextTurn()
+        val finalAnswer = answer.ifBlank {
+            if (rawAnswer.isNullOrBlank()) {
+                "No pude obtener una respuesta del agente en este momento."
+            } else {
+                "Acción ejecutada en el teléfono."
+            }
         }
+        deliverFinal(finalAnswer, AiResponse.Source.AI)
+    }
 
-        tts.speak(answer, callback)
+    private fun deliverFinal(answer: String, source: AiResponse.Source) {
+        if (!active) return
+        LogBus.log("AI_ACTION_PROCESSED sessionId=$sessionId source=$source answerLength=${answer.length}")
+        responseDelivery.deliver(
+            AiResponse(
+                sessionId = sessionId,
+                text = answer,
+                shouldSpeak = true,
+                source = source
+            )
+        )
+    }
+
+    private fun cancelPendingTool() {
+        pendingWeatherResponse = false
+    }
+
+    private fun deliverError(message: String) {
+        cancelPendingTool()
+        if (!active) return
+        responseDelivery.deliver(
+            AiResponse(
+                sessionId = sessionId,
+                text = message,
+                shouldSpeak = true,
+                source = AiResponse.Source.ERROR
+            )
+        )
     }
 
     fun askText(question: String?) {
@@ -441,7 +527,13 @@ class AiConversation(
     private fun finish() {
         if (!active) return
         active = false
+        cancelPendingTool()
+        responseDelivery.cancel()
         stopRequested = false
+        if (usesAndroidSpeech) {
+            androidSpeech.cancel()
+            nativeSpeechSessionId = null
+        }
         mic.stop()
         decoding = false
         decoder.stop()
