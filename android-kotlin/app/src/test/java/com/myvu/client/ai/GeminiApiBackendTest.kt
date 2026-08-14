@@ -1,5 +1,7 @@
 package com.myvu.client.ai
 
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -14,14 +16,21 @@ class GeminiApiBackendTest {
         """.trimIndent())
         val backend = GeminiApiBackend("secret-key", "gemini-2.0-flash", transport)
         var result: Result<GeminiResult>? = null
+        val done = CountDownLatch(1)
 
-        backend.ask(GeminiRequest("r1", "¿Qué hora es?", "Responde breve")) { result = it }
+        backend.ask(GeminiRequest("r1", "¿Qué hora es?", "Responde breve")) {
+            result = it
+            done.countDown()
+        }
+        assertTrue(done.await(2, TimeUnit.SECONDS))
 
         assertEquals("Hola desde API", result!!.getOrThrow().answer)
         assertEquals("gemini_api", result!!.getOrThrow().backendId)
         assertEquals("r1", result!!.getOrThrow().requestId)
         assertTrue(transport.body.contains("¿Qué hora es?"))
         assertTrue(transport.body.contains("Responde breve"))
+        assertTrue(JSONObject(transport.body).has("systemInstruction"))
+        assertFalse(JSONObject(transport.body).has("system_instruction"))
     }
 
     @Test
@@ -29,8 +38,13 @@ class GeminiApiBackendTest {
         val backend = GeminiApiBackend("bad-key", "gemini-2.0-flash", FakeTransport(401, "{" +
             "\"error\":{\"message\":\"bad key\"}}"))
         var result: Result<GeminiResult>? = null
+        val done = CountDownLatch(1)
 
-        backend.ask(GeminiRequest("r2", "hola", "sistema")) { result = it }
+        backend.ask(GeminiRequest("r2", "hola", "sistema")) {
+            result = it
+            done.countDown()
+        }
+        assertTrue(done.await(2, TimeUnit.SECONDS))
 
         assertTrue(result!!.isFailure)
         assertTrue(result!!.exceptionOrNull() is GeminiApiException)
@@ -44,7 +58,9 @@ class GeminiApiBackendTest {
         val prompt = "prompt-never-log-9f2a"
         LogBus.clear()
 
-        backend.ask(GeminiRequest("r3", prompt, "system-never-log")) {}
+        val done = CountDownLatch(1)
+        backend.ask(GeminiRequest("r3", prompt, "system-never-log")) { done.countDown() }
+        assertTrue(done.await(2, TimeUnit.SECONDS))
 
         val history = LogBus.history().joinToString("\n")
         assertFalse(history.contains("secret-key"))
@@ -56,8 +72,13 @@ class GeminiApiBackendTest {
     fun apiBackendRejectsMalformedResponse() {
         val backend = GeminiApiBackend("key", "model", FakeTransport(200, "not-json"))
         var result: Result<GeminiResult>? = null
+        val done = CountDownLatch(1)
 
-        backend.ask(GeminiRequest("r4", "hola", "sistema")) { result = it }
+        backend.ask(GeminiRequest("r4", "hola", "sistema")) {
+            result = it
+            done.countDown()
+        }
+        assertTrue(done.await(2, TimeUnit.SECONDS))
 
         assertTrue(result!!.isFailure)
         assertEquals(GeminiApiException.Kind.MALFORMED_RESPONSE, (result!!.exceptionOrNull() as GeminiApiException).kind)
@@ -68,7 +89,7 @@ class GeminiApiBackendTest {
         private val response: String
     ) : GeminiApiTransport {
         var body: String = ""
-        override fun post(url: String, apiKey: String, requestBody: String): GeminiHttpResponse {
+        override fun post(requestId: String, url: String, apiKey: String, requestBody: String): GeminiHttpResponse {
             body = requestBody
             return GeminiHttpResponse(status, response)
         }

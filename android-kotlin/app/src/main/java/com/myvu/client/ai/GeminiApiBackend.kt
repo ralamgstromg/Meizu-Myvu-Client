@@ -18,6 +18,7 @@ class GeminiApiBackend(
     private val transport: GeminiApiTransport = UrlConnectionGeminiApiTransport()
 ) : GeminiBackend {
     private val cancelled = ConcurrentHashMap.newKeySet<String>()
+    private val activeRequests = ConcurrentHashMap<String, Unit>()
 
     override fun availability(): GeminiAvailability {
         return if (apiKey.isBlank() || model.isBlank()) {
@@ -37,11 +38,12 @@ class GeminiApiBackend(
             return
         }
         cancelled.remove(request.requestId)
+        activeRequests[request.requestId] = Unit
         thread(name = "gemini-api-${request.requestId}") {
             if (cancelled.contains(request.requestId)) return@thread
             val result = runCatching {
                 val body = buildRequestBody(request)
-                val response = transport.post(endpoint(model), apiKey, body)
+                val response = transport.post(request.requestId, endpoint(model), apiKey, body)
                 if (cancelled.contains(request.requestId)) return@runCatching null
                 if (response.statusCode !in 200..299) {
                     val kind = if (response.statusCode == 401 || response.statusCode == 403) {
@@ -56,6 +58,7 @@ class GeminiApiBackend(
                 onSuccess = { value -> value?.let { Result.success(it) } },
                 onFailure = { error -> Result.failure(classify(error)) }
             )
+            activeRequests.remove(request.requestId)
             if (!cancelled.contains(request.requestId) && result != null) callback(result)
         }
     }
@@ -81,7 +84,7 @@ class GeminiApiBackend(
             config.put("responseMimeType", "application/json")
         }
         return JSONObject()
-            .put("system_instruction", JSONObject()
+            .put("systemInstruction", JSONObject()
                 .put("parts", JSONArray().put(JSONObject().put("text", request.systemInstruction))))
             .put("contents", JSONArray().put(JSONObject()
                 .put("role", "user")
@@ -114,7 +117,7 @@ class GeminiApiBackend(
 data class GeminiHttpResponse(val statusCode: Int, val body: String)
 
 interface GeminiApiTransport {
-    fun post(url: String, apiKey: String, requestBody: String): GeminiHttpResponse
+    fun post(requestId: String, url: String, apiKey: String, requestBody: String): GeminiHttpResponse
     fun cancel(requestId: String) = Unit
 }
 
@@ -126,8 +129,15 @@ class GeminiApiException(
 }
 
 private class UrlConnectionGeminiApiTransport : GeminiApiTransport {
-    override fun post(url: String, apiKey: String, requestBody: String): GeminiHttpResponse {
+    private val connections = ConcurrentHashMap<String, HttpURLConnection>()
+
+    override fun post(requestId: String, url: String, apiKey: String, requestBody: String): GeminiHttpResponse {
         val connection = (URL(url).openConnection() as HttpURLConnection)
+        connections[requestId] = connection
+        if (Thread.currentThread().isInterrupted) {
+            connection.disconnect()
+            throw IOException("cancelled")
+        }
         try {
             connection.requestMethod = "POST"
             connection.connectTimeout = TIMEOUT_MS
@@ -142,8 +152,13 @@ private class UrlConnectionGeminiApiTransport : GeminiApiTransport {
             LogBus.log("AI_GEMINI_API_HTTP status=$status responseLength=${response.length}")
             return GeminiHttpResponse(status, response)
         } finally {
+            connections.remove(requestId)
             connection.disconnect()
         }
+    }
+
+    override fun cancel(requestId: String) {
+        connections.remove(requestId)?.disconnect()
     }
 
     companion object {
