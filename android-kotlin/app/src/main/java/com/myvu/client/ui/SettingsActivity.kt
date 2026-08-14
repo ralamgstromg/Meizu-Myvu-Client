@@ -37,6 +37,10 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var layTtsApiKey: TextInputLayout
     private lateinit var layTtsModel: TextInputLayout
     private lateinit var layTtsVoice: TextInputLayout
+    private lateinit var layGeminiAndroidControls: LinearLayout
+    private lateinit var lblGeminiNanoStatus: TextView
+    private lateinit var btnGeminiFallbackGroup: MaterialButtonToggleGroup
+    private lateinit var btnCheckGeminiCapability: MaterialButton
 
     private lateinit var txtApiKey: TextInputEditText
     private lateinit var txtModel: TextInputEditText
@@ -93,6 +97,10 @@ class SettingsActivity : AppCompatActivity() {
         txtTtsModel = findViewById(R.id.txtTtsModel)
         txtTtsVoice = findViewById(R.id.txtTtsVoice)
         txtSystemPrompt = findViewById(R.id.txtSystemPrompt)
+        layGeminiAndroidControls = findViewById(R.id.layGeminiAndroidControls)
+        lblGeminiNanoStatus = findViewById(R.id.lblGeminiNanoStatus)
+        btnGeminiFallbackGroup = findViewById(R.id.btnGeminiFallbackGroup)
+        btnCheckGeminiCapability = findViewById(R.id.btnCheckGeminiCapability)
     }
 
     private val providerClickListener = View.OnClickListener { v ->
@@ -106,11 +114,13 @@ class SettingsActivity : AppCompatActivity() {
         val buttonIds = intArrayOf(
             R.id.btnProviderAssistant, R.id.btnProviderGemini, R.id.btnProviderOpenai,
             R.id.btnProviderClaude, R.id.btnProviderGroq, R.id.btnProviderNvidia,
-            R.id.btnProviderLocal
+            R.id.btnProviderLocal, R.id.btnProviderGeminiAndroid
         )
         for (id in buttonIds) {
             findViewById<View?>(id)?.setOnClickListener(providerClickListener)
         }
+
+        configureGeminiAndroidControls()
 
         sttProvider = SttProvider.fromId(Prefs.sttProvider(this))
         val sttGroup: MaterialButtonToggleGroup = findViewById(R.id.btnSttProviderGroup)
@@ -368,19 +378,41 @@ class SettingsActivity : AppCompatActivity() {
         val buttonIds = intArrayOf(
             R.id.btnProviderAssistant, R.id.btnProviderGemini, R.id.btnProviderOpenai,
             R.id.btnProviderClaude, R.id.btnProviderGroq, R.id.btnProviderNvidia,
-            R.id.btnProviderLocal
+            R.id.btnProviderLocal, R.id.btnProviderGeminiAndroid
         )
         for (id in buttonIds) {
             val btn: MaterialButton? = findViewById(id)
             btn?.alpha = if (id == selectedId) 1.0f else 0.45f
         }
 
-        layApiKey.visibility = if (assistant) View.GONE else View.VISIBLE
-        layModel.visibility = if (assistant) View.GONE else View.VISIBLE
-        layAiEndpoint.visibility = if (local) View.VISIBLE else View.GONE
-        chkIgnoreSsl?.let {
-            it.visibility = if (local) View.VISIBLE else View.GONE
-            it.isChecked = Prefs.ignoreSsl(this)
+        val isGeminiAndroid = aiProvider == AiProvider.GEMINI_ANDROID
+        layGeminiAndroidControls.visibility = if (isGeminiAndroid) View.VISIBLE else View.GONE
+
+        if (isGeminiAndroid) {
+            val policy = com.myvu.client.ai.GeminiFallbackPolicy.fromId(Prefs.geminiFallbackPolicy(this))
+            val showApiKey = policy.allowsApiFallback
+            layApiKey.visibility = if (showApiKey) View.VISIBLE else View.GONE
+            layModel.visibility = if (showApiKey) View.VISIBLE else View.GONE
+            layAiEndpoint.visibility = View.GONE
+            chkIgnoreSsl?.visibility = View.GONE
+
+            btnGeminiFallbackGroup.check(
+                when (policy) {
+                    com.myvu.client.ai.GeminiFallbackPolicy.NANO_THEN_API -> R.id.btnFallbackNanoThenApi
+                    com.myvu.client.ai.GeminiFallbackPolicy.NANO_ONLY -> R.id.btnFallbackNanoOnly
+                    com.myvu.client.ai.GeminiFallbackPolicy.API_ONLY -> R.id.btnFallbackApiOnly
+                }
+            )
+
+            updateGeminiNanoStatus()
+        } else {
+            layApiKey.visibility = if (assistant) View.GONE else View.VISIBLE
+            layModel.visibility = if (assistant) View.GONE else View.VISIBLE
+            layAiEndpoint.visibility = if (local) View.VISIBLE else View.GONE
+            chkIgnoreSsl?.let {
+                it.visibility = if (local) View.VISIBLE else View.GONE
+                it.isChecked = Prefs.ignoreSsl(this)
+            }
         }
 
         layApiKey.hint = aiProvider.label + " API key"
@@ -480,11 +512,41 @@ class SettingsActivity : AppCompatActivity() {
         if (announce) Toast.makeText(this, "Syncing weather…", Toast.LENGTH_SHORT).show()
     }
 
+    private fun configureGeminiAndroidControls() {
+        btnGeminiFallbackGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            val policy = when (checkedId) {
+                R.id.btnFallbackNanoOnly -> com.myvu.client.ai.GeminiFallbackPolicy.NANO_ONLY
+                R.id.btnFallbackApiOnly -> com.myvu.client.ai.GeminiFallbackPolicy.API_ONLY
+                else -> com.myvu.client.ai.GeminiFallbackPolicy.NANO_THEN_API
+            }
+            Prefs.setGeminiFallbackPolicy(this, policy.id)
+            bindAiFields()
+        }
+
+        btnCheckGeminiCapability.setOnClickListener {
+            updateGeminiNanoStatus()
+            Toast.makeText(this, "Verificación de capacidad realizada", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun updateGeminiNanoStatus() {
+        val detector = com.myvu.client.ai.GeminiCapabilityDetector(this)
+        val availability = detector.detect()
+        lblGeminiNanoStatus.text = when (availability.state) {
+            com.myvu.client.ai.GeminiAvailability.State.AVAILABLE -> "Estado Gemini Nano: Disponible en el dispositivo"
+            com.myvu.client.ai.GeminiAvailability.State.MODEL_MISSING -> "Estado Gemini Nano: Modelo no descargado"
+            com.myvu.client.ai.GeminiAvailability.State.TASK_UNSUPPORTED -> "Estado Gemini Nano: Tarea no soportada"
+            else -> "Estado Gemini Nano: No disponible en este dispositivo"
+        }
+    }
+
     companion object {
         private fun aiButtonFor(provider: AiProvider): Int {
             return when (provider) {
                 AiProvider.OPENAI -> R.id.btnProviderOpenai
                 AiProvider.GEMINI -> R.id.btnProviderGemini
+                AiProvider.GEMINI_ANDROID -> R.id.btnProviderGeminiAndroid
                 AiProvider.GROQ -> R.id.btnProviderGroq
                 AiProvider.NVIDIA -> R.id.btnProviderNvidia
                 AiProvider.ASSISTANT -> R.id.btnProviderAssistant
@@ -497,6 +559,7 @@ class SettingsActivity : AppCompatActivity() {
             return when (buttonId) {
                 R.id.btnProviderOpenai -> AiProvider.OPENAI
                 R.id.btnProviderGemini -> AiProvider.GEMINI
+                R.id.btnProviderGeminiAndroid -> AiProvider.GEMINI_ANDROID
                 R.id.btnProviderGroq -> AiProvider.GROQ
                 R.id.btnProviderNvidia -> AiProvider.NVIDIA
                 R.id.btnProviderAssistant -> AiProvider.ASSISTANT
