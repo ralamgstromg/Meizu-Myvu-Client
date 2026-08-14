@@ -13,7 +13,7 @@ class GemmaLocalClientTest {
     fun defaultOptionHasValidConfig() {
         val option = GemmaLocalClient.DEFAULT_OPTION
         assertEquals("gemma-4-e2b-it-int4", option.id)
-        assertEquals("gemma-4-e2b-it-gpu-int4.task", option.fileName)
+        assertEquals("gemma-4-e2b-it-gpu-int4.tflite", option.fileName)
         assertTrue(option.downloadUrl.contains("huggingface.co"))
     }
 }

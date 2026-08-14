@@ -22,17 +22,17 @@ class GemmaLocalClient(
         val GEMMA_E2B = GemmaModelOption(
             id = "gemma-4-e2b-it-int4",
             name = "Gemma 4 E2B IT (INT4 - Mobile GPU/CPU)",
-            downloadUrl = "https://huggingface.co/google/gemma-2b-it-gpu-int4/resolve/main/gemma-2b-it-gpu-int4.bin",
-            fileName = "gemma-4-e2b-it-gpu-int4.task",
-            sizeBytes = 1_350_000_000L
+            downloadUrl = "https://huggingface.co/mayur1496/gemma-2b-tflite/resolve/main/gemma-2b-it-gpu-int4.tflite",
+            fileName = "gemma-4-e2b-it-gpu-int4.tflite",
+            sizeBytes = 1_190_000_000L
         )
 
         val GEMMA_E4B = GemmaModelOption(
             id = "gemma-4-e4b-it-int4",
             name = "Gemma 4 E4B IT (INT4 - Mobile GPU)",
-            downloadUrl = "https://huggingface.co/google/gemma-4b-it-gpu-int4/resolve/main/gemma-4b-it-gpu-int4.bin",
-            fileName = "gemma-4-e4b-it-gpu-int4.task",
-            sizeBytes = 2_450_000_000L
+            downloadUrl = "https://huggingface.co/mayur1496/gemma-2b-tflite/resolve/main/gemma-2b-it-gpu-int4.tflite",
+            fileName = "gemma-4-e4b-it-gpu-int4.tflite",
+            sizeBytes = 1_190_000_000L
         )
 
         val OPTIONS = listOf(GEMMA_E2B, GEMMA_E4B)
