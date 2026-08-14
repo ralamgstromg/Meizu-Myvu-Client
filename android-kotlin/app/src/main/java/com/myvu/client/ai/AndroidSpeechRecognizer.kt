@@ -17,6 +17,7 @@ import java.util.Locale
 class AndroidSpeechRecognizer(context: Context) : AndroidSpeechEngine {
     private val context = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
+    private var wakeLock: android.os.PowerManager.WakeLock? = null
     private var recognizer: SpeechRecognizer? = null
     private var terminal = false
     private var pendingStart = false
@@ -67,6 +68,7 @@ class AndroidSpeechRecognizer(context: Context) : AndroidSpeechEngine {
         terminal = false
         attempt++
         activeAttempt = attempt
+        acquireWakeLock()
         LogBus.log("STT_ANDROID_START attempt=$activeAttempt language=$language preferOffline=$preferOffline")
         val engine = SpeechRecognizer.createSpeechRecognizer(context)
         recognizer = engine
@@ -181,7 +183,25 @@ class AndroidSpeechRecognizer(context: Context) : AndroidSpeechEngine {
     private fun Bundle.firstText(): String? =
         getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
 
+    private fun acquireWakeLock() {
+        if (wakeLock == null) {
+            val pm = context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+            wakeLock = pm?.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "myvu:stt_wakelock")
+        }
+        try {
+            if (wakeLock?.isHeld == false) wakeLock?.acquire(30_000L)
+        } catch (_: Exception) {}
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) wakeLock?.release()
+        } catch (_: Exception) {}
+        wakeLock = null
+    }
+
     private fun releaseRecognizer() {
+        releaseWakeLock()
         recognizer?.setRecognitionListener(null)
         try { recognizer?.destroy() } catch (_: Exception) {}
         recognizer = null

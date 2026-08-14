@@ -26,14 +26,15 @@ class AiResponseDelivery(
 
         private fun cleanResponseText(raw: String): String {
             var cleaned = raw
-            if (cleaned.contains("Respuesta local Gemma")) {
-                cleaned = cleaned.substringAfter("para: ").trim()
-            }
-            if (cleaned.contains("[Contexto del Sistema:")) {
-                cleaned = cleaned.substringAfter("] ").trim()
-            }
+            cleaned = SYSTEM_CONTEXT_REGEX.replace(cleaned, "").trim()
+            cleaned = GEMMA_HEADER_REGEX.replace(cleaned, "").trim()
+            cleaned = MULTI_SPACE_REGEX.replace(cleaned, " ").trim()
             return cleaned.ifEmpty { raw }
         }
+
+        private val SYSTEM_CONTEXT_REGEX = Regex("\\[Contexto del Sistema:[^\\]]*\\]", RegexOption.IGNORE_CASE)
+        private val GEMMA_HEADER_REGEX = Regex("^Respuesta local[^\n:]*:\\s*", RegexOption.IGNORE_CASE)
+        private val MULTI_SPACE_REGEX = Regex("\\s+")
 
         fun deliver(response: AiResponse): Boolean {
         if (!isSessionActive(response.sessionId)) {
