@@ -614,6 +614,20 @@ class SettingsActivity : AppCompatActivity() {
             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
         }
 
+        findViewById<View?>(R.id.btnTestGemmaModel)?.setOnClickListener {
+            val selectedOption = com.myvu.client.ai.GemmaLocalClient.findOption(Prefs.gemmaModelId(this))
+            val client = com.myvu.client.ai.GemmaLocalClient(this, selectedOption)
+            val isReady = client.isConfigured()
+            val file = com.myvu.client.ai.GemmaLocalClient.getModelFile(this, selectedOption.fileName)
+            val sizeMb = if (file.exists()) file.length() / (1024 * 1024) else 0L
+
+            if (!isReady) {
+                Toast.makeText(this, "❌ Modelo no descargado (${selectedOption.name})", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, "✅ Modelo verificado: ${file.name} (${sizeMb}MB). Fallback activo hacia API remota.", Toast.LENGTH_LONG).show()
+            }
+        }
+
         updateGemmaModelStatus()
     }
 

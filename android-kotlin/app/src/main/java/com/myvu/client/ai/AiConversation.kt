@@ -226,6 +226,14 @@ class AiConversation(
         noiseChunks = 0
         loudStreak = 0
         speechThreshold = SPEECH_ENERGY
+        try {
+            decoder.start()
+            decoding = true
+        } catch (e: Exception) {
+            LogBus.error("could not start the Opus decoder", e)
+        }
+        mic.start()
+
         if (usesAndroidSpeech) {
             nativeSpeechSessionId = sessionId
             val started = androidSpeech.start(
@@ -238,28 +246,21 @@ class AiConversation(
                 onResult = { text ->
                     if (active && nativeSpeechSessionId == sessionId) onTranscript(text)
                 },
-                onError = { _, message ->
+                onError = { code, message ->
                     if (active && nativeSpeechSessionId == sessionId) {
-                        LogBus.warn("AI native STT failed: $message")
-                        finish()
+                        LogBus.warn("AI native STT failed (code=$code): $message. Conmutando a streaming de audio de gafas...")
+                        // Fallback: si hay audio capturado de las gafas, procesar con STT API
+                        if (mic.isCapturing() && speechStarted) {
+                            endUtterance()
+                        } else {
+                            finish()
+                        }
                     }
                 }
             )
             if (!started) {
-                LogBus.warn("AI native STT could not start")
-                finish()
-                return
+                LogBus.warn("AI native STT could not start, continuing with glasses microphone")
             }
-        } else {
-            try {
-                decoder.start()
-                decoding = true
-            } catch (e: Exception) {
-                LogBus.error("could not start the Opus decoder", e)
-                finish()
-                return
-            }
-            mic.start()
         }
 
         send(AiProtocol.sessionAck(sessionId))
@@ -386,8 +387,9 @@ class AiConversation(
     }
 
     private fun buildContextPayload(): String {
-        val sdf = SimpleDateFormat("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", Locale("es", "CO"))
-        val currentDateTime = sdf.format(Date()).replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale("es", "CO")) else it.toString() }
+        val locale = Locale.getDefault()
+        val sdf = SimpleDateFormat("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", locale)
+        val currentDateTime = sdf.format(Date()).replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
         val conn = MyvuService.activeConnection()
         val batteryInfo = if (conn?.state == ConnectionState.READY) {
             val batt = conn.glassesInfo()?.battery?.takeIf { it > 0 } ?: 85
@@ -402,7 +404,7 @@ class AiConversation(
             .take(2)
             .joinToString("; ") {
                 val text = it.title.ifBlank { it.body }
-                "$text a las ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(it.triggerAt))}"
+                "$text a las ${SimpleDateFormat("HH:mm", locale).format(Date(it.triggerAt))}"
             }
 
         return "[Contexto del Sistema: $currentDateTime | $batteryInfo | Próximos recordatorios: ${upcoming.ifEmpty { "Ninguno" }}]\n"

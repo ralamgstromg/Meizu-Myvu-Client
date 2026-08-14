@@ -43,15 +43,7 @@ enum class AiProvider(
             context?.let { Prefs.systemPrompt(it) } ?: AiClient.DEFAULT_SYSTEM_PROMPT
         }
         val ignoreSsl = context != null && Prefs.ignoreSsl(context)
-        if (context != null && Prefs.useLocalGemmaIfAvailable(context)) {
-            val optionId = Prefs.gemmaModelId(context)
-            val option = GemmaLocalClient.findOption(optionId)
-            val gemmaClient = GemmaLocalClient(context, option)
-            if (gemmaClient.isConfigured()) {
-                return gemmaClient
-            }
-        }
-        return when (this) {
+        val baseClient = when (this) {
             OPENAI -> OpenAiClient(apiKey, model, effectivePrompt)
             GEMINI -> GeminiClient(apiKey, model, effectivePrompt)
             GEMINI_ANDROID -> {
@@ -72,6 +64,54 @@ enum class AiProvider(
             ASSISTANT -> AndroidAssistantClient(context!!)
             LOCAL -> LocalAiClient(endpoint, apiKey, model, effectivePrompt, ignoreSsl)
             else -> ClaudeClient(apiKey, model, effectivePrompt)
+        }
+
+        if (context != null && (Prefs.useLocalGemmaIfAvailable(context) || this == GEMMA_LOCAL)) {
+            val optionId = Prefs.gemmaModelId(context)
+            val option = GemmaLocalClient.findOption(optionId)
+            val gemmaClient = GemmaLocalClient(context, option)
+            if (gemmaClient.isConfigured()) {
+                val fallbackClient = if (this == GEMMA_LOCAL) {
+                    // Si el proveedor seleccionado es GEMMA_LOCAL y falla, buscar el proveedor remoto configurado de respaldo (ej. Gemini o Groq)
+                    val backupProviderId = if (Prefs.aiApiKey(context, "gemini").isNotEmpty()) "gemini" else "groq"
+                    val backupProvider = fromId(backupProviderId)
+                    backupProvider.newClient(
+                        null,
+                        Prefs.aiApiKey(context, backupProviderId),
+                        Prefs.aiModel(context, backupProviderId),
+                        Prefs.aiEndpoint(context, backupProviderId),
+                        effectivePrompt
+                    )
+                } else {
+                    baseClient
+                }
+                return LocalFallbackAiClient(localClient = gemmaClient, fallbackClient = fallbackClient)
+            }
+        }
+
+        return baseClient
+    }
+
+    class LocalFallbackAiClient(
+        private val localClient: AiClient,
+        private val fallbackClient: AiClient
+    ) : AiClient {
+        override fun isConfigured(): Boolean = localClient.isConfigured() || fallbackClient.isConfigured()
+
+        @Throws(java.io.IOException::class)
+        override fun ask(question: String): String {
+            if (localClient.isConfigured()) {
+                try {
+                    com.myvu.client.core.LogBus.log("AI_LOCAL_ATTEMPT: Ejecutando en modelo local on-device...")
+                    return localClient.ask(question)
+                } catch (e: Exception) {
+                    com.myvu.client.core.LogBus.warn("AI_LOCAL_FAILED: Falló modelo local (${e.message}). Conmutando automáticamente a API remota de respaldo...")
+                }
+            }
+            if (fallbackClient.isConfigured()) {
+                return fallbackClient.ask(question)
+            }
+            throw java.io.IOException("Ni el modelo local ni la API de respaldo están configurados correctamente.")
         }
     }
 

@@ -343,6 +343,15 @@
                                     android:textSize="11sp"
                                     android:text="Eliminar Modelo" />
                             </LinearLayout>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnTestGemmaModel"
+                                style="@style/Button.Myvu.Outlined"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:textSize="12sp"
+                                android:text="🧪 Probar Modelo Local / Diagnóstico" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
 

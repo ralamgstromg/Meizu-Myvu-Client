@@ -70,7 +70,8 @@ abstract class AiHttpClient @JvmOverloads constructor(
             conn.requestMethod = "POST"
             conn.setRequestProperty("content-type", "application/json")
             authorize(conn)
-            conn.connectTimeout = TIMEOUT_MS
+            val isLocal = provider == AiProvider.LOCAL || endpoint().contains("10.0.0.") || endpoint().contains("localhost") || endpoint().contains("127.0.0.1") || endpoint().contains("192.168.")
+            conn.connectTimeout = if (isLocal) LOCAL_CONNECT_TIMEOUT_MS else TIMEOUT_MS
             conn.readTimeout = TIMEOUT_MS
             conn.doOutput = true
 
@@ -110,6 +111,7 @@ abstract class AiHttpClient @JvmOverloads constructor(
 
     companion object {
         private const val TIMEOUT_MS = 30000
+        private const val LOCAL_CONNECT_TIMEOUT_MS = 5000
 
         private fun extractError(response: String): String {
             try {

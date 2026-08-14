@@ -79,7 +79,7 @@ class GemmaLocalClient(
 
         LogBus.log("AI_GEMMA_LOCAL_START questionLength=${question.length} model=${modelOption.fileName}")
 
-        val cleanQuestion = question.replace(Regex("\\[Contexto del Sistema:[^\\]]*\\]", RegexOption.IGNORE_CASE), "").trim()
-        return "Respuesta para: $cleanQuestion"
+        // El motor on-device LiteRT/TFLite para Gemma aún no está enlazado a nivel de runtime nativo
+        throw IOException("Motor de inferencia local Gemma no disponible para ${modelOption.fileName}. Activando fallback.")
     }
 }

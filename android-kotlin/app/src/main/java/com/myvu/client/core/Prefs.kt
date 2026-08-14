@@ -3,6 +3,9 @@ package com.myvu.client.core
 import android.content.Context
 import android.content.SharedPreferences
 import android.preference.PreferenceManager
+import java.util.Currency
+import java.util.Locale
+import java.util.TimeZone
 
 /** Small typed wrapper over the default SharedPreferences. */
 @Suppress("DEPRECATION")
@@ -352,7 +355,30 @@ object Prefs {
     fun systemPrompt(c: Context): String {
         val custom = prefs(c).getString("custom_system_prompt", null)
             ?: prefs(c).getString(KEY_SYSTEM_PROMPT, null)
-        return if (!custom.isNullOrBlank()) custom else com.myvu.client.ai.AiClient.DEFAULT_SYSTEM_PROMPT
+        val template = if (!custom.isNullOrBlank()) custom else com.myvu.client.ai.AiClient.DEFAULT_SYSTEM_PROMPT
+        val locale = Locale.getDefault()
+        val langTag = locale.toLanguageTag() // e.g. "es-CO"
+        val langName = locale.getDisplayName(locale).ifBlank { locale.displayLanguage }
+        val country = locale.getDisplayCountry(locale).ifBlank { locale.country.ifBlank { "Global" } }
+        val currency = try {
+            Currency.getInstance(locale)
+        } catch (_: Exception) {
+            try { Currency.getInstance("USD") } catch (_: Exception) { null }
+        }
+        val currencyCode = currency?.currencyCode ?: "COP"
+        val currencySymbol = currency?.getSymbol(locale) ?: "$"
+        val tz = TimeZone.getDefault()
+        val tzName = tz.id
+
+        return template
+            .replace("{COUNTRY}", country)
+            .replace("{CURRENCY_CODE}", currencyCode)
+            .replace("{CURRENCY_SYMBOL}", currencySymbol)
+            .replace("{TIMEZONE}", tzName)
+            .replace("{STT_LANGUAGE}", langTag)
+            .replace("{LOCALE}", langTag)
+            .replace("{LANGUAGE}", langTag)
+            .replace("{LANGUAGE_NAME}", langName)
     }
 
     @JvmStatic
