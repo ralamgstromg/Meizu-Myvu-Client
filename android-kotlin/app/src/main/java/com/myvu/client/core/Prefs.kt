@@ -227,8 +227,19 @@ object Prefs {
     }
 
     @JvmStatic
+    fun useAndroidStt(c: Context): Boolean {
+        return prefs(c).getBoolean("use_android_stt", true)
+    }
+
+    @JvmStatic
+    fun setUseAndroidStt(c: Context, use: Boolean) {
+        prefs(c).edit().putBoolean("use_android_stt", use).apply()
+    }
+
+    @JvmStatic
     fun sttProvider(c: Context): String {
-        return prefs(c).getString(KEY_STT_PROVIDER, "groq") ?: "groq"
+        val prov = prefs(c).getString(KEY_STT_PROVIDER, "groq") ?: "groq"
+        return if (prov == "android") "groq" else prov
     }
 
     @JvmStatic

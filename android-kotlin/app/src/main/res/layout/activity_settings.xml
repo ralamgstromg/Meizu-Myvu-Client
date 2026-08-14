@@ -593,11 +593,29 @@
                         android:layout_marginTop="2dp"
                         android:text="Transcribes what you say into the glasses' microphone. Stored on this device only." />
 
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/swUseAndroidStt"
+                        style="@style/Switch.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textSize="13sp"
+                        android:textColor="@color/on_surface_obsidian"
+                        android:text="Priorizar STT nativo de Android (On-Device)" />
+
+                    <TextView
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textSize="11sp"
+                        android:text="Si falla o la pantalla está bloqueada, usará la API configurada a continuación:" />
+
                     <com.google.android.material.button.MaterialButtonToggleGroup
                         android:id="@+id/btnSttProviderGroup"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="8dp"
                         app:singleSelection="true"
                         app:selectionRequired="true">
 
@@ -607,7 +625,7 @@
                             android:layout_width="0dp"
                             android:layout_weight="1"
                             android:layout_height="wrap_content"
-                            android:text="Groq" />
+                            android:text="Groq Whisper" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSttLocal"
@@ -615,15 +633,7 @@
                             android:layout_width="0dp"
                             android:layout_weight="1"
                             android:layout_height="wrap_content"
-                            android:text="Local" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSttAndroid"
-                            style="@style/Button.Myvu.Outlined"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:text="Android" />
+                            android:text="Local / Servidor" />
                     </com.google.android.material.button.MaterialButtonToggleGroup>
 
                     <com.google.android.material.textfield.TextInputLayout

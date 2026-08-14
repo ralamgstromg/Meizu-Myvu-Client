@@ -44,7 +44,7 @@ class AiConversation(
     private var nativeSpeechSessionId: String? = null
 
     private val usesAndroidSpeech: Boolean
-        get() = SttProvider.fromId(Prefs.sttProvider(context)).isNative
+        get() = Prefs.useAndroidStt(context)
     private val tts = TtsPlayer(this.context)
     private val responseDelivery = AiResponseDelivery(
         sender = ::send,
