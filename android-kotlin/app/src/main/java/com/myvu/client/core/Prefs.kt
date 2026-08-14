@@ -17,6 +17,7 @@ object Prefs {
     private const val KEY_SYSTEM_PROMPT = "ai_system_prompt"
     private const val KEY_WEATHER_ENABLED = "weather_enabled"
     private const val KEY_WEATHER_PLACE = "weather_place"
+    private const val KEY_GEMINI_FALLBACK_POLICY = "gemini_fallback_policy"
 
     const val DEFAULT_MAC = "2C:6F:4E:00:DC:47"
     const val DEFAULT_LOCAL_AI_ENDPOINT = "http://10.0.0.2:1234/v1/chat/completions"
@@ -89,6 +90,16 @@ object Prefs {
     @JvmStatic
     fun setAiProvider(c: Context, providerId: String) {
         prefs(c).edit().putString(KEY_AI_PROVIDER, providerId).apply()
+    }
+
+    @JvmStatic
+    fun geminiFallbackPolicy(c: Context): String {
+        return prefs(c).getString(KEY_GEMINI_FALLBACK_POLICY, "nano_then_api") ?: "nano_then_api"
+    }
+
+    @JvmStatic
+    fun setGeminiFallbackPolicy(c: Context, policyId: String) {
+        prefs(c).edit().putString(KEY_GEMINI_FALLBACK_POLICY, policyId).apply()
     }
 
     @JvmStatic

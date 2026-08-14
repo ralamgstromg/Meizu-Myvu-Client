@@ -12,6 +12,7 @@ enum class AiProvider(
     CLAUDE("claude", "Claude (Anthropic)", "console.anthropic.com", "claude-3-5-haiku-20241022"),
     OPENAI("openai", "ChatGPT (OpenAI)", "platform.openai.com", "gpt-4o-mini"),
     GEMINI("gemini", "Gemini (Google)", "aistudio.google.com", "gemini-2.0-flash"),
+    GEMINI_ANDROID("gemini_android", "Gemini Android (Nano/API)", "ai.google.dev", ""),
     GROQ("groq", "Groq (Ultra-Fast)", "console.groq.com", "llama-3.3-70b-versatile"),
     NVIDIA("nvidia", "NVIDIA NIM (Free Credits)", "build.nvidia.com", "meta/llama-3.3-70b-instruct"),
     ASSISTANT("assistant", "Asistente de Android (Google/Gemini)", "", ""),
