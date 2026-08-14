@@ -129,8 +129,12 @@ class PhoneActionExecutor(context: Context) {
         }
 
         // 5. Calls / Dialing
-        if (lower.contains("action:call=")) {
-            val target = extractValue(aiText, "ACTION:CALL=")
+        if (lower.contains("action:call=") || lower.contains("action:call:") || lower.contains("action:call ")) {
+            val target = extractValue(aiText, "ACTION:CALL=").ifBlank {
+                extractValue(aiText, "ACTION:CALL:").ifBlank {
+                    extractValue(aiText, "ACTION:CALL ")
+                }
+            }
             makeCall(target)
         }
 
@@ -1161,8 +1165,9 @@ class PhoneActionExecutor(context: Context) {
 
     private fun stripActionTags(text: String?): String {
         if (text == null) return ""
-        var clean = text.replace(Regex("(?i)ACTION:[A-Z_]+(=[^\n]*)?"), "")
+        var clean = text.replace(Regex("(?i)ACTION:[A-Z_]+(=|:)?([^\n]*)?"), "")
         clean = clean.replace(Regex("(?i)\\[Contexto del Sistema:[^\\]]*\\]"), "")
+        clean = clean.replace(Regex("(?i)\\b(call|action)\\s*(=|igual a|dos puntos)\\s*([a-zA-Z0-9_ ]+)"), "")
         clean = clean.replace(Regex("\\[([^\\]]+)\\]\\([^\\)]+\\)"), "$1")
         clean = clean.replace(Regex("[*_`~#>]"), "")
         clean = clean.replace(Regex("(?m)^[\\s*\\-]+\\s*"), "")
