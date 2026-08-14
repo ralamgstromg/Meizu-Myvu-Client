@@ -20,6 +20,9 @@ object HttpRetry {
             val code = e.statusCode
             return code == 429 || code >= 500
         }
+        if (e is java.net.ConnectException || e is java.net.SocketTimeoutException) {
+            return false // Fallar rápido ante caída de servidor para activar fallback
+        }
         return e is IOException
     }
 

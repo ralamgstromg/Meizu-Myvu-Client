@@ -24,7 +24,14 @@ class TtsPlayer(private val context: Context) {
     }
 
     private val main = Handler(Looper.getMainLooper())
-    private val network: ExecutorService = Executors.newSingleThreadExecutor()
+    private val network: ExecutorService = Executors.newSingleThreadExecutor { r ->
+        Thread(r, "tts-network").apply {
+            isDaemon = true
+            setUncaughtExceptionHandler { t, e ->
+                LogBus.error("Uncaught exception on thread ${t.name}", e)
+            }
+        }
+    }
     private var tts: TextToSpeech? = null
     private var mediaPlayer: MediaPlayer? = null
     private var mediaFile: File? = null

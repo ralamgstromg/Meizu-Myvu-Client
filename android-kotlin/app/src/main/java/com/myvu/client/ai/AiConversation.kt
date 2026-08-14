@@ -31,7 +31,12 @@ class AiConversation(
     private val context: Context = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
     private val worker: ExecutorService = Executors.newSingleThreadExecutor { r ->
-        Thread(r, "ai-worker").apply { isDaemon = true }
+        Thread(r, "ai-worker").apply {
+            isDaemon = true
+            setUncaughtExceptionHandler { t, e ->
+                LogBus.error("Uncaught exception on thread ${t.name}", e)
+            }
+        }
     }
     private val mic = GlassesMicStream()
     private val decoder = OpusDecoderStream()
@@ -60,7 +65,12 @@ class AiConversation(
     )
     private val actionExecutor = PhoneActionExecutor(this.context)
     private val audio: ExecutorService = Executors.newSingleThreadExecutor { r ->
-        Thread(r, "ai-audio").apply { isDaemon = true }
+        Thread(r, "ai-audio").apply {
+            isDaemon = true
+            setUncaughtExceptionHandler { t, e ->
+                LogBus.error("Uncaught exception on thread ${t.name}", e)
+            }
+        }
     }
 
     @Volatile
@@ -315,17 +325,29 @@ class AiConversation(
     }
 
     private fun transcribe(pcm: ByteArray, sampleRate: Int, channels: Int) {
-        val sttProviderId = Prefs.sttProvider(context)
+        var sttProviderId = Prefs.sttProvider(context)
+        if ("android" == sttProviderId) {
+            // Si el STT estaba en modo Android y conmutó a transcripción de audio, usar Groq u OpenAI
+            sttProviderId = if (Prefs.sttApiKey(context, "groq").isNotEmpty()) "groq" else "openai"
+        }
         val apiKey = Prefs.sttApiKey(context, sttProviderId)
         val storedModel = Prefs.sttModel(context, sttProviderId).trim()
-        val model = if (storedModel.isEmpty()) "whisper-1" else storedModel
+        val model = if (storedModel.isEmpty()) {
+            if ("groq" == sttProviderId) "whisper-large-v3-turbo" else "whisper-1"
+        } else {
+            storedModel
+        }
         val storedEndpoint = Prefs.sttEndpoint(context, sttProviderId).trim()
-        val endpoint = if (storedEndpoint.isEmpty()) "https://api.openai.com/v1/audio/transcriptions" else storedEndpoint
+        val endpoint = if (storedEndpoint.isEmpty()) {
+            if ("groq" == sttProviderId) "https://api.groq.com/openai/v1/audio/transcriptions" else "https://api.openai.com/v1/audio/transcriptions"
+        } else {
+            storedEndpoint
+        }
         val client = OpenAiTranscriptionClient(
             endpoint, model, apiKey, sttProviderId, Prefs.ignoreSsl(context)
         )
         if (!client.isConfigured()) {
-            LogBus.warn("$sttProviderId is not fully configured")
+            LogBus.warn("STT ($sttProviderId) no configurado para transcribir el audio de las gafas.")
             finish()
             return
         }
@@ -553,20 +575,25 @@ class AiConversation(
     private fun finish() {
         if (!active) return
         active = false
-        cancelPendingTool()
-        responseDelivery.cancel()
-        stopRequested = false
-        if (usesAndroidSpeech) {
-            androidSpeech.cancel()
-            nativeSpeechSessionId = null
+        try {
+            cancelPendingTool()
+            responseDelivery.cancel()
+            stopRequested = false
+            if (usesAndroidSpeech) {
+                androidSpeech.cancel()
+                nativeSpeechSessionId = null
+            }
+        } catch (e: Exception) {
+            LogBus.warn("Error during session cancel: ${e.message}")
+        } finally {
+            mic.stop()
+            decoding = false
+            try { decoder.stop() } catch (_: Exception) {}
+            main.removeCallbacks(silenceTimeout)
+            main.removeCallbacks(utteranceCap)
+            send(AiProtocol.vrState(AiProtocol.VR_CLOSE))
+            LogBus.trace("AI conversation ended")
         }
-        mic.stop()
-        decoding = false
-        decoder.stop()
-        main.removeCallbacks(silenceTimeout)
-        main.removeCallbacks(utteranceCap)
-        send(AiProtocol.vrState(AiProtocol.VR_CLOSE))
-        LogBus.trace("AI conversation ended")
     }
 
     private fun abandon() {
@@ -574,7 +601,7 @@ class AiConversation(
         stopRequested = false
         mic.stop()
         decoding = false
-        decoder.stop()
+        try { decoder.stop() } catch (_: Exception) {}
         main.removeCallbacks(silenceTimeout)
         main.removeCallbacks(utteranceCap)
     }
