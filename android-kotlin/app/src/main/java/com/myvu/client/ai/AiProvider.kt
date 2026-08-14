@@ -45,6 +45,13 @@ enum class AiProvider(
         return when (this) {
             OPENAI -> OpenAiClient(apiKey, model, effectivePrompt)
             GEMINI -> GeminiClient(apiKey, model, effectivePrompt)
+            GEMINI_ANDROID -> {
+                val policyId = context?.let { Prefs.geminiFallbackPolicy(it) } ?: GeminiFallbackPolicy.NANO_THEN_API.id
+                val policy = GeminiFallbackPolicy.fromId(policyId)
+                val nanoBackend = context?.let { GeminiNanoBackend(it) } ?: GeminiNanoBackend(GeminiCapabilityDetector { GeminiAvailability.UNAVAILABLE })
+                val apiBackend = context?.let { GeminiApiBackend(it) } ?: GeminiApiBackend()
+                GeminiHybridClient(nanoBackend, apiBackend, policy)
+            }
             GROQ -> LocalAiClient("https://api.groq.com/openai/v1/chat/completions", apiKey, model, effectivePrompt, false)
             NVIDIA -> LocalAiClient("https://integrate.api.nvidia.com/v1/chat/completions", apiKey, model, effectivePrompt, false)
             ASSISTANT -> AndroidAssistantClient(context!!)

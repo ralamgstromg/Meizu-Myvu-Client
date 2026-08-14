@@ -428,6 +428,11 @@ class AiConversation(
             LogBus.log("AI prompt prepared sessionId=$sessionId contextLength=${contextPayload.length} questionLength=${question.length}")
             val answer: String?
             try {
+                if (provider == AiProvider.GEMINI_ANDROID) {
+                    val hybrid = client as? GeminiHybridClient
+                    val availability = hybrid?.availability()
+                    LogBus.log("AI_GEMINI_BACKEND_SELECTED backend=${availability?.state ?: "UNKNOWN"} sessionId=$sessionId")
+                }
                 answer = client.ask(fullPrompt)
             } catch (e: Exception) {
                 LogBus.error("$aiProviderId request failed", e)
