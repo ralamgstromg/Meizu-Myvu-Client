@@ -20,6 +20,9 @@ class GeminiApiBackend(
     private val cancelled = ConcurrentHashMap.newKeySet<String>()
     private val activeRequests = ConcurrentHashMap<String, Unit>()
 
+    internal fun activeRequestCountForTest(): Int = activeRequests.size
+    internal fun cancelledRequestCountForTest(): Int = cancelled.size
+
     override fun availability(): GeminiAvailability {
         return if (apiKey.isBlank() || model.isBlank()) {
             GeminiAvailability(GeminiAvailability.State.UNAVAILABLE, "missing_configuration")
@@ -29,6 +32,7 @@ class GeminiApiBackend(
     }
 
     override fun ask(request: GeminiRequest, callback: (Result<GeminiResult>) -> Unit) {
+        val requestId = request.requestId
         if (request.requestId.isBlank()) {
             callback(Result.failure(GeminiApiException(GeminiApiException.Kind.CONFIGURATION, "missing_request_id")))
             return
@@ -37,14 +41,25 @@ class GeminiApiBackend(
             callback(Result.failure(GeminiApiException(GeminiApiException.Kind.CONFIGURATION, "missing_configuration")))
             return
         }
-        cancelled.remove(request.requestId)
-        activeRequests[request.requestId] = Unit
-        thread(name = "gemini-api-${request.requestId}") {
-            if (cancelled.contains(request.requestId)) return@thread
+        synchronized(activeRequests) {
+            cancelled.remove(requestId)
+            activeRequests[requestId] = Unit
+            if (cancelled.contains(requestId)) {
+                activeRequests.remove(requestId)
+                cancelled.remove(requestId)
+                return
+            }
+        }
+        thread(name = "gemini-api-$requestId") {
+            if (isCancelled(requestId)) {
+                finishRequest(requestId)
+                return@thread
+            }
             val result = runCatching {
                 val body = buildRequestBody(request)
-                val response = transport.post(request.requestId, endpoint(model), apiKey, body)
-                if (cancelled.contains(request.requestId)) return@runCatching null
+                if (isCancelled(requestId)) return@runCatching null
+                val response = transport.post(requestId, endpoint(model), apiKey, body)
+                if (isCancelled(requestId)) return@runCatching null
                 if (response.statusCode !in 200..299) {
                     val kind = if (response.statusCode == 401 || response.statusCode == 403) {
                         GeminiApiException.Kind.CONFIGURATION
@@ -58,14 +73,28 @@ class GeminiApiBackend(
                 onSuccess = { value -> value?.let { Result.success(it) } },
                 onFailure = { error -> Result.failure(classify(error)) }
             )
-            activeRequests.remove(request.requestId)
-            if (!cancelled.contains(request.requestId) && result != null) callback(result)
+            if (!isCancelled(requestId) && result != null) callback(result)
+            finishRequest(requestId)
         }
     }
 
     override fun cancel(requestId: String) {
-        cancelled += requestId
+        synchronized(activeRequests) {
+            if (!activeRequests.containsKey(requestId)) return
+            cancelled += requestId
+        }
         transport.cancel(requestId)
+    }
+
+    private fun isCancelled(requestId: String): Boolean = synchronized(activeRequests) {
+        cancelled.contains(requestId)
+    }
+
+    private fun finishRequest(requestId: String) {
+        synchronized(activeRequests) {
+            activeRequests.remove(requestId)
+            cancelled.remove(requestId)
+        }
     }
 
     private fun classify(error: Throwable): GeminiApiException {
