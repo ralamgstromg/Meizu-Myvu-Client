@@ -247,6 +247,16 @@ object Prefs {
     }
 
     @JvmStatic
+    fun sttLanguage(c: Context): String {
+        return prefs(c).getString("stt_language", "es") ?: "es"
+    }
+
+    @JvmStatic
+    fun setSttLanguage(c: Context, lang: String) {
+        prefs(c).edit().putString("stt_language", lang).apply()
+    }
+
+    @JvmStatic
     fun sttProvider(c: Context): String {
         val prov = prefs(c).getString(KEY_STT_PROVIDER, "groq") ?: "groq"
         return if (prov == "android") "groq" else prov

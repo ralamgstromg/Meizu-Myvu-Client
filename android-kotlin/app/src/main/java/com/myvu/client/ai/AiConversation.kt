@@ -370,7 +370,7 @@ class AiConversation(
             storedEndpoint
         }
         val client = OpenAiTranscriptionClient(
-            endpoint, model, apiKey, sttProviderId, Prefs.ignoreSsl(context)
+            endpoint, model, apiKey, sttProviderId, Prefs.ignoreSsl(context), Prefs.sttLanguage(context)
         )
         if (!client.isConfigured()) {
             LogBus.warn("STT ($sttProviderId) no configurado para transcribir el audio de las gafas.")
@@ -458,7 +458,26 @@ class AiConversation(
         return "[Contexto del Sistema: $currentDateTime | $batteryInfo | Próximos recordatorios: ${upcoming.ifEmpty { "Ninguno" }}]\n"
     }
 
+    private val voiceRouter: VoiceActionRouter = VoiceActionRouter(context, actionExecutor)
+
     private fun askAi(question: String) {
+        val route = voiceRouter.tryRoute(question)
+        if (route.handled) {
+            if (route.isAsyncWeather) {
+                pendingWeatherResponse = true
+                actionExecutor.queryWeather { text, success ->
+                    main.post {
+                        if (!active || !pendingWeatherResponse) return@post
+                        pendingWeatherResponse = false
+                        deliverFinal(text, if (success) AiResponse.Source.WEATHER else AiResponse.Source.ERROR)
+                    }
+                }
+                return
+            }
+            deliverFinal(route.responseText, route.source)
+            return
+        }
+
         LogBus.log("AI_REQUEST_STARTED sessionId=$sessionId provider=${Prefs.aiProvider(context)} questionLength=${question.length}")
         val aiProviderId = Prefs.aiProvider(context)
         val provider = AiProvider.fromId(aiProviderId)
@@ -495,6 +514,7 @@ class AiConversation(
     private fun deliver(rawAnswer: String?) {
         if (!active) return
 
+        // 1. Ejecutar siempre el validador JSON si aplica
         val parsed = GeminiActionValidator.parse(rawAnswer)
         if (parsed.actions.isNotEmpty()) {
             for (action in parsed.actions) {
@@ -502,10 +522,12 @@ class AiConversation(
             }
         }
 
+        // 2. Ejecutar SIEMPRE el procesador de acciones por texto / regex
+        val processedAnswer = actionExecutor.processAndExecute(rawAnswer)
+
         val weatherAction = rawAnswer?.contains("ACTION:WEATHER_REFRESH", ignoreCase = true) == true ||
                 parsed.actions.any { it.type == "weather_query" }
 
-        val answer = if (parsed.answer.isNotBlank()) parsed.answer else actionExecutor.processAndExecute(rawAnswer)
         if (weatherAction) {
             pendingWeatherResponse = true
             LogBus.log("AI_WEATHER_QUERY_STARTED sessionId=$sessionId")
@@ -521,13 +543,16 @@ class AiConversation(
             }
             return
         }
-        val finalAnswer = answer.ifBlank {
-            if (rawAnswer.isNullOrBlank()) {
-                "No pude obtener una respuesta del agente en este momento."
-            } else {
-                "Acción ejecutada en el teléfono."
-            }
+
+        val answerCandidate = if (processedAnswer.isNotBlank()) processedAnswer else parsed.answer
+        val finalAnswer = if (answerCandidate.isNotBlank()) {
+            answerCandidate
+        } else if (rawAnswer.isNullOrBlank()) {
+            "No pude obtener una respuesta del agente en este momento."
+        } else {
+            "Acción ejecutada en el teléfono."
         }
+
         deliverFinal(finalAnswer, AiResponse.Source.AI)
     }
 

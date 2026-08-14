@@ -451,12 +451,19 @@ class PhoneActionExecutor(context: Context) {
                 }
             }
 
+            var cleanNum = number?.replace(Regex("[^0-9]"), "") ?: ""
+            // Si es un celular colombiano de 10 dígitos (ej: 3011161686), anteponer el código de país 57
+            if (cleanNum.length == 10 && (cleanNum.startsWith("3") || cleanNum.startsWith("6"))) {
+                cleanNum = "57$cleanNum"
+            }
+
             val url = StringBuilder("https://api.whatsapp.com/send?")
-            if (!number.isNullOrEmpty()) {
-                val cleanNum = number.replace(Regex("[^0-9]"), "")
+            if (cleanNum.isNotEmpty()) {
                 url.append("phone=").append(cleanNum).append("&")
             }
-            url.append("text=").append(URLEncoder.encode(message, "UTF-8"))
+            if (message.isNotEmpty()) {
+                url.append("text=").append(URLEncoder.encode(message, "UTF-8"))
+            }
 
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url.toString()))
             intent.setPackage("com.whatsapp")
@@ -464,9 +471,8 @@ class PhoneActionExecutor(context: Context) {
 
             try {
                 context.startActivity(intent)
-                LogBus.log("voice action -> opened WhatsApp (recipient=$recipient, number=$number) with text: $message")
+                LogBus.log("voice action -> opened WhatsApp (recipient=$recipient, phone=$cleanNum) with text: $message")
             } catch (e: Exception) {
-                // Si falla con package específico de WhatsApp, intentar con Intent genérico
                 val genericIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url.toString()))
                 genericIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(genericIntent)

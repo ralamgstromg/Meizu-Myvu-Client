@@ -667,17 +667,44 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
     }
 
     private fun shareLog() {
-        val sb = StringBuilder()
-        for (line in LogBus.history()) sb.append(line).append('\n')
-        startActivity(
-            Intent.createChooser(
-                Intent(Intent.ACTION_SEND)
-                    .setType("text/plain")
-                    .putExtra(Intent.EXTRA_SUBJECT, "MYVU client log")
-                    .putExtra(Intent.EXTRA_TEXT, sb.toString()),
-                "Share log"
+        try {
+            val sb = StringBuilder()
+            val history = LogBus.history()
+            for (line in history) sb.append(line).append('\n')
+            val fullLog = sb.toString()
+
+            // Guardar en archivo para evitar el límite de tamaño de Intent.EXTRA_TEXT
+            val logFile = java.io.File(cacheDir, "myvu_client_log.txt")
+            logFile.writeText(fullLog)
+
+            val logUri = androidx.core.content.FileProvider.getUriForFile(
+                this,
+                "$packageName.fileprovider",
+                logFile
             )
-        )
+
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_SUBJECT, "MYVU Client Log (${history.size} líneas)")
+                putExtra(Intent.EXTRA_TEXT, fullLog)
+                putExtra(Intent.EXTRA_STREAM, logUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            startActivity(Intent.createChooser(shareIntent, "Compartir Log Completo"))
+        } catch (e: Exception) {
+            LogBus.error("could not share log file", e)
+            val fallbackText = LogBus.history().joinToString("\n")
+            startActivity(
+                Intent.createChooser(
+                    Intent(Intent.ACTION_SEND)
+                        .setType("text/plain")
+                        .putExtra(Intent.EXTRA_SUBJECT, "MYVU client log")
+                        .putExtra(Intent.EXTRA_TEXT, fallbackText),
+                    "Share log"
+                )
+            )
+        }
     }
 
     override fun onLine(line: String) {

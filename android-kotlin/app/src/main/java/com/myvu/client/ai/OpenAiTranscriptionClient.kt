@@ -18,7 +18,8 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
     model: String?,
     apiKey: String?,
     private val serviceLabel: String,
-    private val ignoreSsl: Boolean = false
+    private val ignoreSsl: Boolean = false,
+    private val customLanguage: String? = "es"
 ) {
     private val endpoint: String = endpoint?.trim() ?: ""
     private val model: String = model?.trim() ?: ""
@@ -84,12 +85,14 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
             conn.readTimeout = TIMEOUT_MS
             conn.doOutput = true
 
-            val lang = java.util.Locale.getDefault().language.ifBlank { "es" }
+            val lang = customLanguage?.ifBlank { "es" } ?: java.util.Locale.getDefault().language.ifBlank { "es" }
+            val whisperPrompt = "Comandos de voz en español: llamar a, marca a, enviar whatsapp a, mensaje para, toma nota, agrega a la lista, clima, recordatorio."
 
             DataOutputStream(conn.outputStream).use { out ->
                 writeAudioPart(out)
                 writeTextPart(out, "model", model)
                 writeTextPart(out, "language", lang)
+                writeTextPart(out, "prompt", whisperPrompt)
                 writeTextPart(out, "response_format", "json")
                 out.writeBytes("--$BOUNDARY--\r\n")
                 out.flush()

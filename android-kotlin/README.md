@@ -41,22 +41,25 @@ graph TD
 - [**`transport/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/transport): Capa de transporte asíncrona con Kotlin Coroutines y Flow para BLE GATT (`BleTransport`) y RFCOMM Classic (`BtTransport`).
 - [**`service/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/service): `ConnectionManager` (HandlerThread dedicada `myvu-conn`), Foreground Service `MyvuService`, `RelaySupervisor` y `MirrorNotificationListener`.
 - [**`ai/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ai): Asistente de voz inteligente con arquitectura híbrida **Local-First**:
-  - **STT**: Whisper Large v3 Turbo INT4 On-Device (`whisper_large_v3_turbo_30s_i4.tflite` de LiteRT-Community ~721MB) y Whisper Tiny ACFT (~75MB) con adaptación dinámica al idioma y configuración regional del dispositivo (`Locale.getDefault()`), Android Native Speech Recognizer y fallback transparente a Groq Whisper API / Servidor HTTP local.
+  - **STT**: Whisper Large v3 Turbo INT4 On-Device y fallback transparente a Groq Whisper API configurado por defecto en **Español (`es`)** con prompt contextual de comandos de voz para prevenir transcripciones erróneas (`"Jamar"` -> `"Llamar"`), además de Android Speech Recognizer.
   - **LLM**: Motor de inferencia nativo on-device **LiteRT-LM & MediaPipe Tasks GenAI** ejecutando:
     - ⭐ **Gemma 4 E2B IT** (`gemma-4-E2B-it.litertlm` ~1.12GB de Google AI Edge Gallery con Tokenizer SentencePiece integrado).
     - **Gemma 2B IT GPU / CPU** (`gemma-2b-it-gpu-int4.bin` ~1.35GB oficial de Google).
     - **Gemini Nano** (AICore nativo) y rescate automático en cascada hacia APIs en la nube (Groq, Gemini, Claude, OpenAI).
-  - **Inyección Regional y Extracción de Acciones**:
-    - **Llamadas Directas**: Búsqueda insensible a acentos/tildes y marcado instantáneo en segundo plano vía `TelecomManager` / `CALL_PHONE`.
-    - **WhatsApp & Telegram**: Enrutamiento directo al chat con mensaje precargado (`ACTION:WHATSAPP={Contacto}: {Mensaje}`).
-    - **Resumen Inteligente de Notificaciones**: Extracción estructurada y lectura en voz alta de mensajes pendientes en segundo plano (`InboxStyle` y `MessagingStyle` para WhatsApp, Gmail, Outlook y Telegram con `ACTION:SUMMARY`).
-    - **Control Total**: Soporte para música (`ACTION:OPENTUNE_PLAY`, volumen, media keys), navegación GPS HUD (`ACTION:NAVIGATE`), notas (`ACTION:NOTE`, `ACTION:SEARCH_NOTES`), teleprompter y alarmas.
+  - **VoiceActionRouter (Fast-Path Determinista <5ms)**: Intercepta comandos directos por palabras clave sin pasar por el LLM para máxima velocidad y cero alucinaciones:
+    - **Llamadas Directas**: Búsqueda difusa (Levenshtein + FTS) y marcado instantáneo en segundo plano vía `TelecomManager` / `CALL_PHONE` con tolerancia fonética (ej: *"Jamar a..."*, *"Llama a..."*).
+    - **WhatsApp & Telegram**: Apertura inmediata de chat con mensaje precargado y auto-formateo internacional **E.164** (ej: `+57` para números colombianos) evitando errores de número no válido en `com.whatsapp`.
+    - **Resumen de Notificaciones**: Lectura de mensajes pendientes agrupados (`InboxStyle` y `MessagingStyle` para WhatsApp, Gmail, Outlook, Telegram).
+    - **Listas de Tareas (To-Do)**: Crear, completar, listar y eliminar tareas organizadas por listas en SQLite v4.
+    - **Control Multimedia y Apps**: Reproducción en YouTube Music, Spotify o YouTube y apertura universal de cualquier app instalada.
+    - **Navegación HUD & Teleprompter**: Inicia rutas OSRM paso a paso y proyector de texto en el visor monocromático.
+    - **Alarmas y Recordatorios**: Configuración exacta de alarmas y recordatorios programados en segundo plano.
   - **Audio**: Decodificación Opus en tiempo real desde el micrófono de las gafas (`OpusDecoderStream`) y síntesis TTS (`TtsPlayer`).
 - [**`nav/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/nav): Motor de navegación OSRM con renderizado HUD paso a paso en las gafas.
 - [**`weather/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/weather): Sincronización periódica con Open-Meteo para widget meteorológico en visor.
 - [**`reminder/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/reminder): Recordatorios con alarmas exactas vía `AlarmManager` y reenvío al HUD.
-- [**`database/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/database): Almacenamiento local SQLite nativo (`LocalDatabase`) sin sobrecarga de ORMs.
-- [**`ui/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ui): Actividades (`ConnectActivity`, `SettingsActivity`, `TeleprompterActivity`, `NotesActivity`, `TouchpadActivity`).
+- [**`database/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/database): Almacenamiento local SQLite nativo v4 (`notes`, `reminders`, `todos`) sin sobrecarga de ORMs.
+- [**`ui/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ui): Actividades (`ConnectActivity` con FileProvider para compartir log completo de 2000 líneas sin truncamiento, `SettingsActivity`, `TeleprompterActivity`, `NotesActivity`, `TouchpadActivity`).
 
 ---
 
