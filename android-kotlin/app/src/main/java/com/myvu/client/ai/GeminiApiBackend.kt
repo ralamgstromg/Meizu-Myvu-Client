@@ -148,7 +148,7 @@ private class UrlConnectionGeminiApiTransport : GeminiApiTransport {
             connection.outputStream.use { it.write(requestBody.toByteArray(StandardCharsets.UTF_8)) }
             val status = connection.responseCode
             val stream = if (status >= 400) connection.errorStream else connection.inputStream
-            val response = stream?.use { it.readBytes().take(MAX_RESPONSE_BYTES).toByteArray().toString(StandardCharsets.UTF_8) } ?: ""
+            val response = stream?.use { readGeminiResponseBounded(it) } ?: ""
             LogBus.log("AI_GEMINI_API_HTTP status=$status responseLength=${response.length}")
             return GeminiHttpResponse(status, response)
         } finally {
@@ -163,6 +163,27 @@ private class UrlConnectionGeminiApiTransport : GeminiApiTransport {
 
     companion object {
         private const val TIMEOUT_MS = 30_000
-        private const val MAX_RESPONSE_BYTES = 512 * 1024
     }
+}
+
+internal const val GEMINI_MAX_RESPONSE_BYTES = 512 * 1024
+
+internal fun readGeminiResponseBounded(input: java.io.InputStream): String {
+    val buffer = ByteArray(8192)
+    val output = java.io.ByteArrayOutputStream(8192)
+    var total = 0
+    while (true) {
+        val remaining = GEMINI_MAX_RESPONSE_BYTES + 1 - total
+        if (remaining <= 0) {
+            throw GeminiApiException(GeminiApiException.Kind.MALFORMED_RESPONSE, "response_too_large")
+        }
+        val count = input.read(buffer, 0, minOf(buffer.size, remaining))
+        if (count < 0) break
+        total += count
+        if (total > GEMINI_MAX_RESPONSE_BYTES) {
+            throw GeminiApiException(GeminiApiException.Kind.MALFORMED_RESPONSE, "response_too_large")
+        }
+        output.write(buffer, 0, count)
+    }
+    return output.toString(StandardCharsets.UTF_8.name())
 }
