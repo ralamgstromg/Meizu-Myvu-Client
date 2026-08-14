@@ -12,13 +12,19 @@ class GemmaLocalClientTest {
     @Test
     fun defaultOptionHasValidConfig() {
         val option = GemmaLocalClient.DEFAULT_OPTION
-        assertEquals("gemma-2b-it-gpu-int4", option.id)
-        assertEquals("gemma-2b-it-gpu-int4.bin", option.fileName)
-        assertTrue(option.downloadUrl.contains("huggingface.co/google/gemma-2b-it-tflite"))
+        assertEquals("gemma-4-e2b-it-litert-lm", option.id)
+        assertEquals("gemma-4-E2B-it.litertlm", option.fileName)
+        assertTrue(option.downloadUrl.contains("huggingface.co/litert-community/gemma-4-E2B-it-litert-lm"))
     }
 
     @Test
-    fun defaultModelIdMatchesGemma2B() {
+    fun defaultModelIdMatchesGemma4E2B() {
+        assertEquals("gemma-4-e2b-it-litert-lm", GemmaLocalClient.GEMMA_4_E2B_LITERT.id)
+    }
+
+    @Test
+    fun gemma2BOptionsAreAvailable() {
         assertEquals("gemma-2b-it-gpu-int4", GemmaLocalClient.GEMMA_2B_IT_GPU.id)
+        assertEquals("gemma-2b-it-cpu-int4", GemmaLocalClient.GEMMA_2B_IT_CPU.id)
     }
 }

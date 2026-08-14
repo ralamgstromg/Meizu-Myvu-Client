@@ -42,7 +42,10 @@ graph TD
 - [**`service/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/service): `ConnectionManager` (HandlerThread dedicada `myvu-conn`), Foreground Service `MyvuService`, `RelaySupervisor` y `MirrorNotificationListener`.
 - [**`ai/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ai): Asistente de voz inteligente con arquitectura híbrida **Local-First**:
   - **STT**: Whisper Large v3 Turbo INT4 On-Device (`whisper_large_v3_turbo_30s_i4.tflite` de LiteRT-Community ~721MB) y Whisper Tiny ACFT (~75MB) con adaptación dinámica al idioma y configuración regional del dispositivo (`Locale.getDefault()`), Android Native Speech Recognizer y fallback transparente a Groq Whisper API / Servidor HTTP local.
-  - **LLM**: Motor de inferencia nativo on-device **MediaPipe Tasks GenAI** (`libllm_inference_engine_jni.so`) ejecutando **Gemma 2B IT GPU / CPU** (`gemma-2b-it-gpu-int4.bin` ~1.35GB oficial de Google), Gemini Nano (AICore nativo) y rescate automático en cascada hacia APIs en la nube (Groq, Gemini, Claude, OpenAI).
+  - **LLM**: Motor de inferencia nativo on-device **LiteRT-LM & MediaPipe Tasks GenAI** ejecutando:
+    - ⭐ **Gemma 4 E2B IT** (`gemma-4-E2B-it.litertlm` ~1.12GB de Google AI Edge Gallery con Tokenizer SentencePiece integrado).
+    - **Gemma 2B IT GPU / CPU** (`gemma-2b-it-gpu-int4.bin` ~1.35GB oficial de Google).
+    - **Gemini Nano** (AICore nativo) y rescate automático en cascada hacia APIs en la nube (Groq, Gemini, Claude, OpenAI).
   - **Inyección Regional y Extracción de Acciones**:
     - **Llamadas Directas**: Búsqueda insensible a acentos/tildes y marcado instantáneo en segundo plano vía `TelecomManager` / `CALL_PHONE`.
     - **WhatsApp & Telegram**: Enrutamiento directo al chat con mensaje precargado (`ACTION:WHATSAPP={Contacto}: {Mensaje}`).

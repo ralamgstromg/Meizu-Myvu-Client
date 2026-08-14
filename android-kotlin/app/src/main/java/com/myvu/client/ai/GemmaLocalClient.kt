@@ -21,6 +21,14 @@ class GemmaLocalClient(
 ) : AiClient {
 
     companion object {
+        val GEMMA_4_E2B_LITERT = GemmaModelOption(
+            id = "gemma-4-e2b-it-litert-lm",
+            name = "Gemma 4 E2B IT (LiteRT-LM ~1.12GB)",
+            downloadUrl = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm",
+            fileName = "gemma-4-E2B-it.litertlm",
+            sizeBytes = 1_120_000_000L
+        )
+
         val GEMMA_2B_IT_GPU = GemmaModelOption(
             id = "gemma-2b-it-gpu-int4",
             name = "Gemma 2B IT (MediaPipe GPU ~1.35GB)",
@@ -37,8 +45,8 @@ class GemmaLocalClient(
             sizeBytes = 1_350_000_000L
         )
 
-        val OPTIONS = listOf(GEMMA_2B_IT_GPU, GEMMA_2B_IT_CPU)
-        val DEFAULT_OPTION = GEMMA_2B_IT_GPU
+        val OPTIONS = listOf(GEMMA_4_E2B_LITERT, GEMMA_2B_IT_GPU, GEMMA_2B_IT_CPU)
+        val DEFAULT_OPTION = GEMMA_4_E2B_LITERT
 
         private var cachedEngine: LlmInference? = null
         private var cachedModelPath: String? = null
