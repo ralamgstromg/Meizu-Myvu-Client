@@ -22,6 +22,64 @@ class AiResponseDeliveryTest {
     }
 
     @Test
+    fun voiceOnlyOmitsVisualAnswerAndFinishesAfterSpeech() {
+        val sent = mutableListOf<String>()
+        val speaker = DelayedSpeaker()
+        var finished = false
+        val delivery = AiResponseDelivery(
+            sender = { sent += it },
+            tts = speaker,
+            isSessionActive = { true },
+            onFinished = { finished = true },
+            mode = AiResponseMode.VOICE_ONLY
+        )
+
+        assertTrue(delivery.deliver(AiResponse("s1", "respuesta", true)))
+        assertTrue(sent.none { it.contains("\"code\":122") })
+        assertTrue(!finished)
+        speaker.complete(true)
+        assertTrue(finished)
+    }
+
+    @Test
+    fun visualOnlySendsAnswerWithoutStartingSpeech() {
+        val sent = mutableListOf<String>()
+        val speaker = RecordingSpeaker()
+        var finished = false
+        val delivery = AiResponseDelivery(
+            sender = { sent += it },
+            tts = speaker,
+            isSessionActive = { true },
+            onFinished = { finished = true },
+            mode = AiResponseMode.VISUAL_ONLY
+        )
+
+        assertTrue(delivery.deliver(AiResponse("s1", "respuesta", true)))
+        assertTrue(sent.any { it.contains("\"code\":122") })
+        assertTrue(sent.none { it.contains("\"code\":6") })
+        assertEquals(0, speaker.calls)
+        assertTrue(finished)
+    }
+
+    @Test
+    fun voiceAndVisualSendsBothChannels() {
+        val sent = mutableListOf<String>()
+        val speaker = RecordingSpeaker()
+        val delivery = AiResponseDelivery(
+            sender = { sent += it },
+            tts = speaker,
+            isSessionActive = { true },
+            onFinished = {},
+            mode = AiResponseMode.VOICE_AND_VISUAL
+        )
+
+        assertTrue(delivery.deliver(AiResponse("s1", "respuesta", true)))
+        assertTrue(sent.any { it.contains("\"code\":122") })
+        assertTrue(sent.any { it.contains("\"code\":6") })
+        assertEquals(1, speaker.calls)
+    }
+
+    @Test
     fun ttsCallbackCanBeDelayedUntilPlaybackCompletes() {
         val sent = mutableListOf<String>()
         var finished = false
@@ -57,6 +115,15 @@ class AiResponseDeliveryTest {
 
     private class FakeSpeaker : AiResponseDelivery.Speaker {
         override fun speak(text: String, callback: (Boolean) -> Unit) = callback(true)
+        override fun stop() = Unit
+    }
+
+    private class RecordingSpeaker : AiResponseDelivery.Speaker {
+        var calls = 0
+        override fun speak(text: String, callback: (Boolean) -> Unit) {
+            calls++
+            callback(true)
+        }
         override fun stop() = Unit
     }
 

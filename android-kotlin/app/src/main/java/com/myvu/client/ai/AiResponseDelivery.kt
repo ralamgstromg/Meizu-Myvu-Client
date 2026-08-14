@@ -8,7 +8,9 @@ class AiResponseDelivery(
     private val sender: (String) -> Unit,
     private val tts: Speaker,
     private val isSessionActive: (String) -> Boolean,
-    private val onFinished: (Boolean) -> Unit
+    private val onFinished: (Boolean) -> Unit,
+    private val mode: AiResponseMode = AiResponseMode.VOICE_AND_VISUAL,
+    private val modeProvider: (() -> AiResponseMode)? = null
 ) {
     interface Speaker {
         fun speak(text: String, callback: (Boolean) -> Unit)
@@ -39,10 +41,16 @@ class AiResponseDelivery(
         ttsRequested = false
 
         val text = response.normalizedText
-        sender(AiProtocol.chatAnswer(response.sessionId, text, response.baseStatus))
-        LogBus.log("AI_TEXT_SENT sessionId=${response.sessionId} source=${response.source} answerLength=${text.length}")
+        val selectedMode = modeProvider?.invoke() ?: mode
+        LogBus.log("AI_RESPONSE_MODE_SELECTED sessionId=${response.sessionId} mode=$selectedMode")
+        val speak = response.shouldSpeak && selectedMode != AiResponseMode.VISUAL_ONLY
+        val visual = selectedMode != AiResponseMode.VOICE_ONLY
+        if (visual) {
+            sender(AiProtocol.chatAnswer(response.sessionId, text, response.baseStatus))
+            LogBus.log("AI_TEXT_SENT sessionId=${response.sessionId} source=${response.source} answerLength=${text.length}")
+        }
 
-        if (!response.shouldSpeak) {
+        if (!speak) {
             finishTurn(true)
             return true
         }
@@ -50,7 +58,7 @@ class AiResponseDelivery(
         playbackStarted = true
         ttsRequested = true
         sender(AiProtocol.playState(AiProtocol.PLAY_STATE_START))
-        LogBus.log("AI_TTS_REQUESTED sessionId=${response.sessionId} answerLength=${text.length}")
+        LogBus.log("AI_TTS_REQUESTED sessionId=${response.sessionId} mode=$mode answerLength=${text.length}")
         tts.speak(text) { success ->
             if (playbackEnded || cancelled) return@speak
             playbackEnded = true

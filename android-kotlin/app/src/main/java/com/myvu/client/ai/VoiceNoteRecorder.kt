@@ -32,6 +32,12 @@ class VoiceNoteRecorder(private val context: Context) {
     private var nativeTranscript: String? = null
     private var nativeFinished = false
     private var pendingNativeResult: ((String, String) -> Unit)? = null
+    private var nativeSessionId = 0L
+
+    private fun nextNativeSession(): Long {
+        nativeSessionId++
+        return nativeSessionId
+    }
 
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -80,16 +86,19 @@ class VoiceNoteRecorder(private val context: Context) {
             recordingStartTime = System.currentTimeMillis()
 
             if (SttProvider.fromId(Prefs.sttProvider(context)).isNative) {
+                val session = nextNativeSession()
                 nativeTranscript = null
                 nativeFinished = false
                 val started = androidSpeech.start(
                     java.util.Locale.getDefault().toLanguageTag(),
                     onResult = { text ->
+                        if (session != nativeSessionId) return@start
                         nativeTranscript = text.trim().ifEmpty { FALLBACK_TRANSCRIPT }
                         nativeFinished = true
                         completeNativeIfReady()
                     },
                     onError = { _, message ->
+                        if (session != nativeSessionId) return@start
                         LogBus.warn("VoiceNoteRecorder: Android STT failed: $message")
                         nativeTranscript = FALLBACK_TRANSCRIPT
                         nativeFinished = true
@@ -178,6 +187,7 @@ class VoiceNoteRecorder(private val context: Context) {
      * Cancels recording and deletes the temporary audio file if it exists.
      */
     fun cancelRecording() {
+        nextNativeSession()
         androidSpeech.cancel()
         pendingNativeResult = null
         nativeFinished = false

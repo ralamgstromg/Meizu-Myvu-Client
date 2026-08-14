@@ -55,7 +55,8 @@ class AiConversation(
         isSessionActive = { id -> active && id == sessionId },
         onFinished = { _ ->
             if (textMode || !SPOKEN_FOLLOW_UP_TURNS) finish() else nextTurn()
-        }
+        },
+        modeProvider = { AiResponseMode.fromId(Prefs.aiResponseMode(this.context)) }
     )
     private val actionExecutor = PhoneActionExecutor(this.context)
     private val audio: ExecutorService = Executors.newSingleThreadExecutor { r ->
@@ -229,6 +230,11 @@ class AiConversation(
             nativeSpeechSessionId = sessionId
             val started = androidSpeech.start(
                 Locale.getDefault().toLanguageTag(),
+                onPartial = { text ->
+                    if (active && nativeSpeechSessionId == sessionId) {
+                        sendNativePartial(sessionId, text)
+                    }
+                },
                 onResult = { text ->
                     if (active && nativeSpeechSessionId == sessionId) onTranscript(text)
                 },
@@ -332,6 +338,11 @@ class AiConversation(
             }
             main.post { onTranscript(text) }
         }
+    }
+
+    private fun sendNativePartial(nativeSessionId: String, text: String) {
+        if (!active || nativeSpeechSessionId != nativeSessionId || text.isBlank()) return
+        send(AiProtocol.asrResult(nativeSessionId, text.trim(), false))
     }
 
     private fun onTranscript(text: String?) {

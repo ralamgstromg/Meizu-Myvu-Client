@@ -17,6 +17,7 @@ import com.google.android.material.textfield.TextInputLayout
 import com.myvu.client.R
 import com.myvu.client.ai.AiClient
 import com.myvu.client.ai.AiProvider
+import com.myvu.client.ai.AiResponseMode
 import com.myvu.client.ai.SttProvider
 import com.myvu.client.ai.TtsProvider
 import com.myvu.client.app.feature.TouchGestureManager
@@ -63,6 +64,7 @@ class SettingsActivity : AppCompatActivity() {
         bindViews()
         configureProviderSelectors()
         bindStoredValues()
+        configureResponseMode()
         configurePersistence()
         configureButtons()
     }
@@ -147,6 +149,28 @@ class SettingsActivity : AppCompatActivity() {
         bindSttFields()
         bindTtsFields()
         txtSystemPrompt.setText(Prefs.systemPrompt(this))
+    }
+
+    private fun configureResponseMode() {
+        val group: MaterialButtonToggleGroup? = findViewById(R.id.btnAiResponseModeGroup)
+        group ?: return
+        val mode = AiResponseMode.fromId(Prefs.aiResponseMode(this))
+        group.check(
+            when (mode) {
+                AiResponseMode.VOICE_ONLY -> R.id.btnAiResponseVoice
+                AiResponseMode.VISUAL_ONLY -> R.id.btnAiResponseVisual
+                AiResponseMode.VOICE_AND_VISUAL -> R.id.btnAiResponseBoth
+            }
+        )
+        group.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            val selected = when (checkedId) {
+                R.id.btnAiResponseVoice -> AiResponseMode.VOICE_ONLY
+                R.id.btnAiResponseVisual -> AiResponseMode.VISUAL_ONLY
+                else -> AiResponseMode.VOICE_AND_VISUAL
+            }
+            Prefs.setAiResponseMode(this, selected.id)
+        }
     }
 
     private fun configurePersistence() {

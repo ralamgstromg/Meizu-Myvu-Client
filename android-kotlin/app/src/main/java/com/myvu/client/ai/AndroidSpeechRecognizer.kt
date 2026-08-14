@@ -21,6 +21,18 @@ class AndroidSpeechRecognizer(context: Context) : AndroidSpeechEngine {
     private var terminal = false
     private var pendingStart = false
     private var destroyed = false
+    private var attempt = 0L
+    private var activeAttempt = 0L
+    private var activeLanguage: String? = null
+    private var candidateLanguages: List<String> = emptyList()
+    private var fallbackIndex = 0
+    private var startCallbacks: Callbacks? = null
+
+    private data class Callbacks(
+        val onPartial: ((String) -> Unit)?,
+        val onResult: (String) -> Unit,
+        val onError: (Int, String) -> Unit
+    )
 
     override fun start(
         languageTag: String?,
@@ -37,76 +49,142 @@ class AndroidSpeechRecognizer(context: Context) : AndroidSpeechEngine {
             onError(SpeechRecognizer.ERROR_SERVER, "Android speech service unavailable")
             return false
         }
+        val requested = languageTag ?: Locale.getDefault().toLanguageTag()
+        startCallbacks = Callbacks(onPartial, onResult, onError)
+        candidateLanguages = AndroidSpeechLanguagePolicy.candidates(requested)
+        fallbackIndex = 0
+        activeLanguage = candidateLanguages.firstOrNull()
         pendingStart = true
-        main.post {
-            pendingStart = false
-            if (destroyed || recognizer != null) return@post
-            terminal = false
-            val engine = SpeechRecognizer.createSpeechRecognizer(context)
-            recognizer = engine
-            engine.setRecognitionListener(listener(onPartial, onResult, onError))
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, onPartial != null)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag ?: Locale.getDefault().toLanguageTag())
-            }
-            try {
-                engine.startListening(intent)
-            } catch (e: Exception) {
-                terminalError(SpeechRecognizer.ERROR_CLIENT, e.message ?: "Could not start Android speech recognition", onError)
-            }
-        }
+        main.post { startAttempt(preferOffline = true) }
         return true
     }
 
-    private fun listener(
-        onPartial: ((String) -> Unit)?,
-        onResult: (String) -> Unit,
-        onError: (Int, String) -> Unit
-    ): RecognitionListener = object : RecognitionListener {
-        override fun onReadyForSpeech(params: Bundle?) = Unit
-        override fun onBeginningOfSpeech() = Unit
+    private fun startAttempt(preferOffline: Boolean) {
+        pendingStart = false
+        if (destroyed || recognizer != null) return
+        val callbacks = startCallbacks ?: return
+        val language = activeLanguage ?: Locale.getDefault().toLanguageTag()
+        terminal = false
+        attempt++
+        activeAttempt = attempt
+        LogBus.log("STT_ANDROID_START attempt=$activeAttempt language=$language preferOffline=$preferOffline")
+        val engine = SpeechRecognizer.createSpeechRecognizer(context)
+        recognizer = engine
+        engine.setRecognitionListener(listener(activeAttempt, callbacks))
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, preferOffline)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, callbacks.onPartial != null)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, language)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, language)
+            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
+        }
+        try {
+            engine.startListening(intent)
+        } catch (e: Exception) {
+            terminalError(activeAttempt, SpeechRecognizer.ERROR_CLIENT, e.message ?: "Could not start Android speech recognition", callbacks.onError)
+        }
+    }
+
+    private fun retryLanguage(code: Int): Boolean {
+        if (!AndroidSpeechErrorPolicy.isLanguageFallbackError(code)) return false
+        if (fallbackIndex + 1 >= candidateLanguages.size) return false
+        fallbackIndex++
+        activeLanguage = candidateLanguages[fallbackIndex]
+        releaseRecognizer()
+        LogBus.warn("STT_ANDROID_RETRY language=$activeLanguage preferOffline=false")
+        main.post { startAttempt(preferOffline = false) }
+        return true
+    }
+
+    private fun describeError(code: Int): String = when (code) {
+        11 -> "Android speech language unavailable"
+        12 -> "Android speech language not supported"
+        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission is required"
+        SpeechRecognizer.ERROR_NETWORK -> "Android speech network error"
+        SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Android speech network timeout"
+        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Android speech recognizer is busy"
+        SpeechRecognizer.ERROR_NO_MATCH -> "Android speech returned no text"
+        else -> "Android speech recognition error $code"
+    }
+
+    private fun logReady() {
+        LogBus.log("STT_ANDROID_READY attempt=$activeAttempt language=$activeLanguage")
+    }
+
+    private fun logBeginning() {
+        LogBus.log("STT_ANDROID_BEGIN attempt=$activeAttempt")
+    }
+
+    private fun logEnd() {
+        LogBus.log("STT_ANDROID_END attempt=$activeAttempt")
+    }
+
+    private fun logError(code: Int) {
+        LogBus.warn("STT_ANDROID_ERROR attempt=$activeAttempt code=$code message=${describeError(code)}")
+    }
+
+    private fun callbacksFor(attemptId: Long): Callbacks? =
+        startCallbacks.takeIf { attemptId == activeAttempt }
+
+    private fun listener(attemptId: Long, callbacks: Callbacks): RecognitionListener = object : RecognitionListener {
+        override fun onReadyForSpeech(params: Bundle?) = logReady()
+        override fun onBeginningOfSpeech() = logBeginning()
         override fun onRmsChanged(rmsdB: Float) = Unit
         override fun onBufferReceived(buffer: ByteArray?) = Unit
-        override fun onEndOfSpeech() = Unit
+        override fun onEndOfSpeech() = logEnd()
         override fun onEvent(eventType: Int, params: Bundle?) = Unit
         override fun onPartialResults(results: Bundle?) {
-            results?.firstText()?.takeIf { it.isNotBlank() }?.let { onPartial?.invoke(it) }
+            if (attemptId != activeAttempt) return
+            results?.firstText()?.takeIf { it.isNotBlank() }?.let {
+                LogBus.log("STT_ANDROID_PARTIAL attempt=$attemptId textLength=${it.length}")
+                callbacks.onPartial?.invoke(it)
+            }
         }
         override fun onResults(results: Bundle?) {
             val text = results?.firstText().orEmpty().trim()
             if (text.isEmpty()) {
-                terminalError(SpeechRecognizer.ERROR_NO_MATCH, "Android speech returned no text", onError)
+                terminalError(attemptId, SpeechRecognizer.ERROR_NO_MATCH, describeError(SpeechRecognizer.ERROR_NO_MATCH), callbacks.onError)
             } else {
-                terminalResult(text, onResult)
+                terminalResult(attemptId, text, callbacks.onResult)
             }
         }
         override fun onError(error: Int) {
-            terminalError(error, "Android speech recognition error $error", onError)
+            if (attemptId != activeAttempt || terminal) return
+            logError(error)
+            if (!retryLanguage(error)) {
+                terminalError(attemptId, error, describeError(error), callbacks.onError)
+            }
+        }
+    }
+
+    private fun terminalResult(attemptId: Long, text: String, callback: (String) -> Unit) {
+        main.post {
+            if (attemptId != activeAttempt || terminal || destroyed) return@post
+            terminal = true
+            LogBus.log("STT_ANDROID_RESULT attempt=$attemptId textLength=${text.length}")
+            callback(text)
+            releaseRecognizer()
+        }
+    }
+
+    private fun terminalError(attemptId: Long, code: Int, message: String, callback: (Int, String) -> Unit) {
+        main.post {
+            if (attemptId != activeAttempt || terminal || destroyed) return@post
+            terminal = true
+            LogBus.warn(message)
+            callback(code, message)
+            releaseRecognizer()
         }
     }
 
     private fun Bundle.firstText(): String? =
         getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
 
-    private fun terminalResult(text: String, callback: (String) -> Unit) {
-        main.post {
-            if (terminal || destroyed) return@post
-            terminal = true
-            callback(text)
-            releaseRecognizer()
-        }
-    }
-
-    private fun terminalError(code: Int, message: String, callback: (Int, String) -> Unit) {
-        main.post {
-            if (terminal || destroyed) return@post
-            terminal = true
-            LogBus.warn(message)
-            callback(code, message)
-            releaseRecognizer()
-        }
+    private fun releaseRecognizer() {
+        recognizer?.setRecognitionListener(null)
+        try { recognizer?.destroy() } catch (_: Exception) {}
+        recognizer = null
     }
 
     override fun stop() {
@@ -118,6 +196,7 @@ class AndroidSpeechRecognizer(context: Context) : AndroidSpeechEngine {
     override fun cancel() {
         main.post {
             terminal = true
+            startCallbacks = null
             try { recognizer?.cancel() } catch (_: Exception) {}
             releaseRecognizer()
         }
@@ -128,13 +207,8 @@ class AndroidSpeechRecognizer(context: Context) : AndroidSpeechEngine {
             if (destroyed) return@post
             destroyed = true
             terminal = true
+            startCallbacks = null
             releaseRecognizer()
         }
-    }
-
-    private fun releaseRecognizer() {
-        recognizer?.setRecognitionListener(null)
-        try { recognizer?.destroy() } catch (_: Exception) {}
-        recognizer = null
     }
 }

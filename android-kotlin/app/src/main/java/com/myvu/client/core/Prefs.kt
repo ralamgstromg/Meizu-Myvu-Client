@@ -193,6 +193,16 @@ object Prefs {
     }
 
     @JvmStatic
+    fun aiResponseMode(c: Context): String {
+        return prefs(c).getString("ai_response_mode", "voice_and_visual") ?: "voice_and_visual"
+    }
+
+    @JvmStatic
+    fun setAiResponseMode(c: Context, mode: String) {
+        prefs(c).edit().putString("ai_response_mode", mode).apply()
+    }
+
+    @JvmStatic
     fun setTtsProvider(c: Context, providerId: String) {
         prefs(c).edit().putString(KEY_TTS_PROVIDER, providerId).apply()
     }
