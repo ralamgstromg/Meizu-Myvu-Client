@@ -79,7 +79,7 @@ class GemmaLocalClient(
 
         LogBus.log("AI_GEMMA_LOCAL_START questionLength=${question.length} model=${modelOption.fileName}")
 
-        val cleanQuestion = question.substringAfter("] ").trim().ifEmpty { question }
-        return "El clima para $cleanQuestion estará despejado y agradable."
+        val cleanQuestion = question.replace(Regex("\\[Contexto del Sistema:[^\\]]*\\]", RegexOption.IGNORE_CASE), "").trim()
+        return "Respuesta para: $cleanQuestion"
     }
 }

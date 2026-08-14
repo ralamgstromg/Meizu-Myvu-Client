@@ -3,8 +3,6 @@ package com.myvu.client.ai
 import java.util.Locale
 
 object AndroidSpeechLanguagePolicy {
-    private val fallbackLanguages = listOf("es-CO", "es", "en-US", "en")
-
     fun candidates(requested: String?): List<String> {
         val raw = requested.orEmpty().trim().replace('_', '-')
         val sanitized = if (raw.contains("-u-")) raw.substringBefore("-u-") else raw
@@ -16,7 +14,7 @@ object AndroidSpeechLanguagePolicy {
             val base = clean.substringBefore('-')
             if (base != clean) values += base
         }
-        values += fallbackLanguages
+        values += listOf("es-CO", "es")
         return values.map { it.lowercase(Locale.US) }
             .distinct()
             .map { tag ->

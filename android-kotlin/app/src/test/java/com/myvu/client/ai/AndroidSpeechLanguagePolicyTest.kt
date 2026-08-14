@@ -8,7 +8,7 @@ class AndroidSpeechLanguagePolicyTest {
     @Test
     fun candidatesPreferRequestedRegionThenBaseThenSpanishFallbacks() {
         assertEquals(
-            listOf("es-CO", "es", "en-US", "en"),
+            listOf("es-CO", "es"),
             AndroidSpeechLanguagePolicy.candidates("es-CO")
         )
     }
@@ -16,7 +16,7 @@ class AndroidSpeechLanguagePolicyTest {
     @Test
     fun candidatesNormalizeAndRemoveDuplicates() {
         assertEquals(
-            listOf("es-CO", "es", "en-US", "en"),
+            listOf("es-CO", "es"),
             AndroidSpeechLanguagePolicy.candidates(" ES_co ")
         )
     }
