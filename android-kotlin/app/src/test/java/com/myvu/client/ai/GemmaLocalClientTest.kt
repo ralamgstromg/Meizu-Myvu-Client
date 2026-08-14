@@ -16,4 +16,9 @@ class GemmaLocalClientTest {
         assertEquals("gemma-4-E2B-it.litertlm", option.fileName)
         assertTrue(option.downloadUrl.contains("huggingface.co/litert-community/gemma-4-E2B-it-litert-lm"))
     }
+
+    @Test
+    fun defaultModelIdMatchesGemma4E2B() {
+        assertEquals("gemma-4-e2b-it-litert-lm", GemmaLocalClient.GEMMA_4_E2B_LITERT.id)
+    }
 }
