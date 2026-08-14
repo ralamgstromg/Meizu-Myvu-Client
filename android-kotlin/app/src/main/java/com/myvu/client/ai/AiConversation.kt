@@ -441,8 +441,18 @@ class AiConversation(
 
     private fun deliver(rawAnswer: String?) {
         if (!active) return
-        val weatherAction = rawAnswer?.contains("ACTION:WEATHER_REFRESH", ignoreCase = true) == true
-        val answer = actionExecutor.processAndExecute(rawAnswer)
+
+        val parsed = GeminiActionValidator.parse(rawAnswer)
+        if (parsed.actions.isNotEmpty()) {
+            for (action in parsed.actions) {
+                actionExecutor.executeAction(action)
+            }
+        }
+
+        val weatherAction = rawAnswer?.contains("ACTION:WEATHER_REFRESH", ignoreCase = true) == true ||
+                parsed.actions.any { it.type == "weather_query" }
+
+        val answer = if (parsed.answer.isNotBlank()) parsed.answer else actionExecutor.processAndExecute(rawAnswer)
         if (weatherAction) {
             pendingWeatherResponse = true
             LogBus.log("AI_WEATHER_QUERY_STARTED sessionId=$sessionId")

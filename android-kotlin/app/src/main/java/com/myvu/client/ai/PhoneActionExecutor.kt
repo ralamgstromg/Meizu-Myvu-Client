@@ -26,6 +26,52 @@ class PhoneActionExecutor(context: Context) {
     private val context: Context = context.applicationContext
     private val audioManager: AudioManager? = this.context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
 
+    fun executeAction(action: GeminiAction) {
+        when (action.type) {
+            "weather_query" -> {
+                refreshWeather()
+            }
+            "open_whatsapp" -> {
+                val text = action.arguments["text"] ?: action.arguments["message"]
+                openWhatsApp(text)
+            }
+            "open_telegram" -> {
+                val text = action.arguments["text"] ?: action.arguments["message"]
+                openTelegram(text)
+            }
+            "make_call" -> {
+                val target = action.arguments["target"] ?: action.arguments["number"]
+                makeCall(target)
+            }
+            "web_search" -> {
+                val query = action.arguments["query"]
+                openWebSearch(query)
+            }
+            "set_alarm" -> {
+                val time = action.arguments["time"] ?: action.arguments["alarm"]
+                setAlarm(time)
+            }
+            "set_timer" -> {
+                val duration = action.arguments["duration"] ?: action.arguments["timer"]
+                setTimer(duration)
+            }
+            "volume_control" -> {
+                val levelStr = action.arguments["level"] ?: action.arguments["volume"]
+                levelStr?.toIntOrNull()?.let { setVolume(it) }
+            }
+            "media_control" -> {
+                val command = action.arguments["command"]
+                when (command?.lowercase()) {
+                    "pause" -> sendMediaKey(KeyEvent.KEYCODE_MEDIA_PAUSE)
+                    "resume", "play" -> sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY)
+                    "next" -> sendMediaKey(KeyEvent.KEYCODE_MEDIA_NEXT)
+                    "prev", "previous" -> sendMediaKey(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+                    else -> sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+                }
+            }
+        }
+    }
+
     fun processAndExecute(aiText: String?): String {
         if (aiText.isNullOrEmpty()) return aiText ?: ""
 
