@@ -145,6 +145,19 @@ class NoteRepository(context: Context) {
         return list
     }
 
+    fun updateNote(id: Long, newBody: String, newTitle: String? = null, tags: String? = null): Boolean {
+        val db = dbHelper.writableDatabase
+        val values = ContentValues().apply {
+            put("body", newBody)
+            if (newTitle != null) put("title", newTitle)
+            if (tags != null) put("tags", tags)
+            put("updated_at", System.currentTimeMillis())
+        }
+        val rows = db.update("notes", values, "id = ?", arrayOf(id.toString()))
+        LogBus.log("NoteRepository -> Updated note #$id (rows: $rows)")
+        return rows > 0
+    }
+
     fun delete(noteId: Long): Boolean = deleteNote(noteId)
 
     fun deleteNote(id: Long): Boolean {
@@ -155,6 +168,13 @@ class NoteRepository(context: Context) {
             LogBus.log("NoteRepository -> Deleted note #$id")
         }
         return success
+    }
+
+    fun deleteByTitle(titlePattern: String): Boolean {
+        val db = dbHelper.writableDatabase
+        val rows = db.delete("notes", "title LIKE ? OR body LIKE ?", arrayOf("%$titlePattern%", "%$titlePattern%"))
+        LogBus.log("NoteRepository -> deleteByTitle '$titlePattern' (rows: $rows)")
+        return rows > 0
     }
 
     private fun cursorToNote(c: Cursor): Note {

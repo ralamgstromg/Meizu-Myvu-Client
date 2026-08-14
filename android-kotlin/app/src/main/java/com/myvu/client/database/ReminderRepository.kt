@@ -197,6 +197,26 @@ class ReminderRepository(context: Context) {
         return success
     }
 
+    fun deleteByTitle(titlePattern: String): Boolean {
+        val db = dbHelper.writableDatabase
+        val rows = db.delete("reminders", "title LIKE ? OR body LIKE ?", arrayOf("%$titlePattern%", "%$titlePattern%"))
+        LogBus.log("ReminderRepository -> deleteByTitle '$titlePattern' (rows: $rows)")
+        return rows > 0
+    }
+
+    fun updateReminder(id: Long, newBody: String, newTitle: String? = null, newTriggerAt: Long? = null): Boolean {
+        val db = dbHelper.writableDatabase
+        val values = ContentValues().apply {
+            put("body", newBody)
+            if (newTitle != null) put("title", newTitle)
+            if (newTriggerAt != null) put("trigger_at", newTriggerAt)
+            put("updated_at", System.currentTimeMillis())
+        }
+        val rows = db.update("reminders", values, "id = ?", arrayOf(id.toString()))
+        LogBus.log("ReminderRepository -> Updated reminder #$id (rows: $rows)")
+        return rows > 0
+    }
+
     private fun cursorToReminder(c: Cursor): Reminder {
         val titleIdx = c.getColumnIndex("title")
         val title = if (titleIdx != -1 && !c.isNull(titleIdx)) c.getString(titleIdx) else ""

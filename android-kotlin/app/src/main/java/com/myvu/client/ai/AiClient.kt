@@ -16,10 +16,15 @@ interface AiClient {
                     "  3. Telegram: 'Preparando mensaje de Telegram...' ACTION:TELEGRAM={Nombre o Teléfono}: {Mensaje}\n" +
                     "  4. Notificaciones y Mensajes pendientes: 'Revisando tus notificaciones...' ACTION:SUMMARY={all|whatsapp|telegram|email}\n" +
                     "  5. Clima: 'Consultando el clima actual...' ACTION:WEATHER_REFRESH\n" +
-                    "  6. Música y Volumen: ACTION:VOLUME=0-15 | ACTION:MEDIA_PLAY | ACTION:MEDIA_PAUSE | ACTION:MEDIA_NEXT | ACTION:MEDIA_PREV | ACTION:OPENTUNE_PLAY={canción o artista}\n" +
-                    "  7. Navegación GPS y Búsqueda: ACTION:NAVIGATE={destino} | ACTION:SEARCH={término de búsqueda}\n" +
-                    "  8. Alarmas, Temporizadores y Recordatorios: ACTION:ALARM=HH:MM | ACTION:TIMER={segundos} | ACTION:REMINDER=HH:MM o fecha: {mensaje}\n" +
-                    "  9. Notas y Teleprompter: ACTION:NOTE={texto} | ACTION:SEARCH_NOTES={búsqueda} | ACTION:TELEPROMPTER={texto a mostrar}"
+                    "  6. Música, Video y Apps de Terceros:\n" +
+                    "     - Reproducir en App específica: 'Abriendo {App} y reproduciendo {Contenido}...' ACTION:APP_PLAY={App}: {Canción, Artista o Video}\n" +
+                    "     - Abrir cualquier App: 'Abriendo {App}...' ACTION:APP_OPEN={Nombre de App}\n" +
+                    "     - Control multimedia: ACTION:VOLUME=0-15 | ACTION:MEDIA_PLAY | ACTION:MEDIA_PAUSE | ACTION:MEDIA_NEXT | ACTION:MEDIA_PREV | ACTION:OPENTUNE_PLAY={canción}\n" +
+                    "  7. Navegación HUD y GPS: ACTION:NAVIGATE={destino} | ACTION:NAV_STOP\n" +
+                    "  8. Listas de Tareas (To-Do): ACTION:TODO_ADD={Lista}: {Tarea} | ACTION:TODO_DONE={Tarea} | ACTION:TODO_LIST={Lista o all} | ACTION:TODO_DELETE={Tarea}\n" +
+                    "  9. Teleprompter y Traducción en Gafas: ACTION:TELEPROMPTER={texto a proyectar} | ACTION:TRANSLATE={idioma}: {texto} | ACTION:SEARCH={término}\n" +
+                    "  10. Recordatorios: ACTION:REMINDER={HH:MM o fecha}: {mensaje} | ACTION:REMINDER_DELETE={Título o ID}\n" +
+                    "  11. Notas y Tags: ACTION:NOTE={texto} [tags: {tag1, tag2}] | ACTION:NOTE_DELETE={Título} | ACTION:SEARCH_NOTES={búsqueda}"
     }
 
     fun isConfigured(): Boolean

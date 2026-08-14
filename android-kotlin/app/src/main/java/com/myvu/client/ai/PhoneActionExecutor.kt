@@ -9,6 +9,8 @@ import android.view.KeyEvent
 import com.myvu.client.core.LogBus
 import com.myvu.client.database.NoteRepository
 import com.myvu.client.database.ReminderRepository
+import com.myvu.client.database.TodoRepository
+import com.myvu.client.database.TodoItem
 import com.myvu.client.reminder.ReminderScheduler
 import com.myvu.client.reminder.ReminderTimeParser
 import com.myvu.client.service.MirrorNotificationListener
@@ -88,7 +90,13 @@ class PhoneActionExecutor(context: Context) {
         }
 
         // 2. Media control & OpenTune Integration
-        if (lower.contains("action:opentune_play=")) {
+        if (lower.contains("action:app_play=")) {
+            val appPlayVal = extractValue(aiText, "ACTION:APP_PLAY=")
+            playInThirdPartyApp(appPlayVal)
+        } else if (lower.contains("action:app_open=")) {
+            val appName = extractValue(aiText, "ACTION:APP_OPEN=")
+            openAppByName(appName)
+        } else if (lower.contains("action:opentune_play=")) {
             val query = extractValue(aiText, "ACTION:OPENTUNE_PLAY=")
             playFromSearchInOpenTune(query)
         } else if (lower.contains("action:opentune_search=")) {
@@ -138,19 +146,43 @@ class PhoneActionExecutor(context: Context) {
             setAlarm(alarmVal)
         }
 
-        // 8. Timers
+        // 8. Timers & Reminders
         if (lower.contains("action:timer=")) {
             val timerVal = extractValue(aiText, "ACTION:TIMER=")
             setTimer(timerVal)
+        } else if (lower.contains("action:reminder_delete=")) {
+            val remTarget = extractValue(aiText, "ACTION:REMINDER_DELETE=")
+            deleteReminderAction(remTarget)
+        } else if (lower.contains("action:reminder=")) {
+            val remVal = extractValue(aiText, "ACTION:REMINDER=")
+            createReminderAction(remVal)
         }
 
-        // 9. GPS Navigation
-        if (lower.contains("action:navigate=")) {
+        // 9. To-Do Lists (Tareas)
+        if (lower.contains("action:todo_add=")) {
+            val todoVal = extractValue(aiText, "ACTION:TODO_ADD=")
+            addTodoAction(todoVal)
+        } else if (lower.contains("action:todo_done=")) {
+            val todoVal = extractValue(aiText, "ACTION:TODO_DONE=")
+            markTodoDoneAction(todoVal)
+        } else if (lower.contains("action:todo_delete=")) {
+            val todoVal = extractValue(aiText, "ACTION:TODO_DELETE=")
+            deleteTodoAction(todoVal)
+        } else if (lower.contains("action:todo_list=")) {
+            val listVal = extractValue(aiText, "ACTION:TODO_LIST=")
+            val todoSummary = listTodosSummary(listVal)
+            return stripActionTags(aiText) + "\n\n" + todoSummary
+        }
+
+        // 10. GPS Navigation & HUD
+        if (lower.contains("action:navigate_stop") || lower.contains("action:nav_stop")) {
+            stopNavigation()
+        } else if (lower.contains("action:navigate=")) {
             val dest = extractValue(aiText, "ACTION:NAVIGATE=")
             startNavigation(dest)
         }
 
-        // 10. Calendar Events (General & Specific Accounts)
+        // 11. Calendar Events (General & Specific Accounts)
         if (lower.contains("action:calendar_outlook=")) {
             val eventVal = extractValue(aiText, "ACTION:CALENDAR_OUTLOOK=")
             addOutlookCalendarEvent(eventVal)
@@ -162,8 +194,14 @@ class PhoneActionExecutor(context: Context) {
             addCalendarEvent(eventVal)
         }
 
-        // 11. Notes (Google Keep vs Notes with Tags vs Quick Notes)
-        if (lower.contains("action:note_keep=")) {
+        // 12. Notes (Google Keep vs Notes with Tags vs Quick Notes & Delete)
+        if (lower.contains("action:note_delete=")) {
+            val noteTarget = extractValue(aiText, "ACTION:NOTE_DELETE=")
+            deleteNoteAction(noteTarget)
+        } else if (lower.contains("action:note_update=")) {
+            val noteTarget = extractValue(aiText, "ACTION:NOTE_UPDATE=")
+            updateNoteAction(noteTarget)
+        } else if (lower.contains("action:note_keep=")) {
             val noteText = extractValue(aiText, "ACTION:NOTE_KEEP=")
             createKeepNote(noteText)
         } else if (lower.contains("action:note_tags=")) {
@@ -174,7 +212,7 @@ class PhoneActionExecutor(context: Context) {
             createNote(noteText)
         }
 
-        // 12. Search Notes
+        // 13. Search Notes
         if (lower.contains("action:search_notes=")) {
             val query = extractValue(aiText, "ACTION:SEARCH_NOTES=")
             val searchResults = searchNotesSummary(query)
@@ -226,40 +264,155 @@ class PhoneActionExecutor(context: Context) {
         LogBus.log("voice action -> sent media key $keyCode")
     }
 
-    fun playFromSearchInOpenTune(query: String?) {
+    fun openAppByName(rawName: String?) {
         try {
-            if (query.isNullOrBlank()) {
-                sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY)
-                return
-            }
-            val intent = Intent(android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH)
-            intent.putExtra(android.app.SearchManager.QUERY, query.trim())
-            intent.putExtra(android.provider.MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*")
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (rawName.isNullOrBlank()) return
+            val cleanName = normalize(rawName.trim().replace(Regex("(?i)^(abrir?\\s+(la\\s+app\\s+de\\s+|la\\s+aplicacion\\s+de\\s+|el\\s+|la\\s+)?|lanzar?\\s+)"), ""))
+            val pm = context.packageManager
+            val packages = pm.getInstalledPackages(0)
 
-            val openTunePkgs = arrayOf(
-                "com.opentune.app", "org.opentune.android", "com.opentune.music",
-                "com.vibe.opentune", "com.github.opentune", "com.opentune"
-            )
-            var launched = false
-            for (pkg in openTunePkgs) {
-                try {
-                    val pkgIntent = Intent(intent)
-                    pkgIntent.setPackage(pkg)
-                    context.startActivity(pkgIntent)
-                    LogBus.log("voice action -> launched OpenTune ($pkg) search/play for: $query")
-                    launched = true
+            var bestPkg: String? = null
+            var bestScore = Int.MIN_VALUE
+
+            for (p in packages) {
+                val appInfo = p.applicationInfo ?: continue
+                if ((appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0 && pm.getLaunchIntentForPackage(p.packageName) == null) {
+                    continue
+                }
+                val label = normalize(pm.getApplicationLabel(appInfo).toString())
+                val pkgName = p.packageName.lowercase()
+
+                if (label == cleanName || pkgName == cleanName) {
+                    bestPkg = p.packageName
                     break
-                } catch (ignored: Exception) {
+                }
+
+                var score = 0
+                if (label.contains(cleanName) || pkgName.contains(cleanName)) score += 50
+                if (cleanName.contains(label) && label.length > 2) score += 30
+                val dist = levenshteinDistance(cleanName, label)
+                if (dist <= 2) score += 40
+
+                if (score > bestScore && score >= 30) {
+                    bestScore = score
+                    bestPkg = p.packageName
                 }
             }
-            if (!launched) {
-                context.startActivity(intent)
+
+            if (bestPkg != null) {
+                val intent = pm.getLaunchIntentForPackage(bestPkg)
+                if (intent != null) {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
+                    LogBus.log("voice action -> launched app '$rawName' (pkg: $bestPkg)")
+                    return
+                }
+            }
+            LogBus.warn("voice action -> app '$rawName' not found on device")
+        } catch (e: Exception) {
+            LogBus.error("could not open app '$rawName'", e)
+        }
+    }
+
+    fun playInThirdPartyApp(appAndQuery: String?) {
+        try {
+            if (appAndQuery.isNullOrBlank()) return
+            var appName = "music"
+            var query = appAndQuery.trim()
+
+            if (appAndQuery.contains(":") || appAndQuery.contains("|")) {
+                val parts = appAndQuery.split(Regex("[:|]"), 2)
+                appName = parts[0].trim().lowercase()
+                query = parts[1].trim()
+            }
+
+            val targetPkgs = when {
+                appName.contains("youtube music") || appName.contains("yt music") ->
+                    listOf("com.google.android.apps.youtube.music")
+                appName.contains("spotify") ->
+                    listOf("com.spotify.music", "com.spotify.lite")
+                appName.contains("youtube") ->
+                    listOf("com.google.android.youtube")
+                appName.contains("deezer") ->
+                    listOf("deezer.android.app")
+                appName.contains("amazon") ->
+                    listOf("com.amazon.mp3")
+                appName.contains("soundcloud") ->
+                    listOf("com.soundcloud.android")
+                appName.contains("apple") ->
+                    listOf("com.apple.android.music")
+                appName.contains("opentune") ->
+                    listOf("com.opentune.app", "org.opentune.android", "com.opentune.music")
+                else -> emptyList()
+            }
+
+            val pm = context.packageManager
+            var resolvedPkg: String? = targetPkgs.firstOrNull { pkg ->
+                try {
+                    pm.getPackageInfo(pkg, 0)
+                    true
+                } catch (ignored: Exception) {
+                    false
+                }
+            }
+
+            if (resolvedPkg == null && targetPkgs.isEmpty()) {
+                // Búsqueda difusa en caso de que sea otra app de música instalada
+                val packages = pm.getInstalledPackages(0)
+                for (p in packages) {
+                    val label = normalize(pm.getApplicationLabel(p.applicationInfo ?: continue).toString())
+                    if (label.contains(appName)) {
+                        resolvedPkg = p.packageName
+                        break
+                    }
+                }
+            }
+
+            // Intent estándar de reproducción multimedia
+            val mediaIntent = Intent(android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
+                putExtra(android.app.SearchManager.QUERY, query)
+                putExtra(android.provider.MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            if (resolvedPkg != null) {
+                mediaIntent.setPackage(resolvedPkg)
+                try {
+                    context.startActivity(mediaIntent)
+                    LogBus.log("voice action -> launched MediaPlay in $resolvedPkg for: $query")
+                } catch (e: Exception) {
+                    // Fallback a deep link según la app
+                    if (resolvedPkg.contains("youtube")) {
+                        val ytIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://music.youtube.com/search?q=" + URLEncoder.encode(query, "UTF-8"))).apply {
+                            setPackage(resolvedPkg)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(ytIntent)
+                    } else if (resolvedPkg.contains("spotify")) {
+                        val spotIntent = Intent(Intent.ACTION_VIEW, Uri.parse("spotify:search:" + URLEncoder.encode(query, "UTF-8"))).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(spotIntent)
+                    }
+                }
+            } else {
+                // Lanzador genérico
+                context.startActivity(mediaIntent)
                 LogBus.log("voice action -> launched generic media play from search for: $query")
             }
+
+            // Disparo de Play diferido para asegurar que comience a reproducir
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY)
+            }, 1000L)
+
         } catch (e: Exception) {
-            LogBus.error("could not play in OpenTune for $query", e)
+            LogBus.error("could not execute playInThirdPartyApp for '$appAndQuery'", e)
         }
+    }
+
+    fun playFromSearchInOpenTune(query: String?) {
+        playInThirdPartyApp("opentune: ${query ?: ""}")
     }
 
     fun openWhatsApp(text: String?) {
@@ -401,6 +554,23 @@ class PhoneActionExecutor(context: Context) {
         }
     }
 
+    private fun levenshteinDistance(s1: String, s2: String): Int {
+        val dp = Array(s1.length + 1) { IntArray(s2.length + 1) }
+        for (i in 0..s1.length) dp[i][0] = i
+        for (j in 0..s2.length) dp[0][j] = j
+        for (i in 1..s1.length) {
+            for (j in 1..s2.length) {
+                val cost = if (s1[i - 1] == s2[j - 1]) 0 else 1
+                dp[i][j] = minOf(
+                    dp[i - 1][j] + 1,
+                    dp[i][j - 1] + 1,
+                    dp[i - 1][j - 1] + cost
+                )
+            }
+        }
+        return dp[s1.length][s2.length]
+    }
+
     private fun lookupContactNumber(name: String?): String? {
         if (name.isNullOrBlank()) return null
         if (context.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
@@ -409,6 +579,11 @@ class PhoneActionExecutor(context: Context) {
         }
         try {
             val normalizedSearch = normalize(name)
+            val searchTokens = normalizedSearch.split(Regex("\\s+")).filter { it.length >= 2 }
+
+            var bestNumber: String? = null
+            var bestScore = Int.MIN_VALUE
+
             context.contentResolver.query(
                 android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                 arrayOf(
@@ -422,23 +597,49 @@ class PhoneActionExecutor(context: Context) {
                 val numIdx = cursor.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
                 val nameIdx = cursor.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
                 if (numIdx >= 0 && nameIdx >= 0) {
-                    var candidateNumber: String? = null
                     while (cursor.moveToNext()) {
                         val contactName = cursor.getString(nameIdx) ?: continue
                         val contactNumber = cursor.getString(numIdx) ?: continue
                         val normalizedContact = normalize(contactName)
+                        val contactTokens = normalizedContact.split(Regex("\\s+")).filter { it.length >= 2 }
 
+                        // 1. Coincidencia Exacta
                         if (normalizedContact == normalizedSearch) {
                             return contactNumber
                         }
-                        if (normalizedContact.contains(normalizedSearch) && candidateNumber == null) {
-                            candidateNumber = contactNumber
+
+                        // 2. Cálculo de puntuación por proximidad y tokens compartidos (FTS)
+                        var currentScore = 0
+                        if (normalizedContact.contains(normalizedSearch)) {
+                            currentScore += 100
+                        }
+
+                        for (sToken in searchTokens) {
+                            for (cToken in contactTokens) {
+                                if (sToken == cToken) {
+                                    currentScore += 50
+                                } else if (cToken.contains(sToken) || sToken.contains(cToken)) {
+                                    currentScore += 25
+                                } else {
+                                    val dist = levenshteinDistance(sToken, cToken)
+                                    val maxLen = maxOf(sToken.length, cToken.length)
+                                    if (maxLen > 3 && dist <= 2) {
+                                        currentScore += (20 - (dist * 5))
+                                    }
+                                }
+                            }
+                        }
+
+                        if (currentScore > bestScore && currentScore >= 15) {
+                            bestScore = currentScore
+                            bestNumber = contactNumber
                         }
                     }
-                    if (candidateNumber != null) {
-                        return candidateNumber
-                    }
                 }
+            }
+            if (bestNumber != null) {
+                LogBus.log("contact fuzzy match -> '$name' matched number ($bestScore pts)")
+                return bestNumber
             }
         } catch (e: Exception) {
             LogBus.warn("could not lookup contact: ${e.message}")
@@ -512,12 +713,33 @@ class PhoneActionExecutor(context: Context) {
     fun startNavigation(destination: String?) {
         try {
             if (destination.isNullOrBlank()) return
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=" + URLEncoder.encode(destination.trim(), "UTF-8")))
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val cleanDest = destination.trim()
+
+            // 1. Iniciar HUD de navegación en las gafas AR vía MyvuService
+            val conn = MyvuService.activeConnection()
+            if (conn != null) {
+                conn.nav().start(cleanDest)
+                LogBus.log("voice action -> started Glasses AR HUD Navigation to: $cleanDest")
+            }
+
+            // 2. Abrir navegación GPS en el teléfono
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=" + URLEncoder.encode(cleanDest, "UTF-8"))).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
             context.startActivity(intent)
-            LogBus.log("voice action -> started GPS navigation to: $destination")
+            LogBus.log("voice action -> started phone GPS navigation to: $cleanDest")
         } catch (e: Exception) {
             LogBus.error("could not start navigation for $destination", e)
+        }
+    }
+
+    fun stopNavigation() {
+        try {
+            val conn = MyvuService.activeConnection()
+            conn?.nav()?.stop()
+            LogBus.log("voice action -> stopped Glasses AR Navigation")
+        } catch (e: Exception) {
+            LogBus.error("could not stop navigation", e)
         }
     }
 
@@ -640,12 +862,167 @@ class PhoneActionExecutor(context: Context) {
         }
     }
 
+    fun createReminderAction(valStr: String?) {
+        createSpecificReminder(valStr)
+    }
+
+    fun deleteReminderAction(target: String?) {
+        try {
+            if (target.isNullOrBlank()) return
+            val repo = ReminderRepository(context)
+            val cleanTarget = target.trim()
+            val id = cleanTarget.toLongOrNull()
+            if (id != null) {
+                repo.deleteReminder(id)
+            } else {
+                repo.deleteByTitle(cleanTarget)
+            }
+            LogBus.log("voice action -> deleted reminder '$target'")
+        } catch (e: Exception) {
+            LogBus.error("could not delete reminder '$target'", e)
+        }
+    }
+
+    fun addTodoAction(valStr: String?) {
+        try {
+            if (valStr.isNullOrBlank()) return
+            var listName = "General"
+            var title = valStr.trim()
+            var tags = ""
+
+            if (valStr.contains(":") || valStr.contains("|")) {
+                val parts = valStr.split(Regex("[:|]"), 2)
+                listName = parts[0].trim().ifBlank { "General" }
+                title = parts[1].trim()
+            }
+
+            if (title.contains("[tags:") || title.contains("[tag:")) {
+                val tagMatch = Regex("\\[tags?:\\s*([^\\]]+)\\]", RegexOption.IGNORE_CASE).find(title)
+                if (tagMatch != null) {
+                    tags = tagMatch.groupValues[1].trim()
+                    title = title.replace(tagMatch.value, "").trim()
+                }
+            }
+
+            val repo = TodoRepository(context)
+            val id = repo.createTodo(title = title, listName = listName, tags = tags)
+            LogBus.log("voice action -> added todo #$id in [$listName]: '$title'")
+        } catch (e: Exception) {
+            LogBus.error("could not add todo for '$valStr'", e)
+        }
+    }
+
+    fun markTodoDoneAction(target: String?) {
+        try {
+            if (target.isNullOrBlank()) return
+            val repo = TodoRepository(context)
+            val cleanTarget = target.trim()
+            val id = cleanTarget.toLongOrNull()
+            if (id != null) {
+                repo.markCompleted(id, true)
+            } else {
+                repo.markCompletedByTitle(cleanTarget, true)
+            }
+            LogBus.log("voice action -> marked todo done '$target'")
+        } catch (e: Exception) {
+            LogBus.error("could not mark todo done '$target'", e)
+        }
+    }
+
+    fun deleteTodoAction(target: String?) {
+        try {
+            if (target.isNullOrBlank()) return
+            val repo = TodoRepository(context)
+            val cleanTarget = target.trim()
+            val id = cleanTarget.toLongOrNull()
+            if (id != null) {
+                repo.deleteTodo(id)
+            } else {
+                repo.deleteByTitle(cleanTarget)
+            }
+            LogBus.log("voice action -> deleted todo '$target'")
+        } catch (e: Exception) {
+            LogBus.error("could not delete todo '$target'", e)
+        }
+    }
+
+    fun listTodosSummary(listName: String?): String {
+        try {
+            val repo = TodoRepository(context)
+            val todos = repo.getPendingTodos(listName)
+            if (todos.isEmpty()) {
+                return "No tienes tareas pendientes" + (if (!listName.isNullOrBlank() && !listName.equals("all", ignoreCase = true)) " en la lista $listName." else ".")
+            }
+            val sb = StringBuilder("📋 Tareas pendientes:\n")
+            todos.take(5).forEachIndexed { idx, t ->
+                val tagStr = if (t.tags.isNotBlank()) " [${t.tags}]" else ""
+                sb.append("${idx + 1}. [${t.listName}] ${t.title}$tagStr\n")
+            }
+            return sb.toString().trim()
+        } catch (e: Exception) {
+            LogBus.error("could not list todos", e)
+            return "Error al consultar tareas."
+        }
+    }
+
+    fun deleteNoteAction(target: String?) {
+        try {
+            if (target.isNullOrBlank()) return
+            val repo = NoteRepository(context)
+            val cleanTarget = target.trim()
+            val id = cleanTarget.toLongOrNull()
+            if (id != null) {
+                repo.deleteNote(id)
+            } else {
+                repo.deleteByTitle(cleanTarget)
+            }
+            LogBus.log("voice action -> deleted note '$target'")
+        } catch (e: Exception) {
+            LogBus.error("could not delete note '$target'", e)
+        }
+    }
+
+    fun updateNoteAction(valStr: String?) {
+        try {
+            if (valStr.isNullOrBlank()) return
+            var target = ""
+            var newBody = valStr.trim()
+            if (valStr.contains(":") || valStr.contains("|")) {
+                val parts = valStr.split(Regex("[:|]"), 2)
+                target = parts[0].trim()
+                newBody = parts[1].trim()
+            }
+            val repo = NoteRepository(context)
+            val id = target.toLongOrNull()
+            if (id != null) {
+                repo.updateNote(id, newBody)
+            } else {
+                val existing = repo.search(target).firstOrNull()
+                if (existing != null) {
+                    repo.updateNote(existing.id, newBody)
+                }
+            }
+            LogBus.log("voice action -> updated note '$target' with: $newBody")
+        } catch (e: Exception) {
+            LogBus.error("could not update note '$valStr'", e)
+        }
+    }
+
     fun createNote(text: String?) {
         try {
             if (text.isNullOrBlank()) return
+            var cleanText = text.trim()
+            var tags = ""
+            if (cleanText.contains("[tags:") || cleanText.contains("[tag:")) {
+                val tagMatch = Regex("\\[tags?:\\s*([^\\]]+)\\]", RegexOption.IGNORE_CASE).find(cleanText)
+                if (tagMatch != null) {
+                    tags = tagMatch.groupValues[1].trim()
+                    cleanText = cleanText.replace(tagMatch.value, "").trim()
+                }
+            }
             val repo = NoteRepository(context)
-            val id = repo.createNote(text.trim())
-            LogBus.log("voice action -> created local note #$id: $text")
+            val id = repo.createNote(title = "", body = cleanText, tags = tags)
+            LogBus.log("voice action -> created local note #$id: $cleanText (tags: $tags)")
         } catch (e: Exception) {
             LogBus.error("could not create local note for $text", e)
         }
@@ -785,6 +1162,7 @@ class PhoneActionExecutor(context: Context) {
     private fun stripActionTags(text: String?): String {
         if (text == null) return ""
         var clean = text.replace(Regex("(?i)ACTION:[A-Z_]+(=[^\n]*)?"), "")
+        clean = clean.replace(Regex("(?i)\\[Contexto del Sistema:[^\\]]*\\]"), "")
         clean = clean.replace(Regex("\\[([^\\]]+)\\]\\([^\\)]+\\)"), "$1")
         clean = clean.replace(Regex("[*_`~#>]"), "")
         clean = clean.replace(Regex("(?m)^[\\s*\\-]+\\s*"), "")

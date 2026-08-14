@@ -33,7 +33,18 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(context.applicationCont
                     "alarm_request_code INTEGER NOT NULL);"
         )
 
-        LogBus.log("LocalDatabase -> Created notes and reminders tables (v3)")
+        db.execSQL(
+            "CREATE TABLE todos (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "list_name TEXT NOT NULL DEFAULT 'General', " +
+                    "title TEXT NOT NULL, " +
+                    "completed INTEGER NOT NULL DEFAULT 0, " +
+                    "tags TEXT NOT NULL DEFAULT '', " +
+                    "created_at INTEGER NOT NULL, " +
+                    "updated_at INTEGER NOT NULL);"
+        )
+
+        LogBus.log("LocalDatabase -> Created notes, reminders and todos tables (v4)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -50,7 +61,9 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(context.applicationCont
                 LogBus.error("LocalDatabase -> Migration failed, recreating tables", e)
                 db.execSQL("DROP TABLE IF EXISTS notes;")
                 db.execSQL("DROP TABLE IF EXISTS reminders;")
+                db.execSQL("DROP TABLE IF EXISTS todos;")
                 onCreate(db)
+                return
             }
         }
         if (oldVersion < 3) {
@@ -61,11 +74,28 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(context.applicationCont
                 LogBus.error("LocalDatabase -> Migration to v3 failed", e)
             }
         }
+        if (oldVersion < 4) {
+            try {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS todos (" +
+                            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                            "list_name TEXT NOT NULL DEFAULT 'General', " +
+                            "title TEXT NOT NULL, " +
+                            "completed INTEGER NOT NULL DEFAULT 0, " +
+                            "tags TEXT NOT NULL DEFAULT '', " +
+                            "created_at INTEGER NOT NULL, " +
+                            "updated_at INTEGER NOT NULL);"
+                )
+                LogBus.log("LocalDatabase -> Migrated database to v4 (added todos table)")
+            } catch (e: Exception) {
+                LogBus.error("LocalDatabase -> Migration to v4 failed", e)
+            }
+        }
     }
 
     companion object {
         const val DATABASE_NAME = "myvu_client.db"
-        const val DATABASE_VERSION = 3
+        const val DATABASE_VERSION = 4
 
         @Volatile
         private var instance: LocalDatabase? = null
