@@ -7,6 +7,13 @@ enum class SttProvider(
     @JvmField val defaultModel: String,
     @JvmField val apiKeyRequired: Boolean
 ) {
+    ON_DEVICE(
+        "on_device",
+        "Whisper On-Device",
+        "",
+        "whisper-tiny-acft.tflite",
+        false
+    ),
     GROQ(
         "groq",
         "Groq Whisper",

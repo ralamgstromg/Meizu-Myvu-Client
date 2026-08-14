@@ -9,6 +9,7 @@ playServicesLocation = "21.3.0"
 junit = "4.13.2"
 json = "20260522"
 lifecycleRuntimeKtx = "2.8.7"
+mediapipeGenai = "0.10.20"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -20,6 +21,7 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 junit = { module = "junit:junit", version.ref = "junit" }
 json = { module = "org.json:json", version.ref = "json" }
+mediapipe-tasks-genai = { module = "com.google.mediapipe:tasks-genai", version.ref = "mediapipeGenai" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

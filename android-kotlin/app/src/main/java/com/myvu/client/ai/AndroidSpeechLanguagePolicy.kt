@@ -12,7 +12,7 @@ object AndroidSpeechLanguagePolicy {
         if (clean.isNotEmpty()) {
             values += clean
             val base = clean.substringBefore('-')
-            if (base != clean) values += base
+            if (base != clean && base.isNotEmpty()) values += base
         }
         values += listOf("es-CO", "es")
         return values.map { it.lowercase(Locale.US) }

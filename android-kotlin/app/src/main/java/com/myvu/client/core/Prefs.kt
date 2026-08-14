@@ -237,6 +237,16 @@ object Prefs {
     }
 
     @JvmStatic
+    fun whisperModelId(c: Context): String {
+        return prefs(c).getString("whisper_model_id", "whisper-large-v3-turbo-i4") ?: "whisper-large-v3-turbo-i4"
+    }
+
+    @JvmStatic
+    fun setWhisperModelId(c: Context, modelId: String) {
+        prefs(c).edit().putString("whisper_model_id", modelId).apply()
+    }
+
+    @JvmStatic
     fun sttProvider(c: Context): String {
         val prov = prefs(c).getString(KEY_STT_PROVIDER, "groq") ?: "groq"
         return if (prov == "android") "groq" else prov

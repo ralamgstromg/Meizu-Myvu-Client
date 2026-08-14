@@ -260,8 +260,8 @@ class AiConversation(
                     if (active && nativeSpeechSessionId == sessionId) {
                         LogBus.warn("AI native STT failed (code=$code): $message. Conmutando a streaming de audio de gafas...")
                         // Fallback: si hay audio capturado de las gafas, procesar con STT API
-                        if (mic.isCapturing() && speechStarted) {
-                            endUtterance()
+                        if (mic.isCapturing() && (speechStarted || mic.packetCount() > 0)) {
+                            endUtterance(forceGlassesAudio = true)
                         } else {
                             finish()
                         }
@@ -282,8 +282,8 @@ class AiConversation(
         main.postDelayed(utteranceCap, MAX_UTTERANCE_MS)
     }
 
-    private fun endUtterance() {
-        if (usesAndroidSpeech) {
+    private fun endUtterance(forceGlassesAudio: Boolean = false) {
+        if (usesAndroidSpeech && !forceGlassesAudio) {
             if (active) androidSpeech.stop()
             return
         }
@@ -326,20 +326,46 @@ class AiConversation(
 
     private fun transcribe(pcm: ByteArray, sampleRate: Int, channels: Int) {
         var sttProviderId = Prefs.sttProvider(context)
-        if ("android" == sttProviderId) {
-            // Si el STT estaba en modo Android y conmutó a transcripción de audio, usar Groq u OpenAI
-            sttProviderId = if (Prefs.sttApiKey(context, "groq").isNotEmpty()) "groq" else "openai"
+        if (sttProviderId == SttProvider.ON_DEVICE.id) {
+            val modelOption = WhisperLocalClient.findOption(Prefs.whisperModelId(context))
+            val localWhisper = WhisperLocalClient(context, modelOption)
+            if (localWhisper.isConfigured()) {
+                worker.execute {
+                    try {
+                        val lang = Locale.getDefault().language.ifBlank { "es" }
+                        val text = localWhisper.transcribe(pcm, sampleRate, channels, lang)
+                        main.post { onTranscript(text) }
+                        return@execute
+                    } catch (e: Exception) {
+                        LogBus.warn("Whisper On-Device falló (${e.message}). Conmutando automáticamente a Groq Whisper API...")
+                    }
+                    // Fallback a Groq API
+                    transcribeWithApi(pcm, sampleRate, channels, "groq")
+                }
+                return
+            } else {
+                LogBus.warn("Whisper On-Device (${modelOption.name}) no descargado. Usando API remota...")
+                sttProviderId = "groq"
+            }
+        }
+        transcribeWithApi(pcm, sampleRate, channels, sttProviderId)
+    }
+
+    private fun transcribeWithApi(pcm: ByteArray, sampleRate: Int, channels: Int, preferredProvider: String) {
+        var sttProviderId = preferredProvider
+        if ("android" == sttProviderId || "on_device" == sttProviderId) {
+            sttProviderId = if (Prefs.sttApiKey(context, "groq").isNotEmpty()) "groq" else "local"
         }
         val apiKey = Prefs.sttApiKey(context, sttProviderId)
         val storedModel = Prefs.sttModel(context, sttProviderId).trim()
         val model = if (storedModel.isEmpty()) {
-            if ("groq" == sttProviderId) "whisper-large-v3-turbo" else "whisper-1"
+            if ("groq" == sttProviderId) "whisper-large-v3-turbo" else "whisper"
         } else {
             storedModel
         }
         val storedEndpoint = Prefs.sttEndpoint(context, sttProviderId).trim()
         val endpoint = if (storedEndpoint.isEmpty()) {
-            if ("groq" == sttProviderId) "https://api.groq.com/openai/v1/audio/transcriptions" else "https://api.openai.com/v1/audio/transcriptions"
+            if ("groq" == sttProviderId) "https://api.groq.com/openai/v1/audio/transcriptions" else "http://10.0.0.2:1235/v1/audio/transcriptions"
         } else {
             storedEndpoint
         }

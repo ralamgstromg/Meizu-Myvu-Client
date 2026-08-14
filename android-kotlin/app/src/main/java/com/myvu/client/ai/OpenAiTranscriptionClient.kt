@@ -84,10 +84,12 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
             conn.readTimeout = TIMEOUT_MS
             conn.doOutput = true
 
+            val lang = java.util.Locale.getDefault().language.ifBlank { "es" }
+
             DataOutputStream(conn.outputStream).use { out ->
                 writeAudioPart(out)
                 writeTextPart(out, "model", model)
-                writeTextPart(out, "language", "es")
+                writeTextPart(out, "language", lang)
                 writeTextPart(out, "response_format", "json")
                 out.writeBytes("--$BOUNDARY--\r\n")
                 out.flush()

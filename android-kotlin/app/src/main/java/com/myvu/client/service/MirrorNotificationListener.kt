@@ -208,7 +208,7 @@ class MirrorNotificationListener : NotificationListenerService() {
 
         @JvmStatic
         fun getUnreadSummary(category: String?): String {
-            val listener = instance ?: return "No hay acceso a las notificaciones del teléfono."
+            val listener = instance ?: return "Activa el acceso a notificaciones en los ajustes del teléfono para leer tus mensajes pendientes."
 
             return try {
                 val sbns = listener.activeNotifications
@@ -222,6 +222,7 @@ class MirrorNotificationListener : NotificationListenerService() {
 
                 for (sbn in sbns) {
                     if (sbn?.notification == null) continue
+                    if (sbn.isOngoing) continue // Ignorar reproductores multimedia y servicios en curso
                     val pkg = sbn.packageName ?: continue
 
                     val matches = when {
@@ -229,7 +230,7 @@ class MirrorNotificationListener : NotificationListenerService() {
                             pkg.contains("outlook") || pkg.contains("gm") || pkg.contains("mail")
                         cat.contains("whatsapp") -> pkg.contains("whatsapp")
                         cat.contains("telegram") -> pkg.contains("telegram")
-                        else -> true
+                        else -> !pkg.contains("com.myvu.client") && !pkg.contains("android")
                     }
 
                     if (!matches) continue
@@ -237,27 +238,52 @@ class MirrorNotificationListener : NotificationListenerService() {
                     val n = sbn.notification
                     val extras = n.extras ?: continue
 
-                    val titleCs = extras.getCharSequence(Notification.EXTRA_TITLE)
-                    val textCs = extras.getCharSequence(Notification.EXTRA_TEXT)
+                    // Extraer título y remitente
+                    val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim()
+                        ?: extras.getCharSequence(Notification.EXTRA_TITLE_BIG)?.toString()?.trim()
+                        ?: ""
 
-                    val title = titleCs?.toString() ?: ""
-                    val text = textCs?.toString() ?: ""
+                    // Extraer cuerpo principal o mensajes de chat de WhatsApp/Telegram
+                    var body = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.trim()
+                        ?: extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()?.trim()
+                        ?: ""
 
-                    if (title.isEmpty() && text.isEmpty()) continue
+                    // Si es un chat con múltiples líneas (InboxStyle o MessagingStyle)
+                    if (body.isEmpty()) {
+                        val textLines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)
+                        if (textLines != null && textLines.isNotEmpty()) {
+                            body = textLines.filterNotNull().joinToString(". ") { it.toString().trim() }
+                        }
+                    }
+
+                    if (title.isEmpty() && body.isEmpty()) continue
 
                     count++
-                    sb.append("- De ").append(title).append(": ").append(text).append("\n")
-                    if (count >= 8) break
+                    val appName = try {
+                        val pm = listener.packageManager
+                        pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+                    } catch (ignored: Exception) {
+                        if (pkg.contains("whatsapp")) "WhatsApp" else if (pkg.contains("telegram")) "Telegram" else "Notificación"
+                    }
+
+                    val prefix = if (title.isNotBlank()) title else appName
+                    sb.append("• ").append(prefix)
+                    if (body.isNotBlank()) {
+                        sb.append(": ").append(body)
+                    }
+                    sb.append("\n")
+
+                    if (count >= 6) break
                 }
 
                 if (count == 0) {
                     "No tienes ${if (cat.isEmpty()) "notificaciones" else cat} pendientes por leer."
                 } else {
-                    sb.toString()
+                    "Tienes $count ${if (cat.isEmpty()) "notificaciones" else cat} pendientes:\n" + sb.toString().trim()
                 }
             } catch (e: Exception) {
                 LogBus.error("could not fetch active notifications", e)
-                "Error al leer las notificaciones del teléfono."
+                "Error al consultar las notificaciones del teléfono."
             }
         }
 

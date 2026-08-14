@@ -271,23 +271,50 @@ class PhoneActionExecutor(context: Context) {
             if (text.contains(":") || text.contains("|")) {
                 val parts = text.split(Regex("[:|]"), 2)
                 recipient = parts[0].trim()
+                    .replace(Regex("(?i)^(enviar?\\s+(un\\s+)?(mensaje|whatsapp)(\\s+a|\\s+al)?\\s*|a\\s+mi\\s+|a\\s+|al\\s+)"), "")
+                    .trim()
                 message = parts[1].trim()
             }
 
-            val url = StringBuilder("https://api.whatsapp.com/send?")
+            var number: String? = null
             if (!recipient.isNullOrEmpty()) {
-                val number = lookupContactNumber(recipient)
-                if (!number.isNullOrEmpty()) {
-                    val cleanNum = number.replace(Regex("[^0-9]"), "")
-                    url.append("phone=").append(cleanNum).append("&")
+                if (recipient.matches(Regex("^[0-9+#* -]+$"))) {
+                    number = recipient
+                } else {
+                    number = lookupContactNumber(recipient)
+                    if (number.isNullOrEmpty()) {
+                        val parts = recipient.split(Regex("\\s+"))
+                        for (part in parts) {
+                            if (part.length >= 3) {
+                                number = lookupContactNumber(part)
+                                if (!number.isNullOrEmpty()) break
+                            }
+                        }
+                    }
                 }
+            }
+
+            val url = StringBuilder("https://api.whatsapp.com/send?")
+            if (!number.isNullOrEmpty()) {
+                val cleanNum = number.replace(Regex("[^0-9]"), "")
+                url.append("phone=").append(cleanNum).append("&")
             }
             url.append("text=").append(URLEncoder.encode(message, "UTF-8"))
 
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url.toString()))
+            intent.setPackage("com.whatsapp")
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-            LogBus.log("voice action -> opened WhatsApp (recipient=$recipient) with text: $message")
+
+            try {
+                context.startActivity(intent)
+                LogBus.log("voice action -> opened WhatsApp (recipient=$recipient, number=$number) with text: $message")
+            } catch (e: Exception) {
+                // Si falla con package específico de WhatsApp, intentar con Intent genérico
+                val genericIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url.toString()))
+                genericIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(genericIntent)
+                LogBus.log("voice action -> opened generic WhatsApp browser/app fallback for: $message")
+            }
         } catch (e: Exception) {
             LogBus.error("could not open WhatsApp", e)
         }
@@ -313,22 +340,23 @@ class PhoneActionExecutor(context: Context) {
         tm.placeCall(Uri.parse("tel:" + Uri.encode(number)), extras)
     }
 
+    private fun normalize(text: String): String {
+        val nfd = java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD)
+        return nfd.replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "").lowercase().trim()
+    }
+
     fun makeCall(target: String?) {
         try {
             if (target.isNullOrBlank()) return
             val cleanTarget = target.trim()
+                .replace(Regex("(?i)^(llamar?\\s+(a|al)?\\s*|marcar?\\s+(a|al)?\\s*|a\\s+mi\\s+|a\\s+|al\\s+)"), "")
+                .trim()
             var number: String? = null
 
             if (cleanTarget.matches(Regex("^[0-9+#* -]+$"))) {
                 number = cleanTarget
             } else {
                 number = lookupContactNumber(cleanTarget)
-                if (number.isNullOrEmpty()) {
-                    val stripped = cleanTarget.replace(Regex("(?i)^(a\\s+)?(mi\\s+)?"), "").trim()
-                    if (stripped.isNotEmpty() && !stripped.equals(cleanTarget, ignoreCase = true)) {
-                        number = lookupContactNumber(stripped)
-                    }
-                }
                 if (number.isNullOrEmpty()) {
                     val parts = cleanTarget.split(Regex("\\s+"))
                     for (part in parts) {
@@ -363,7 +391,7 @@ class PhoneActionExecutor(context: Context) {
                 context.startActivity(intent)
                 LogBus.log("voice action -> placing " + (if (hasCallPerm) "direct call" else "dialer call") + " to $target ($number)")
             } else {
-                intent = Intent(Intent.ACTION_DIAL)
+                intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:"))
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
                 LogBus.warn("voice action -> contact number not found for $target, opening dialer")
@@ -380,16 +408,36 @@ class PhoneActionExecutor(context: Context) {
             return null
         }
         try {
+            val normalizedSearch = normalize(name)
             context.contentResolver.query(
                 android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER, android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME),
-                android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " LIKE ?",
-                arrayOf("%" + name.trim() + "%"),
+                arrayOf(
+                    android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER,
+                    android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME
+                ),
+                null,
+                null,
                 null
             )?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val idx = cursor.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
-                    if (idx >= 0) return cursor.getString(idx)
+                val numIdx = cursor.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
+                val nameIdx = cursor.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                if (numIdx >= 0 && nameIdx >= 0) {
+                    var candidateNumber: String? = null
+                    while (cursor.moveToNext()) {
+                        val contactName = cursor.getString(nameIdx) ?: continue
+                        val contactNumber = cursor.getString(numIdx) ?: continue
+                        val normalizedContact = normalize(contactName)
+
+                        if (normalizedContact == normalizedSearch) {
+                            return contactNumber
+                        }
+                        if (normalizedContact.contains(normalizedSearch) && candidateNumber == null) {
+                            candidateNumber = contactNumber
+                        }
+                    }
+                    if (candidateNumber != null) {
+                        return candidateNumber
+                    }
                 }
             }
         } catch (e: Exception) {

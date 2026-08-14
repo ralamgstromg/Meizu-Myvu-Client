@@ -73,6 +73,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.play.services.location)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.mediapipe.tasks.genai)
 
     testImplementation(libs.junit)
     testImplementation(libs.json)

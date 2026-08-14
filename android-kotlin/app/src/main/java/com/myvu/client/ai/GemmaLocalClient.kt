@@ -5,6 +5,8 @@ import com.myvu.client.core.LogBus
 import java.io.File
 import java.io.IOException
 
+import com.google.mediapipe.tasks.genai.llminference.LlmInference
+
 data class GemmaModelOption(
     val id: String,
     val name: String,
@@ -19,40 +21,27 @@ class GemmaLocalClient(
 ) : AiClient {
 
     companion object {
-        val GEMMA_4_E2B_LITERT = GemmaModelOption(
-            id = "gemma-4-e2b-it-litert-lm",
-            name = "Gemma 4 E2B IT LiteRT (Mobile CPU/GPU)",
-            downloadUrl = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm",
-            fileName = "gemma-4-E2B-it.litertlm",
-            sizeBytes = 1_120_000_000L
+        val GEMMA_2B_IT_GPU = GemmaModelOption(
+            id = "gemma-2b-it-gpu-int4",
+            name = "Gemma 2B IT (MediaPipe GPU ~1.35GB)",
+            downloadUrl = "https://huggingface.co/google/gemma-2b-it-tflite/resolve/main/gemma-2b-it-gpu-int4.bin",
+            fileName = "gemma-2b-it-gpu-int4.bin",
+            sizeBytes = 1_350_000_000L
         )
 
-        val PHI_4_MINI = GemmaModelOption(
-            id = "phi-4-mini-instruct-q8",
-            name = "Phi-4 Mini Instruct (Q8 - LiteRT Mobile)",
-            downloadUrl = "https://huggingface.co/litert-community/Phi-4-mini-instruct/resolve/main/phi4_q8_ekv1280.tflite",
-            fileName = "phi4_q8_ekv1280.tflite",
-            sizeBytes = 3_800_000_000L
+        val GEMMA_2B_IT_CPU = GemmaModelOption(
+            id = "gemma-2b-it-cpu-int4",
+            name = "Gemma 2B IT (MediaPipe CPU ~1.35GB)",
+            downloadUrl = "https://huggingface.co/google/gemma-2b-it-tflite/resolve/main/gemma-2b-it-cpu-int4.bin",
+            fileName = "gemma-2b-it-cpu-int4.bin",
+            sizeBytes = 1_350_000_000L
         )
 
-        val GEMMA_E2B = GemmaModelOption(
-            id = "gemma-4-e2b-it-int4",
-            name = "Gemma 4 E2B IT (INT4 - Mobile GPU/CPU)",
-            downloadUrl = "https://huggingface.co/mayur1496/gemma-2b-tflite/resolve/main/gemma-2b-it-gpu-int4.tflite",
-            fileName = "gemma-4-e2b-it-gpu-int4.tflite",
-            sizeBytes = 1_190_000_000L
-        )
+        val OPTIONS = listOf(GEMMA_2B_IT_GPU, GEMMA_2B_IT_CPU)
+        val DEFAULT_OPTION = GEMMA_2B_IT_GPU
 
-        val GEMMA_E4B = GemmaModelOption(
-            id = "gemma-4-e4b-it-int4",
-            name = "Gemma 4 E4B IT (INT4 - Mobile GPU)",
-            downloadUrl = "https://huggingface.co/mayur1496/gemma-2b-tflite/resolve/main/gemma-2b-it-gpu-int4.tflite",
-            fileName = "gemma-4-e4b-it-gpu-int4.tflite",
-            sizeBytes = 1_190_000_000L
-        )
-
-        val OPTIONS = listOf(GEMMA_4_E2B_LITERT, PHI_4_MINI, GEMMA_E2B, GEMMA_E4B)
-        val DEFAULT_OPTION = GEMMA_4_E2B_LITERT
+        private var cachedEngine: LlmInference? = null
+        private var cachedModelPath: String? = null
 
         fun findOption(id: String?): GemmaModelOption {
             return OPTIONS.firstOrNull { it.id == id } ?: DEFAULT_OPTION
@@ -71,6 +60,25 @@ class GemmaLocalClient(
         return modelFile.exists() && modelFile.length() > 0
     }
 
+    @Synchronized
+    private fun getOrInitEngine(): LlmInference {
+        val path = modelFile.absolutePath
+        if (cachedEngine != null && cachedModelPath == path) {
+            return cachedEngine!!
+        }
+
+        LogBus.log("AI_GEMMA_NATIVE_INIT path=$path")
+        val options = LlmInference.LlmInferenceOptions.builder()
+            .setModelPath(path)
+            .setMaxTokens(512)
+            .build()
+
+        val engine = LlmInference.createFromOptions(context, options)
+        cachedEngine = engine
+        cachedModelPath = path
+        return engine
+    }
+
     @Throws(IOException::class)
     override fun ask(question: String): String {
         if (!isConfigured()) {
@@ -78,8 +86,16 @@ class GemmaLocalClient(
         }
 
         LogBus.log("AI_GEMMA_LOCAL_START questionLength=${question.length} model=${modelOption.fileName}")
-
-        // El motor on-device LiteRT/TFLite para Gemma aún no está enlazado a nivel de runtime nativo
-        throw IOException("Motor de inferencia local Gemma no disponible para ${modelOption.fileName}. Activando fallback.")
+        try {
+            val engine = getOrInitEngine()
+            val response = engine.generateResponse(question)
+            if (response.isNullOrBlank()) {
+                throw IOException("MediaPipe LlmInference returned blank response")
+            }
+            return response.trim()
+        } catch (e: Throwable) {
+            LogBus.error("AI_GEMMA_NATIVE_ERROR: ${e.message}", e)
+            throw IOException("Inferencia nativa Gemma falló (${e.message}). Activando fallback.", e)
+        }
     }
 }

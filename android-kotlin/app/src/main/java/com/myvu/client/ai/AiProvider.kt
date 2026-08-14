@@ -66,26 +66,44 @@ enum class AiProvider(
             else -> ClaudeClient(apiKey, model, effectivePrompt)
         }
 
-        if (context != null && (Prefs.useLocalGemmaIfAvailable(context) || this == GEMMA_LOCAL)) {
+        if (context != null) {
+            val isLocalGemmaActive = Prefs.useLocalGemmaIfAvailable(context) || this == GEMMA_LOCAL
             val optionId = Prefs.gemmaModelId(context)
             val option = GemmaLocalClient.findOption(optionId)
             val gemmaClient = GemmaLocalClient(context, option)
-            if (gemmaClient.isConfigured()) {
-                val fallbackClient = if (this == GEMMA_LOCAL) {
-                    // Si el proveedor seleccionado es GEMMA_LOCAL y falla, buscar el proveedor remoto configurado de respaldo (ej. Gemini o Groq)
-                    val backupProviderId = if (Prefs.aiApiKey(context, "gemini").isNotEmpty()) "gemini" else "groq"
-                    val backupProvider = fromId(backupProviderId)
-                    backupProvider.newClient(
-                        null,
-                        Prefs.aiApiKey(context, backupProviderId),
-                        Prefs.aiModel(context, backupProviderId),
-                        Prefs.aiEndpoint(context, backupProviderId),
-                        effectivePrompt
-                    )
-                } else {
-                    baseClient
-                }
-                return LocalFallbackAiClient(localClient = gemmaClient, fallbackClient = fallbackClient)
+
+            // Construir cliente de rescate en la nube con cualquier API Key disponible (o groq de STT)
+            val rescueProviderId = listOf("groq", "gemini", "openai", "claude", "nvidia")
+                .firstOrNull { 
+                    Prefs.aiApiKey(context, it).isNotBlank() || (it == "groq" && Prefs.sttApiKey(context, "groq").isNotBlank())
+                } ?: "groq"
+            val rescueProvider = fromId(rescueProviderId)
+            val rescueApiKey = Prefs.aiApiKey(context, rescueProviderId).ifBlank {
+                if (rescueProviderId == "groq") Prefs.sttApiKey(context, "groq") else ""
+            }
+            val rescueModel = Prefs.aiModel(context, rescueProviderId).ifBlank { rescueProvider.defaultModel }
+            val rescueEndpoint = Prefs.aiEndpoint(context, rescueProviderId)
+            val rescueClient = rescueProvider.newClient(
+                null,
+                rescueApiKey,
+                rescueModel,
+                rescueEndpoint,
+                effectivePrompt
+            )
+
+            if (isLocalGemmaActive && gemmaClient.isConfigured()) {
+                return LocalFallbackAiClient(
+                    localClient = gemmaClient,
+                    primaryClient = baseClient,
+                    rescueClient = rescueClient
+                )
+            } else if (this == LOCAL) {
+                // Si el usuario eligió Servidor HTTP Local, envolverlo con rescate a Cloud API si el servidor local se cae
+                return LocalFallbackAiClient(
+                    localClient = null,
+                    primaryClient = baseClient,
+                    rescueClient = rescueClient
+                )
             }
         }
 
@@ -93,25 +111,38 @@ enum class AiProvider(
     }
 
     class LocalFallbackAiClient(
-        private val localClient: AiClient,
-        private val fallbackClient: AiClient
+        private val localClient: AiClient?,
+        private val primaryClient: AiClient,
+        private val rescueClient: AiClient?
     ) : AiClient {
-        override fun isConfigured(): Boolean = localClient.isConfigured() || fallbackClient.isConfigured()
+        override fun isConfigured(): Boolean =
+            (localClient?.isConfigured() == true) || primaryClient.isConfigured() || (rescueClient?.isConfigured() == true)
 
         @Throws(java.io.IOException::class)
         override fun ask(question: String): String {
-            if (localClient.isConfigured()) {
+            if (localClient?.isConfigured() == true) {
                 try {
                     com.myvu.client.core.LogBus.log("AI_LOCAL_ATTEMPT: Ejecutando en modelo local on-device...")
                     return localClient.ask(question)
                 } catch (e: Exception) {
-                    com.myvu.client.core.LogBus.warn("AI_LOCAL_FAILED: Falló modelo local (${e.message}). Conmutando automáticamente a API remota de respaldo...")
+                    com.myvu.client.core.LogBus.warn("AI_LOCAL_FAILED: Falló modelo local on-device (${e.message}). Intentando proveedor principal/remoto...")
                 }
             }
-            if (fallbackClient.isConfigured()) {
-                return fallbackClient.ask(question)
+
+            if (primaryClient.isConfigured() && primaryClient != localClient) {
+                try {
+                    return primaryClient.ask(question)
+                } catch (e: Exception) {
+                    com.myvu.client.core.LogBus.warn("AI_PRIMARY_FAILED: Proveedor principal falló (${e.message}). Conmutando automáticamente a API de rescate en la nube...")
+                }
             }
-            throw java.io.IOException("Ni el modelo local ni la API de respaldo están configurados correctamente.")
+
+            if (rescueClient?.isConfigured() == true && rescueClient != primaryClient) {
+                com.myvu.client.core.LogBus.log("AI_RESCUE_ATTEMPT: Ejecutando con API de rescate en la nube...")
+                return rescueClient.ask(question)
+            }
+
+            throw java.io.IOException("Ningún proveedor de IA (On-Device, Servidor Local o Cloud API) respondió.")
         }
     }
 
