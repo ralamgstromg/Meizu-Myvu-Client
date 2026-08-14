@@ -19,6 +19,22 @@ class GemmaLocalClient(
 ) : AiClient {
 
     companion object {
+        val GEMMA_4_E2B_LITERT = GemmaModelOption(
+            id = "gemma-4-e2b-it-litert-lm",
+            name = "Gemma 4 E2B IT LiteRT (Mobile CPU/GPU)",
+            downloadUrl = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm",
+            fileName = "gemma-4-E2B-it.litertlm",
+            sizeBytes = 1_120_000_000L
+        )
+
+        val PHI_4_MINI = GemmaModelOption(
+            id = "phi-4-mini-instruct-q8",
+            name = "Phi-4 Mini Instruct (Q8 - LiteRT Mobile)",
+            downloadUrl = "https://huggingface.co/litert-community/Phi-4-mini-instruct/resolve/main/phi4_q8_ekv1280.tflite",
+            fileName = "phi4_q8_ekv1280.tflite",
+            sizeBytes = 3_800_000_000L
+        )
+
         val GEMMA_E2B = GemmaModelOption(
             id = "gemma-4-e2b-it-int4",
             name = "Gemma 4 E2B IT (INT4 - Mobile GPU/CPU)",
@@ -35,8 +51,8 @@ class GemmaLocalClient(
             sizeBytes = 1_190_000_000L
         )
 
-        val OPTIONS = listOf(GEMMA_E2B, GEMMA_E4B)
-        val DEFAULT_OPTION = GEMMA_E2B
+        val OPTIONS = listOf(GEMMA_4_E2B_LITERT, PHI_4_MINI, GEMMA_E2B, GEMMA_E4B)
+        val DEFAULT_OPTION = GEMMA_4_E2B_LITERT
 
         fun findOption(id: String?): GemmaModelOption {
             return OPTIONS.firstOrNull { it.id == id } ?: DEFAULT_OPTION
