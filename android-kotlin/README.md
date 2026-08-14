@@ -59,7 +59,7 @@ graph TD
 - [**`weather/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/weather): Sincronización periódica con Open-Meteo para widget meteorológico en visor.
 - [**`reminder/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/reminder): Recordatorios con alarmas exactas vía `AlarmManager` y reenvío al HUD.
 - [**`database/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/database): Almacenamiento local SQLite nativo v4 (`notes`, `reminders`, `todos`) sin sobrecarga de ORMs.
-- [**`ui/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ui): Actividades (`ConnectActivity` con FileProvider para compartir log completo de 2000 líneas sin truncamiento, `SettingsActivity`, `TeleprompterActivity`, `NotesActivity`, `TouchpadActivity`).
+- [**`ui/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ui): Actividades (`ConnectActivity` con selector de posición de dashboard FOV y FileProvider para compartir log completo de 2000 líneas sin truncamiento, `SettingsActivity`, `TeleprompterActivity`, `NotesActivity`, `TouchpadActivity`).
 
 ---
 

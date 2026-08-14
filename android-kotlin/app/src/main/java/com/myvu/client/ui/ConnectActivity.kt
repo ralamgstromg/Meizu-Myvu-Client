@@ -44,6 +44,7 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.textfield.TextInputEditText
 import com.myvu.client.R
 import com.myvu.client.app.feature.NavCommands
+import com.myvu.client.core.GlassesConfig
 import com.myvu.client.core.LogBus
 import com.myvu.client.core.Prefs
 import com.myvu.client.database.Note
@@ -376,6 +377,34 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
             override fun set(enabled: Boolean) { Prefs.setAirModeEnabled(this@ConnectActivity, enabled) }
             override fun sendToGlasses(conn: ConnectionManager, enabled: Boolean) { conn.setAirMode(enabled) }
         })
+
+        val sliderMainStandbyPos: com.google.android.material.slider.Slider? = findViewById(R.id.sliderMainStandbyPos)
+        val lblMainStandbyPos: TextView? = findViewById(R.id.lblMainStandbyPos)
+        val currentStandbyPos = GlassesConfig.getStandbyPosition(this)
+
+        fun describePos(pos: Int): String = when (pos) {
+            0 -> "Centro (0)"
+            1 -> "Superior (1)"
+            2 -> "Inferior (2)"
+            3 -> "Lateral / Extremo (3)"
+            else -> "Posición: $pos"
+        }
+
+        if (sliderMainStandbyPos != null) {
+            sliderMainStandbyPos.value = currentStandbyPos.toFloat()
+            lblMainStandbyPos?.text = "Posición del Dashboard en Gafas (FOV): ${describePos(currentStandbyPos)}"
+            sliderMainStandbyPos.addOnChangeListener { _, value, fromUser ->
+                val valInt = value.toInt()
+                lblMainStandbyPos?.text = "Posición del Dashboard en Gafas (FOV): ${describePos(valInt)}"
+                if (fromUser) {
+                    GlassesConfig.setStandbyPosition(this, valInt)
+                    val conn = service?.connection()
+                    if (bound && conn != null && conn.state() == ConnectionState.READY) {
+                        conn.setStandbyPosition(valInt)
+                    }
+                }
+            }
+        }
 
         findViewById<View>(R.id.btnSyncTime).setOnClickListener {
             if (need()) service?.connection()?.syncTime()

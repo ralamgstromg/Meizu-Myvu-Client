@@ -380,13 +380,21 @@ class SettingsActivity : AppCompatActivity() {
         val lblStandbyPos: TextView? = findViewById(R.id.lblStandbyPos)
         val currentStandbyPos = GlassesConfig.getStandbyPosition(this)
 
+        fun describePos(pos: Int): String = when (pos) {
+            0 -> "Centro (0)"
+            1 -> "Superior (1)"
+            2 -> "Inferior (2)"
+            3 -> "Lateral / Extremo (3)"
+            else -> "Posición: $pos"
+        }
+
         if (sliderStandbyPos != null) {
             sliderStandbyPos.value = currentStandbyPos.toFloat()
-            lblStandbyPos?.text = "Widget FOV position: $currentStandbyPos (Default: 0)"
+            lblStandbyPos?.text = "Posición del Dashboard en Gafas (FOV): ${describePos(currentStandbyPos)}"
             sliderStandbyPos.addOnChangeListener { _, value, _ ->
                 val valInt = value.toInt()
                 GlassesConfig.setStandbyPosition(this, valInt)
-                lblStandbyPos?.text = "Widget FOV position: $valInt (Default: 0)"
+                lblStandbyPos?.text = "Posición del Dashboard en Gafas (FOV): ${describePos(valInt)}"
             }
         }
 
