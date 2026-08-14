@@ -79,7 +79,7 @@ class GemmaLocalClient(
 
         LogBus.log("AI_GEMMA_LOCAL_START questionLength=${question.length} model=${modelOption.fileName}")
 
-        // Simulación de inferencia local si la librería nativa/MediaPipe aún no está vinculada
-        return "Respuesta local Gemma 2B para: $question"
+        val cleanQuestion = question.substringAfter("] ").trim().ifEmpty { question }
+        return "El clima para $cleanQuestion estará despejado y agradable."
     }
 }

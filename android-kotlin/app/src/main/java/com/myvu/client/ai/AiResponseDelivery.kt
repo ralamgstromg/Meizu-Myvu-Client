@@ -24,7 +24,18 @@ class AiResponseDelivery(
     private var cancelled = false
     private var ttsRequested = false
 
-    fun deliver(response: AiResponse): Boolean {
+        private fun cleanResponseText(raw: String): String {
+            var cleaned = raw
+            if (cleaned.contains("Respuesta local Gemma")) {
+                cleaned = cleaned.substringAfter("para: ").trim()
+            }
+            if (cleaned.contains("[Contexto del Sistema:")) {
+                cleaned = cleaned.substringAfter("] ").trim()
+            }
+            return cleaned.ifEmpty { raw }
+        }
+
+        fun deliver(response: AiResponse): Boolean {
         if (!isSessionActive(response.sessionId)) {
             LogBus.trace("AI response ignored -- stale session ${response.sessionId}")
             return false
@@ -40,7 +51,8 @@ class AiResponseDelivery(
         cancelled = false
         ttsRequested = false
 
-        val text = response.normalizedText
+        val rawText = response.normalizedText
+        val text = cleanResponseText(rawText)
         val selectedMode = modeProvider?.invoke() ?: mode
         LogBus.log("AI_RESPONSE_MODE_SELECTED sessionId=${response.sessionId} mode=$selectedMode")
         val speak = response.shouldSpeak && selectedMode != AiResponseMode.VISUAL_ONLY

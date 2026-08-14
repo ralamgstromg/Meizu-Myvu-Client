@@ -80,6 +80,25 @@ class AiResponseDeliveryTest {
     }
 
     @Test
+    fun stripsSystemContextFromDeliveredText() {
+        val sent = mutableListOf<String>()
+        val speaker = RecordingSpeaker()
+        val delivery = AiResponseDelivery(
+            sender = { sent += it },
+            tts = speaker,
+            isSessionActive = { true },
+            onFinished = {},
+            mode = AiResponseMode.VOICE_AND_VISUAL
+        )
+
+        val raw = "Respuesta local Gemma 2B para: [Contexto del Sistema: Viernes, 14 de agosto de 2026] Mañana estará soleado."
+        delivery.deliver(AiResponse("s1", raw, true))
+
+        assertEquals("Mañana estará soleado.", speaker.lastText)
+        assertTrue(sent.any { it.contains("Mañana estará soleado.") && !it.contains("Contexto del Sistema") })
+    }
+
+    @Test
     fun ttsCallbackCanBeDelayedUntilPlaybackCompletes() {
         val sent = mutableListOf<String>()
         var finished = false
@@ -120,8 +139,10 @@ class AiResponseDeliveryTest {
 
     private class RecordingSpeaker : AiResponseDelivery.Speaker {
         var calls = 0
+        var lastText: String? = null
         override fun speak(text: String, callback: (Boolean) -> Unit) {
             calls++
+            lastText = text
             callback(true)
         }
         override fun stop() = Unit
