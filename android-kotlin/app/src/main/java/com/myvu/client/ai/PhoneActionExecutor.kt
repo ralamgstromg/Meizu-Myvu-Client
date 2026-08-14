@@ -422,16 +422,62 @@ class PhoneActionExecutor(context: Context) {
     fun openWhatsApp(text: String?) {
         try {
             if (text.isNullOrBlank()) return
-            var recipient: String? = null
-            var message = text.trim()
+            val cleanRaw = text.trim()
+                .replace(Regex("(?i)^(enviar?\\s+(un\\s+)?(mensaje|whatsapp)(\\s+de\\s+whatsapp)?(\\s+a|\\s+al)?\\s*|manda\\s+(un\\s+)?(mensaje|whatsapp)(\\s+de\\s+whatsapp)?(\\s+a|\\s+al)?\\s*|a\\s+mi\\s+|a\\s+|al\\s+)"), "")
+                .trim()
 
-            if (text.contains(":") || text.contains("|")) {
-                val parts = text.split(Regex("[:|]"), 2)
+            var recipient: String? = null
+            var message = ""
+
+            // 1. Delimitadores explícitos: ':', '|', ','
+            if (cleanRaw.contains(":") || cleanRaw.contains("|")) {
+                val parts = cleanRaw.split(Regex("[:|]"), 2)
                 recipient = parts[0].trim()
-                    .replace(Regex("(?i)^(enviar?\\s+(un\\s+)?(mensaje|whatsapp)(\\s+a|\\s+al)?\\s*|a\\s+mi\\s+|a\\s+|al\\s+)"), "")
-                    .trim()
                 message = parts[1].trim()
+            } else if (cleanRaw.contains(",")) {
+                val parts = cleanRaw.split(Regex(","), 2)
+                recipient = parts[0].trim()
+                message = parts[1].trim()
+            } else {
+                // 2. Delimitadores gramaticales en español: "que diga", "diciendo", "y dile", "dile que", "con el texto"
+                val gramMatch = Regex("(?i)^(.+?)\\s+(que\\s+diga|diciendo|y\\s+dile(\\s+que)?|dile\\s+que|con\\s+el\\s+texto|con\\s+el\\s+mensaje)\\s+(.+)$").find(cleanRaw)
+                if (gramMatch != null) {
+                    recipient = gramMatch.groupValues[1].trim()
+                    message = gramMatch.groupValues[4].trim()
+                } else {
+                    // 3. Extracción heurística iterativa buscando coincidencias de contactos palabra por palabra
+                    val tokens = cleanRaw.split(Regex("\\s+"))
+                    var foundRecipient: String? = null
+                    var foundMessage = cleanRaw
+                    var longestMatchLen = 0
+
+                    for (i in 1..Math.min(4, tokens.size)) {
+                        val candidate = tokens.take(i).joinToString(" ")
+                        val num = lookupContactNumber(candidate)
+                        if (!num.isNullOrEmpty()) {
+                            foundRecipient = candidate
+                            foundMessage = tokens.drop(i).joinToString(" ")
+                            longestMatchLen = i
+                        }
+                    }
+
+                    if (foundRecipient != null) {
+                        recipient = foundRecipient
+                        message = foundMessage
+                    } else {
+                        // Fallback: usar el primer token como destinatario si hay más de 1 palabra
+                        if (tokens.size >= 2) {
+                            recipient = tokens[0]
+                            message = tokens.drop(1).joinToString(" ")
+                        } else {
+                            recipient = cleanRaw
+                            message = ""
+                        }
+                    }
+                }
             }
+
+            recipient = recipient?.replace(Regex("(?i)^(a|al|a\\s+mi)\\s+"), "")?.trim()
 
             var number: String? = null
             if (!recipient.isNullOrEmpty()) {

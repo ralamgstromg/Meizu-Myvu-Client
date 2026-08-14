@@ -42,25 +42,15 @@ class VoiceActionRouter(
             }
         }
 
-        // 2. WhatsApp y Mensajes (incluyendo frases directas como "para Matías Castro: hola")
-        val waMatch = Regex("^(enviar?|manda|mandar?|escribir?|mensaje\\s+para|para)\\s+(un\\s+)?(whatsapp|mensaje)?\\s*(a|al|a\\s+mi|para)?\\s*(.+)$", RegexOption.IGNORE_CASE).find(normalized)
-        if (waMatch != null && !normalized.startsWith("para las ") && !normalized.startsWith("para ")) {
+        // 2. WhatsApp y Mensajes (incluyendo frases como "enviar mensaje de whatsapp a Matías Castro, hola cómo vas")
+        val waMatch = Regex("^(enviar?|manda|mandar?|escribir?|mensaje\\s+para|para)\\s+(un\\s+)?(mensaje\\s+de\\s+whatsapp|whatsapp|mensaje)?\\s*(a|al|a\\s+mi|para)?\\s*(.+)$", RegexOption.IGNORE_CASE).find(normalized)
+        if (waMatch != null && !normalized.startsWith("para las ") && !normalized.startsWith("para el ")) {
             val payload = trimmed.substring(waMatch.groups[1]!!.range.last + 1)
-                .replace(Regex("(?i)^(un\\s+)?(whatsapp|mensaje)\\s*(a|al|a\\s+mi|para)?\\s*"), "")
+                .replace(Regex("(?i)^(un\\s+)?(mensaje\\s+de\\s+whatsapp|whatsapp|mensaje)\\s*(a|al|a\\s+mi|para)?\\s*"), "")
                 .trim()
             if (payload.isNotBlank()) {
                 LogBus.log("VoiceActionRouter -> Fast-Path WhatsApp: '$payload'")
                 actionExecutor.openWhatsApp(payload)
-                return RouteResult(handled = true, responseText = "Preparando mensaje de WhatsApp...")
-            }
-        }
-
-        // 2b. Mensaje directo "para {contacto}" cuando no es un recordatorio
-        if (normalized.startsWith("para ") && !normalized.matches(Regex("^para\\s+(las?\\s+)?[0-9].*"))) {
-            val targetAndMsg = trimmed.replace(Regex("(?i)^para\\s+"), "").trim()
-            if (targetAndMsg.isNotBlank()) {
-                LogBus.log("VoiceActionRouter -> Fast-Path WhatsApp (para ...): '$targetAndMsg'")
-                actionExecutor.openWhatsApp(targetAndMsg)
                 return RouteResult(handled = true, responseText = "Preparando mensaje de WhatsApp...")
             }
         }

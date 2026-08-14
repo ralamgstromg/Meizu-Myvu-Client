@@ -48,7 +48,7 @@ graph TD
     - **Gemini Nano** (AICore nativo) y rescate automático en cascada hacia APIs en la nube (Groq, Gemini, Claude, OpenAI).
   - **VoiceActionRouter (Fast-Path Determinista <5ms)**: Intercepta comandos directos por palabras clave sin pasar por el LLM para máxima velocidad y cero alucinaciones:
     - **Llamadas Directas**: Búsqueda difusa (Levenshtein + FTS) y marcado instantáneo en segundo plano vía `TelecomManager` / `CALL_PHONE` con tolerancia fonética (ej: *"Jamar a..."*, *"Llama a..."*).
-    - **WhatsApp & Telegram**: Apertura inmediata de chat con mensaje precargado y auto-formateo internacional **E.164** (ej: `+57` para números colombianos) evitando errores de número no válido en `com.whatsapp`.
+    - **WhatsApp & Telegram**: Extractor semántico natural de destinatario y mensaje (soporta delimitadores por coma ej: *"Enviar whatsapp a Matías Castro, hola cómo vas"*, *"que diga"*, *"y dile"*, o búsqueda heurística por agenda) con auto-formateo internacional **E.164** (ej: `+57` para números colombianos) para abrir inmediatamente el chat directo en `com.whatsapp`.
     - **Resumen de Notificaciones**: Lectura de mensajes pendientes agrupados (`InboxStyle` y `MessagingStyle` para WhatsApp, Gmail, Outlook, Telegram).
     - **Listas de Tareas (To-Do)**: Crear, completar, listar y eliminar tareas organizadas por listas en SQLite v4.
     - **Control Multimedia y Apps**: Reproducción en YouTube Music, Spotify o YouTube y apertura universal de cualquier app instalada.
