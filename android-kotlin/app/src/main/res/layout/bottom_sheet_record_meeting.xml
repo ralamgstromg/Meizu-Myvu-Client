@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/obsidian_container_low"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <!-- Top Drag Handle -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_chip_badge" />
+
+    <!-- Title Input -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layTitleInput"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Título de la reunión o idea (opcional)"
+        android:textColorHint="@color/outline_obsidian"
+        app:boxStrokeColor="@color/cyber_teal"
+        app:hintTextColor="@color/cyber_teal">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etRecordingTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textCapSentences"
+            android:textColor="@color/on_surface_obsidian"
+            android:textSize="15sp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Category Selector Chips -->
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/chipGroupRecordCategory"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:singleSelection="true">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipRecMeeting"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="👥 Reunión"
+            android:textColor="@color/on_surface_obsidian"
+            app:chipBackgroundColor="@color/obsidian_container_high" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipRecIdea"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="💡 Idea"
+            android:textColor="@color/on_surface_obsidian"
+            app:chipBackgroundColor="@color/obsidian_container_high" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipRecConversation"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🗣️ Conversación"
+            android:textColor="@color/on_surface_obsidian"
+            app:chipBackgroundColor="@color/obsidian_container_high" />
+    </com.google.android.material.chip.ChipGroup>
+
+    <!-- Recording Timer Indicator -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <View
+            android:id="@+id/recordingDot"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/status_dot"
+            android:backgroundTint="#FF3B30" />
+
+        <TextView
+            android:id="@+id/tvRecordingTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="00:00"
+            android:textColor="@color/on_surface_obsidian"
+            android:textSize="32sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Waveform Visualizer -->
+    <com.myvu.client.ui.WaveformVisualizerView
+        android:id="@+id/waveformVisualizer"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:layout_marginVertical="16dp"
+        android:background="@color/obsidian_container_lowest" />
+
+    <!-- Action Controls Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <!-- Cancel / Discard -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancelRecording"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="Descartar"
+            app:icon="@android:drawable/ic_menu_delete"
+            app:iconTint="@color/outline_obsidian" />
+
+        <!-- Pause / Resume -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPauseResumeRecording"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginHorizontal="16dp"
+            android:backgroundTint="@color/obsidian_container_high"
+            android:contentDescription="Pausar o Reanudar"
+            app:icon="@drawable/ic_pause"
+            app:iconSize="24dp"
+            app:iconTint="@color/cyber_teal" />
+
+        <!-- Stop and Save with AI -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStopAndSaveRecording"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="52dp"
+            android:backgroundTint="@color/cyber_teal"
+            android:paddingHorizontal="20dp"
+            android:text="Guardar con IA"
+            android:textColor="@color/on_cyber_teal"
+            android:textStyle="bold"
+            app:cornerRadius="26dp"
+            app:icon="@drawable/ic_sparkle"
+            app:iconTint="@color/on_cyber_teal" />
+    </LinearLayout>
+
+</LinearLayout>

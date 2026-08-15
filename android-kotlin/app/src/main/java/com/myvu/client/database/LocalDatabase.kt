@@ -44,7 +44,26 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(context.applicationCont
                     "updated_at INTEGER NOT NULL);"
         )
 
-        LogBus.log("LocalDatabase -> Created notes, reminders and todos tables (v4)")
+        db.execSQL(
+            "CREATE TABLE voice_recordings (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "title TEXT NOT NULL DEFAULT '', " +
+                    "audio_path TEXT NOT NULL, " +
+                    "duration_ms INTEGER NOT NULL DEFAULT 0, " +
+                    "file_size_bytes INTEGER NOT NULL DEFAULT 0, " +
+                    "raw_transcript TEXT NOT NULL DEFAULT '', " +
+                    "diarized_transcript TEXT NOT NULL DEFAULT '', " +
+                    "summary TEXT NOT NULL DEFAULT '', " +
+                    "action_items TEXT NOT NULL DEFAULT '', " +
+                    "mindmap_data TEXT NOT NULL DEFAULT '', " +
+                    "tags TEXT NOT NULL DEFAULT '', " +
+                    "category TEXT NOT NULL DEFAULT 'MEETING', " +
+                    "status TEXT NOT NULL DEFAULT 'READY', " +
+                    "created_at INTEGER NOT NULL, " +
+                    "updated_at INTEGER NOT NULL);"
+        )
+
+        LogBus.log("LocalDatabase -> Created notes, reminders, todos and voice_recordings tables (v5)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -62,6 +81,7 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(context.applicationCont
                 db.execSQL("DROP TABLE IF EXISTS notes;")
                 db.execSQL("DROP TABLE IF EXISTS reminders;")
                 db.execSQL("DROP TABLE IF EXISTS todos;")
+                db.execSQL("DROP TABLE IF EXISTS voice_recordings;")
                 onCreate(db)
                 return
             }
@@ -91,11 +111,36 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(context.applicationCont
                 LogBus.error("LocalDatabase -> Migration to v4 failed", e)
             }
         }
+        if (oldVersion < 5) {
+            try {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS voice_recordings (" +
+                            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                            "title TEXT NOT NULL DEFAULT '', " +
+                            "audio_path TEXT NOT NULL, " +
+                            "duration_ms INTEGER NOT NULL DEFAULT 0, " +
+                            "file_size_bytes INTEGER NOT NULL DEFAULT 0, " +
+                            "raw_transcript TEXT NOT NULL DEFAULT '', " +
+                            "diarized_transcript TEXT NOT NULL DEFAULT '', " +
+                            "summary TEXT NOT NULL DEFAULT '', " +
+                            "action_items TEXT NOT NULL DEFAULT '', " +
+                            "mindmap_data TEXT NOT NULL DEFAULT '', " +
+                            "tags TEXT NOT NULL DEFAULT '', " +
+                            "category TEXT NOT NULL DEFAULT 'MEETING', " +
+                            "status TEXT NOT NULL DEFAULT 'READY', " +
+                            "created_at INTEGER NOT NULL, " +
+                            "updated_at INTEGER NOT NULL);"
+                )
+                LogBus.log("LocalDatabase -> Migrated database to v5 (added voice_recordings table)")
+            } catch (e: Exception) {
+                LogBus.error("LocalDatabase -> Migration to v5 failed", e)
+            }
+        }
     }
 
     companion object {
         const val DATABASE_NAME = "myvu_client.db"
-        const val DATABASE_VERSION = 4
+        const val DATABASE_VERSION = 5
 
         @Volatile
         private var instance: LocalDatabase? = null

@@ -202,6 +202,9 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
                 R.id.nav_notes -> {
                     startActivity(Intent(this, NotesActivity::class.java))
                 }
+                R.id.nav_voice_recorder -> {
+                    startActivity(Intent(this, VoiceRecorderActivity::class.java))
+                }
                 R.id.nav_ai_config -> {
                     startActivity(Intent(this, SettingsActivity::class.java))
                 }

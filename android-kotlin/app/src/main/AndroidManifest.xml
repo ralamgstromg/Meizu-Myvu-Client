@@ -62,6 +62,14 @@
             android:exported="false" />
 
         <activity
+            android:name=".ui.VoiceRecorderActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.RecordingDetailActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".ui.TrackpadActivity"
             android:exported="false" />
 

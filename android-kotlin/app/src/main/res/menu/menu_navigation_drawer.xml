@@ -14,6 +14,10 @@
             android:icon="@android:drawable/ic_menu_edit"
             android:title="Notas y Recordatorios" />
         <item
+            android:id="@+id/nav_voice_recorder"
+            android:icon="@drawable/ic_mic"
+            android:title="Grabadora de Voz IA" />
+        <item
             android:id="@+id/nav_trackpad"
             android:icon="@drawable/ic_trackpad"
             android:title="Control Trackpad" />
