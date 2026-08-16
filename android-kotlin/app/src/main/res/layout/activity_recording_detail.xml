@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootRecordingDetail"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/obsidian_bg"
@@ -12,18 +13,28 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/obsidian_bg"
-        app:navigationIcon="@android:drawable/ic_menu_revert"
-        app:navigationIconTint="@color/cyber_teal"
+        app:navigationIcon="@drawable/ic_arrow_back_cyber"
         app:title="Detalle de Grabación"
         app:titleTextColor="@color/on_surface_obsidian"
+        app:titleTextAppearance="@style/TextAppearance.Material3.TitleMedium"
         app:subtitleTextColor="@color/on_surface_variant_obsidian">
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
+            android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingEnd="8dp">
+            android:paddingEnd="4dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEditRecordingTitle"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:contentDescription="Editar Título"
+                app:icon="@drawable/ic_edit"
+                app:iconTint="@color/on_surface_obsidian" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnReAnalyzeAi"
@@ -49,8 +60,7 @@
                 android:layout_width="38dp"
                 android:layout_height="38dp"
                 android:contentDescription="Compartir"
-                app:icon="@android:drawable/ic_menu_share"
-                app:iconTint="@color/on_surface_obsidian" />
+                app:icon="@drawable/ic_share_cyber" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDeleteRecording"
@@ -58,17 +68,17 @@
                 android:layout_width="38dp"
                 android:layout_height="38dp"
                 android:contentDescription="Eliminar"
-                app:icon="@android:drawable/ic_menu_delete"
-                app:iconTint="@color/outline_obsidian" />
+                app:icon="@drawable/ic_delete_cyber" />
         </LinearLayout>
     </com.google.android.material.appbar.MaterialToolbar>
 
-    <!-- Player Bar Card -->
+    <!-- Player Card -->
     <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardPlayer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="2dp"
         android:layout_marginBottom="8dp"
         app:cardBackgroundColor="@color/obsidian_container_low"
         app:cardCornerRadius="16dp"
@@ -81,80 +91,117 @@
             android:orientation="vertical"
             android:padding="12dp">
 
-            <!-- Scrubber SeekBar + Time Labels -->
-            <SeekBar
-                android:id="@+id/playerSeekBar"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:progressTint="@color/cyber_teal"
-                android:thumbTint="@color/cyber_teal" />
-
+            <!-- Title & Metadata -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingHorizontal="8dp">
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
                 <TextView
-                    android:id="@+id/tvCurrentTime"
+                    android:id="@+id/tvDetailTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Título de la Grabación"
+                    android:textColor="@color/on_surface_obsidian"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvDetailDate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="00:00"
+                    android:text="15 Ago, 14:30"
                     android:textColor="@color/outline_obsidian"
-                    android:textSize="11sp" />
+                    android:textSize="12sp" />
+            </LinearLayout>
 
-                <View
+            <!-- Tags -->
+            <TextView
+                android:id="@+id/tvDetailTags"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="🏷️ #reunion #arquitectura"
+                android:textColor="@color/cyber_teal_dim"
+                android:textSize="12sp" />
+
+            <!-- Scrubber / SeekBar -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvCurrentPosition"
+                    android:layout_width="44dp"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:gravity="center"
+                    android:text="00:00"
+                    android:textColor="@color/on_surface_variant_obsidian"
+                    android:textSize="12sp" />
+
+                <SeekBar
+                    android:id="@+id/seekBarAudio"
                     android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1" />
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:progressBackgroundTint="@color/outline_variant_obsidian"
+                    android:progressTint="@color/cyber_teal"
+                    android:thumbTint="@color/cyber_teal" />
 
                 <TextView
                     android:id="@+id/tvTotalDuration"
-                    android:layout_width="wrap_content"
+                    android:layout_width="44dp"
                     android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:gravity="center"
                     android:text="00:00"
-                    android:textColor="@color/outline_obsidian"
-                    android:textSize="11sp" />
+                    android:textColor="@color/on_surface_variant_obsidian"
+                    android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Player Controls -->
+            <!-- Playback Controls -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:orientation="horizontal">
 
-                <!-- Rewind 5s -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRewind5s"
                     style="@style/Widget.Material3.Button.IconButton"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:contentDescription="Retroceder 5s"
-                    app:icon="@android:drawable/ic_media_rew"
+                    app:icon="@drawable/ic_rewind_5"
                     app:iconTint="@color/on_surface_obsidian" />
 
-                <!-- Main Play / Pause -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnMainPlayPause"
                     style="@style/Widget.Material3.Button.IconButton"
-                    android:layout_width="52dp"
-                    android:layout_height="52dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_marginHorizontal="16dp"
                     android:backgroundTint="@color/obsidian_container_high"
                     android:contentDescription="Play/Pause"
                     app:icon="@drawable/ic_play_arrow"
-                    app:iconSize="28dp"
+                    app:iconSize="26dp"
                     app:iconTint="@color/cyber_teal" />
 
-                <!-- Forward 5s -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnForward5s"
                     style="@style/Widget.Material3.Button.IconButton"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:contentDescription="Adelantar 5s"
-                    app:icon="@android:drawable/ic_media_ff"
+                    app:icon="@drawable/ic_forward_5"
                     app:iconTint="@color/on_surface_obsidian" />
 
                 <View
@@ -162,7 +209,6 @@
                     android:layout_height="1dp"
                     android:layout_weight="1" />
 
-                <!-- Speed Toggle -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSpeedToggle"
                     style="@style/Widget.Material3.Button.TonalButton"
@@ -171,23 +217,27 @@
                     android:backgroundTint="@color/obsidian_container_high"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
-                    android:paddingHorizontal="8dp"
+                    android:paddingHorizontal="10dp"
                     android:text="1.0x"
                     android:textColor="@color/cyber_teal"
-                    android:textSize="11sp"
-                    app:cornerRadius="16dp" />
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="8dp" />
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Tabs Header -->
+    <!-- Tab Navigation -->
     <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabsDetail"
+        android:id="@+id/tabLayoutDetail"
         android:layout_width="match_parent"
-        android:layout_height="42dp"
+        android:layout_height="40dp"
         android:background="@color/obsidian_bg"
+        app:tabGravity="fill"
         app:tabIndicatorColor="@color/cyber_teal"
-        app:tabMode="scrollable"
+        app:tabIndicatorHeight="3dp"
+        app:tabMode="fixed"
+        app:tabRippleColor="#2200F0FF"
         app:tabSelectedTextColor="@color/cyber_teal"
         app:tabTextColor="@color/on_surface_variant_obsidian">
 
@@ -199,7 +249,7 @@
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Resumen IA" />
+            android:text="Resumen" />
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
@@ -264,10 +314,77 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRecordingTakePhoto"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:backgroundTint="@color/obsidian_container_high"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:text="📷 Foto"
+                        android:textColor="@color/cyber_teal"
+                        android:textSize="12sp"
+                        app:cornerRadius="8dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRecordingAttachFile"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_marginStart="8dp"
+                        android:backgroundTint="@color/obsidian_container_high"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:text="📎 Adjuntar Doc"
+                        android:textColor="@color/cyber_teal"
+                        android:textSize="12sp"
+                        app:cornerRadius="8dp" />
+                </LinearLayout>
+
+                <!-- Attachments List Container -->
+                <LinearLayout
+                    android:id="@+id/layRecordingAttachmentsSection"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/tvRecordingAttachmentsHeader"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="📎 Archivos y Fotos Adjuntas (0):"
+                        android:textColor="@color/cyber_teal"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:id="@+id/layRecordingAttachmentsList"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal" />
+                    </HorizontalScrollView>
+                </LinearLayout>
+
                 <TextView
                     android:id="@+id/tvRawTranscript"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
                     android:lineSpacingMultiplier="1.3"
                     android:text="Texto de la transcripción..."
                     android:textColor="@color/on_surface_obsidian"
@@ -294,7 +411,7 @@
                 android:textSize="15sp" />
         </ScrollView>
 
-        <!-- 3. Tareas Tab View -->
+        <!-- 3. Tareas Tab View (Full CRUD) -->
         <LinearLayout
             android:id="@+id/viewTabTasks"
             android:layout_width="match_parent"
@@ -302,62 +419,160 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnExportAllTasksToTodo"
-                style="@style/Widget.Material3.Button"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
-                android:backgroundTint="@color/cyber_teal"
-                android:text="Exportar todas a Mis Tareas"
-                android:textColor="@color/on_cyber_teal"
-                android:textStyle="bold"
-                app:cornerRadius="12dp"
-                app:icon="@drawable/ic_add"
-                app:iconTint="@color/on_cyber_teal" />
+                android:orientation="horizontal">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvMeetingTasks"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAddNewManualTask"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:backgroundTint="@color/obsidian_container_high"
+                    android:text="+ Nueva Tarea"
+                    android:textColor="@color/cyber_teal"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnExportAllTasksToTodo"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:backgroundTint="@color/cyber_teal"
+                    android:text="Exportar a To-Dos"
+                    android:textColor="@color/on_cyber_teal"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp" />
+            </LinearLayout>
+
+            <ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="0dp"
+                android:layout_weight="1">
+
+                <LinearLayout
+                    android:id="@+id/layMeetingTasksContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </ScrollView>
         </LinearLayout>
 
-        <!-- 4. Mapa Mental Tab View -->
-        <ScrollView
+        <!-- 4. Mapa Mental Tab View (Interactive WebView Graph + Text fallback) -->
+        <FrameLayout
             android:id="@+id/viewTabMindmap"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="gone">
 
-            <com.google.android.material.card.MaterialCardView
+            <android.webkit.WebView
+                android:id="@+id/wvInteractiveMindMap"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/obsidian_container_lowest"
-                app:cardCornerRadius="16dp"
-                app:strokeColor="@color/outline_variant_obsidian"
-                app:strokeWidth="1dp">
+                android:layout_height="match_parent"
+                android:background="@color/obsidian_bg" />
+
+            <ScrollView
+                android:id="@+id/scrollMindmapText"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone">
 
                 <TextView
                     android:id="@+id/tvMindmapContent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fontFamily="monospace"
-                    android:lineSpacingMultiplier="1.3"
                     android:padding="16dp"
                     android:text="mindmap..."
                     android:textColor="@color/cyber_teal_light"
-                    android:textIsSelectable="true"
                     android:textSize="14sp" />
-            </com.google.android.material.card.MaterialCardView>
-        </ScrollView>
+            </ScrollView>
 
-        <!-- 5. Chat IA Tab View -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnToggleMindMapView"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_gravity="top|end"
+                android:layout_margin="8dp"
+                android:backgroundTint="@color/obsidian_container_high"
+                android:text="📝 Esquema"
+                android:textColor="@color/cyber_teal"
+                android:textSize="11sp"
+                app:cornerRadius="8dp" />
+        </FrameLayout>
+
+        <!-- 5. Chat IA Tab View with Quick Suggestions -->
         <LinearLayout
             android:id="@+id/viewTabQa"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
             android:visibility="gone">
+
+            <!-- Quick Suggestions Chips -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipQuickSummary"
+                        style="@style/Widget.Material3.Chip.Assist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:text="📝 Resumen en 3 puntos"
+                        android:textColor="@color/on_surface_obsidian"
+                        app:chipBackgroundColor="@color/obsidian_container_high"
+                        app:chipStrokeColor="@color/outline_variant_obsidian" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipQuickAgreements"
+                        style="@style/Widget.Material3.Chip.Assist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:text="🤝 Acuerdos clave"
+                        android:textColor="@color/on_surface_obsidian"
+                        app:chipBackgroundColor="@color/obsidian_container_high"
+                        app:chipStrokeColor="@color/outline_variant_obsidian" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipQuickTasks"
+                        style="@style/Widget.Material3.Chip.Assist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:text="⚡ Tareas pendientes"
+                        android:textColor="@color/on_surface_obsidian"
+                        app:chipBackgroundColor="@color/obsidian_container_high"
+                        app:chipStrokeColor="@color/outline_variant_obsidian" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipQuickPending"
+                        style="@style/Widget.Material3.Chip.Assist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="❓ Preguntas abiertas"
+                        android:textColor="@color/on_surface_obsidian"
+                        app:chipBackgroundColor="@color/obsidian_container_high"
+                        app:chipStrokeColor="@color/outline_variant_obsidian" />
+                </LinearLayout>
+            </HorizontalScrollView>
 
             <ScrollView
                 android:id="@+id/scrollQaChat"
@@ -376,7 +591,7 @@
                         android:layout_height="wrap_content"
                         android:background="@drawable/bg_obsidian_card"
                         android:padding="12dp"
-                        android:text="✨ Hazme cualquier pregunta sobre esta reunión o grabación. Por ejemplo: '¿Cuáles fueron los compromisos de entrega?' o '¿Qué se acordó sobre el presupuesto?'"
+                        android:text="✨ Pregúntale a la IA cualquier detalle sobre esta grabación. Responderá con formato enriquecido en Markdown."
                         android:textColor="@color/on_surface_variant_obsidian"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -396,7 +611,7 @@
                     android:layout_height="48dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_obsidian_card"
-                    android:hint="Pregunta sobre la grabación..."
+                    android:hint="Pregunta sobre la reunión..."
                     android:imeOptions="actionSend"
                     android:inputType="textCapSentences"
                     android:paddingHorizontal="14dp"

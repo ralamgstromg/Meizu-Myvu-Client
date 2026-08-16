@@ -30,6 +30,7 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.textfield.TextInputEditText
 import com.myvu.client.R
 import com.myvu.client.ai.VoiceNoteRecorder
+import com.myvu.client.core.setMarkdown
 import com.myvu.client.database.Note
 import com.myvu.client.database.NoteRepository
 import com.myvu.client.database.Reminder
@@ -73,6 +74,7 @@ class NotesActivity : AppCompatActivity() {
         setContentView(R.layout.activity_notes)
 
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbarNotes)
+        com.myvu.client.core.EdgeToEdgeHelper.setupEdgeToEdge(this, toolbar)
         val navigateToDashboard = {
             if (isTaskRoot) {
                 val intent = Intent(this, ConnectActivity::class.java)
@@ -110,6 +112,7 @@ class NotesActivity : AppCompatActivity() {
         setupActions()
         setupSpeedDialFab()
         loadData()
+        updateGlassesBatteryBadge()
 
         handleIntent(intent)
     }
@@ -642,7 +645,7 @@ class NotesActivity : AppCompatActivity() {
                 holder.lblTitle.visibility = View.GONE
             }
 
-            holder.lblBody.text = n.body
+            holder.lblBody.setMarkdown(n.body)
             val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
             holder.lblDate.text = sdf.format(Date(n.updatedAt))
 
@@ -686,11 +689,11 @@ class NotesActivity : AppCompatActivity() {
             }
 
             holder.btnEdit.setOnClickListener {
-                showNoteDialog(n)
+                openNoteDetail(NoteDetailActivity.TYPE_NOTE, n.id)
             }
 
             holder.itemView.setOnClickListener {
-                showNoteDialog(n)
+                openNoteDetail(NoteDetailActivity.TYPE_NOTE, n.id)
             }
 
             holder.btnDelete.setOnClickListener {
@@ -712,6 +715,48 @@ class NotesActivity : AppCompatActivity() {
             val btnEdit: ImageButton = itemView.findViewById(R.id.btnEditNote)
             val btnDelete: ImageButton = itemView.findViewById(R.id.btnDeleteNote)
         }
+    }
+
+    private fun openNoteDetail(type: String, id: Long) {
+        val intent = Intent(this, NoteDetailActivity::class.java).apply {
+            putExtra(NoteDetailActivity.EXTRA_ITEM_TYPE, type)
+            putExtra(NoteDetailActivity.EXTRA_ITEM_ID, id)
+        }
+        startActivity(intent)
+    }
+
+    private fun updateGlassesBatteryBadge() {
+        val txtBattery = findViewById<TextView>(R.id.txtNotesGlassesBattery) ?: return
+        val layBattery = findViewById<View>(R.id.layNotesGlassesBattery) ?: return
+
+        layBattery.setOnClickListener {
+            val conn = com.myvu.client.service.MyvuService.activeConnection()
+            if (conn != null && conn.state() == com.myvu.client.service.ConnectionState.READY) {
+                conn.queryBatteryInfo()
+                Toast.makeText(this, "Actualizando batería de gafas...", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Gafas desconectadas", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        val conn = com.myvu.client.service.MyvuService.activeConnection()
+        if (conn != null && conn.state() == com.myvu.client.service.ConnectionState.READY) {
+            val battery = conn.glassesInfo()?.battery ?: -1
+            if (battery in 0..100) {
+                txtBattery.text = "$battery%"
+            } else {
+                txtBattery.text = "--"
+                conn.queryBatteryInfo()
+            }
+        } else {
+            txtBattery.text = "--"
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadData()
+        updateGlassesBatteryBadge()
     }
 
     private inner class ReminderAdapter : RecyclerView.Adapter<ReminderAdapter.ReminderVH>() {
@@ -739,7 +784,7 @@ class NotesActivity : AppCompatActivity() {
                 holder.lblTitle.visibility = View.GONE
             }
 
-            holder.lblBody.text = r.body
+            holder.lblBody.setMarkdown(r.body)
             val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
             holder.lblTime.text = "Programado: " + sdf.format(Date(r.triggerAt))
             holder.lblState.text = "Estado: " + r.state
@@ -747,11 +792,11 @@ class NotesActivity : AppCompatActivity() {
             holder.btnPlayAudio.visibility = View.GONE
 
             holder.btnEdit.setOnClickListener {
-                showReminderDialog(r)
+                openNoteDetail(NoteDetailActivity.TYPE_REMINDER, r.id)
             }
 
             holder.itemView.setOnClickListener {
-                showReminderDialog(r)
+                openNoteDetail(NoteDetailActivity.TYPE_REMINDER, r.id)
             }
 
             holder.btnDelete.setOnClickListener {

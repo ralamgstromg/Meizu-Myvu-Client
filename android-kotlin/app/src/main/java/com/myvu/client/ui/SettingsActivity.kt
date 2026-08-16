@@ -1,14 +1,21 @@
 package com.myvu.client.ui
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.materialswitch.MaterialSwitch
@@ -22,9 +29,16 @@ import com.myvu.client.ai.AiResponseMode
 import com.myvu.client.ai.SttProvider
 import com.myvu.client.ai.TtsProvider
 import com.myvu.client.app.feature.TouchGestureManager
+import com.myvu.client.core.BackupManager
 import com.myvu.client.core.GlassesConfig
+import com.myvu.client.core.GoogleDriveSyncHelper
+import com.myvu.client.core.LogBus
 import com.myvu.client.core.Prefs
 import com.myvu.client.service.MyvuService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -52,6 +66,49 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnDownloadGemmaModel: MaterialButton
     private lateinit var btnDeleteGemmaModel: MaterialButton
     private var gemmaDownloader: com.myvu.client.ai.GemmaModelDownloader? = null
+
+    // Backup & Cloud Sync UI
+    private var txtGoogleAccountName: TextView? = null
+    private var txtCloudBackupTime: TextView? = null
+    private var btnConnectGoogleDrive: MaterialButton? = null
+    private var btnGenerateBackup: MaterialButton? = null
+    private var btnRestoreBackup: MaterialButton? = null
+    private var progressBackup: ProgressBar? = null
+    private var txtBackupStatus: TextView? = null
+
+    private val googleWebAuthLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            updateGoogleDriveUi()
+            Toast.makeText(this, "¡Google Drive vinculado exitosamente!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private val googleSignInLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            if (account != null) {
+                Toast.makeText(this, "Conectado a Google Drive: ${account.email}", Toast.LENGTH_SHORT).show()
+                updateGoogleDriveUi()
+            }
+        } catch (e: Exception) {
+            LogBus.error("Google Sign-In failed", e)
+            Toast.makeText(this, "Error Play Services: ${e.message}\nUsa 'Conexión Web' o 'Token'.", Toast.LENGTH_LONG).show()
+            updateGoogleDriveUi()
+        }
+    }
+
+    private val restoreFilePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            performRestoreFromUri(uri)
+        }
+    }
 
     private lateinit var txtApiKey: TextInputEditText
     private lateinit var txtModel: TextInputEditText
@@ -82,6 +139,7 @@ class SettingsActivity : AppCompatActivity() {
         configureResponseMode()
         configurePersistence()
         configureButtons()
+        setupBackupRestoreUi()
     }
 
     private fun bindViews() {
@@ -123,6 +181,15 @@ class SettingsActivity : AppCompatActivity() {
         btnDeleteGemmaModel = findViewById(R.id.btnDeleteGemmaModel)
         val selectedOption = com.myvu.client.ai.GemmaLocalClient.findOption(Prefs.gemmaModelId(this))
         gemmaDownloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption)
+
+        // Backup views
+        txtGoogleAccountName = findViewById(R.id.txtGoogleAccountName)
+        txtCloudBackupTime = findViewById(R.id.txtCloudBackupTime)
+        btnConnectGoogleDrive = findViewById(R.id.btnConnectGoogleDrive)
+        btnGenerateBackup = findViewById(R.id.btnGenerateBackup)
+        btnRestoreBackup = findViewById(R.id.btnRestoreBackup)
+        progressBackup = findViewById(R.id.progressBackup)
+        txtBackupStatus = findViewById(R.id.txtBackupStatus)
     }
 
     private val providerClickListener = View.OnClickListener { v ->
@@ -850,6 +917,360 @@ class SettingsActivity : AppCompatActivity() {
             com.myvu.client.ai.GeminiAvailability.State.TASK_UNSUPPORTED -> "Estado Gemini Nano: Tarea no soportada"
             else -> "Estado Gemini Nano: No disponible en este dispositivo"
         }
+    }
+
+    // ==================== BACKUP & CLOUD SYNC ====================
+
+    private fun setupBackupRestoreUi() {
+        updateGoogleDriveUi()
+
+        btnConnectGoogleDrive?.setOnClickListener {
+            if (GoogleDriveSyncHelper.isConnected(this)) {
+                val email = GoogleDriveSyncHelper.getSignedInEmail(this) ?: "esta cuenta"
+                AlertDialog.Builder(this)
+                    .setTitle("Google Drive")
+                    .setMessage("¿Deseas desvincular la cuenta $email de la aplicación?")
+                    .setPositiveButton("Desvincular") { _, _ ->
+                        GoogleDriveSyncHelper.disconnect(this)
+                        Toast.makeText(this, "Cuenta de Google Drive desvinculada", Toast.LENGTH_SHORT).show()
+                        updateGoogleDriveUi()
+                    }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
+            } else {
+                showGoogleDriveConnectDialog()
+            }
+        }
+
+        btnGenerateBackup?.setOnClickListener {
+            performGenerateBackup()
+        }
+
+        btnRestoreBackup?.setOnClickListener {
+            showRestoreOptionsDialog()
+        }
+    }
+
+    private fun showGoogleDriveConnectDialog() {
+        val options = arrayOf(
+            "🔑 1. Configurar Client ID / Token (Recomendado)",
+            "🌐 2. Iniciar Sesión Web (Requiere Client ID previo)",
+            "📱 3. Conexión Nativa (Google Play Services)",
+            "📋 4. Ver SHA-1 y Package Name (Para Google Cloud)"
+        )
+
+        AlertDialog.Builder(this)
+            .setTitle("Vincular Google Drive")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showCustomCredentialsDialog()
+                    1 -> {
+                        if (GoogleDriveSyncHelper.hasValidClientId(this)) {
+                            val intent = Intent(this, GoogleOAuthActivity::class.java)
+                            googleWebAuthLauncher.launch(intent)
+                        } else {
+                            AlertDialog.Builder(this)
+                                .setTitle("Configuración Requerida")
+                                .setMessage("Para usar la conexión web necesitas ingresar tu Client ID de Google Cloud (tipo Web o Desktop).\n\n¿Deseas configurarlo ahora?")
+                                .setPositiveButton("Configurar") { _, _ -> showCustomCredentialsDialog() }
+                                .setNegativeButton("Cancelar", null)
+                                .show()
+                        }
+                    }
+                    2 -> {
+                        val gso = GoogleDriveSyncHelper.getGoogleSignInOptions()
+                        val client = GoogleSignIn.getClient(this, gso)
+                        googleSignInLauncher.launch(client.signInIntent)
+                    }
+                    3 -> showSha1InfoDialog()
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun showSha1InfoDialog() {
+        val sha1 = GoogleDriveSyncHelper.getAppSha1Fingerprint(this)
+        val pkg = packageName
+        val msg = "Para registrar esta app en tu Google Cloud Console:\n\n" +
+                "📦 Package Name:\n$pkg\n\n" +
+                "🔑 SHA-1 Fingerprint:\n$sha1\n\n" +
+                "🌐 Redirect URI (OAuth Web):\nhttp://localhost/oauth2callback"
+
+        AlertDialog.Builder(this)
+            .setTitle("Información de Firma del APK")
+            .setMessage(msg)
+            .setPositiveButton("Copiar SHA-1") { _, _ ->
+                val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("MYVU SHA-1", sha1)
+                clipboard.setPrimaryClip(clip)
+                Toast.makeText(this, "SHA-1 copiado al portapapeles", Toast.LENGTH_SHORT).show()
+            }
+            .setNeutralButton("Copiar Todo") { _, _ ->
+                val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("MYVU App Info", "Package: $pkg\nSHA-1: $sha1\nRedirect: http://localhost/oauth2callback")
+                clipboard.setPrimaryClip(clip)
+                Toast.makeText(this, "Información copiada al portapapeles", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cerrar", null)
+            .show()
+    }
+
+    private fun showCustomCredentialsDialog() {
+        val view = layoutInflater.inflate(R.layout.dialog_gdrive_custom_token, null, false)
+        val txtEmail = view.findViewById<TextInputEditText>(R.id.txtCustomEmail)
+        val txtToken = view.findViewById<TextInputEditText>(R.id.txtCustomToken)
+        val txtClientId = view.findViewById<TextInputEditText>(R.id.txtCustomClientId)
+        val txtClientSecret = view.findViewById<TextInputEditText>(R.id.txtCustomClientSecret)
+
+        txtClientId.setText(GoogleDriveSyncHelper.getClientId(this))
+        txtClientSecret.setText(GoogleDriveSyncHelper.getClientSecret(this))
+        txtEmail.setText(GoogleDriveSyncHelper.getSignedInEmail(this) ?: "")
+
+        AlertDialog.Builder(this)
+            .setTitle("Credenciales de Google Drive")
+            .setView(view)
+            .setPositiveButton("Guardar") { _, _ ->
+                val email = txtEmail.text?.toString()?.trim() ?: "usuario@google.com"
+                val token = txtToken.text?.toString()?.trim() ?: ""
+                val cId = txtClientId.text?.toString()?.trim() ?: ""
+                val cSec = txtClientSecret.text?.toString()?.trim() ?: ""
+
+                if (cId.isNotBlank()) {
+                    GoogleDriveSyncHelper.saveClientCredentials(this, cId, cSec)
+                }
+
+                if (token.isNotBlank()) {
+                    GoogleDriveSyncHelper.saveCustomToken(this, token, email)
+                    Toast.makeText(this, "Token de Google Drive guardado", Toast.LENGTH_SHORT).show()
+                } else if (cId.isNotBlank()) {
+                    Toast.makeText(this, "Client ID guardado. Ahora puedes pulsar 'Iniciar Sesión Web'.", Toast.LENGTH_LONG).show()
+                }
+                updateGoogleDriveUi()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun updateGoogleDriveUi() {
+        val isConnected = GoogleDriveSyncHelper.isConnected(this)
+        val email = GoogleDriveSyncHelper.getSignedInEmail(this)
+
+        if (isConnected && !email.isNullOrBlank()) {
+            txtGoogleAccountName?.text = "Google Drive: $email"
+            btnConnectGoogleDrive?.text = "Desconectar"
+
+            lifecycleScope.launch {
+                val info = GoogleDriveSyncHelper.checkCloudBackupInfo(this@SettingsActivity)
+                if (info.exists) {
+                    val sizeKb = info.sizeBytes / 1024
+                    txtCloudBackupTime?.text = "En la nube (/myvu/backup/data.zip): $sizeKb KB"
+                } else {
+                    txtCloudBackupTime?.text = "Google Drive conectado. Sin respaldo en /myvu/backup/"
+                }
+            }
+        } else {
+            txtGoogleAccountName?.text = "Google Drive: No vinculado"
+            txtCloudBackupTime?.text = "Última sincronización: Sin respaldo en la nube"
+            btnConnectGoogleDrive?.text = "Vincular"
+        }
+    }
+
+    private fun performGenerateBackup() {
+        progressBackup?.visibility = View.VISIBLE
+        txtBackupStatus?.visibility = View.VISIBLE
+        txtBackupStatus?.text = "Iniciando respaldo de datos..."
+        btnGenerateBackup?.isEnabled = false
+        btnRestoreBackup?.isEnabled = false
+
+        lifecycleScope.launch {
+            try {
+                val backupFile = BackupManager.createBackup(this@SettingsActivity) { status ->
+                    runOnUiThread { txtBackupStatus?.text = status }
+                }
+
+                var cloudUploaded = false
+                val isConnected = GoogleDriveSyncHelper.isConnected(this@SettingsActivity)
+                if (isConnected) {
+                    txtBackupStatus?.text = "Subiendo a Google Drive (/myvu/backup/data.zip)..."
+                    cloudUploaded = GoogleDriveSyncHelper.uploadBackupToDrive(this@SettingsActivity, backupFile) { status ->
+                        runOnUiThread { txtBackupStatus?.text = status }
+                    }
+                }
+
+                progressBackup?.visibility = View.GONE
+                btnGenerateBackup?.isEnabled = true
+                btnRestoreBackup?.isEnabled = true
+
+                val sizeKb = backupFile.length() / 1024
+                val cloudMsg = if (cloudUploaded) "\n☁️ Subido a Google Drive: /myvu/backup/data.zip" else if (!isConnected) "\n💡 Google Drive no vinculado (solo local)" else "\n⚠️ No se pudo sincronizar en la nube"
+
+                AlertDialog.Builder(this@SettingsActivity)
+                    .setTitle("Copia de Seguridad Generada")
+                    .setMessage("¡Respaldo creado con éxito!\n\n📁 Archivo: data.zip ($sizeKb KB)\n💾 Guardado en: /Download/MYVU/data.zip$cloudMsg")
+                    .setPositiveButton("Aceptar", null)
+                    .show()
+
+                updateGoogleDriveUi()
+            } catch (e: Exception) {
+                LogBus.error("SettingsActivity -> Generate backup error", e)
+                progressBackup?.visibility = View.GONE
+                btnGenerateBackup?.isEnabled = true
+                btnRestoreBackup?.isEnabled = true
+                txtBackupStatus?.text = "Error: ${e.message}"
+                Toast.makeText(this@SettingsActivity, "Error al generar respaldo: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun showRestoreOptionsDialog() {
+        val isConnected = GoogleDriveSyncHelper.isConnected(this)
+        val options = if (isConnected) {
+            arrayOf("☁️ Restaurar desde Google Drive (/myvu/backup/data.zip)", "📁 Seleccionar archivo .zip local")
+        } else {
+            arrayOf("📁 Seleccionar archivo .zip local", "☁️ Vincular Google Drive para restaurar")
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Restaurar Copia de Seguridad")
+            .setItems(options) { _, which ->
+                if (isConnected) {
+                    if (which == 0) confirmAndRestoreFromDrive()
+                    else restoreFilePickerLauncher.launch(arrayOf("application/zip", "application/x-zip-compressed", "*/*"))
+                } else {
+                    if (which == 0) restoreFilePickerLauncher.launch(arrayOf("application/zip", "application/x-zip-compressed", "*/*"))
+                    else {
+                        showGoogleDriveConnectDialog()
+                    }
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun confirmAndRestoreFromDrive() {
+        AlertDialog.Builder(this)
+            .setTitle("Confirmar Restauración")
+            .setMessage("Se descargarán y restaurarán las notas, recordatorios, tareas, grabaciones y configuraciones desde Google Drive (/myvu/backup/data.zip).\n\n¿Deseas sobreescribir los datos actuales?")
+            .setPositiveButton("Restaurar") { _, _ ->
+                performRestoreFromDrive()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun performRestoreFromDrive() {
+        progressBackup?.visibility = View.VISIBLE
+        txtBackupStatus?.visibility = View.VISIBLE
+        txtBackupStatus?.text = "Descargando respaldo desde Google Drive..."
+        btnGenerateBackup?.isEnabled = false
+        btnRestoreBackup?.isEnabled = false
+
+        lifecycleScope.launch {
+            try {
+                val downloadedZip = GoogleDriveSyncHelper.downloadBackupFromDrive(this@SettingsActivity) { status ->
+                    runOnUiThread { txtBackupStatus?.text = status }
+                }
+
+                if (downloadedZip == null || !downloadedZip.exists()) {
+                    progressBackup?.visibility = View.GONE
+                    btnGenerateBackup?.isEnabled = true
+                    btnRestoreBackup?.isEnabled = true
+                    txtBackupStatus?.text = "No se pudo descargar el archivo desde Google Drive."
+                    Toast.makeText(this@SettingsActivity, "Error al descargar respaldo de Drive", Toast.LENGTH_LONG).show()
+                    return@launch
+                }
+
+                txtBackupStatus?.text = "Procesando y restaurando datos..."
+                val result = withContext(Dispatchers.IO) {
+                    downloadedZip.inputStream().use { stream ->
+                        BackupManager.restoreBackup(this@SettingsActivity, stream) { status ->
+                            runOnUiThread { txtBackupStatus?.text = status }
+                        }
+                    }
+                }
+                downloadedZip.delete()
+
+                progressBackup?.visibility = View.GONE
+                btnGenerateBackup?.isEnabled = true
+                btnRestoreBackup?.isEnabled = true
+
+                if (result.success) {
+                    showRestoreSuccessDialog(result)
+                } else {
+                    txtBackupStatus?.text = result.message
+                    Toast.makeText(this@SettingsActivity, result.message, Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                LogBus.error("SettingsActivity -> Restore from drive error", e)
+                progressBackup?.visibility = View.GONE
+                btnGenerateBackup?.isEnabled = true
+                btnRestoreBackup?.isEnabled = true
+                txtBackupStatus?.text = "Error: ${e.message}"
+                Toast.makeText(this@SettingsActivity, "Error al restaurar: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun performRestoreFromUri(uri: Uri) {
+        AlertDialog.Builder(this)
+            .setTitle("Confirmar Restauración")
+            .setMessage("Se restaurarán todos los datos contenidos en el archivo ZIP seleccionado.\n\n¿Deseas sobreescribir los datos actuales?")
+            .setPositiveButton("Restaurar") { _, _ ->
+                progressBackup?.visibility = View.VISIBLE
+                txtBackupStatus?.visibility = View.VISIBLE
+                txtBackupStatus?.text = "Restaurando archivo local..."
+                btnGenerateBackup?.isEnabled = false
+                btnRestoreBackup?.isEnabled = false
+
+                lifecycleScope.launch {
+                    try {
+                        val result = withContext(Dispatchers.IO) {
+                            contentResolver.openInputStream(uri)?.use { stream ->
+                                BackupManager.restoreBackup(this@SettingsActivity, stream) { status ->
+                                    runOnUiThread { txtBackupStatus?.text = status }
+                                }
+                            } ?: BackupManager.RestoreResult(false, "No se pudo abrir el archivo seleccionado.")
+                        }
+
+                        progressBackup?.visibility = View.GONE
+                        btnGenerateBackup?.isEnabled = true
+                        btnRestoreBackup?.isEnabled = true
+
+                        if (result.success) {
+                            showRestoreSuccessDialog(result)
+                        } else {
+                            txtBackupStatus?.text = result.message
+                            Toast.makeText(this@SettingsActivity, result.message, Toast.LENGTH_LONG).show()
+                        }
+                    } catch (e: Exception) {
+                        LogBus.error("SettingsActivity -> Restore from URI error", e)
+                        progressBackup?.visibility = View.GONE
+                        btnGenerateBackup?.isEnabled = true
+                        btnRestoreBackup?.isEnabled = true
+                        txtBackupStatus?.text = "Error: ${e.message}"
+                        Toast.makeText(this@SettingsActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun showRestoreSuccessDialog(result: BackupManager.RestoreResult) {
+        AlertDialog.Builder(this)
+            .setTitle("¡Restauración Exitosa!")
+            .setMessage("Se han restaurado correctamente:\n\n" +
+                    "📝 Notas: ${result.notesRestored}\n" +
+                    "⏰ Recordatorios: ${result.remindersRestored}\n" +
+                    "🎙️ Grabaciones de voz: ${result.recordingsRestored}\n" +
+                    "📋 Tareas: ${result.todosRestored}\n" +
+                    "🎵 Audios recuperados: ${result.mediaFilesRestored}\n\n" +
+                    "Las configuraciones y claves de IA han sido actualizadas.")
+            .setPositiveButton("Aceptar") { _, _ ->
+                bindStoredValues()
+            }
+            .show()
     }
 
     companion object {

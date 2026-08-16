@@ -49,6 +49,13 @@
         <item name="android:textColorHint">@color/on_surface_variant_obsidian</item>
     </style>
 
+    <style name="Button.Myvu" parent="Widget.Material3.Button">
+        <item name="cornerRadius">16dp</item>
+        <item name="backgroundTint">@color/cyber_teal</item>
+        <item name="android:textColor">@color/on_cyber_teal</item>
+        <item name="iconTint">@color/on_cyber_teal</item>
+    </style>
+
     <style name="Button.Myvu.Outlined" parent="Widget.Material3.Button.OutlinedButton">
         <item name="cornerRadius">16dp</item>
         <item name="strokeColor">@color/outline_variant_obsidian</item>

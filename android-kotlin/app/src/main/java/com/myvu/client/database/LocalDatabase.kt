@@ -17,6 +17,10 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(context.applicationCont
                     "audio_path TEXT, " +
                     "duration_sec INTEGER NOT NULL DEFAULT 0, " +
                     "tags TEXT NOT NULL DEFAULT '', " +
+                    "summary TEXT NOT NULL DEFAULT '', " +
+                    "action_items TEXT NOT NULL DEFAULT '', " +
+                    "mindmap_data TEXT NOT NULL DEFAULT '', " +
+                    "attachments_json TEXT NOT NULL DEFAULT '[]', " +
                     "created_at INTEGER NOT NULL, " +
                     "updated_at INTEGER NOT NULL);"
         )
@@ -26,6 +30,11 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(context.applicationCont
                     "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     "title TEXT NOT NULL DEFAULT '', " +
                     "body TEXT NOT NULL, " +
+                    "tags TEXT NOT NULL DEFAULT '', " +
+                    "summary TEXT NOT NULL DEFAULT '', " +
+                    "action_items TEXT NOT NULL DEFAULT '', " +
+                    "mindmap_data TEXT NOT NULL DEFAULT '', " +
+                    "attachments_json TEXT NOT NULL DEFAULT '[]', " +
                     "trigger_at INTEGER NOT NULL, " +
                     "created_at INTEGER NOT NULL, " +
                     "updated_at INTEGER NOT NULL DEFAULT 0, " +
@@ -59,11 +68,12 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(context.applicationCont
                     "tags TEXT NOT NULL DEFAULT '', " +
                     "category TEXT NOT NULL DEFAULT 'MEETING', " +
                     "status TEXT NOT NULL DEFAULT 'READY', " +
+                    "attachments_json TEXT NOT NULL DEFAULT '[]', " +
                     "created_at INTEGER NOT NULL, " +
                     "updated_at INTEGER NOT NULL);"
         )
 
-        LogBus.log("LocalDatabase -> Created notes, reminders, todos and voice_recordings tables (v5)")
+        LogBus.log("LocalDatabase -> Created notes, reminders, todos and voice_recordings tables (v7)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -136,19 +146,52 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(context.applicationCont
                 LogBus.error("LocalDatabase -> Migration to v5 failed", e)
             }
         }
+        if (oldVersion < 6) {
+            try {
+                db.execSQL("ALTER TABLE notes ADD COLUMN summary TEXT NOT NULL DEFAULT '';")
+                db.execSQL("ALTER TABLE notes ADD COLUMN action_items TEXT NOT NULL DEFAULT '';")
+                db.execSQL("ALTER TABLE notes ADD COLUMN mindmap_data TEXT NOT NULL DEFAULT '';")
+
+                db.execSQL("ALTER TABLE reminders ADD COLUMN tags TEXT NOT NULL DEFAULT '';")
+                db.execSQL("ALTER TABLE reminders ADD COLUMN summary TEXT NOT NULL DEFAULT '';")
+                db.execSQL("ALTER TABLE reminders ADD COLUMN action_items TEXT NOT NULL DEFAULT '';")
+                db.execSQL("ALTER TABLE reminders ADD COLUMN mindmap_data TEXT NOT NULL DEFAULT '';")
+                LogBus.log("LocalDatabase -> Migrated database to v6 (added AI summary, tasks, mindmap columns to notes & reminders)")
+            } catch (e: Exception) {
+                LogBus.error("LocalDatabase -> Migration to v6 failed", e)
+            }
+        }
+        if (oldVersion < 7) {
+            try {
+                db.execSQL("ALTER TABLE notes ADD COLUMN attachments_json TEXT NOT NULL DEFAULT '[]';")
+                db.execSQL("ALTER TABLE reminders ADD COLUMN attachments_json TEXT NOT NULL DEFAULT '[]';")
+                db.execSQL("ALTER TABLE voice_recordings ADD COLUMN attachments_json TEXT NOT NULL DEFAULT '[]';")
+                LogBus.log("LocalDatabase -> Migrated database to v7 (added attachments_json columns)")
+            } catch (e: Exception) {
+                LogBus.error("LocalDatabase -> Migration to v7 failed", e)
+            }
+        }
     }
 
     companion object {
         const val DATABASE_NAME = "myvu_client.db"
-        const val DATABASE_VERSION = 5
+        const val DATABASE_VERSION = 7
 
         @Volatile
         private var instance: LocalDatabase? = null
 
-        @JvmStatic
         fun getInstance(context: Context): LocalDatabase {
             return instance ?: synchronized(this) {
-                instance ?: LocalDatabase(context.applicationContext).also { instance = it }
+                instance ?: LocalDatabase(context).also { instance = it }
+            }
+        }
+
+        fun closeInstance() {
+            synchronized(this) {
+                try {
+                    instance?.close()
+                } catch (ignored: Exception) {}
+                instance = null
             }
         }
     }

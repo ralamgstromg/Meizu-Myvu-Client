@@ -173,7 +173,20 @@ class MeetingAiProcessor(private val context: Context) {
                     throw IllegalStateException("Cliente de IA ($aiProviderId) no configurado.")
                 }
 
-                val aiResponse = aiClient.ask("TRANSCRIPCIÓN DE LA REUNIÓN / GRABACIÓN:\n\n$rawTranscript")
+                val attachments = recording.getAttachments()
+                val attachmentsText = if (attachments.isNotEmpty()) {
+                    val sb = StringBuilder("\n\n=== ARCHIVOS Y DOCUMENTOS ADJUNTOS ===\n")
+                    for (att in attachments) {
+                        sb.append("📎 [${att.fileType.name}] ${att.fileName}:\n")
+                        if (att.extractedText.isNotBlank()) {
+                            sb.append(att.extractedText).append("\n\n")
+                        }
+                    }
+                    sb.toString()
+                } else ""
+
+                val fullContent = "TRANSCRIPCIÓN DE LA REUNIÓN / GRABACIÓN:\n\n$rawTranscript$attachmentsText"
+                val aiResponse = aiClient.ask(fullContent)
                 LogBus.log("MeetingAiProcessor: Received AI analysis (${aiResponse.length} chars)")
 
                 // Parse AI JSON response
@@ -227,7 +240,7 @@ class MeetingAiProcessor(private val context: Context) {
     }
 
     /**
-     * Ask a specific question grounded strictly in this recording's content.
+     * Ask a specific question grounded strictly in this recording's content and its attachments.
      */
     fun askQuestionAboutRecording(
         recording: VoiceRecording,
@@ -242,10 +255,21 @@ class MeetingAiProcessor(private val context: Context) {
                 val aiModel = Prefs.aiModel(context, aiProviderId)
                 val aiEndpoint = Prefs.aiEndpoint(context, aiProviderId)
 
+                val attachments = recording.getAttachments()
+                val attachmentsText = if (attachments.isNotEmpty()) {
+                    val sb = StringBuilder("\n\n=== ARCHIVOS Y DOCUMENTOS ADJUNTOS ===\n")
+                    for (att in attachments) {
+                        sb.append("📎 [${att.fileType.name}] ${att.fileName}:\n")
+                        if (att.extractedText.isNotBlank()) {
+                            sb.append(att.extractedText).append("\n\n")
+                        }
+                    }
+                    sb.toString()
+                } else ""
+
                 val prompt = """
-                    Eres un asistente inteligente que responde preguntas sobre una grabación de audio transcrita.
-                    Responde de forma clara, directa y estructurada en español.
-                    Si la información no se encuentra en la transcripción, indícalo cortésmente.
+                    Eres un asistente inteligente que responde preguntas sobre una grabación de audio y sus documentos adjuntos.
+                    Responde de forma clara, directa y estructurada en Markdown.
                     
                     DATOS DE LA GRABACIÓN:
                     Título: ${recording.title}
@@ -256,6 +280,7 @@ class MeetingAiProcessor(private val context: Context) {
                     
                     TRANSCRIPCIÓN COMPLETA:
                     ${recording.rawTranscript}
+                    $attachmentsText
                 """.trimIndent()
 
                 val client = provider.newClient(context, aiApiKey, aiModel, aiEndpoint, prompt)

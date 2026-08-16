@@ -153,6 +153,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         wireFeatures()
         wireSettings()
         wireNavigationDrawer()
+        com.myvu.client.core.EdgeToEdgeHelper.setupEdgeToEdge(this, findViewById(R.id.topBarConnect))
         animateEntrance()
         requestNeededPermissions()
     }
@@ -607,6 +608,38 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         } else if (state == ConnectionState.IDLE) {
             txtGlasses.visibility = View.GONE
         }
+
+        updateDrawerHeader(state)
+        updateDashboardData()
+    }
+
+    private fun updateDrawerHeader(state: ConnectionState) {
+        val navigationView = findViewById<com.google.android.material.navigation.NavigationView>(R.id.navigationView) ?: return
+        val headerView = navigationView.getHeaderView(0) ?: return
+        val txtHeaderStatus = headerView.findViewById<TextView>(R.id.txtHeaderStatus)
+        val imgHeaderStatusDot = headerView.findViewById<ImageView>(R.id.imgHeaderStatusDot)
+
+        val conn = service?.connection()
+        val isConnected = (state == ConnectionState.READY && bound && conn != null)
+
+        if (isConnected) {
+            val batteryLevel = conn?.glassesInfo()?.battery ?: -1
+            if (batteryLevel in 0..100) {
+                txtHeaderStatus?.text = "Conectado • $batteryLevel% Batería Gafas"
+            } else {
+                txtHeaderStatus?.text = "Conectado"
+            }
+            imgHeaderStatusDot?.setColorFilter(ContextCompat.getColor(this, R.color.cyber_teal))
+        } else {
+            val statusText = when (state) {
+                ConnectionState.CONNECTING, ConnectionState.BONDING -> "Conectando..."
+                ConnectionState.PAIRING -> "Vinculando..."
+                ConnectionState.SESSION -> "Iniciando sesión..."
+                else -> "Desconectado"
+            }
+            txtHeaderStatus?.text = statusText
+            imgHeaderStatusDot?.setColorFilter(ContextCompat.getColor(this, R.color.outline_obsidian))
+        }
     }
 
     private fun dotColor(state: ConnectionState): Int {
@@ -805,22 +838,13 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         val conn = service?.connection()
         val isConnected = bound && conn != null && conn.state() == ConnectionState.READY
 
-        // Battery stat (no DB — safe on main thread)
+        // Battery stat of glasses (no DB — safe on main thread)
         val txtBattery = findViewById<TextView>(R.id.txtBatteryStat)
         if (isConnected) {
             val batteryLevel = conn?.glassesInfo()?.battery ?: -1
-            if (batteryLevel >= 0) txtBattery?.text = "$batteryLevel%"
+            if (batteryLevel in 0..100) txtBattery?.text = "$batteryLevel%"
             else { txtBattery?.text = "..."; conn?.queryBatteryInfo() }
         } else txtBattery?.text = "--"
-
-        // Uptime stat (no DB — safe on main thread)
-        val txtUptime = findViewById<TextView>(R.id.txtUptimeStat)
-        if (isConnected) {
-            val uptimeMs = conn?.connectedUptimeMs() ?: 0L
-            val totalMinutes = uptimeMs / (1000 * 60)
-            val h = totalMinutes / 60; val m = totalMinutes % 60
-            txtUptime?.text = if (uptimeMs > 0) (if (h > 0) "${h}h ${m}m" else "${m}m") else "0m"
-        } else txtUptime?.text = "--"
 
         // AI model stat (no DB — safe on main thread)
         val provider = Prefs.aiProvider(this)

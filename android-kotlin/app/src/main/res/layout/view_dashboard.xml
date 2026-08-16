@@ -162,15 +162,16 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Row 1: Battery & Uptime -->
+        <!-- Row 1: Glasses Battery & Active AI Model -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-            <!-- Battery Card -->
+            <!-- Glasses Battery Card -->
             <com.google.android.material.card.MaterialCardView
                 style="@style/Card.Myvu"
+                android:id="@+id/cardBatteryStat"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -200,7 +201,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="6dp"
-                            android:text="Batería"
+                            android:text="Batería Gafas"
                             android:textColor="@color/on_surface_variant_obsidian"
                             android:textSize="12sp" />
                     </LinearLayout>
@@ -217,9 +218,10 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Uptime Card -->
+            <!-- Active AI Model Card -->
             <com.google.android.material.card.MaterialCardView
                 style="@style/Card.Myvu"
+                android:id="@+id/btnAiSettings"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -241,79 +243,33 @@
                         <ImageView
                             android:layout_width="20dp"
                             android:layout_height="20dp"
-                            android:src="@drawable/ic_uptime"
+                            android:src="@drawable/ic_sparkle"
                             app:tint="@color/cyber_teal"
-                            android:contentDescription="uptime" />
+                            android:contentDescription="ai model" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="6dp"
-                            android:text="Uptime"
+                            android:text="Modelo IA"
                             android:textColor="@color/on_surface_variant_obsidian"
                             android:textSize="12sp" />
                     </LinearLayout>
 
                     <TextView
-                        android:id="@+id/txtUptimeStat"
+                        android:id="@+id/txtAiModelStat"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="--"
-                        android:textColor="@color/on_surface_obsidian"
-                        android:textSize="18sp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="OpenAI / GPT-4o"
+                        android:textColor="@color/cyber_teal"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
-
-        <!-- Row 2: Active AI Model -->
-        <com.google.android.material.card.MaterialCardView
-            style="@style/Card.Myvu"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/obsidian_container_low"
-            app:cardCornerRadius="20dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginEnd="12dp"
-                    android:src="@drawable/ic_ai_model"
-                    app:tint="@color/cyber_teal"
-                    android:contentDescription="ai model" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Modelo IA Activo"
-                        android:textColor="@color/on_surface_variant_obsidian"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/txtAiModelStat"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="OpenAI / GPT-4o"
-                        android:textColor="@color/cyber_teal"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 
     <!-- ==================== RECENT NOTES CARD ==================== -->

@@ -5,6 +5,7 @@ import android.media.MediaRecorder
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import com.myvu.client.core.LogBus
 import java.io.File
 
@@ -23,6 +24,7 @@ class MeetingAudioRecorder(private val context: Context) {
     private var outputFile: File? = null
     private var isRecording = false
     private var isPaused = false
+    private var wakeLock: PowerManager.WakeLock? = null
 
     private var startTimeMs = 0L
     private var accumulatedDurationMs = 0L
@@ -81,12 +83,14 @@ class MeetingAudioRecorder(private val context: Context) {
             startTimeMs = System.currentTimeMillis()
             accumulatedDurationMs = 0L
 
+            acquireWakeLock()
             startProgressPolling()
             LogBus.log("MeetingAudioRecorder: Recording started -> ${file.name}")
             listener?.onRecordingStarted(file)
             file
         } catch (e: Exception) {
             LogBus.error("MeetingAudioRecorder: Failed to start recording", e)
+            releaseWakeLock()
             releaseRecorder()
             listener?.onRecordingError("Error al iniciar grabación: ${e.message}", e)
             null
@@ -128,6 +132,7 @@ class MeetingAudioRecorder(private val context: Context) {
         if (!isRecording) return null
 
         stopProgressPolling()
+        releaseWakeLock()
         val file = outputFile
         val totalDuration = if (isPaused) {
             accumulatedDurationMs
@@ -160,6 +165,7 @@ class MeetingAudioRecorder(private val context: Context) {
 
     fun cancelRecording() {
         stopProgressPolling()
+        releaseWakeLock()
         try {
             mediaRecorder?.stop()
         } catch (e: Exception) {
@@ -173,6 +179,36 @@ class MeetingAudioRecorder(private val context: Context) {
             if (it.exists()) it.delete()
         }
         outputFile = null
+    }
+
+    private fun acquireWakeLock() {
+        try {
+            if (wakeLock == null) {
+                val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+                wakeLock = pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "myvu:meeting_recording")
+            }
+            wakeLock?.let {
+                if (!it.isHeld) {
+                    it.acquire(2 * 60 * 60 * 1000L) // Max 2 hours safety timeout
+                    LogBus.log("MeetingAudioRecorder: Acquired PARTIAL_WAKE_LOCK")
+                }
+            }
+        } catch (e: Exception) {
+            LogBus.warn("MeetingAudioRecorder: Failed to acquire WakeLock: ${e.message}")
+        }
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            wakeLock?.let {
+                if (it.isHeld) {
+                    it.release()
+                    LogBus.log("MeetingAudioRecorder: Released PARTIAL_WAKE_LOCK")
+                }
+            }
+        } catch (e: Exception) {
+            LogBus.warn("MeetingAudioRecorder: Failed to release WakeLock: ${e.message}")
+        }
     }
 
     private fun startProgressPolling() {

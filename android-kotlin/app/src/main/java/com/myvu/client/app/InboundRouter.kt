@@ -122,14 +122,28 @@ class InboundRouter(private val sender: Sender) {
     private fun checkBatteryInfo(msg: JSONObject) {
         val listener = batteryListener ?: return
 
+        val action = msg.optString("action")
+
+        // Ignore accessory/unicron battery if not connected or capacity is 0
+        if (action == "unicron_battery") {
+            val valObj = msg.optJSONObject("value")
+            if (valObj != null && valObj.optBoolean("isConnect", false)) {
+                val cap = valObj.optInt("capacity", -1)
+                if (cap in 1..100) {
+                    listener.onBatteryUpdated(cap, false)
+                }
+            }
+            return
+        }
+
         // 1. Action: sync_glass_battery_info
-        if ("sync_glass_battery_info" == msg.optString("action")) {
+        if ("sync_glass_battery_info" == action) {
             parseValueBattery(msg.optString("value"))
             return
         }
 
         // 2. Action: air_ota -> data -> action: get_air_glass_info
-        if ("air_ota" == msg.optString("action")) {
+        if ("air_ota" == action) {
             val data = msg.optJSONObject("data")
             if (data != null) {
                 parseValueBattery(data.optString("value"))
@@ -141,18 +155,18 @@ class InboundRouter(private val sender: Sender) {
         val devInfo = msg.optJSONObject("device_info")
         if (devInfo != null && devInfo.has("battery")) {
             val battery = devInfo.optInt("battery", -1)
-            if (battery >= 0) {
+            if (battery in 1..100) {
                 listener.onBatteryUpdated(battery, devInfo.optBoolean("is_charging", false))
             }
             return
         }
 
         // 4. Action containing battery or get_device_info
-        if (msg.has("action") && msg.optString("action").contains("battery")) {
+        if (action.contains("battery")) {
             val data = msg.optJSONObject("data")
             if (data != null && data.has("battery")) {
                 val battery = data.optInt("battery", -1)
-                if (battery >= 0) {
+                if (battery in 1..100) {
                     val isCharging = data.optBoolean("is_charging", data.optBoolean("isCharging", false))
                     listener.onBatteryUpdated(battery, isCharging)
                     return
@@ -167,10 +181,10 @@ class InboundRouter(private val sender: Sender) {
         try {
             val valObj = JSONObject(valueJson)
             var battery = valObj.optInt("battery", -1)
-            if (battery < 0 && valObj.has("capacity")) {
+            if (battery <= 0 && valObj.has("capacity")) {
                 battery = valObj.optInt("capacity", -1)
             }
-            if (battery >= 0) {
+            if (battery in 1..100) {
                 val isCharging = valObj.optBoolean("isCharging", valObj.optBoolean("is_charging", false))
                 batteryListener?.onBatteryUpdated(battery, isCharging)
             }

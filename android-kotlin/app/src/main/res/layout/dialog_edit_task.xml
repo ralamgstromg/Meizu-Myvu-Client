@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/obsidian_container_low"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Descripción de la Tarea"
+        android:textColor="@color/on_surface_variant_obsidian"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/etDialogTaskTitle"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_obsidian_card"
+        android:hint="Ej. Enviar propuesta técnica al cliente"
+        android:inputType="textCapSentences"
+        android:paddingHorizontal="12dp"
+        android:textColor="@color/on_surface_obsidian"
+        android:textColorHint="@color/outline_obsidian"
+        android:textSize="14sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Responsable / Persona"
+                android:textColor="@color/on_surface_variant_obsidian"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etDialogTaskOwner"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_obsidian_card"
+                android:hint="Ej. Carlos"
+                android:inputType="textPersonName"
+                android:paddingHorizontal="12dp"
+                android:textColor="@color/on_surface_obsidian"
+                android:textColorHint="@color/outline_obsidian"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Fecha Límite"
+                android:textColor="@color/on_surface_variant_obsidian"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etDialogTaskDeadline"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_obsidian_card"
+                android:hint="Ej. Viernes 18:00"
+                android:inputType="text"
+                android:paddingHorizontal="12dp"
+                android:textColor="@color/on_surface_obsidian"
+                android:textColorHint="@color/outline_obsidian"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

@@ -39,4 +39,5 @@
     <color name="state_connecting">#00F0FF</color>
     <color name="state_ready">#2ECC71</color>
     <color name="state_failed">#FFB4AB</color>
+    <color name="cyber_neon_red">#FF5252</color>
 </resources>

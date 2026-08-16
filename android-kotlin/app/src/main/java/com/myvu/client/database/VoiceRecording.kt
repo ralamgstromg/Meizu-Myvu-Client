@@ -14,6 +14,7 @@ data class VoiceRecording(
     var tags: String = "",
     var category: String = CATEGORY_MEETING,
     var status: String = STATUS_READY,
+    var attachmentsJson: String = "[]",
     var createdAt: Long = System.currentTimeMillis(),
     var updatedAt: Long = System.currentTimeMillis()
 ) {
@@ -34,6 +35,8 @@ data class VoiceRecording(
     val tagsList: List<String>
         get() = if (tags.isBlank()) emptyList() else tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }
 
+    fun getAttachments(): List<Attachment> = Attachment.listFromJson(attachmentsJson)
+
     fun formattedDuration(): String {
         val totalSecs = (durationMs / 1000).coerceAtLeast(0)
         val hours = totalSecs / 3600
@@ -44,5 +47,11 @@ data class VoiceRecording(
         } else {
             String.format("%02d:%02d", mins, secs)
         }
+    }
+
+    fun formattedDate(): String {
+        val time = if (createdAt > 0) createdAt else System.currentTimeMillis()
+        val sdf = java.text.SimpleDateFormat("dd MMM, HH:mm", java.util.Locale.getDefault())
+        return sdf.format(java.util.Date(time))
     }
 }

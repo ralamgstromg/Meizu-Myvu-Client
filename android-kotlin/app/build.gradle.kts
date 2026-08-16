@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.material)
     implementation(libs.play.services.location)
+    implementation(libs.play.services.auth)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.mediapipe.tasks.genai)
 

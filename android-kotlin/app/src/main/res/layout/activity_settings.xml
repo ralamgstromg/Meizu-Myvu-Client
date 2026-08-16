@@ -1364,6 +1364,135 @@
                     </com.google.android.material.button.MaterialButtonToggleGroup>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== Backup & Cloud Sync ===== -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Card.Myvu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/CardTitle.Myvu"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Copia de Seguridad y Nube" />
+
+                    <TextView
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Respalda y restaura notas, recordatorios, tareas, grabaciones de voz y configuraciones de IA localmente y en Google Drive (/myvu/backup/data.zip)." />
+
+                    <!-- Google Drive Account Box -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/bg_chip_badge"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_google_drive"
+                            app:tint="@color/cyber_teal"
+                            android:contentDescription="google drive" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/txtGoogleAccountName"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Google Drive: No vinculado"
+                                android:textColor="@color/on_surface_obsidian"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/txtCloudBackupTime"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Última sincronización: Sin respaldo en la nube"
+                                android:textColor="@color/on_surface_variant_obsidian"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnConnectGoogleDrive"
+                            style="@style/Button.Myvu.Outlined"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="11sp"
+                            android:text="Vincular" />
+                    </LinearLayout>
+
+                    <!-- Backup Action Buttons -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnGenerateBackup"
+                            style="@style/Button.Myvu"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="6dp"
+                            app:icon="@drawable/ic_backup"
+                            app:iconTint="@color/on_cyber_teal"
+                            android:textSize="12sp"
+                            android:text="Generar Backup" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRestoreBackup"
+                            style="@style/Button.Myvu.Outlined"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
+                            app:icon="@drawable/ic_restore"
+                            app:iconTint="@color/cyber_teal"
+                            android:textSize="12sp"
+                            android:text="Restaurar" />
+                    </LinearLayout>
+
+                    <!-- Status Text & Progress -->
+                    <ProgressBar
+                        android:id="@+id/progressBackup"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:indeterminate="true"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/txtBackupStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="@color/cyber_teal"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </LinearLayout>

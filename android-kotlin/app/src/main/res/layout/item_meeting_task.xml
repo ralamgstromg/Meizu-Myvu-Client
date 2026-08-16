@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardMeetingTask"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
@@ -70,6 +71,17 @@
             </LinearLayout>
         </LinearLayout>
 
+        <!-- Edit Task -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEditSingleTask"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:contentDescription="Editar Tarea"
+            app:icon="@drawable/ic_edit"
+            app:iconTint="@color/on_surface_variant_obsidian" />
+
+        <!-- Export Task to Todo -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnExportSingleTask"
             style="@style/Widget.Material3.Button.IconButton"
@@ -78,6 +90,16 @@
             android:contentDescription="Añadir a To-Do"
             app:icon="@drawable/ic_add"
             app:iconTint="@color/cyber_teal" />
+
+        <!-- Delete Task -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDeleteSingleTask"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:contentDescription="Eliminar Tarea"
+            app:icon="@drawable/ic_delete_cyber"
+            app:iconTint="@color/outline_obsidian" />
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>

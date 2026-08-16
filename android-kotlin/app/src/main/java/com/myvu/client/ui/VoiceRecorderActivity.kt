@@ -7,11 +7,12 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.EditText
 import android.widget.HorizontalScrollView
-import android.widget.ImageView
+import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
@@ -20,6 +21,8 @@ import com.google.android.material.chip.ChipGroup
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.myvu.client.R
 import com.myvu.client.ai.MeetingAiProcessor
+import com.myvu.client.core.EdgeToEdgeHelper
+import com.myvu.client.core.LogBus
 import com.myvu.client.database.VoiceRecording
 import com.myvu.client.database.VoiceRecordingRepository
 import com.myvu.client.recorder.AudioPlayerManager
@@ -30,10 +33,9 @@ class VoiceRecorderActivity : AppCompatActivity() {
     private lateinit var aiProcessor: MeetingAiProcessor
     private val playerManager = AudioPlayerManager()
 
-    // Views
     private lateinit var toolbar: MaterialToolbar
     private lateinit var etSearch: EditText
-    private lateinit var btnClearSearch: ImageView
+    private lateinit var btnClearSearch: android.widget.ImageView
     private lateinit var chipGroupCategories: ChipGroup
     private lateinit var scrollTags: HorizontalScrollView
     private lateinit var chipGroupTags: ChipGroup
@@ -49,21 +51,31 @@ class VoiceRecorderActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_voice_recorder)
+        try {
+            setContentView(R.layout.activity_voice_recorder)
 
-        repository = VoiceRecordingRepository(this)
-        aiProcessor = MeetingAiProcessor(this)
+            repository = VoiceRecordingRepository(this)
+            aiProcessor = MeetingAiProcessor(this)
 
-        bindViews()
-        setupAdapter()
-        setupSearchAndFilters()
-        setupPlayerManager()
-        setupFab()
+            bindViews()
+            EdgeToEdgeHelper.setupEdgeToEdge(this, toolbar, fabRecord, rvRecordings)
+            setupAdapter()
+            setupSearchAndFilters()
+            setupPlayerManager()
+            setupFab()
+        } catch (e: Throwable) {
+            LogBus.error("VoiceRecorderActivity: Fatal error in onCreate", e)
+            Toast.makeText(this, "Error al iniciar Grabadora de Voz: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        loadData()
+        try {
+            loadData()
+        } catch (e: Throwable) {
+            LogBus.error("VoiceRecorderActivity: Error in onResume", e)
+        }
     }
 
     private fun bindViews() {
@@ -100,11 +112,40 @@ class VoiceRecorderActivity : AppCompatActivity() {
             },
             onShareClick = { rec ->
                 shareRecording(rec)
+            },
+            onRenameClick = { rec ->
+                showRenameDialog(rec)
             }
         )
 
         rvRecordings.layoutManager = LinearLayoutManager(this)
         rvRecordings.adapter = adapter
+    }
+
+    private fun showRenameDialog(rec: VoiceRecording) {
+        val input = android.widget.EditText(this).apply {
+            setText(rec.title)
+            setSelection(rec.title.length)
+            setHint("Nombre de la grabación...")
+            setTextColor(ContextCompat.getColor(context, R.color.on_surface_obsidian))
+            setHintTextColor(ContextCompat.getColor(context, R.color.outline_obsidian))
+            setPadding(48, 32, 48, 32)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Renombrar Grabación")
+            .setView(input)
+            .setPositiveButton("Guardar") { _, _ ->
+                val newTitle = input.text.toString().trim()
+                if (newTitle.isNotBlank()) {
+                    rec.title = newTitle
+                    repository.updateRecording(rec)
+                    loadData()
+                    Toast.makeText(this, "Título actualizado", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun setupSearchAndFilters() {
@@ -179,8 +220,12 @@ class VoiceRecorderActivity : AppCompatActivity() {
     }
 
     private fun loadData() {
-        loadTagsChips()
-        applyFilters()
+        try {
+            loadTagsChips()
+            applyFilters()
+        } catch (e: Throwable) {
+            LogBus.error("VoiceRecorderActivity: Error in loadData", e)
+        }
     }
 
     private fun loadTagsChips() {
@@ -221,30 +266,39 @@ class VoiceRecorderActivity : AppCompatActivity() {
     }
 
     private fun applyFilters() {
-        val list = repository.searchRecordings(
-            query = currentSearchQuery.ifBlank { null },
-            tag = if (currentTagFilter == "ALL") null else currentTagFilter,
-            category = if (currentCategoryFilter == "ALL") null else currentCategoryFilter
-        )
+        try {
+            val list = repository.searchRecordings(
+                query = currentSearchQuery.ifBlank { null },
+                tag = if (currentTagFilter == "ALL") null else currentTagFilter,
+                category = if (currentCategoryFilter == "ALL") null else currentCategoryFilter
+            )
 
-        adapter.setRecordings(list)
+            adapter.setRecordings(list)
 
-        if (list.isEmpty()) {
-            layEmpty.visibility = View.VISIBLE
-            rvRecordings.visibility = View.GONE
-        } else {
-            layEmpty.visibility = View.GONE
-            rvRecordings.visibility = View.VISIBLE
+            if (list.isEmpty()) {
+                layEmpty.visibility = View.VISIBLE
+                rvRecordings.visibility = View.GONE
+            } else {
+                layEmpty.visibility = View.GONE
+                rvRecordings.visibility = View.VISIBLE
+            }
+        } catch (e: Throwable) {
+            LogBus.error("VoiceRecorderActivity: Error in applyFilters", e)
         }
     }
 
     private fun openDetailActivity(id: Long, autoProcess: Boolean) {
-        playerManager.stop()
-        val intent = Intent(this, RecordingDetailActivity::class.java).apply {
-            putExtra(RecordingDetailActivity.EXTRA_RECORDING_ID, id)
-            putExtra(RecordingDetailActivity.EXTRA_AUTO_PROCESS, autoProcess)
+        try {
+            playerManager.stop()
+            val intent = Intent(this, RecordingDetailActivity::class.java).apply {
+                putExtra(RecordingDetailActivity.EXTRA_RECORDING_ID, id)
+                putExtra(RecordingDetailActivity.EXTRA_AUTO_PROCESS, autoProcess)
+            }
+            startActivity(intent)
+        } catch (e: Throwable) {
+            LogBus.error("VoiceRecorderActivity: Error opening detail activity", e)
+            Toast.makeText(this, "Error al abrir la grabación: ${e.message}", Toast.LENGTH_SHORT).show()
         }
-        startActivity(intent)
     }
 
     private fun confirmDelete(rec: VoiceRecording) {
@@ -278,7 +332,9 @@ class VoiceRecorderActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        playerManager.stop()
+        try {
+            playerManager.stop()
+        } catch (_: Throwable) {}
         super.onDestroy()
     }
 }

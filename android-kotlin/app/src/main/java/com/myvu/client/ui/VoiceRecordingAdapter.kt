@@ -23,7 +23,8 @@ class VoiceRecordingAdapter(
     private val onPlayClick: (VoiceRecording) -> Unit,
     private val onDeleteClick: (VoiceRecording) -> Unit,
     private val onReAnalyzeClick: (VoiceRecording) -> Unit,
-    private val onShareClick: (VoiceRecording) -> Unit
+    private val onShareClick: (VoiceRecording) -> Unit,
+    private val onRenameClick: (VoiceRecording) -> Unit = {}
 ) : RecyclerView.Adapter<VoiceRecordingAdapter.ViewHolder>() {
 
     private val recordings = mutableListOf<VoiceRecording>()
@@ -155,15 +156,17 @@ class VoiceRecordingAdapter(
 
         private fun showPopupMenu(anchor: View, item: VoiceRecording) {
             val popup = PopupMenu(context, anchor)
-            popup.menu.add(0, 1, 0, "✨ Re-procesar con IA")
-            popup.menu.add(0, 2, 1, "📤 Compartir")
-            popup.menu.add(0, 3, 2, "🗑️ Eliminar")
+            popup.menu.add(0, 4, 0, "✏️ Renombrar")
+            popup.menu.add(0, 1, 1, "✨ Re-procesar con IA")
+            popup.menu.add(0, 2, 2, "📤 Compartir")
+            popup.menu.add(0, 3, 3, "🗑️ Eliminar")
 
             popup.setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
                     1 -> onReAnalyzeClick(item)
                     2 -> onShareClick(item)
                     3 -> onDeleteClick(item)
+                    4 -> onRenameClick(item)
                 }
                 true
             }

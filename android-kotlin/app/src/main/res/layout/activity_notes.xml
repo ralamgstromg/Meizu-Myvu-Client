@@ -39,6 +39,7 @@
                     app:iconTint="@color/cyber_teal" />
 
                 <LinearLayout
+                    android:id="@+id/layNotesGlassesBattery"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
@@ -51,15 +52,16 @@
                     <ImageView
                         android:layout_width="16dp"
                         android:layout_height="16dp"
-                        android:contentDescription="Battery Status"
+                        android:contentDescription="Glasses Battery Status"
                         android:src="@drawable/ic_battery"
                         app:tint="@color/cyber_teal" />
 
                     <TextView
+                        android:id="@+id/txtNotesGlassesBattery"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="92%"
+                        android:text="--"
                         android:textColor="@color/on_surface_obsidian"
                         android:textSize="12sp"
                         android:textStyle="bold" />

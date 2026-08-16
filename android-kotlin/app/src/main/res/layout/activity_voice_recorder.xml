@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootVoiceRecorder"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/obsidian_bg">
@@ -10,16 +11,16 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- Top App Bar -->
+        <!-- Top App Bar with Edge-to-Edge Safe Padding -->
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarVoiceRecorder"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/obsidian_bg"
-            app:navigationIcon="@android:drawable/ic_menu_revert"
-            app:navigationIconTint="@color/cyber_teal"
+            app:navigationIcon="@drawable/ic_arrow_back_cyber"
             app:title="Grabadora de Voz IA"
             app:titleTextColor="@color/on_surface_obsidian"
+            app:titleTextAppearance="@style/TextAppearance.Material3.TitleMedium"
             app:subtitle="Reuniones, Ideas y Conversaciones"
             app:subtitleTextColor="@color/on_surface_variant_obsidian">
 
@@ -43,7 +44,7 @@
             android:layout_marginTop="4dp"
             android:layout_marginBottom="8dp"
             app:cardBackgroundColor="@color/obsidian_container_low"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="16dp"
             app:strokeColor="@color/outline_variant_obsidian"
             app:strokeWidth="1dp">
 
@@ -52,7 +53,7 @@
                 android:layout_height="48dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="12dp">
+                android:paddingHorizontal="14dp">
 
                 <ImageView
                     android:layout_width="20dp"
@@ -65,10 +66,10 @@
                     android:id="@+id/etSearchRecordings"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="10dp"
                     android:layout_weight="1"
                     android:background="@android:color/transparent"
-                    android:hint="Buscar por nombre, texto o tag..."
+                    android:hint="Buscar por título, contenido o tags..."
                     android:imeOptions="actionSearch"
                     android:inputType="text"
                     android:textColor="@color/on_surface_obsidian"
@@ -77,10 +78,12 @@
 
                 <ImageView
                     android:id="@+id/btnClearSearch"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Clear"
-                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    android:padding="2dp"
+                    android:src="@drawable/ic_close_cyber"
                     android:visibility="gone"
                     app:tint="@color/outline_obsidian" />
             </LinearLayout>
@@ -169,7 +172,7 @@
                 android:clipToPadding="false"
                 android:paddingHorizontal="16dp"
                 android:paddingTop="8dp"
-                android:paddingBottom="90dp" />
+                android:paddingBottom="96dp" />
 
             <!-- Empty State -->
             <LinearLayout
@@ -209,7 +212,7 @@
         </FrameLayout>
     </LinearLayout>
 
-    <!-- FAB for New Recording -->
+    <!-- FAB for New Recording with Cyber Aura -->
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/fabStartRecording"
         android:layout_width="wrap_content"
@@ -218,6 +221,7 @@
         android:layout_marginBottom="24dp"
         android:backgroundTint="#FF3B30"
         android:contentDescription="Grabar Reunión o Idea"
+        android:elevation="6dp"
         android:text="Grabar con IA"
         android:textColor="@android:color/white"
         android:textStyle="bold"
