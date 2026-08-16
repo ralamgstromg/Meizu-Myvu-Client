@@ -49,6 +49,12 @@ class AppLayer {
                     .put("data", JSONArray().put(entry)))
                 .toString()
         }
+
+        @JvmStatic
+        fun sendNotification(title: String, body: String) {
+            val action = buildNotificationAction(title, body)
+            com.myvu.client.service.MyvuService.activeConnection()?.sendAction(action)
+        }
     }
 
     /** Matches the Python client, which sends 5001 first. */
