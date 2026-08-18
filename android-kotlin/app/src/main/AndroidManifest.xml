@@ -107,6 +107,17 @@
             </intent-filter>
         </receiver>
 
+        <!-- Tasker Event Plugin -->
+        <activity
+            android:name=".plugin.tasker.event.TaskerEventActivity"
+            android:icon="@drawable/ic_launcher_ar"
+            android:label="MYVU Evento"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.twofortyfouram.locale.intent.action.EDIT_CONDITION" />
+            </intent-filter>
+        </activity>
+
         <!-- Foreground & Background Services -->
         <service
             android:name=".service.MyvuService"

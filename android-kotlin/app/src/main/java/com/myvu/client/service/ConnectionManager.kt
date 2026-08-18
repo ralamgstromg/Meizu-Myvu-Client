@@ -21,6 +21,7 @@ import com.myvu.client.core.GlassesConfig
 import com.myvu.client.core.Hex
 import com.myvu.client.core.LogBus
 import com.myvu.client.core.Prefs
+import com.myvu.client.plugin.tasker.event.TaskerEventBroadcaster
 import com.myvu.client.crypto.StarryCrypto
 import com.myvu.client.nav.FusedLocationSource
 import com.myvu.client.nav.NavSession
@@ -95,13 +96,17 @@ class ConnectionManager(
     var state: ConnectionState
         get() = _stateFlow.value
         private set(s) {
-            if (s == ConnectionState.READY && _stateFlow.value != ConnectionState.READY) {
+            val old = _stateFlow.value
+            if (s == ConnectionState.READY && old != ConnectionState.READY) {
                 sessionStartTimeMs = android.os.SystemClock.elapsedRealtime()
             } else if (s != ConnectionState.READY) {
                 sessionStartTimeMs = 0L
             }
             _stateFlow.value = s
             listener?.onStateChanged(s)
+            if (old != s) {
+                TaskerEventBroadcaster.sendConnectionStateEvent(context, s)
+            }
         }
 
     fun state(): ConnectionState = state
@@ -246,8 +251,8 @@ class ConnectionManager(
             weather().refresh()
         }
 
-        inbound.setBatteryUpdateListener { battery, _ ->
-            updateGlassesBattery(battery)
+        inbound.setBatteryUpdateListener { battery, isCharging ->
+            updateGlassesBattery(battery, isCharging)
         }
     }
 
@@ -272,7 +277,8 @@ class ConnectionManager(
         }
     }
 
-    fun updateGlassesBattery(battery: Int) {
+    @JvmOverloads
+    fun updateGlassesBattery(battery: Int, isCharging: Boolean = false) {
         if (battery < 0 || battery > 100) return
         conn.post {
             val current = glassesInfoVal
@@ -280,6 +286,7 @@ class ConnectionManager(
                 glassesInfoVal = DeviceInfo("", "", "", "5001", "MYVU", battery, 0)
                 LogBus.log("glasses battery set: $battery%")
                 listener?.onStateChanged(state)
+                TaskerEventBroadcaster.sendBatteryEvent(context, battery, isCharging)
             } else if (current.battery != battery) {
                 glassesInfoVal = DeviceInfo(
                     current.btMac, current.companyId,
@@ -288,6 +295,7 @@ class ConnectionManager(
                 )
                 LogBus.log("glasses battery updated: $battery%")
                 listener?.onStateChanged(state)
+                TaskerEventBroadcaster.sendBatteryEvent(context, battery, isCharging)
             }
         }
     }

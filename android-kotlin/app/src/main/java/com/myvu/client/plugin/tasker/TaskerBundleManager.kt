@@ -271,7 +271,7 @@ object TaskerBundleManager {
 
     fun generateEventBlurb(event: TaskerEvent): String {
         return when (event.eventType) {
-            TaskerConstants.EVENT_TOUCH_GESTURE -> "Gesto Táctil: ${event.gestureName ?: (event.gestureCode?.toString() ?: "Desconocido")}"
+            TaskerConstants.EVENT_TOUCH_GESTURE -> "Gesto Táctil: ${event.gestureName ?: (event.gestureCode?.toString() ?: "Cualquier Gesto")}"
             TaskerConstants.EVENT_AI_BUTTON -> "Botón AI (Código: ${event.buttonCode ?: 0})"
             TaskerConstants.EVENT_BATTERY_CHANGED -> "Batería: ${event.batteryLevel ?: 0}%${if (event.isCharging == true) " (Cargando)" else ""}"
             TaskerConstants.EVENT_CONNECTED -> "Gafas Conectadas"
