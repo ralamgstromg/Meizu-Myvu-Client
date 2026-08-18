@@ -90,6 +90,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
     private lateinit var btnPairDone: MaterialButton
     private val ringAnimators = ArrayList<Animator>()
     private var pairing: Boolean = false
+    private val dismissPairingRunnable = Runnable { if (pairing) dismissPairing() }
 
     private var service: MyvuService? = null
     private var bound: Boolean = false
@@ -194,6 +195,8 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
 
     override fun onStop() {
         super.onStop()
+        pairingOverlay.removeCallbacks(dismissPairingRunnable)
+        stopRings()
         stateJob?.cancel()
         stateJob = null
         LogBus.removeListener(this)
@@ -495,7 +498,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         val conn = service?.connection()
         val current = if (bound && conn != null) conn.state() else ConnectionState.CONNECTING
         if (current == ConnectionState.READY) {
-            updatePairing(ConnectionState.READY)
+            pairingSuccess()
         } else {
             imgGlasses.alpha = 0.5f
             pairTitle.text = "Searching for your glasses"
@@ -507,6 +510,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
 
     private fun dismissPairing() {
         pairing = false
+        pairingOverlay.removeCallbacks(dismissPairingRunnable)
         stopRings()
         pairingOverlay.animate().alpha(0f).setDuration(180).withEndAction {
             pairingOverlay.visibility = View.GONE
@@ -567,8 +571,12 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
                 pairTitle.text = "Almost ready"
                 pairSubtitle.text = deviceLabel()
             }
-            ConnectionState.READY -> pairingSuccess()
-            ConnectionState.FAILED -> pairingFailed()
+            ConnectionState.READY -> {
+                pairingSuccess()
+            }
+            ConnectionState.FAILED -> {
+                pairingFailed()
+            }
             else -> {}
         }
     }
@@ -584,11 +592,15 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         imgCheck.animate().scaleX(1f).scaleY(1f).setDuration(360)
             .setInterpolator(OvershootInterpolator()).start()
         btnPairDone.visibility = View.VISIBLE
-        pairingOverlay.postDelayed({ if (pairing) dismissPairing() }, 1600)
+
+        // Auto-cierre garantizado tras 1.2 segundos
+        pairingOverlay.removeCallbacks(dismissPairingRunnable)
+        pairingOverlay.postDelayed(dismissPairingRunnable, 1200)
     }
 
     private fun pairingFailed() {
         stopRings()
+        pairingOverlay.removeCallbacks(dismissPairingRunnable)
         imgGlasses.alpha = 0.5f
         pairTitle.text = "Couldn't connect"
         pairSubtitle.text = "The glasses didn't respond. Check they are on, and that no other phone is connected to them."
