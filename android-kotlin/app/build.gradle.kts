@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.mediapipe.tasks.genai)
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
     testImplementation(libs.json)
     testImplementation(libs.kotlinx.coroutines.test)
 }

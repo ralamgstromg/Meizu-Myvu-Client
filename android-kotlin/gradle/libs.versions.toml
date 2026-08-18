@@ -8,6 +8,7 @@ material = "1.12.0"
 playServicesLocation = "21.3.0"
 playServicesAuth = "21.3.0"
 junit = "4.13.2"
+robolectric = "4.14.1"
 json = "20260522"
 lifecycleRuntimeKtx = "2.8.7"
 mediapipeGenai = "0.10.20"
@@ -22,6 +23,7 @@ play-services-auth = { module = "com.google.android.gms:play-services-auth", ver
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 junit = { module = "junit:junit", version.ref = "junit" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 json = { module = "org.json:json", version.ref = "json" }
 mediapipe-tasks-genai = { module = "com.google.mediapipe:tasks-genai", version.ref = "mediapipeGenai" }
 
