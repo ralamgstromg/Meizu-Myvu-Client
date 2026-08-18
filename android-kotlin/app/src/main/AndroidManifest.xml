@@ -87,11 +87,11 @@
             android:name=".ui.NotificationAppsActivity"
             android:exported="false" />
 
-        <!-- Tasker Action Plugin -->
+        <!-- Tasker Action Plugin (Tasker -> Gafas HUD) -->
         <activity
             android:name=".plugin.tasker.action.TaskerActionActivity"
             android:icon="@drawable/ic_launcher_ar"
-            android:label="MYVU Acción"
+            android:label="MYVU Mensaje HUD"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" />
@@ -107,13 +107,15 @@
             </intent-filter>
         </receiver>
 
-        <!-- Tasker Event Plugin -->
+        <!-- Tasker Event / Condition Plugin (Gafas -> Tasker) -->
         <activity
             android:name=".plugin.tasker.event.TaskerEventActivity"
             android:icon="@drawable/ic_launcher_ar"
-            android:label="MYVU Evento"
+            android:label="MYVU Gafas Evento"
             android:exported="true">
             <intent-filter>
+                <action android:name="net.dinglisch.android.tasker.ACTION_EDIT_EVENT" />
+                <action android:name="com.twofortyfouram.locale.intent.action.EDIT_EVENT" />
                 <action android:name="com.twofortyfouram.locale.intent.action.EDIT_CONDITION" />
             </intent-filter>
         </activity>

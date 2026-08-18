@@ -287,6 +287,16 @@ object TaskerBundleManager {
     fun getVariableReplaceKeys(): String =
         "${TaskerConstants.KEY_TITLE} ${TaskerConstants.KEY_CONTENT} ${TaskerConstants.KEY_VALUE_STRING} ${TaskerConstants.KEY_RAW_JSON}"
 
+    fun getVariableReplaceKeys(bundle: Bundle?): String? {
+        if (bundle == null) return null
+        val action = parseAction(bundle)
+        val hasVars = containsVariables(action.title) ||
+                containsVariables(action.content) ||
+                containsVariables(action.valueString) ||
+                containsVariables(action.rawJson)
+        return if (hasVars) getVariableReplaceKeys() else null
+    }
+
     fun extractVariables(text: String?): List<String> {
         if (text.isNullOrBlank()) return emptyList()
         return VARIABLE_REGEX.findAll(text).map { it.value }.distinct().toList()
