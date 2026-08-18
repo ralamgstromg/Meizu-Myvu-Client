@@ -120,6 +120,14 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name=".plugin.tasker.event.TaskerConditionReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.twofortyfouram.locale.intent.action.QUERY_CONDITION" />
+            </intent-filter>
+        </receiver>
+
         <!-- Foreground & Background Services -->
         <service
             android:name=".service.MyvuService"

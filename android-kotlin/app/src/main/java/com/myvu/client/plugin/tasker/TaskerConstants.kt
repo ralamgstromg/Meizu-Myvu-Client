@@ -9,6 +9,11 @@ object TaskerConstants {
     const val EXTRA_BUNDLE = "com.twofortyfouram.locale.intent.extra.BUNDLE"
     const val EXTRA_BLURB = "com.twofortyfouram.locale.intent.extra.BLURB"
 
+    // Locale Condition Result Codes
+    const val RESULT_CONDITION_SATISFIED = 16
+    const val RESULT_CONDITION_UNSATISFIED = 17
+    const val RESULT_CONDITION_UNKNOWN = 18
+
     // Tasker variable replacement
     const val EXTRA_TASKER_PASS_THROUGH = "net.dinglisch.android.tasker.extras.PASS_THROUGH"
     const val EXTRA_VARIABLE_REPLACE_KEYS = "net.dinglisch.android.tasker.extras.VARIABLE_REPLACE_KEYS"
