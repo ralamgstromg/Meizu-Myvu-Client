@@ -27,8 +27,11 @@ import android.view.animation.OvershootInterpolator
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.core.app.ActivityCompat
@@ -91,6 +94,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
     private var service: MyvuService? = null
     private var bound: Boolean = false
     private var lastDotColor: Int = 0
+    private var stateJob: Job? = null
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
@@ -99,6 +103,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
             bound = true
             val conn = s.connection()
             if (conn != null) {
+                observeConnectionState(conn)
                 render(conn.state())
                 if (conn.state() == ConnectionState.READY) {
                     conn.queryBatteryInfo()
@@ -111,6 +116,17 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         override fun onServiceDisconnected(name: ComponentName) {
             service = null
             bound = false
+        }
+    }
+
+    private fun observeConnectionState(conn: ConnectionManager) {
+        stateJob?.cancel()
+        stateJob = lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                conn.stateFlow.collect { state ->
+                    render(state)
+                }
+            }
         }
     }
 
@@ -178,6 +194,8 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
 
     override fun onStop() {
         super.onStop()
+        stateJob?.cancel()
+        stateJob = null
         LogBus.removeListener(this)
         if (bound) {
             unbindService(serviceConnection)
@@ -776,8 +794,6 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         val atBottom = logAtBottom()
         val last = logAdapter.add(line)
         if (atBottom) rvLog.scrollToPosition(last)
-        val conn = service?.connection()
-        if (bound && conn != null) render(conn.state())
     }
 
     private fun logAtBottom(): Boolean = !rvLog.canScrollVertically(1)

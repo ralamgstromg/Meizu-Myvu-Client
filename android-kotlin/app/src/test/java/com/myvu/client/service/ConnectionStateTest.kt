@@ -1,9 +1,15 @@
 package com.myvu.client.service
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ConnectionStateTest {
 
     @Test
@@ -24,5 +30,31 @@ class ConnectionStateTest {
         assertEquals(ConnectionState.IDLE, ConnectionState.valueOf("IDLE"))
         assertEquals(ConnectionState.READY, ConnectionState.valueOf("READY"))
         assertEquals(ConnectionState.FAILED, ConnectionState.valueOf("FAILED"))
+    }
+
+    @Test
+    fun stateFlowEmitsSequentialTransitions() = runTest {
+        val stateFlow = MutableStateFlow(ConnectionState.IDLE)
+        val collected = mutableListOf<ConnectionState>()
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            stateFlow.collect { collected.add(it) }
+        }
+
+        stateFlow.value = ConnectionState.CONNECTING
+        stateFlow.value = ConnectionState.PAIRING
+        stateFlow.value = ConnectionState.SESSION
+        stateFlow.value = ConnectionState.READY
+
+        assertEquals(
+            listOf(
+                ConnectionState.IDLE,
+                ConnectionState.CONNECTING,
+                ConnectionState.PAIRING,
+                ConnectionState.SESSION,
+                ConnectionState.READY
+            ),
+            collected
+        )
+        job.cancel()
     }
 }
