@@ -86,6 +86,11 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
+                        android:clickable="true"
+                        android:focusable="false"
+                        app:endIconMode="custom"
+                        app:endIconDrawable="@android:drawable/arrow_down_float"
+                        app:endIconTint="@color/cyber_teal"
                         android:hint="Acción">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -93,6 +98,9 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:inputType="none"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:cursorVisible="false"
                             android:textColor="@color/on_surface_obsidian"
                             android:maxLines="1" />
                     </com.google.android.material.textfield.TextInputLayout>

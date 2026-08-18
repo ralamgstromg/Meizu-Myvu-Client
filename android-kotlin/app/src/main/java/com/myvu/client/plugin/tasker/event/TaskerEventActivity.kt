@@ -103,6 +103,10 @@ class TaskerEventActivity : AppCompatActivity() {
     }
 
     private fun setupDropdowns() {
+        actvEventType.isFocusable = false
+        actvEventType.isClickable = true
+        actvEventType.isCursorVisible = false
+
         val eventAdapter = ArrayAdapter(
             this,
             android.R.layout.simple_dropdown_item_1line,
@@ -114,6 +118,17 @@ class TaskerEventActivity : AppCompatActivity() {
             selectEventType(selected.type)
         }
 
+        val eventClickListener = View.OnClickListener {
+            showEventTypePicker()
+        }
+        actvEventType.setOnClickListener(eventClickListener)
+        layEventType.setOnClickListener(eventClickListener)
+        layEventType.setEndIconOnClickListener(eventClickListener)
+
+        actvGestureType.isFocusable = false
+        actvGestureType.isClickable = true
+        actvGestureType.isCursorVisible = false
+
         val gestureAdapter = ArrayAdapter(
             this,
             android.R.layout.simple_dropdown_item_1line,
@@ -124,6 +139,44 @@ class TaskerEventActivity : AppCompatActivity() {
             selectedGestureOption = gestureOptions[position]
             updateBlurbPreview()
         }
+
+        val gestureClickListener = View.OnClickListener {
+            showGestureTypePicker()
+        }
+        actvGestureType.setOnClickListener(gestureClickListener)
+        layGestureType.setOnClickListener(gestureClickListener)
+        layGestureType.setEndIconOnClickListener(gestureClickListener)
+    }
+
+    private fun showEventTypePicker() {
+        val titles = eventTypeOptions.map { it.title }.toTypedArray()
+        val currentIndex = eventTypeOptions.indexOfFirst { it.type == currentEventType }.coerceAtLeast(0)
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Disparador / Evento")
+            .setSingleChoiceItems(titles, currentIndex) { dialog, which ->
+                val selected = eventTypeOptions[which]
+                selectEventType(selected.type)
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun showGestureTypePicker() {
+        val titles = gestureOptions.map { it.title }.toTypedArray()
+        val currentIndex = gestureOptions.indexOfFirst { it == selectedGestureOption }.coerceAtLeast(0)
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Filtro de Gesto")
+            .setSingleChoiceItems(titles, currentIndex) { dialog, which ->
+                selectedGestureOption = gestureOptions[which]
+                actvGestureType.setText(selectedGestureOption.title, false)
+                updateBlurbPreview()
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun selectEventType(type: String) {

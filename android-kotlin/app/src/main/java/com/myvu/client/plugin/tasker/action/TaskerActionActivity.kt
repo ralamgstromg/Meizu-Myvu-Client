@@ -149,6 +149,10 @@ class TaskerActionActivity : AppCompatActivity() {
     }
 
     private fun setupActionTypeDropdown() {
+        actvActionType.isFocusable = false
+        actvActionType.isClickable = true
+        actvActionType.isCursorVisible = false
+
         val adapter = ArrayAdapter(
             this,
             android.R.layout.simple_dropdown_item_1line,
@@ -159,6 +163,28 @@ class TaskerActionActivity : AppCompatActivity() {
             val selected = actionTypeOptions[position]
             selectActionType(selected.type)
         }
+
+        val clickListener = View.OnClickListener {
+            showActionTypePicker()
+        }
+        actvActionType.setOnClickListener(clickListener)
+        layActionType.setOnClickListener(clickListener)
+        layActionType.setEndIconOnClickListener(clickListener)
+    }
+
+    private fun showActionTypePicker() {
+        val titles = actionTypeOptions.map { it.title }.toTypedArray()
+        val currentIndex = actionTypeOptions.indexOfFirst { it.type == currentActionType }.coerceAtLeast(0)
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Tipo de Acción")
+            .setSingleChoiceItems(titles, currentIndex) { dialog, which ->
+                val selected = actionTypeOptions[which]
+                selectActionType(selected.type)
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun selectActionType(type: String) {
