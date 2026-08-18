@@ -87,11 +87,11 @@
             android:name=".ui.NotificationAppsActivity"
             android:exported="false" />
 
-        <!-- Tasker Action Plugin (Tasker -> Gafas HUD) -->
+        <!-- Tasker Action Plugin (Tasker -> Gafas) -->
         <activity
             android:name=".plugin.tasker.action.TaskerActionActivity"
             android:icon="@drawable/ic_launcher_ar"
-            android:label="MYVU Mensaje HUD"
+            android:label="MYVU Gafas Acción"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" />

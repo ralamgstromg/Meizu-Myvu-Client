@@ -55,10 +55,10 @@ class TaskerActionActivityTest {
     }
 
     @Test
-    fun activityLoadsExistingHudBundle() {
-        val initialBundle = TaskerBundleManager.buildHudBundle(
-            title = "Aviso WhatsApp",
-            content = "Hola, ¿cómo estás?"
+    fun activityLoadsExistingTeleprompterBundle() {
+        val initialBundle = TaskerBundleManager.buildTeleprompterBundle(
+            text = "Discurso inicial",
+            title = "Keynote"
         )
         val intent = Intent().apply {
             putExtra(TaskerConstants.EXTRA_BUNDLE, initialBundle)
@@ -67,13 +67,13 @@ class TaskerActionActivityTest {
         val controller = Robolectric.buildActivity(TaskerActionActivity::class.java, intent).setup()
         val activity = controller.get()
 
-        val txtHudTitle = activity.findViewById<TextInputEditText>(R.id.txtHudTitle)
-        val txtHudContent = activity.findViewById<TextInputEditText>(R.id.txtHudContent)
+        val txtPrompterTitle = activity.findViewById<TextInputEditText>(R.id.txtPrompterTitle)
+        val txtPrompterContent = activity.findViewById<TextInputEditText>(R.id.txtPrompterContent)
         val txtBlurb = activity.findViewById<TextView>(R.id.txtBlurbPreview)
 
-        assertEquals("Aviso WhatsApp", txtHudTitle.text.toString())
-        assertEquals("Hola, ¿cómo estás?", txtHudContent.text.toString())
-        assertEquals("HUD: Aviso WhatsApp - Hola, ¿cómo estás?", txtBlurb.text.toString())
+        assertEquals("Keynote", txtPrompterTitle.text.toString())
+        assertEquals("Discurso inicial", txtPrompterContent.text.toString())
+        assertEquals("Teleprompter: Keynote - Discurso inicial", txtBlurb.text.toString())
     }
 
     @Test
