@@ -9,12 +9,13 @@ La aplicación Kotlin de **Meizu MYVU Client** incluye soporte nativo y bidirecc
 ```mermaid
 flowchart LR
     subgraph Tasker [Tasker / Automatización]
-        TAction[Plugin: Acción\nMYVU Mensaje HUD]
+        TAction[Plugin: Acción\nMYVU Gafas Acción]
         TEvent[Plugin: Evento / Estado\nMYVU Gafas Evento]
     end
 
     subgraph App [Meizu MYVU Client]
         AReceiver[TaskerActionReceiver\nResolución %variables]
+        CReceiver[TaskerConditionReceiver\nQUERY_CONDITION]
         EBroadcaster[TaskerEventBroadcaster\nDual-Broadcast]
         Svc[MyvuService / ConnectionManager]
     end
@@ -29,36 +30,53 @@ flowchart LR
 
     Sensors --> Svc --> EBroadcaster
     EBroadcaster -->|ACTION_OPEN_EVENT / ACTION_EDIT_EVENT| TEvent
+    TEvent -->|QUERY_CONDITION| CReceiver
 ```
 
 ---
 
-## 1. 📥 Acciones: Tasker ➡️ Gafas MYVU (Mensaje HUD)
+## 1. 📥 Acciones: Tasker ➡️ Gafas MYVU
 
-Permite a cualquier tarea de Tasker proyectar notificaciones y mensajes en la lente monocromática de las gafas.
+Permite a cualquier tarea de Tasker enviar comandos visuales o cambiar parámetros de hardware de las gafas.
 
 ### Configuración visual en Tasker
-1. En Tasker, crea o edita una Tarea y añade una Acción: **Plugin ➡️ MYVU Mensaje HUD**.
+1. En Tasker, crea o edita una Tarea y añade una Acción: **Plugin ➡️ MYVU Gafas Acción**.
 2. Pulsa en el icono de lápiz para abrir la pantalla de configuración [`TaskerActionActivity`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/plugin/tasker/action/TaskerActionActivity.kt).
-3. Configura los campos del mensaje:
+3. Selecciona el tipo de acción deseado:
 
-| Campo | Descripción |
-|---|---|
-| **Título (Opcional)** | Encabezado corto del aviso en el HUD (ej: `Alerta Casa`, `%caller_name`). |
-| **Mensaje / Contenido (Obligatorio)** | Texto del mensaje a proyectar (ej: `Lavadora terminada`, `%antigravity_msg`). |
-| **Soporte de Variables (%var)** | Admite cualquier variable local o global de Tasker (ej. `%TIME`, `%BATT`, `%asunto`, etc.). Se resuelven dinámicamente antes de enviar a las gafas. |
+| Tipo de Acción | Parámetros Disponibles | Descripción |
+|---|---|---|
+| **Mostrar Mensaje HUD** | Título (Opcional), Mensaje (Obligatorio) | Proyecta una notificación flotante en el lente con sanitización y truncamiento seguro. Soporta variables de Tasker (`%antigravity_msg`). |
+| **Abrir Teleprompter** | Título (Opcional), Texto del discurso | Lanza la aplicación de teleprompter en las gafas con el texto especificado. |
+| **Ajustar Brillo** | Nivel de brillo (1 - 5) | Modifica la intensidad del proyector MicroLED. |
+| **Ajustar Volumen** | Nivel de volumen (0 - 15) | Modifica el volumen de los altavoces estéreo de las patillas. |
+| **Alternar WiFi** | Switch On / Off | Activa o desactiva la conexión WiFi interna de las gafas. |
+| **Modo Zen** | Switch On / Off | Silencia o permite avisos visuales en el visor (No molestar). |
+| **Modo Air** | Switch On / Off | Alterna el modo Air en las gafas. |
+| **Posición Standby (FOV)** | Slider 0 a 3 | Cambia la posición del HUD en el campo de visión (0: Centro, 1: Arriba, 2: Derecha, 3: Izquierda). |
+| **Enviar Comando JSON Raw** | JSON arbitrario | Envía cualquier payload directo del protocolo Meizu StarryNet (ej: `{"action":"system", ...}`). |
+
+### Soporte de Variables Dinámicas de Tasker
+Puedes usar cualquier variable local o global de Tasker en los campos de texto (ej. `%TIME`, `%BATT`, `%caller_name`, `%my_custom_var`). El plugin las resolverá automáticamente en tiempo de ejecución antes de transmitir el paquete a las gafas.
 
 ### 🚀 Fallback por Intent Broadcast Directo
-Si prefieres no usar la UI de plugins o disparar avisos desde terminal / ADB / scripts:
+Si prefieres no usar la UI de plugins o ejecutar comandos desde terminal/ADB/scripts:
 - **Action:** `com.myvu.client.TASKER_ACTION`
 - **Extras:**
-  - `action_type`: `show_hud`
-  - `title`: String (opcional)
-  - `content`: String (mensaje obligatorio)
+  - `action_type`: `show_hud` | `show_teleprompter` | `set_brightness` | `set_volume` | `toggle_wifi` | `set_zen_mode` | `set_air_mode` | `set_standby_pos` | `send_raw`
+  - `title`: String (para HUD o Teleprompter)
+  - `content`: String (para HUD o Teleprompter)
+  - `brightness_value`: Int 1-5
+  - `volume_value`: Int 0-15
+  - `wifi_enabled`: Boolean
+  - `zen_mode_enabled`: Boolean
+  - `air_mode_enabled`: Boolean
+  - `standby_position`: Int 0-3
+  - `raw_json`: String (JSON)
 
 **Ejemplo vía ADB:**
 ```bash
-adb shell am broadcast -a com.myvu.client.TASKER_ACTION --es action_type "show_hud" --es title "Alerta" --es content "Batería del móvil al 100%"
+adb shell am broadcast -a com.myvu.client.TASKER_ACTION --es action_type "show_hud" --es title "Alerta" --es content "Lavadora terminada"
 ```
 
 ---
@@ -85,8 +103,8 @@ Permite que acciones físicas en las gafas disparen flujos de automatización en
 1. En la app Android, ve a **Ajustes ➡️ Gestos táctiles** y selecciona **"Evento Tasker"** (o déjalo en automático).
 2. En Tasker, crea un Perfil con Evento: `MYVU Gafas Evento` (Gesto: *Pulsación Larga*).
 3. En la Tarea asociada, añade:
-   - *Acción en móvil*: Encender luces inteligentes o abrir portón.
-   - *Mensaje HUD de respuesta*: Acción Plugin MYVU con Contenido: *"Luces encendidas"*.
+   - *Hogar inteligente*: Encender luces de la habitación.
+   - *Mensaje HUD de respuesta*: Usar plugin MYVU para mostrar en el lente: *"Luces encendidas"*.
 
 ### 🚀 Fallback por Intent Broadcast Directo
 Tasker puede escuchar eventos mediante un receptor de intención estándar:
@@ -104,8 +122,9 @@ Tasker puede escuchar eventos mediante un receptor de intención estándar:
 
 ## 🛠️ Arquitectura Interna
 
-- **[`TaskerConstants`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/plugin/tasker/TaskerConstants.kt)**: Contratos de intención (`ACTION_EDIT_EVENT`, `EDIT_EVENT`, `EDIT_CONDITION`, `EDIT_SETTING`, `FIRE_SETTING`).
+- **[`TaskerConstants`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/plugin/tasker/TaskerConstants.kt)**: Define los contratos de intención (`ACTION_EDIT_EVENT`, `EDIT_EVENT`, `EDIT_CONDITION`, `ACTION_QUERY_CONDITION`, `EDIT_SETTING`, `FIRE_SETTING`).
 - **[`TaskerBundleManager`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/plugin/tasker/TaskerBundleManager.kt)**: Serialización tipada e inmutable de bundles de configuración con soporte para `EXTRA_VARIABLE_REPLACE_KEYS`.
-- **[`TaskerActionActivity`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/plugin/tasker/action/TaskerActionActivity.kt)**: Interfaz simplificada y enfocada exclusivamente en proyección de mensajes HUD.
+- **[`TaskerActionActivity`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/plugin/tasker/action/TaskerActionActivity.kt)**: Interfaz de configuración multi-acción (HUD, Teleprompter, Brillo, Volumen, WiFi, Zen Mode, Air Mode, Posición FOV, JSON Raw).
 - **[`TaskerActionReceiver`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/plugin/tasker/action/TaskerActionReceiver.kt)**: Procesa `FIRE_SETTING`, resuelve variables dinámicas y proyecta en el lente vía `MyvuService`.
+- **[`TaskerConditionReceiver`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/plugin/tasker/event/TaskerConditionReceiver.kt)**: Evalúa consultas `QUERY_CONDITION` de Tasker de forma segura.
 - **[`TaskerEventBroadcaster`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/plugin/tasker/event/TaskerEventBroadcaster.kt)**: Emite eventos concurrentes hacia el bus de Tasker garantizando seguridad en hilos de background.
