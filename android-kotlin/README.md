@@ -374,7 +374,7 @@ El cliente Android implementa configuración avanzada de permisos y aceleración
 | `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | Exención de Doze para mantener el socket RFCOMM activo sin desconexiones | Solicitud Directa Settings |
 
 ### 🔬 Compatibilidad con Chipsets MediaTek / SoC `mt6878` (Dimensity Series)
-- **Solución al error `libvndksupport.so not found`**: Se implementó la precarga automática de `libvndksupport.so` y `libOpenCL.so` en `MediaPipeLlmEngine.kt` para resolver las restricciones de enlace dinámico VNDK en procesadores ARM Mali / MediaTek.
+- **Carga Nativa por Ruta Absoluta System/Vendor (`System.load`)**: `MediaPipeLlmEngine.kt` busca y carga directamente las librerías nativas desde `/system/lib64/libvndksupport.so` y `/vendor/lib64/libOpenCL.so`, omitiendo las restricciones de `System.loadLibrary()`.
 - **Delegación Transparente de `.litertlm`**: `LiteRtLmEngine` delega la inferencia de contenedores `.litertlm` (como **Gemma 4 E2B IT**) a `MediaPipeLlmEngine`, logrando ejecución directa por hardware.
 
 ---

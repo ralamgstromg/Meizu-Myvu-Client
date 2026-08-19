@@ -21,18 +21,33 @@ class MediaPipeLlmEngine(
         fun tryPreloadNativeLibraries() {
             if (librariesPreloaded) return
             librariesPreloaded = true
-            try {
-                System.loadLibrary("vndksupport")
-            } catch (_: Throwable) {
+
+            val systemVendorLibs = listOf(
+                "/system/lib64/libvndksupport.so",
+                "/vendor/lib64/libvndksupport.so",
+                "/system/lib/libvndksupport.so",
+                "/vendor/lib/libvndksupport.so",
+                "/vendor/lib64/libOpenCL.so",
+                "/vendor/lib64/egl/libGLES_mali.so",
+                "/system/vendor/lib64/egl/libGLES_mali.so",
+                "/vendor/lib64/libgal.so"
+            )
+
+            for (path in systemVendorLibs) {
+                try {
+                    val file = File(path)
+                    if (file.exists()) {
+                        System.load(path)
+                        LogBus.log("AI_MEDIAPIPE_LOADED_SYS_LIB: $path")
+                    }
+                } catch (t: Throwable) {
+                    LogBus.trace("AI_MEDIAPIPE_LOAD_SYS_LIB_SKIP ($path): ${t.message}")
+                }
             }
-            try {
-                System.loadLibrary("OpenCL")
-            } catch (_: Throwable) {
-            }
-            try {
-                System.loadLibrary("GLES_mali")
-            } catch (_: Throwable) {
-            }
+
+            try { System.loadLibrary("vndksupport") } catch (_: Throwable) {}
+            try { System.loadLibrary("OpenCL") } catch (_: Throwable) {}
+            try { System.loadLibrary("GLES_mali") } catch (_: Throwable) {}
         }
     }
 
