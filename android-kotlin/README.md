@@ -262,6 +262,10 @@ En la sección **"Control Táctil de Patilla (Gafas)"** de `SettingsActivity`, l
 
 ## 🛡️ Resiliencia de Conexión y Estabilidad Anticaídas
 
+- **Integración Multimodal e Inteligente para Notas, Recordatorios y Grabadora de Voz (`NoteAiProcessor.kt` & `MeetingAiProcessor.kt`)**: 
+  - **Transcripción STT y Diarización**: Soporte para Whisper Groq/OpenAI y Android Speech con resumen ejecutivo, tareas estructuradas (exportables a To-Do), mapa mental Mermaid y Chat IA interactivo sobre notas y grabaciones.
+  - **Enriquecimiento LLM Automático**: Al crear notas o recordatorios mediante comandos de voz del Agente de IA o desde la app, se inicia automáticamente el procesamiento en segundo plano para generar resúmenes, tareas y mapas mentales.
+  - **Comandos de Canal Rápido (<5ms)**: Intercepción determinista para *"mis notas"*, *"mis recordatorios"*, *"borrar nota"* y *"borrar recordatorio"*.
 - **Auto-Envío de Mensajes y Solución de Raíz en WhatsApp/Telegram (`AutoSendAccessibilityService.kt`)**: Eliminación de muletillas de voz iniciales (*"¿Qué?"*, *"Oye,"*, *"Por favor,"*) en `VoiceActionRouter.kt` y servicio opcional de accesibilidad que presiona el botón de envío automáticamente al abrir WhatsApp o Telegram.
 - **Consulta de Agenda y Reuniones Próximas (`CalendarService.kt`)**: Lectura directa de los eventos programados en el calendario de Android (`CalendarContract.Events`) para las próximas 24-48 horas (*"¿Qué reuniones tengo hoy?"*, *"Revisa mi agenda"*).
 - **Resumen de Notificaciones y Correos Pendientes (`MirrorNotificationListener.kt`)**: Análisis y conteo de avisos activos y correos sin leer (Gmail, Outlook, Yahoo) recibidos en la barra de notificaciones del smartphone (*"Resume mis notificaciones"*, *"¿Tengo correos pendientes?"*).

@@ -976,6 +976,7 @@ class PhoneActionExecutor(context: Context) {
                     repo.updateReminderState(reminder.id, "FAILED")
                 }
                 LogBus.log("voice action -> created local reminder #${reminder.id}: $message at $triggerAt")
+                NoteAiProcessor(context).processReminder(reminder.id) { _ -> }
             }
         } catch (e: Exception) {
             LogBus.error("could not create local reminder for $valStr", e)
@@ -1142,6 +1143,9 @@ class PhoneActionExecutor(context: Context) {
             }
             val repo = NoteRepository(context)
             val id = repo.createNote(title = "", body = cleanText, tags = tags)
+            if (id > 0) {
+                NoteAiProcessor(context).processNote(id) { _ -> }
+            }
             LogBus.log("voice action -> created local note #$id: $cleanText (tags: $tags)")
         } catch (e: Exception) {
             LogBus.error("could not create local note for $text", e)
@@ -1174,6 +1178,9 @@ class PhoneActionExecutor(context: Context) {
             }
             val repo = NoteRepository(context)
             val id = repo.createNote(title = title, body = body, tags = tags)
+            if (id > 0) {
+                NoteAiProcessor(context).processNote(id) { _ -> }
+            }
             LogBus.log("voice action -> created local note with tags #$id title='$title', tags='$tags'")
         } catch (e: Exception) {
             LogBus.error("could not create note with tags for $valStr", e)
@@ -1198,6 +1205,26 @@ class PhoneActionExecutor(context: Context) {
         } catch (e: Exception) {
             LogBus.error("could not search notes for $query", e)
             return "Error al buscar notas."
+        }
+    }
+
+    fun listRemindersSummary(): String {
+        try {
+            val repo = ReminderRepository(context)
+            val reminders = repo.getPendingReminders()
+            if (reminders.isEmpty()) {
+                return "No tienes recordatorios pendientes."
+            }
+            val sb = StringBuilder("⏰ Recordatorios pendientes (${reminders.size}):\n")
+            reminders.take(5).forEachIndexed { idx, r ->
+                val titleStr = r.title.ifBlank { r.body }
+                val timeStr = r.formattedTriggerDate()
+                sb.append("${idx + 1}. $titleStr (a las $timeStr)\n")
+            }
+            return sb.toString().trim()
+        } catch (e: Exception) {
+            LogBus.error("could not list reminders", e)
+            return "Error al consultar recordatorios."
         }
     }
 

@@ -207,18 +207,36 @@ class VoiceActionRouter(
             return RouteResult(handled = true, responseText = summary)
         }
 
-        // 7. Notas
-        // 7a. Crear Nota: ej: "toma nota que la cita es a las 4"
+        // 7. Notas y Recordatorios
+        // 7a. Consultar Notas: ej: "mis notas", "consultar notas", "qué notas tengo"
+        if (normalized.contains("mis notas") || normalized.contains("consultar notas") || normalized.contains("que notas tengo") || normalized.startsWith("buscar nota")) {
+            val query = if (normalized.contains("sobre ") || normalized.contains("de ")) {
+                trimmed.substringAfter("de ").substringAfter("sobre ").trim()
+            } else ""
+            val summary = if (query.isNotBlank()) actionExecutor.searchNotesSummary(query) else actionExecutor.searchNotesSummary(" ")
+            return RouteResult(handled = true, responseText = summary)
+        }
+
+        // 7b. Consultar Recordatorios: ej: "mis recordatorios", "consultar recordatorios"
+        if (normalized.contains("mis recordatorios") || normalized.contains("consultar recordatorios") || normalized.contains("que recordatorios tengo")) {
+            val summary = actionExecutor.listRemindersSummary()
+            return RouteResult(handled = true, responseText = summary)
+        }
+
+        // 7c. Crear Nota: ej: "toma nota que la cita es a las 4"
         val noteMatch = Regex("^(toma\\s+nota|anota\\s+que|anota|nueva\\s+nota|apunta\\s+que|apunta)\\s+(.+)$", RegexOption.IGNORE_CASE).find(normalized)
         if (noteMatch != null) {
             val noteBody = trimmed.substring(noteMatch.groups[2]!!.range.first).trim()
             val repo = NoteRepository(context)
-            repo.createNote(title = "", body = noteBody)
+            val noteId = repo.createNote(title = "", body = noteBody)
+            if (noteId > 0) {
+                com.myvu.client.ai.NoteAiProcessor(context).processNote(noteId) { _ -> }
+            }
             LogBus.log("VoiceActionRouter -> Fast-Path note created: '$noteBody'")
             return RouteResult(handled = true, responseText = "Nota guardada.")
         }
 
-        // 7b. Eliminar Nota: ej: "elimina la nota de reunión"
+        // 7d. Eliminar Nota: ej: "elimina la nota de reunión"
         val noteDelMatch = Regex("^(elimina|borra|borrar?|eliminar?)\\s+(la\\s+nota\\s+(de\\s+)?|nota\\s+)?(.+)$", RegexOption.IGNORE_CASE).find(normalized)
         if (noteDelMatch != null && normalized.contains("nota")) {
             val noteTitle = cleanTarget(noteDelMatch.groupValues[4])
@@ -226,6 +244,15 @@ class VoiceActionRouter(
             repo.deleteByTitle(noteTitle)
             LogBus.log("VoiceActionRouter -> Fast-Path note deleted: '$noteTitle'")
             return RouteResult(handled = true, responseText = "Nota eliminada.")
+        }
+
+        // 7e. Eliminar Recordatorio: ej: "eliminar recordatorio de médico"
+        val remDelMatch = Regex("^(elimina|borra|borrar?|eliminar?)\\s+(el\\s+recordatorio\\s+(de\\s+)?|recordatorio\\s+)?(.+)$", RegexOption.IGNORE_CASE).find(normalized)
+        if (remDelMatch != null && normalized.contains("recordatorio")) {
+            val remTitle = cleanTarget(remDelMatch.groupValues[4])
+            actionExecutor.deleteReminderAction(remTitle)
+            LogBus.log("VoiceActionRouter -> Fast-Path reminder deleted: '$remTitle'")
+            return RouteResult(handled = true, responseText = "Recordatorio eliminado.")
         }
 
         // 8. Alarmas y Temporizadores
