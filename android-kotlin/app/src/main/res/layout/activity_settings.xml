@@ -178,12 +178,23 @@
                             android:layout_marginTop="6dp">
 
                             <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnProviderGeminiAndroid"
+                                android:id="@+id/btnProviderPocketLlm"
                                 style="@style/Button.Myvu.Outlined"
-                                android:layout_width="match_parent"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
                                 android:layout_height="wrap_content"
                                 android:textSize="11sp"
-                                android:text="Gemini Android (Nano/API)" />
+                                android:layout_marginEnd="4dp"
+                                android:text="Pocket LLM" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnProviderGeminiAndroid"
+                                style="@style/Button.Myvu.Outlined"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="wrap_content"
+                                android:textSize="11sp"
+                                android:text="Gemini Android" />
                         </LinearLayout>
                     </LinearLayout>
 

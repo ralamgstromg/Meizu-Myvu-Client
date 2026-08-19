@@ -208,7 +208,7 @@ class SettingsActivity : AppCompatActivity() {
         val buttonIds = intArrayOf(
             R.id.btnProviderAssistant, R.id.btnProviderGemini, R.id.btnProviderOpenai,
             R.id.btnProviderClaude, R.id.btnProviderGroq, R.id.btnProviderNvidia,
-            R.id.btnProviderLocal, R.id.btnProviderGeminiAndroid
+            R.id.btnProviderLocal, R.id.btnProviderPocketLlm, R.id.btnProviderGeminiAndroid
         )
         for (id in buttonIds) {
             findViewById<View?>(id)?.setOnClickListener(providerClickListener)
@@ -519,13 +519,15 @@ class SettingsActivity : AppCompatActivity() {
     private fun bindAiFields() {
         bindingAi = true
         val local = aiProvider == AiProvider.LOCAL
+        val isPocketLlm = aiProvider == AiProvider.POCKET_LLM
+        val isLocalOrPocket = local || isPocketLlm
         val assistant = aiProvider == AiProvider.ASSISTANT
 
         val selectedId = aiButtonFor(aiProvider)
         val buttonIds = intArrayOf(
             R.id.btnProviderAssistant, R.id.btnProviderGemini, R.id.btnProviderOpenai,
             R.id.btnProviderClaude, R.id.btnProviderGroq, R.id.btnProviderNvidia,
-            R.id.btnProviderLocal, R.id.btnProviderGeminiAndroid
+            R.id.btnProviderLocal, R.id.btnProviderPocketLlm, R.id.btnProviderGeminiAndroid
         )
         for (id in buttonIds) {
             val btn: MaterialButton? = findViewById(id)
@@ -556,16 +558,17 @@ class SettingsActivity : AppCompatActivity() {
         } else {
             layApiKey.visibility = if (assistant) View.GONE else View.VISIBLE
             layModel.visibility = if (assistant) View.GONE else View.VISIBLE
-            layAiEndpoint.visibility = if (local) View.VISIBLE else View.GONE
+            layAiEndpoint.visibility = if (isLocalOrPocket) View.VISIBLE else View.GONE
             chkIgnoreSsl?.let {
-                it.visibility = if (local) View.VISIBLE else View.GONE
+                it.visibility = if (isLocalOrPocket) View.VISIBLE else View.GONE
                 it.isChecked = Prefs.ignoreSsl(this)
             }
         }
 
-        layApiKey.hint = aiProvider.label + " API key"
-        layApiKey.helperText = if (local) "Optional Bearer token" else "Create one at " + aiProvider.console
-        layModel.helperText = if (local) "Required; use a model id exposed by the local server" else "Blank uses " + aiProvider.defaultModel
+        layApiKey.hint = if (isPocketLlm) "Pocket LLM Token / Bearer Key (Opcional)" else aiProvider.label + " API key"
+        layApiKey.helperText = if (isLocalOrPocket) "Token Opcional (si tu servidor local/Pocket LLM requiere autenticación Bearer)" else "Create one at " + aiProvider.console
+        layAiEndpoint.hint = if (isPocketLlm) "URL Pocket LLM (default: http://127.0.0.1:8080/v1/chat/completions)" else "URL Endpoint API (OpenAI Compatible)"
+        layModel.helperText = if (isLocalOrPocket) "Requerido/Opcional: ID de modelo expuesto en Pocket LLM (ej: gemma-4-e2b-it)" else "Blank uses " + aiProvider.defaultModel
         txtApiKey.setText(Prefs.aiApiKey(this, aiProvider.id))
         txtModel.setText(Prefs.aiModel(this, aiProvider.id))
         txtAiEndpoint.setText(Prefs.aiEndpoint(this, aiProvider.id))
@@ -1328,6 +1331,7 @@ class SettingsActivity : AppCompatActivity() {
                 AiProvider.NVIDIA -> R.id.btnProviderNvidia
                 AiProvider.ASSISTANT -> R.id.btnProviderAssistant
                 AiProvider.LOCAL -> R.id.btnProviderLocal
+                AiProvider.POCKET_LLM -> R.id.btnProviderPocketLlm
                 else -> R.id.btnProviderClaude
             }
         }
@@ -1341,6 +1345,7 @@ class SettingsActivity : AppCompatActivity() {
                 R.id.btnProviderNvidia -> AiProvider.NVIDIA
                 R.id.btnProviderAssistant -> AiProvider.ASSISTANT
                 R.id.btnProviderLocal -> AiProvider.LOCAL
+                R.id.btnProviderPocketLlm -> AiProvider.POCKET_LLM
                 else -> AiProvider.CLAUDE
             }
         }

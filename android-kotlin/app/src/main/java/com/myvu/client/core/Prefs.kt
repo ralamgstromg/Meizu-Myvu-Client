@@ -218,7 +218,7 @@ object Prefs {
 
     @JvmStatic
     fun aiEndpoint(c: Context, providerId: String): String {
-        val defaultValue = if ("local" == providerId) DEFAULT_LOCAL_AI_ENDPOINT else ""
+        val defaultValue = if ("local" == providerId || "pocket_llm" == providerId) DEFAULT_LOCAL_AI_ENDPOINT else ""
         return prefs(c).getString("ai_endpoint_$providerId", defaultValue) ?: defaultValue
     }
 
