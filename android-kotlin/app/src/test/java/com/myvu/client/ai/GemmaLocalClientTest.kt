@@ -8,6 +8,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -227,6 +228,109 @@ class GemmaLocalClientTest {
         } catch (e: IOException) {
             assertTrue(e.message?.contains("Inferencia local Gemma falló") == true)
             assertTrue(e.message?.contains("Out of memory on GPU") == true)
+        }
+    }
+
+    @Test
+    fun findAvailableMediaPipeFallbackDetectsAvailableBinModels() {
+        val client = GemmaLocalClient(context, GemmaLocalClient.GEMMA_4_E2B_LITERT)
+        // No .bin models exist
+        assertNull(client.findAvailableMediaPipeFallback())
+
+        // Create GPU model
+        createSparseModelFile(GemmaLocalClient.GEMMA_2B_IT_GPU.fileName, 60_000_000L)
+        assertEquals(GemmaLocalClient.GEMMA_2B_IT_GPU, client.findAvailableMediaPipeFallback())
+
+        // Create GPU 2 model as well (should still prefer GEMMA_2B_IT_GPU as first candidate)
+        createSparseModelFile(GemmaLocalClient.GEMMA_2_2B_IT_GPU.fileName, 60_000_000L)
+        assertEquals(GemmaLocalClient.GEMMA_2B_IT_GPU, client.findAvailableMediaPipeFallback())
+
+        // If client is configured with GEMMA_2B_IT_GPU, fallback should skip it and select GEMMA_2_2B_IT_GPU
+        val gpuClient = GemmaLocalClient(context, GemmaLocalClient.GEMMA_2B_IT_GPU)
+        assertEquals(GemmaLocalClient.GEMMA_2_2B_IT_GPU, gpuClient.findAvailableMediaPipeFallback())
+    }
+
+    @Test
+    fun askAutoSwitchesToMediaPipeWhenLiteRtFailsAndBinModelExists() {
+        // Create LiteRT model file and MediaPipe GPU model file
+        createSparseModelFile(GemmaLocalClient.GEMMA_4_E2B_LITERT.fileName, 60_000_000L)
+        createSparseModelFile(GemmaLocalClient.GEMMA_2B_IT_GPU.fileName, 60_000_000L)
+
+        val failingEngine = object : OnDeviceLlmEngine {
+            override fun initialize(context: Context, modelFile: File, maxTokens: Int) {}
+            override fun generate(prompt: String): String =
+                throw UnsupportedOperationException("Compilador nativo LiteRT-LM no disponible para SoC mt6878")
+            override fun isReady(): Boolean = true
+            override fun close() {}
+        }
+
+        var fallbackEngineInitCalled = false
+        var fallbackEngineGenerateCalled = false
+        val fallbackEngine = object : OnDeviceLlmEngine {
+            override fun initialize(context: Context, modelFile: File, maxTokens: Int) {
+                fallbackEngineInitCalled = true
+                assertEquals(GemmaLocalClient.GEMMA_2B_IT_GPU.fileName, modelFile.name)
+            }
+
+            override fun generate(prompt: String): String {
+                fallbackEngineGenerateCalled = true
+                return "Respuesta acelerada por MediaPipe GPU: $prompt"
+            }
+
+            override fun isReady(): Boolean = true
+            override fun close() {}
+        }
+
+        val client = GemmaLocalClient(
+            context = context,
+            modelOption = GemmaLocalClient.GEMMA_4_E2B_LITERT,
+            customEngine = failingEngine,
+            fallbackEngineFactory = { opt ->
+                assertEquals(GemmaLocalClient.GEMMA_2B_IT_GPU, opt)
+                fallbackEngine
+            }
+        )
+
+        val response = client.ask("¿Cuál es la fórmula del agua?")
+        assertTrue(fallbackEngineInitCalled)
+        assertTrue(fallbackEngineGenerateCalled)
+        assertEquals("Respuesta acelerada por MediaPipe GPU: ¿Cuál es la fórmula del agua?", response)
+    }
+
+    @Test
+    fun askPropagatesExceptionWhenBothPrimaryAndFallbackFail() {
+        createSparseModelFile(GemmaLocalClient.GEMMA_4_E2B_LITERT.fileName, 60_000_000L)
+        createSparseModelFile(GemmaLocalClient.GEMMA_2B_IT_GPU.fileName, 60_000_000L)
+
+        val failingEngine = object : OnDeviceLlmEngine {
+            override fun initialize(context: Context, modelFile: File, maxTokens: Int) {}
+            override fun generate(prompt: String): String =
+                throw UnsupportedOperationException("Compilador nativo no disponible")
+            override fun isReady(): Boolean = true
+            override fun close() {}
+        }
+
+        val failingFallbackEngine = object : OnDeviceLlmEngine {
+            override fun initialize(context: Context, modelFile: File, maxTokens: Int) {}
+            override fun generate(prompt: String): String =
+                throw RuntimeException("GPU driver crash")
+            override fun isReady(): Boolean = true
+            override fun close() {}
+        }
+
+        val client = GemmaLocalClient(
+            context = context,
+            modelOption = GemmaLocalClient.GEMMA_4_E2B_LITERT,
+            customEngine = failingEngine,
+            fallbackEngineFactory = { failingFallbackEngine }
+        )
+
+        try {
+            client.ask("Hola")
+            fail("Expected IOException when fallback also fails")
+        } catch (e: IOException) {
+            assertTrue(e.message?.contains("auto-conmutación a gemma-2b-it-gpu-int4.bin") == true)
+            assertTrue(e.message?.contains("GPU driver crash") == true)
         }
     }
 }

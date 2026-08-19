@@ -269,4 +269,14 @@ class OnDeviceLlmEngineTest {
         assertFalse(engine.isReady())
         assertNull(engine.getContainerMetadata())
     }
+
+    @Test
+    fun liteRtEngineIsNativeRunnerAvailableReflectsConfiguration() {
+        val defaultEngine = LiteRtLmEngine()
+        assertFalse(defaultEngine.isNativeRunnerAvailable())
+
+        val customRunner = LiteRtLmEngine.LiteRtInferenceRunner { _, _, _ -> "ok" }
+        val engineWithRunner = LiteRtLmEngine(inferenceRunner = customRunner)
+        assertTrue(engineWithRunner.isNativeRunnerAvailable())
+    }
 }

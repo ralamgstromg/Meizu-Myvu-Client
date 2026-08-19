@@ -104,6 +104,8 @@ class LiteRtLmEngine(
         LogBus.log("AI_LITERT_LM_ENGINE_CLOSED")
     }
 
+    fun isNativeRunnerAvailable(): Boolean = inferenceRunner != null
+
     fun getContainerMetadata(): LiteRtContainerMetadata? = containerMetadata
 
     @Throws(IOException::class)

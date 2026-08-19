@@ -25,7 +25,8 @@ data class GemmaModelOption(
 class GemmaLocalClient(
     private val context: Context,
     val modelOption: GemmaModelOption = DEFAULT_OPTION,
-    private val customEngine: OnDeviceLlmEngine? = null
+    private val customEngine: OnDeviceLlmEngine? = null,
+    private val fallbackEngineFactory: ((GemmaModelOption) -> OnDeviceLlmEngine)? = null
 ) : AiClient {
 
     companion object {
@@ -139,6 +140,22 @@ class GemmaLocalClient(
         return engine
     }
 
+    fun findAvailableMediaPipeFallback(): GemmaModelOption? {
+        val fallbackCandidates = listOf(
+            GEMMA_2B_IT_GPU,
+            GEMMA_2_2B_IT_GPU,
+            GEMMA_2B_IT_CPU,
+            GEMMA_1_1_2B_IT_GPU
+        )
+
+        return fallbackCandidates.firstOrNull { candidate ->
+            candidate.id != modelOption.id && run {
+                val candidateFile = getModelFile(context, candidate.fileName)
+                candidateFile.exists() && candidateFile.length() > 50_000_000L
+            }
+        }
+    }
+
     @Throws(IOException::class)
     override fun ask(question: String): String {
         if (!isConfigured()) {
@@ -155,6 +172,32 @@ class GemmaLocalClient(
             return response.trim()
         } catch (e: Throwable) {
             LogBus.error("AI_GEMMA_LOCAL_ERROR: ${e.message}", e)
+
+            val fallbackOption = findAvailableMediaPipeFallback()
+            if (fallbackOption != null) {
+                val fallbackFile = getModelFile(context, fallbackOption.fileName)
+                LogBus.log(
+                    "AI_GEMMA_AUTO_SWITCH from=${modelOption.fileName} " +
+                    "to=${fallbackOption.fileName} reason=${e.message}"
+                )
+                try {
+                    val fallbackEngine = fallbackEngineFactory?.invoke(fallbackOption)
+                        ?: createEngine(fallbackOption)
+                    fallbackEngine.initialize(context, fallbackFile, maxTokens = 512)
+                    val response = fallbackEngine.generate(question)
+                    if (response.isBlank()) {
+                        throw IOException("El motor MediaPipe (${fallbackOption.fileName}) retornó una respuesta vacía")
+                    }
+                    return response.trim()
+                } catch (fallbackError: Throwable) {
+                    LogBus.error("AI_GEMMA_AUTO_SWITCH_ERROR: ${fallbackError.message}", fallbackError)
+                    throw IOException(
+                        "Inferencia local Gemma falló tras auto-conmutación a ${fallbackOption.fileName} (${fallbackError.message}). Activando fallback.",
+                        fallbackError
+                    )
+                }
+            }
+
             throw IOException("Inferencia local Gemma falló (${e.message}). Activando fallback.", e)
         }
     }
