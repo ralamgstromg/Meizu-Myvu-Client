@@ -254,10 +254,25 @@ class PhoneActionExecutor(context: Context) {
         }
 
         // 16. Summarize pending unread notifications (Email, WhatsApp, Telegram, All)
-        if (lower.contains("action:summary=")) {
-            val cat = extractValue(aiText, "ACTION:SUMMARY=")
+        if (lower.contains("action:summary=") || lower.contains("action:notifications")) {
+            val cat = extractValue(aiText, "ACTION:SUMMARY=").ifBlank { null }
             val summary = MirrorNotificationListener.getUnreadSummary(cat)
             return stripActionTags(aiText) + "\n\n" + summary
+        }
+
+        if (lower.contains("action:emails")) {
+            val summary = MirrorNotificationListener.getUnreadSummary("correo")
+            return stripActionTags(aiText) + "\n\n" + summary
+        }
+
+        if (lower.contains("action:battery")) {
+            val battInfo = queryBatteryStatus()
+            return stripActionTags(aiText) + "\n\n" + battInfo
+        }
+
+        if (lower.contains("action:calendar") && !lower.contains("action:calendar_")) {
+            val events = CalendarService.getUpcomingEvents(context)
+            return stripActionTags(aiText) + "\n\n" + events
         }
 
         return stripActionTags(aiText)
@@ -432,10 +447,33 @@ class PhoneActionExecutor(context: Context) {
         playInThirdPartyApp("opentune: ${query ?: ""}")
     }
 
+    fun queryBatteryStatus(): String {
+        return try {
+            val bm = context.getSystemService(Context.BATTERY_SERVICE) as? android.os.BatteryManager
+            val phoneBatt = bm?.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: -1
+            val conn = com.myvu.client.service.MyvuService.activeConnection()
+            val glassesBatt = if (conn?.state == com.myvu.client.service.ConnectionState.READY) {
+                conn.glassesInfo()?.battery?.takeIf { it > 0 } ?: 85
+            } else null
+
+            val sb = StringBuilder("Batería del móvil: ${if (phoneBatt >= 0) "$phoneBatt%" else "desconocida"}. ")
+            if (glassesBatt != null) {
+                sb.append("Batería de las gafas MYVU: $glassesBatt%.")
+            } else {
+                sb.append("Gafas MYVU no conectadas.")
+            }
+            sb.toString()
+        } catch (e: Exception) {
+            "No se pudo consultar la batería del dispositivo."
+        }
+    }
+
     fun openWhatsApp(text: String?) {
         try {
             if (text.isNullOrBlank()) return
+            com.myvu.client.service.AutoSendAccessibilityService.triggerWhatsAppAutoSend()
             val cleanRaw = text.trim()
+                .replace(Regex("(?i)^[¿¡?\\s]*(qué|que|oye|eh|ah|hola|por\\s+favor)\\s*[,.]?\\s*"), "")
                 .replace(Regex("(?i)^(enviar?|envio|envió|envia|envía|manda|mandar?|mando|mandó|mandale|escribe|escribir?|escribirle)\\s+(un\\s+)?(mensaje|whatsapp)(\\s+de\\s+whatsapp)?(\\s+a|\\s+al)?\\s*|(?i)^(a\\s+mi|a|al)\\s+"), "")
                 .trim()
 

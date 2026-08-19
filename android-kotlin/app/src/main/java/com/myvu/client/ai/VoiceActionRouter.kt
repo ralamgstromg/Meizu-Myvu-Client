@@ -30,10 +30,43 @@ class VoiceActionRouter(
     fun tryRoute(rawQuery: String): RouteResult {
         if (rawQuery.isBlank()) return RouteResult(handled = false)
 
-        val trimmed = rawQuery.trim()
+        val rawTrimmed = rawQuery.trim()
+        // Strip leading filler interjections (e.g. "¿Qué?", "Oye,", "Por favor,", "Eh,") while preserving questions like "Qué es..."
+        val cleanedTrimmed = rawTrimmed
+            .replace(Regex("(?i)^[¿¡?\\s]*(qué|que)\\s*[?,!]\\s*|(?i)^[¿¡?\\s]*(oye|eh|ah|hola|por\\s+favor)\\s*[,.]?\\s*"), "")
+            .trim()
+        val trimmed = if (cleanedTrimmed.isNotBlank()) cleanedTrimmed else rawTrimmed
         val normalized = normalize(trimmed)
 
-        // 1. Llamadas telefónicas (incluyendo variaciones fonéticas: llamar, marca, llamo, llamó, llama, marcale, etc.)
+        // 1. Agenda / Calendario (Reuniones próximas)
+        if (normalized.contains("reunione") || normalized.contains("agenda") || normalized.contains("calendario") || normalized.contains("eventos hoy")) {
+            LogBus.log("VoiceActionRouter -> Fast-Path calendar events")
+            val response = CalendarService.getUpcomingEvents(context)
+            return RouteResult(handled = true, responseText = response)
+        }
+
+        // 2. Resumen de Notificaciones Activas
+        if (normalized.contains("resumir notificacion") || normalized.contains("resumen de notificacion") || normalized.contains("notificaciones pendientes") || normalized.contains("que notificaciones") || normalized.contains("que avisos tengo")) {
+            LogBus.log("VoiceActionRouter -> Fast-Path notification summary")
+            val response = MirrorNotificationListener.getUnreadSummary(null)
+            return RouteResult(handled = true, responseText = response)
+        }
+
+        // 3. Correos Pendientes / Mail
+        if (normalized.contains("correos pendientes") || normalized.contains("mails sin leer") || normalized.contains("revisar correo") || normalized.contains("tengo correos")) {
+            LogBus.log("VoiceActionRouter -> Fast-Path email summary")
+            val response = MirrorNotificationListener.getUnreadSummary("correo")
+            return RouteResult(handled = true, responseText = response)
+        }
+
+        // 4. Estado de Batería y Dispositivos
+        if (normalized.contains("bateria") || normalized.contains("cuanta bateria")) {
+            LogBus.log("VoiceActionRouter -> Fast-Path battery query")
+            val response = actionExecutor.queryBatteryStatus()
+            return RouteResult(handled = true, responseText = response)
+        }
+
+        // 5. Llamadas telefónicas (incluyendo variaciones fonéticas: llamar, marca, llamo, llamó, llama, marcale, etc.)
         val callMatch = Regex("^(llamar?|marcar?|marca|llama|llamo|llamó|llamas|llamame|marcale|marcarle|call|jamar?|yamar?)\\s+(a|al|a\\s+mi)?\\s*(.+)$", RegexOption.IGNORE_CASE).find(normalized)
         if (callMatch != null) {
             val rawTarget = trimmed.substring(callMatch.groups[1]!!.range.last + 1)
@@ -45,7 +78,7 @@ class VoiceActionRouter(
             }
         }
 
-        // 2. WhatsApp y Mensajes (incluyendo frases como "envió un mensaje de whatsapp a Matías Castro hola cómo estás")
+        // 6. WhatsApp y Mensajes
         val waMatch = Regex("^(enviar?|envio|envió|envia|envía|envias|envías|manda|mandar?|mando|mandó|mandale|enviarle|mandarle|escribe|escribir?|escribirle|mensaje\\s+para|para)\\s+(un\\s+)?(mensaje\\s+de\\s+whatsapp|mensaje\\s+por\\s+whatsapp|whatsapp|mensaje)?\\s*(a|al|a\\s+mi|para)?\\s*(.+)$", RegexOption.IGNORE_CASE).find(normalized)
         if (waMatch != null && !normalized.startsWith("para las ") && !normalized.startsWith("para el ")) {
             val payload = trimmed
@@ -54,8 +87,9 @@ class VoiceActionRouter(
                 .trim()
             if (payload.isNotBlank()) {
                 LogBus.log("VoiceActionRouter -> Fast-Path WhatsApp: '$payload'")
+                com.myvu.client.service.AutoSendAccessibilityService.triggerWhatsAppAutoSend()
                 actionExecutor.openWhatsApp(payload)
-                return RouteResult(handled = true, responseText = "Preparando mensaje de WhatsApp...")
+                return RouteResult(handled = true, responseText = "Enviando mensaje de WhatsApp...")
             }
         }
 
@@ -66,12 +100,13 @@ class VoiceActionRouter(
                 .trim()
             if (waPayload.isNotBlank() && waPayload.length > 3) {
                 LogBus.log("VoiceActionRouter -> Fast-Path WhatsApp fallback: '$waPayload'")
+                com.myvu.client.service.AutoSendAccessibilityService.triggerWhatsAppAutoSend()
                 actionExecutor.openWhatsApp(waPayload)
-                return RouteResult(handled = true, responseText = "Preparando mensaje de WhatsApp...")
+                return RouteResult(handled = true, responseText = "Enviando mensaje de WhatsApp...")
             }
         }
 
-        // 3. Telegram
+        // 7. Telegram
         val tgMatch = Regex("^(enviar?|envio|envió|envia|envía|manda|mandar?|mandó|mandale|escribe|escribir?)\\s+(un\\s+)?(telegram|mensaje\\s+de\\s+telegram)\\s+(a|al)?\\s*(.+)$", RegexOption.IGNORE_CASE).find(normalized)
         if (tgMatch != null) {
             val payload = trimmed
@@ -79,8 +114,9 @@ class VoiceActionRouter(
                 .trim()
             if (payload.isNotBlank()) {
                 LogBus.log("VoiceActionRouter -> Fast-Path Telegram: '$payload'")
+                com.myvu.client.service.AutoSendAccessibilityService.triggerTelegramAutoSend()
                 actionExecutor.openTelegram(payload)
-                return RouteResult(handled = true, responseText = "Preparando mensaje de Telegram...")
+                return RouteResult(handled = true, responseText = "Enviando mensaje de Telegram...")
             }
         }
 

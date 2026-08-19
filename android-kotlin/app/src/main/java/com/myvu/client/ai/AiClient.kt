@@ -20,7 +20,11 @@ interface AiClient {
             "  - Música: ACTION:APP_PLAY={App}: {Canción}\n" +
             "  - Abrir App: ACTION:APP_OPEN={App}\n" +
             "  - Teleprompter HUD: ACTION:TELEPROMPTER={Texto}\n" +
-            "  - Navegación: ACTION:NAVIGATE={Destino}"
+            "  - Navegación: ACTION:NAVIGATE={Destino}\n" +
+            "  - Agenda / Reuniones: ACTION:CALENDAR\n" +
+            "  - Notificaciones: ACTION:NOTIFICATIONS\n" +
+            "  - Correos Pendientes: ACTION:EMAILS\n" +
+            "  - Estado de Batería: ACTION:BATTERY"
     }
 
     fun isConfigured(): Boolean
