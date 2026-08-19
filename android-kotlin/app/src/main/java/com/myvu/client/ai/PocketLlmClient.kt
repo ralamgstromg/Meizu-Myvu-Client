@@ -57,6 +57,25 @@ class PocketLlmClient @JvmOverloads constructor(
         }
     }
 
+    @Throws(IOException::class)
+    override fun askWithImage(question: String, imageBytes: ByteArray?, mimeType: String): String {
+        if (imageBytes == null || imageBytes.isEmpty()) {
+            return ask(question)
+        }
+        LogBus.log("AI_POCKET_LLM_ASK_MULTIMODAL: Enviando visión + texto a Gemma 4 / Pocket LLM Server ($primaryEndpoint)...")
+        try {
+            return httpClient.askWithImage(question, imageBytes, mimeType)
+        } catch (e: Exception) {
+            LogBus.warn("AI_POCKET_LLM_MULTIMODAL_PRIMARY_FAIL: Falló $primaryEndpoint (${e.message}). Intentando puerto 11434...")
+            try {
+                return fallbackPort11434Client.askWithImage(question, imageBytes, mimeType)
+            } catch (fallbackErr: Exception) {
+                LogBus.error("AI_POCKET_LLM_MULTIMODAL_ERROR: Pocket LLM Server no respondió en 8080 ni 11434: ${fallbackErr.message}", fallbackErr)
+                throw IOException("Pocket LLM Server Android no respondió a la consulta multimodal (${fallbackErr.message})", fallbackErr)
+            }
+        }
+    }
+
     companion object {
         const val DEFAULT_ENDPOINT = "http://127.0.0.1:8080/v1/chat/completions"
         const val DEFAULT_MODEL = "gemma-4-e2b-it"

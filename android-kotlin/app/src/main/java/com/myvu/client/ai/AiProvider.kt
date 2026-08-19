@@ -149,6 +149,32 @@ enum class AiProvider(
 
             throw java.io.IOException("Ningún proveedor de IA (On-Device, Servidor Local o Cloud API) respondió.")
         }
+
+        @Throws(java.io.IOException::class)
+        override fun askWithImage(question: String, imageBytes: ByteArray?, mimeType: String): String {
+            if (localClient?.isConfigured() == true) {
+                try {
+                    com.myvu.client.core.LogBus.log("AI_LOCAL_ATTEMPT: Ejecutando multimodal en modelo local...")
+                    return localClient.askWithImage(question, imageBytes, mimeType)
+                } catch (e: Exception) {
+                    com.myvu.client.core.LogBus.warn("AI_LOCAL_FAILED: Falló modelo local multimodal (${e.message}). Intentando remoto...")
+                }
+            }
+
+            if (primaryClient.isConfigured() && primaryClient != localClient) {
+                try {
+                    return primaryClient.askWithImage(question, imageBytes, mimeType)
+                } catch (e: Exception) {
+                    com.myvu.client.core.LogBus.warn("AI_PRIMARY_FAILED: Proveedor principal falló (${e.message}). Conmutando a API de rescate...")
+                }
+            }
+
+            if (rescueClient?.isConfigured() == true && rescueClient != primaryClient) {
+                return rescueClient.askWithImage(question, imageBytes, mimeType)
+            }
+
+            throw java.io.IOException("Ningún proveedor de IA respondió a la consulta multimodal.")
+        }
     }
 
     companion object {

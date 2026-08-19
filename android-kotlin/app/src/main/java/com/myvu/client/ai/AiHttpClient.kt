@@ -55,7 +55,7 @@ abstract class AiHttpClient @JvmOverloads constructor(
     }
 
     @Throws(IOException::class)
-    private fun askOnce(body: String): String {
+    protected fun askOnce(body: String): String {
         return askOnceInternal(body, ignoreSsl)
     }
 

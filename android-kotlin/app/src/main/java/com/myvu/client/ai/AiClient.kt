@@ -31,4 +31,9 @@ interface AiClient {
 
     @Throws(IOException::class)
     fun ask(question: String): String
+
+    @Throws(IOException::class)
+    fun askWithImage(question: String, imageBytes: ByteArray?, mimeType: String = "image/jpeg"): String {
+        return ask(question)
+    }
 }

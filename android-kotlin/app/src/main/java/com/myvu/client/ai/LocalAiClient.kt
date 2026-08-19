@@ -31,8 +31,41 @@ class LocalAiClient @JvmOverloads constructor(
         }
     }
 
+    @Throws(java.io.IOException::class)
+    override fun askWithImage(question: String, imageBytes: ByteArray?, mimeType: String): String {
+        if (imageBytes == null || imageBytes.isEmpty()) {
+            return ask(question)
+        }
+        if (!isConfigured()) {
+            throw java.io.IOException("${provider.displayName} is not fully configured")
+        }
+        val body = try {
+            buildBodyWithImage(question, imageBytes, mimeType)
+        } catch (e: JSONException) {
+            throw java.io.IOException("could not build the multimodal request: ${e.message}", e)
+        }
+        return HttpRetry.execute(provider.displayName) {
+            askOnce(body)
+        }
+    }
+
     @Throws(JSONException::class)
     override fun buildBody(question: String): String {
+        return buildBodyWithImage(question, null, "image/jpeg")
+    }
+
+    @Throws(JSONException::class)
+    fun buildBodyWithImage(question: String, imageBytes: ByteArray?, mimeType: String = "image/jpeg"): String {
+        val userContentObj: Any = if (imageBytes != null && imageBytes.isNotEmpty()) {
+            val b64 = android.util.Base64.encodeToString(imageBytes, android.util.Base64.NO_WRAP)
+            val dataUrl = "data:$mimeType;base64,$b64"
+            JSONArray()
+                .put(JSONObject().put("type", "text").put("text", question))
+                .put(JSONObject().put("type", "image_url").put("image_url", JSONObject().put("url", dataUrl)))
+        } else {
+            question
+        }
+
         return JSONObject()
             .put("model", model)
             .put("stream", false)
@@ -43,7 +76,7 @@ class LocalAiClient @JvmOverloads constructor(
                     .put("content", systemPrompt))
                 .put(JSONObject()
                     .put("role", "user")
-                    .put("content", question)))
+                    .put("content", userContentObj)))
             .toString()
     }
 

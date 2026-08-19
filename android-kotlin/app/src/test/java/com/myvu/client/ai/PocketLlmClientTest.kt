@@ -45,4 +45,20 @@ class PocketLlmClientTest {
             assertTrue(e.message?.contains("Pocket LLM Server Android no está activo") == true)
         }
     }
+
+    @Test
+    fun askWithImageMultimodalFailsGracefullyWhenServerIsNotRunning() {
+        val client = PocketLlmClient(
+            endpoint = "http://127.0.0.1:59999/v1/chat/completions",
+            apiKey = "secret-token",
+            model = "gemma-4-e2b-it",
+            systemPrompt = "Multimodal test"
+        )
+        val dummyImage = byteArrayOf(0x00, 0x01, 0x02)
+        try {
+            client.askWithImage("Describe esta imagen", dummyImage, "image/jpeg")
+        } catch (e: IOException) {
+            assertTrue(e.message?.contains("Pocket LLM Server Android no respondió") == true)
+        }
+    }
 }
