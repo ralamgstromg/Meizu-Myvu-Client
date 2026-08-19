@@ -375,6 +375,7 @@ El cliente Android implementa configuración avanzada de permisos y aceleración
 
 ### 🔬 Compatibilidad con Chipsets MediaTek / SoC `mt6878` (Dimensity Series)
 - **Carga Nativa por Ruta Absoluta System/Vendor (`System.load`)**: `MediaPipeLlmEngine.kt` busca y carga directamente las librerías nativas desde `/system/lib64/libvndksupport.so` y `/vendor/lib64/libOpenCL.so`, omitiendo las restricciones de `System.loadLibrary()`.
+- **Ejecución 100% CPU (MediaPipe XNNPACK)**: Si los drivers de GPU u OpenCL no pueden cargarse por restricciones de fabricante en el móvil, se incluye la opción **🖥️ Gemma 2B IT CPU (`gemma-2b-it-cpu-int4.bin`)**, que ejecuta la inferencia sobre las instrucciones SIMD (ARM NEON) de la CPU del celular sin tocar drivers GPU.
 - **Delegación Transparente de `.litertlm`**: `LiteRtLmEngine` delega la inferencia de contenedores `.litertlm` (como **Gemma 4 E2B IT**) a `MediaPipeLlmEngine`, logrando ejecución directa por hardware.
 
 ---

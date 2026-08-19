@@ -89,7 +89,7 @@ class GemmaLocalClient(
 
         val GEMMA_2B_IT_CPU = GemmaModelOption(
             id = "gemma-2b-it-cpu-int4",
-            name = "Gemma 2B IT (Google AI Edge CPU ~1.35GB) - Requiere HF Token",
+            name = "🖥️ Gemma 2B IT CPU (MediaPipe XNNPACK ~1.35GB) - 100% CPU (Sin OpenCL/GPU)",
             downloadUrl = "https://huggingface.co/google/gemma-2b-it-tflite/resolve/main/gemma-2b-it-cpu-int4.bin",
             fileName = "gemma-2b-it-cpu-int4.bin",
             sizeBytes = 1_350_000_000L

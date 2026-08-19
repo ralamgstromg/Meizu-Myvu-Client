@@ -166,7 +166,7 @@ class SettingsActivityGemmaTest {
 
         val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
         assertTrue(lblStatus.text.contains("MEDIAPIPE"))
-        assertTrue(lblStatus.text.contains("Gemma 2B IT (Google AI Edge CPU"))
+        assertTrue(lblStatus.text.contains("Gemma 2B IT CPU"))
         assertTrue(lblStatus.text.contains("MediaPipe LLM Inference Engine"))
     }
 
