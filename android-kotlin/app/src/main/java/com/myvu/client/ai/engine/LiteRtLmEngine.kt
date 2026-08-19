@@ -95,7 +95,11 @@ class LiteRtLmEngine(
                 return result.trim()
             }
 
-            return fallbackMediaPipeEngine.generate(prompt)
+            if (fallbackMediaPipeEngine.isReady()) {
+                return fallbackMediaPipeEngine.generate(prompt)
+            }
+
+            throw IOException("El contenedor .litertlm (${file.name}) requiere ejecutor LiteRT-LM nativo o seleccionar un modelo MediaPipe (.task / .bin) como TinyLlama 1.1B o Gemma 2B")
         } catch (e: Throwable) {
             val soc = Build.HARDWARE ?: "unknown"
             val message = "Error en ejecución de inferencia LiteRT-LM en SoC ($soc): ${e.message}"

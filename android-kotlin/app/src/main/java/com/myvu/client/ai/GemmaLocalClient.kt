@@ -186,6 +186,7 @@ class GemmaLocalClient(
         val fallbackCandidates = listOf(
             GEMMA_2B_IT_GPU,
             GEMMA_2_2B_IT_GPU,
+            TINYLLAMA_1_1B_TASK,
             GEMMA_2B_IT_CPU,
             GEMMA_1_1_2B_IT_GPU
         )
