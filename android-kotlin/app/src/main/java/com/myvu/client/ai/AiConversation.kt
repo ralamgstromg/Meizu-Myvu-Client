@@ -24,6 +24,16 @@ class AiConversation(
     private val sender: Sender
 ) {
 
+    private var whisperClientFactory: ((Context, WhisperModelOption) -> WhisperLocalClient)? = null
+
+    constructor(
+        context: Context,
+        sender: Sender,
+        whisperClientFactory: ((Context, WhisperModelOption) -> WhisperLocalClient)?
+    ) : this(context, sender) {
+        this.whisperClientFactory = whisperClientFactory
+    }
+
     fun interface Sender {
         fun send(actionJson: String, targetPkg: String, sourcePkg: String)
     }
@@ -46,7 +56,8 @@ class AiConversation(
     private val usesAndroidSpeech: Boolean
         get() = Prefs.useAndroidStt(context) || 
                 Prefs.sttProvider(context) == SttProvider.ON_DEVICE.id || 
-                Prefs.sttProvider(context) == "android"
+                Prefs.rawSttProvider(context) == SttProvider.ON_DEVICE.id ||
+                Prefs.rawSttProvider(context) == "android"
     private val tts = TtsPlayer(this.context)
     private val responseDelivery = AiResponseDelivery(
         sender = ::send,
@@ -330,7 +341,8 @@ class AiConversation(
         var sttProviderId = Prefs.sttProvider(context)
         if (sttProviderId == SttProvider.ON_DEVICE.id) {
             val modelOption = WhisperLocalClient.findOption(Prefs.whisperModelId(context))
-            val localWhisper = WhisperLocalClient(context, modelOption)
+            val localWhisper = whisperClientFactory?.invoke(context, modelOption)
+                ?: WhisperLocalClient(context, modelOption)
             if (localWhisper.isConfigured()) {
                 worker.execute {
                     try {

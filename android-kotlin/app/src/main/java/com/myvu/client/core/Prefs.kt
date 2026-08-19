@@ -258,6 +258,11 @@ object Prefs {
     }
 
     @JvmStatic
+    fun rawSttProvider(c: Context): String {
+        return prefs(c).getString(KEY_STT_PROVIDER, "groq") ?: "groq"
+    }
+
+    @JvmStatic
     fun sttProvider(c: Context): String {
         val prov = prefs(c).getString(KEY_STT_PROVIDER, "groq") ?: "groq"
         return if (prov == "android") "groq" else prov
