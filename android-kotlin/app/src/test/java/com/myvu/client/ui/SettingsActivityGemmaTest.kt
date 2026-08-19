@@ -18,6 +18,7 @@ import org.robolectric.RuntimeEnvironment
 import java.io.File
 import java.io.RandomAccessFile
 
+@Suppress("DEPRECATION")
 @RunWith(RobolectricTestRunner::class)
 class SettingsActivityGemmaTest {
 
@@ -27,7 +28,7 @@ class SettingsActivityGemmaTest {
     fun setUp() {
         val context = RuntimeEnvironment.getApplication()
         GemmaLocalClient.clearCache()
-        Prefs.setGemmaModelId(context, GemmaLocalClient.GEMMA_4_E2B_LITERT.id)
+        android.preference.PreferenceManager.getDefaultSharedPreferences(context).edit().clear().apply()
     }
 
     @After
@@ -51,6 +52,30 @@ class SettingsActivityGemmaTest {
     }
 
     @Test
+    fun defaultGemmaModelInPrefsIsGemma2BGpu() {
+        val context = RuntimeEnvironment.getApplication()
+        assertEquals(GemmaLocalClient.GEMMA_2B_IT_GPU.id, Prefs.gemmaModelId(context))
+        assertEquals("gemma-2b-it-gpu-int4", Prefs.DEFAULT_GEMMA_MODEL_ID)
+    }
+
+    @Test
+    fun activityInitializesWithGemma2BGpuByDefault() {
+        val controller = Robolectric.buildActivity(SettingsActivity::class.java).setup()
+        val activity = controller.get()
+
+        val group = activity.findViewById<MaterialButtonToggleGroup>(R.id.btnGemmaModelVersionGroup)
+        assertNotNull(group)
+        assertEquals(R.id.btnGemma2B, group.checkedButtonId)
+
+        val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
+        assertNotNull(lblStatus)
+        assertTrue(lblStatus.text.contains("MEDIAPIPE"))
+        assertTrue(lblStatus.text.contains("Gemma 2B IT (Google AI Edge GPU"))
+        assertTrue(lblStatus.text.contains("No descargado"))
+        assertTrue(!lblStatus.text.contains("💡 Recomendado"))
+    }
+
+    @Test
     fun activityInitializesWithGemma4BSelectedWhenConfiguredInPrefs() {
         val context = RuntimeEnvironment.getApplication()
         Prefs.setGemmaModelId(context, GemmaLocalClient.GEMMA_4_E2B_LITERT.id)
@@ -66,10 +91,31 @@ class SettingsActivityGemmaTest {
         assertNotNull(lblStatus)
         assertTrue(lblStatus.text.contains("LITERT_LM"))
         assertTrue(lblStatus.text.contains("Gemma 4 E2B"))
+        assertTrue(lblStatus.text.contains("💡 Recomendado: Gemma 2B GPU para aceleración por hardware nativa"))
+    }
+
+    @Test
+    fun selectingGemma4BLiteRtShowsHardwareAccelerationRecommendation() {
+        val controller = Robolectric.buildActivity(SettingsActivity::class.java).setup()
+        val activity = controller.get()
+
+        val group = activity.findViewById<MaterialButtonToggleGroup>(R.id.btnGemmaModelVersionGroup)
+        group.check(R.id.btnGemma4B)
+
+        val savedId = Prefs.gemmaModelId(activity)
+        assertEquals(GemmaLocalClient.GEMMA_4_E2B_LITERT.id, savedId)
+
+        val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
+        assertTrue(lblStatus.text.contains("LITERT_LM"))
+        assertTrue(lblStatus.text.contains("Gemma 4 E2B"))
+        assertTrue(lblStatus.text.contains("💡 Recomendado: Gemma 2B GPU para aceleración por hardware nativa"))
     }
 
     @Test
     fun selectingGemma2BGpuUpdatesPrefsAndStatusWithMediaPipeEngine() {
+        val context = RuntimeEnvironment.getApplication()
+        Prefs.setGemmaModelId(context, GemmaLocalClient.GEMMA_4_E2B_LITERT.id)
+
         val controller = Robolectric.buildActivity(SettingsActivity::class.java).setup()
         val activity = controller.get()
 
@@ -81,7 +127,8 @@ class SettingsActivityGemmaTest {
 
         val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
         assertTrue(lblStatus.text.contains("MEDIAPIPE"))
-        assertTrue(lblStatus.text.contains("Gemma 2B IT"))
+        assertTrue(lblStatus.text.contains("Gemma 2B IT (Google AI Edge GPU"))
+        assertTrue(!lblStatus.text.contains("💡 Recomendado"))
     }
 
     @Test
@@ -98,6 +145,7 @@ class SettingsActivityGemmaTest {
         val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
         assertTrue(lblStatus.text.contains("MEDIAPIPE"))
         assertTrue(lblStatus.text.contains("Gemma 2 2B IT"))
+        assertTrue(!lblStatus.text.contains("💡 Recomendado"))
     }
 
     @Test
@@ -114,6 +162,7 @@ class SettingsActivityGemmaTest {
         val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
         assertTrue(lblStatus.text.contains("MEDIAPIPE"))
         assertTrue(lblStatus.text.contains("Gemma 2B IT (Google AI Edge CPU"))
+        assertTrue(!lblStatus.text.contains("💡 Recomendado"))
     }
 
     @Test
@@ -128,5 +177,21 @@ class SettingsActivityGemmaTest {
         val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
         assertTrue(lblStatus.text.contains("Listo para uso offline"))
         assertTrue(lblStatus.text.contains("[LITERT_LM]"))
+        assertTrue(lblStatus.text.contains("💡 Recomendado: Gemma 2B GPU para aceleración por hardware nativa"))
+    }
+
+    @Test
+    fun statusDisplaysReadyWithoutRecommendationWhenMediaPipeGpuModelFileExists() {
+        createSparseModelFile(GemmaLocalClient.GEMMA_2B_IT_GPU.fileName, 60_000_000L)
+        val context = RuntimeEnvironment.getApplication()
+        Prefs.setGemmaModelId(context, GemmaLocalClient.GEMMA_2B_IT_GPU.id)
+
+        val controller = Robolectric.buildActivity(SettingsActivity::class.java).setup()
+        val activity = controller.get()
+
+        val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
+        assertTrue(lblStatus.text.contains("Listo para uso offline"))
+        assertTrue(lblStatus.text.contains("[MEDIAPIPE]"))
+        assertTrue(!lblStatus.text.contains("💡 Recomendado"))
     }
 }

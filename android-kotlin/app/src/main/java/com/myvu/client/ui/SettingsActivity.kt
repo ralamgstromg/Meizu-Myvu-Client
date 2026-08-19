@@ -667,27 +667,30 @@ class SettingsActivity : AppCompatActivity() {
 
             downloader.startDownload { state ->
                 runOnUiThread {
+                    val notice = if (selectedOption.engineType == com.myvu.client.ai.GemmaEngineType.LITERT_LM) {
+                        "\n💡 Recomendado: Gemma 2B GPU para aceleración por hardware nativa"
+                    } else ""
                     when (state) {
                         is com.myvu.client.ai.GemmaDownloadState.Downloading -> {
                             progressGemmaDownload.progress = state.progressPercent
-                            lblGemmaModelStatus.text = "Descargando ${selectedOption.name} [${selectedOption.engineType.name}]: ${state.progressPercent}% (${state.downloadedBytes / (1024 * 1024)}MB / ${state.totalBytes / (1024 * 1024)}MB)"
+                            lblGemmaModelStatus.text = "Descargando ${selectedOption.name} [${selectedOption.engineType.name}]: ${state.progressPercent}% (${state.downloadedBytes / (1024 * 1024)}MB / ${state.totalBytes / (1024 * 1024)}MB)$notice"
                         }
                         is com.myvu.client.ai.GemmaDownloadState.Completed -> {
                             btnDownloadGemmaModel.isEnabled = true
                             progressGemmaDownload.visibility = View.GONE
-                            lblGemmaModelStatus.text = "${selectedOption.name} [${selectedOption.engineType.name}]: Listo para uso offline"
+                            lblGemmaModelStatus.text = "${selectedOption.name} [${selectedOption.engineType.name}]: Listo para uso offline$notice"
                             Toast.makeText(this, "Modelo descargado correctamente", Toast.LENGTH_SHORT).show()
                         }
                         is com.myvu.client.ai.GemmaDownloadState.Error -> {
                             btnDownloadGemmaModel.isEnabled = true
                             progressGemmaDownload.visibility = View.GONE
-                            lblGemmaModelStatus.text = "Error al descargar [${selectedOption.engineType.name}]: ${state.message}"
+                            lblGemmaModelStatus.text = "Error al descargar [${selectedOption.engineType.name}]: ${state.message}$notice"
                             Toast.makeText(this, "Error de descarga: ${state.message}", Toast.LENGTH_LONG).show()
                         }
                         else -> {
                             btnDownloadGemmaModel.isEnabled = true
                             progressGemmaDownload.visibility = View.GONE
-                            lblGemmaModelStatus.text = "${selectedOption.name} [${selectedOption.engineType.name}]: No descargado"
+                            lblGemmaModelStatus.text = "${selectedOption.name} [${selectedOption.engineType.name}]: No descargado$notice"
                         }
                     }
                 }
@@ -749,10 +752,16 @@ class SettingsActivity : AppCompatActivity() {
         val selectedOption = com.myvu.client.ai.GemmaLocalClient.findOption(Prefs.gemmaModelId(this))
         val downloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption).also { gemmaDownloader = it }
         val state = downloader.getInitialState()
-        lblGemmaModelStatus.text = when (state) {
+        val baseStatus = when (state) {
             is com.myvu.client.ai.GemmaDownloadState.Completed -> "${selectedOption.name} [${selectedOption.engineType.name}]: Listo para uso offline"
             else -> "${selectedOption.name} [${selectedOption.engineType.name}]: No descargado"
         }
+        val warning = if (selectedOption.engineType == com.myvu.client.ai.GemmaEngineType.LITERT_LM) {
+            "\n💡 Recomendado: Gemma 2B GPU para aceleración por hardware nativa"
+        } else {
+            ""
+        }
+        lblGemmaModelStatus.text = "$baseStatus$warning"
     }
 
     private fun configureWhisperOnDeviceControls() {

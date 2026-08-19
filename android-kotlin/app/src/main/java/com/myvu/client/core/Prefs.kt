@@ -26,6 +26,7 @@ object Prefs {
     private const val KEY_GEMINI_FALLBACK_POLICY = "gemini_fallback_policy"
     private const val KEY_USE_LOCAL_GEMMA = "use_local_gemma"
     private const val KEY_GEMMA_MODEL_ID = "gemma_model_id"
+    const val DEFAULT_GEMMA_MODEL_ID = "gemma-2b-it-gpu-int4"
     private const val KEY_GEMMA_HF_TOKEN = "gemma_hf_token"
     private const val KEY_GEMMA_CUSTOM_URL = "gemma_custom_url"
 
@@ -124,7 +125,7 @@ object Prefs {
 
     @JvmStatic
     fun gemmaModelId(c: Context): String {
-        return prefs(c).getString(KEY_GEMMA_MODEL_ID, "gemma-2b-it-gpu-int4") ?: "gemma-2b-it-gpu-int4"
+        return prefs(c).getString(KEY_GEMMA_MODEL_ID, DEFAULT_GEMMA_MODEL_ID) ?: DEFAULT_GEMMA_MODEL_ID
     }
 
     @JvmStatic
