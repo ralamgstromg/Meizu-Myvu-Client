@@ -11,7 +11,8 @@ import java.nio.ByteOrder
 
 /**
  * Motor de inferencia on-device nativo para contenedores LiteRT-LM (.litertlm),
- * optimizado para modelos como Gemma 4 E2B IT con aceleración de hardware SoC (GPU/NPU).
+ * optimizado para modelos como Gemma 4 E2B IT con aceleración de hardware SoC (GPU/NPU)
+ * y delegación automática a MediaPipe GenAI.
  */
 class LiteRtLmEngine(
     private val inferenceRunner: LiteRtInferenceRunner? = null
@@ -21,6 +22,8 @@ class LiteRtLmEngine(
         @Throws(Exception::class)
         fun executeInference(modelFile: File, prompt: String, maxTokens: Int): String
     }
+
+    private val fallbackMediaPipeEngine: MediaPipeLlmEngine by lazy { MediaPipeLlmEngine() }
 
     @Volatile
     private var modelFile: File? = null
@@ -58,6 +61,15 @@ class LiteRtLmEngine(
             "size=${modelFile.length()} id=${metadata.identifier} " +
             "accel=${metadata.isAccelerated} maxTokens=$maxTokens"
         )
+
+        if (inferenceRunner == null) {
+            try {
+                LogBus.log("AI_LITERT_LM_DELEGATE_MEDIAPIPE delegando a MediaPipeLlmEngine para .litertlm")
+                fallbackMediaPipeEngine.initialize(context, modelFile, maxTokens)
+            } catch (t: Throwable) {
+                LogBus.trace("AI_LITERT_LM_DELEGATE_NOTICE: ${t.message}")
+            }
+        }
     }
 
     @Synchronized
@@ -83,7 +95,7 @@ class LiteRtLmEngine(
                 return result.trim()
             }
 
-            return executeNativeInference(file, prompt, maxTokens)
+            return fallbackMediaPipeEngine.generate(prompt)
         } catch (e: Throwable) {
             val soc = Build.HARDWARE ?: "unknown"
             val message = "Error en ejecución de inferencia LiteRT-LM en SoC ($soc): ${e.message}"
@@ -93,11 +105,17 @@ class LiteRtLmEngine(
     }
 
     override fun isReady(): Boolean {
-        return isInitialized && modelFile?.exists() == true
+        return (isInitialized && modelFile?.exists() == true) || (isInitialized && fallbackMediaPipeEngine.isReady())
     }
 
     @Synchronized
     override fun close() {
+        try {
+            if (isInitialized) {
+                fallbackMediaPipeEngine.close()
+            }
+        } catch (_: Throwable) {
+        }
         isInitialized = false
         modelFile = null
         containerMetadata = null
@@ -154,11 +172,6 @@ class LiteRtLmEngine(
                hardware.contains("exynos") ||
                hardware.contains("tensor") ||
                hardware.contains("kirin")
-    }
-
-    @Throws(Exception::class)
-    private fun executeNativeInference(file: File, prompt: String, maxTokens: Int): String {
-        throw UnsupportedOperationException("Compilador nativo LiteRT-LM no disponible para arquitectura '${Build.HARDWARE}' o faltan binarios JNI")
     }
 
     companion object {

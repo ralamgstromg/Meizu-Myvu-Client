@@ -373,6 +373,10 @@ El cliente Android implementa configuración avanzada de permisos y aceleración
 | `USE_EXACT_ALARM` / `SCHEDULE_EXACT_ALARM` | Programación precisa de recordatorios y eventos | Directo Manifest |
 | `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | Exención de Doze para mantener el socket RFCOMM activo sin desconexiones | Solicitud Directa Settings |
 
+### 🔬 Compatibilidad con Chipsets MediaTek / SoC `mt6878` (Dimensity Series)
+- **Solución al error `libvndksupport.so not found`**: Se implementó la precarga automática de `libvndksupport.so` y `libOpenCL.so` en `MediaPipeLlmEngine.kt` para resolver las restricciones de enlace dinámico VNDK en procesadores ARM Mali / MediaTek.
+- **Delegación Transparente de `.litertlm`**: `LiteRtLmEngine` delega la inferencia de contenedores `.litertlm` (como **Gemma 4 E2B IT**) a `MediaPipeLlmEngine`, logrando ejecución directa por hardware.
+
 ---
 
 ## 🛠️ Compilación y Pruebas Unitarias

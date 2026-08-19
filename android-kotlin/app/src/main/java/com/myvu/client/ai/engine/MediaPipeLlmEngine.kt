@@ -7,12 +7,34 @@ import java.io.File
 import java.io.IOException
 
 /**
- * Motor on-device para modelos empaquetados en formato MediaPipe (.bin),
- * utilizando Google AI Edge / MediaPipe Tasks GenAI.
+ * Motor on-device para modelos empaquetados en formato MediaPipe (.bin, .task, .litertlm),
+ * utilizando Google AI Edge / MediaPipe Tasks GenAI con soporte de GPU/NPU y precarga VNDK.
  */
 class MediaPipeLlmEngine(
     private val inferenceFactory: ((Context, LlmInference.LlmInferenceOptions) -> LlmInference)? = null
 ) : OnDeviceLlmEngine {
+
+    companion object {
+        @Volatile
+        private var librariesPreloaded = false
+
+        fun tryPreloadNativeLibraries() {
+            if (librariesPreloaded) return
+            librariesPreloaded = true
+            try {
+                System.loadLibrary("vndksupport")
+            } catch (_: Throwable) {
+            }
+            try {
+                System.loadLibrary("OpenCL")
+            } catch (_: Throwable) {
+            }
+            try {
+                System.loadLibrary("GLES_mali")
+            } catch (_: Throwable) {
+            }
+        }
+    }
 
     @Volatile
     private var engine: LlmInference? = null
@@ -22,7 +44,7 @@ class MediaPipeLlmEngine(
     @Throws(IOException::class)
     override fun initialize(context: Context, modelFile: File, maxTokens: Int) {
         if (!modelFile.exists() || !modelFile.canRead()) {
-            throw IOException("El archivo del modelo MediaPipe no existe o no se puede leer: ${modelFile.absolutePath}")
+            throw IOException("El archivo del modelo no existe o no se puede leer: ${modelFile.absolutePath}")
         }
 
         if (engine != null && loadedModelPath == modelFile.absolutePath) {
@@ -30,6 +52,8 @@ class MediaPipeLlmEngine(
         }
 
         close()
+
+        tryPreloadNativeLibraries()
 
         LogBus.log("AI_MEDIAPIPE_ENGINE_INIT path=${modelFile.absolutePath} maxTokens=$maxTokens")
         try {

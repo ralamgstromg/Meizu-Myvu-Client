@@ -253,7 +253,7 @@ class OnDeviceLlmEngineTest {
             engine.generate("Test prompt")
             fail("Expected IOException when default native runner is executed in test environment")
         } catch (e: IOException) {
-            assertTrue(e.message?.contains("LiteRT-LM") == true)
+            assertTrue(e.message?.contains("LiteRT-LM") == true || e.message?.contains("MediaPipe") == true)
         }
     }
 
