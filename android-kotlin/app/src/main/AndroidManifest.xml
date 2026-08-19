@@ -47,6 +47,7 @@
         <!-- Launcher Activity -->
         <activity
             android:name=".ui.ConnectActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -57,38 +58,47 @@
         <!-- Secondary Activities -->
         <activity
             android:name=".ui.SettingsActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:exported="false" />
 
         <activity
             android:name=".ui.GoogleOAuthActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:exported="false" />
 
         <activity
             android:name=".ui.NotesActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:exported="false" />
 
         <activity
             android:name=".ui.VoiceRecorderActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:exported="false" />
 
         <activity
             android:name=".ui.RecordingDetailActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:exported="false" />
 
         <activity
             android:name=".ui.NoteDetailActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:exported="false" />
 
         <activity
             android:name=".ui.TrackpadActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:exported="false" />
 
         <activity
             android:name=".ui.NotificationAppsActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:exported="false" />
 
         <activity
             android:name=".ui.chat.ChatActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:exported="false" />
 
 

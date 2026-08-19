@@ -260,6 +260,13 @@ En la sección **"Control Táctil de Patilla (Gafas)"** de `SettingsActivity`, l
 
 ---
 
+## 🛡️ Resiliencia de Conexión y Estabilidad Anticaídas
+
+- **Persistencia de Conexión ante Rotación de Pantalla**: Todas las actividades en `AndroidManifest.xml` cuentan con la propiedad `android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"`. Esto previene que Android destruya la interfaz o desvincule el servicio `MyvuService` al girar el dispositivo entre vertical y horizontal, manteniendo los sockets BLE/RFCOMM 100% estables.
+- **Cola Defensiva durante la Inicialización**: En `ConnectionManager.sendAction()`, si la sesión se encuentra en proceso de apretón de manos (*init burst*), los mensajes del sistema (como respuestas de sincronización de hora `SyncOffSetTime`) se retienen en una cola temporal (`pendingNotifications`) y se transmiten automáticamente tan pronto como la sesión se declara `ready`.
+
+---
+
 ## 📱 Trackpad Virtual Remoto (Phone-to-Glasses)
 
 `TrackpadActivity` transforma la pantalla táctil del smartphone en un controlador táctil remoto de baja latencia para navegar por el lanzador nativo de las gafas (`com.upuphone.star.launcher`).

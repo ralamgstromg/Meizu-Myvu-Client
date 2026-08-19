@@ -906,11 +906,11 @@ class ConnectionManager(
         cancelReconnect()
         if (transport != null) {
             relayEstablished()
-            while (!pendingNotifications.isEmpty()) {
-                val p = pendingNotifications.pollFirst() ?: break
-                LogBus.log("flushing queued notification over RFCOMM: ${truncate(p.actionJson, 80)}")
-                sendActionNow(p.actionJson, p.targetPkg, p.sourcePkg)
-            }
+        }
+        while (!pendingNotifications.isEmpty()) {
+            val p = pendingNotifications.pollFirst() ?: break
+            LogBus.log("flushing queued action/notification: ${truncate(p.actionJson, 80)}")
+            sendActionNow(p.actionJson, p.targetPkg, p.sourcePkg)
         }
 
         val relayExpected = (transport == null) && (sppUuidVal != null)
@@ -1066,6 +1066,13 @@ class ConnectionManager(
         }
 
         if (session == null || !session.ready) {
+            if (session != null || bleSession?.authConfirmed == true) {
+                if (pendingNotifications.size < 10) {
+                    pendingNotifications.add(PendingAction(actionJson, targetPkg, sourcePkg))
+                    LogBus.log("session establishing -- queued action for delivery once ready: ${truncate(actionJson, 80)}")
+                    return
+                }
+            }
             LogBus.warn("no ready session -- action dropped")
             return
         }
