@@ -36,9 +36,12 @@ Each folder has its own README with build/run details:
 - **Trackpad** — the phone as a remote touchpad for the glasses' launcher (tap / double-tap / long-press / swipe).
 - **Diagnostics & Live Logging (`LogBus`)** — centralized thread-safe log bus delivering real-time diagnostics to the app UI with full file export capabilities.
 - **Local-First AI assistant** — press the glasses' button or speak; speech-to-text, an LLM answer, and text-to-speech back to the glasses:
-  - **STT**: Whisper Large v3 Turbo INT4 On-Device with Groq API fallback.
+  - **STT**: Whisper Large v3 Turbo INT4 On-Device with Groq API fallback, Spanish voice-command priming.
   - **LLM**: Gemma 4 E2B IT / Gemma 2B IT (LiteRT-LM & MediaPipe GenAI) On-Device with cloud fallback (Groq, Gemini, Claude, OpenAI).
-  - **Fast-Path Voice Actions (<5ms)**: Direct WhatsApp chat opening, background phone calls (`TelecomManager`), notification summaries, to-do lists, alarms, OpenTune media control, and real-time translation.
+  - **Optimized Prompt & Turn Structure**: Gemma turn template (`<start_of_turn>user\n...<end_of_turn>\n<start_of_turn>model\n...`) and strict system prompts tuned for AR micro-LED HUD (monochrome 640x480) and TTS (concise 1-2 sentence plain-text answers, no markdown formatting or emoji artifacts).
+  - **Live Web & External Search (`ExternalInfoService`)**: Real-time Google search via HTML snippet parsing with Wikipedia and DuckDuckGo fallbacks, Open-Meteo worldwide city weather geocoding, and live currency conversions (USD, EUR, COP, MXN, ARS, etc.).
+  - **Fast-Path Voice Actions (<5ms)**: Intercepts direct commands deterministically before reaching the LLM (fuzzy contact search & background calling via `TelecomManager`, WhatsApp/Telegram E.164 messages, SQLite v4 to-do lists, alarms/timers, unread notification summaries, HUD navigation, teleprompter, OpenTune/Spotify media control).
+  - **Native Phone Actions Architecture**: 100% native Android execution without external plugins (legacy Tasker module removed in favor of direct Android framework APIs and internal SQLite database).
 
 ## How it works (short version)
 
