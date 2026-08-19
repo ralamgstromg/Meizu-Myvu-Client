@@ -703,9 +703,22 @@ class PhoneActionExecutor(context: Context) {
         return null
     }
 
+    fun queryExternal(query: String?, callback: (String, Boolean) -> Unit) {
+        if (query.isNullOrBlank()) {
+            callback("Consulta vacía.", false)
+            return
+        }
+        ExternalInfoService.search(query.trim()) { resultText, success ->
+            callback(resultText, success)
+        }
+    }
+
     fun openWebSearch(query: String?) {
         try {
             if (query.isNullOrBlank()) return
+            queryExternal(query) { resultText, success ->
+                LogBus.log("PhoneActionExecutor -> openWebSearch result: $resultText (success=$success)")
+            }
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=" + URLEncoder.encode(query.trim(), "UTF-8")))
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
@@ -1206,13 +1219,15 @@ class PhoneActionExecutor(context: Context) {
         return listOfNotNull(current, range, condition?.let { "Cielo $it" }).joinToString(". ") + "."
     }
 
-    private fun extractValue(text: String, tag: String): String {
-        val idx = text.uppercase().indexOf(tag.uppercase())
-        if (idx == -1) return ""
-        val start = idx + tag.length
-        var end = text.indexOf("\n", start)
-        if (end == -1) end = text.length
-        return text.substring(start, end).trim()
+    companion object {
+        fun extractValue(text: String, tag: String): String {
+            val idx = text.uppercase().indexOf(tag.uppercase())
+            if (idx == -1) return ""
+            val start = idx + tag.length
+            var end = text.indexOf("\n", start)
+            if (end == -1) end = text.length
+            return text.substring(start, end).trim()
+        }
     }
 
     private fun stripActionTags(text: String?): String {

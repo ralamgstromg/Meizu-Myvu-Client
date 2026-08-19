@@ -112,6 +112,7 @@ class AiConversation(
     private var lastTriggerAt: Long = 0
     private var textMode: Boolean = false
     private var pendingWeatherResponse = false
+    private var pendingExternalSearchResponse = false
 
     private val silenceTimeout = Runnable { endUtterance() }
     private val utteranceCap = Runnable {
@@ -488,6 +489,19 @@ class AiConversation(
                 }
                 return
             }
+            if (route.isAsyncExternalSearch) {
+                pendingExternalSearchResponse = true
+                val q = route.searchQuery.ifBlank { question }
+                LogBus.log("AI_EXTERNAL_SEARCH_FASTPATH sessionId=$sessionId query='$q'")
+                ExternalInfoService.search(q) { text, success ->
+                    main.post {
+                        if (!active || !pendingExternalSearchResponse) return@post
+                        pendingExternalSearchResponse = false
+                        deliverFinal(text, if (success) AiResponse.Source.AI else AiResponse.Source.ERROR)
+                    }
+                }
+                return
+            }
             deliverFinal(route.responseText, route.source)
             return
         }
@@ -558,6 +572,32 @@ class AiConversation(
             return
         }
 
+        val searchAction = rawAnswer?.contains("ACTION:SEARCH=", ignoreCase = true) == true ||
+                parsed.actions.any { it.type == "web_search" }
+
+        if (searchAction) {
+            val q = if (rawAnswer?.contains("ACTION:SEARCH=", ignoreCase = true) == true) {
+                PhoneActionExecutor.extractValue(rawAnswer, "ACTION:SEARCH=")
+            } else {
+                parsed.actions.firstOrNull { it.type == "web_search" }?.arguments?.get("query") ?: ""
+            }
+            if (q.isNotBlank()) {
+                pendingExternalSearchResponse = true
+                LogBus.log("AI_EXTERNAL_SEARCH_STARTED sessionId=$sessionId query='$q'")
+                ExternalInfoService.search(q) { text, success ->
+                    main.post {
+                        if (!active || !pendingExternalSearchResponse) return@post
+                        pendingExternalSearchResponse = false
+                        deliverFinal(
+                            text,
+                            if (success) AiResponse.Source.AI else AiResponse.Source.ERROR
+                        )
+                    }
+                }
+                return
+            }
+        }
+
         val answerCandidate = if (processedAnswer.isNotBlank()) processedAnswer else parsed.answer
         val finalAnswer = if (answerCandidate.isNotBlank()) {
             answerCandidate
@@ -585,6 +625,7 @@ class AiConversation(
 
     private fun cancelPendingTool() {
         pendingWeatherResponse = false
+        pendingExternalSearchResponse = false
     }
 
     private fun deliverError(message: String) {
@@ -663,6 +704,7 @@ class AiConversation(
 
     private fun abandon() {
         active = false
+        cancelPendingTool()
         stopRequested = false
         mic.stop()
         decoding = false

@@ -21,7 +21,10 @@ class VoiceActionRouter(
         val handled: Boolean,
         val responseText: String = "",
         val source: AiResponse.Source = AiResponse.Source.AI,
-        val isAsyncWeather: Boolean = false
+        val isAsyncWeather: Boolean = false,
+        val isAsyncExternalSearch: Boolean = false,
+        val searchQuery: String = "",
+        val targetCity: String? = null
     )
 
     fun tryRoute(rawQuery: String): RouteResult {
@@ -84,12 +87,45 @@ class VoiceActionRouter(
             return RouteResult(handled = true, responseText = summary)
         }
 
-        // 5. Clima / Tiempo
-        if (normalized.matches(Regex("^(como\\s+esta\\s+el\\s+clima|clima|temperatura|tiempo\\s+hoy|pronostico).*")) ||
+        // 5. Clima, Divisas y Búsqueda Web Externa
+        // 5a. Clima (con ciudad específica vs clima local)
+        if (ExternalInfoService.isWeatherQuery(trimmed) ||
+            normalized.matches(Regex("^(como\\s+esta\\s+el\\s+clima|clima|temperatura|tiempo\\s+hoy|pronostico).*")) ||
             normalized.contains("actualiza el clima") || normalized.contains("consultar clima")
         ) {
-            LogBus.log("VoiceActionRouter -> Fast-Path weather query")
-            return RouteResult(handled = true, isAsyncWeather = true)
+            val city = ExternalInfoService.extractCityFromWeatherQuery(trimmed)
+            if (city != null) {
+                LogBus.log("VoiceActionRouter -> Fast-Path weather query for city: '$city'")
+                return RouteResult(
+                    handled = true,
+                    isAsyncExternalSearch = true,
+                    searchQuery = trimmed,
+                    targetCity = city
+                )
+            } else {
+                LogBus.log("VoiceActionRouter -> Fast-Path local weather query")
+                return RouteResult(handled = true, isAsyncWeather = true)
+            }
+        }
+
+        // 5b. Divisas y Tasas de Cambio
+        if (ExternalInfoService.isCurrencyQuery(trimmed)) {
+            LogBus.log("VoiceActionRouter -> Fast-Path currency query: '$trimmed'")
+            return RouteResult(
+                handled = true,
+                isAsyncExternalSearch = true,
+                searchQuery = trimmed
+            )
+        }
+
+        // 5c. Búsqueda Web / Información General
+        if (ExternalInfoService.isGeneralSearchQuery(trimmed)) {
+            LogBus.log("VoiceActionRouter -> Fast-Path web search query: '$trimmed'")
+            return RouteResult(
+                handled = true,
+                isAsyncExternalSearch = true,
+                searchQuery = trimmed
+            )
         }
 
         // 6. Listas de Tareas (To-Do)

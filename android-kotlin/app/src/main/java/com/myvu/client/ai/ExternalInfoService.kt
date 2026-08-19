@@ -91,28 +91,14 @@ object ExternalInfoService {
         val trimmed = query.trim()
         val norm = normalize(trimmed)
 
-        // Match patterns like "clima en Barranquilla mañana", "temperatura de París hoy", "pronóstico para Madrid"
-        val pattern = Regex("(?:clima|temperatura|tiempo|pronostico|llover|frio|calor)\\s+(?:hay\\s+|hace\\s+|sera\\s+|va\\s+a\\s+hacer\\s+)?(?:en|de|para|por)\\s+([a-z0-9áéíóúñü\\s]+)", RegexOption.IGNORE_CASE)
+        // Match weather queries with location prepositions: "clima en Barranquilla", "qué temperatura era mañana en Barranquilla", "temperatura de París hoy", "pronóstico para Madrid"
+        val pattern = Regex("(?:clima|temperatura|tiempo|pronostico|llover|lluvia|frio|calor|grados)\\b(?:.+?)?\\b(?:en|de|para|por)\\s+([a-z0-9áéíóúñü\\s]+)", RegexOption.IGNORE_CASE)
         val match = pattern.find(norm)
         if (match != null) {
             val rawStart = match.groups[1]!!.range.first
             val rawEnd = match.groups[1]!!.range.last + 1
             var city = trimmed.substring(rawStart, minOf(rawEnd, trimmed.length)).trim()
-            city = city.replace(Regex("(?i)\\s+(hoy|mañana|manana|ahora|esta tarde|esta semana|el fin de semana|este fin de semana)$"), "").trim()
-            city = city.replace(Regex("[?.,!;:]+$"), "").trim()
-            if (city.isNotBlank() && !isGenericStopword(city)) {
-                return city
-            }
-        }
-
-        // Try matching "qué temperatura hay en X"
-        val altPattern = Regex("(?:que\\s+temperatura\\s+(?:hay|hace)\\s+en\\s+)([a-z0-9áéíóúñü\\s]+)", RegexOption.IGNORE_CASE)
-        val altMatch = altPattern.find(norm)
-        if (altMatch != null) {
-            val rawStart = altMatch.groups[1]!!.range.first
-            val rawEnd = altMatch.groups[1]!!.range.last + 1
-            var city = trimmed.substring(rawStart, minOf(rawEnd, trimmed.length)).trim()
-            city = city.replace(Regex("(?i)\\s+(hoy|mañana|manana|ahora)$"), "").trim()
+            city = city.replace(Regex("(?i)\\s+(hoy|mañana|manana|ahora|ayer|esta tarde|esta semana|el fin de semana|este fin de semana)$"), "").trim()
             city = city.replace(Regex("[?.,!;:]+$"), "").trim()
             if (city.isNotBlank() && !isGenericStopword(city)) {
                 return city
@@ -124,7 +110,7 @@ object ExternalInfoService {
 
     private fun isGenericStopword(word: String): Boolean {
         val n = normalize(word)
-        return n in setOf("hoy", "manana", "mi ciudad", "aqui", "aca", "este momento", "el mundo", "donde estoy")
+        return n in setOf("hoy", "manana", "ayer", "mi ciudad", "aqui", "aca", "este momento", "el mundo", "donde estoy", "esta zona", "la ciudad")
     }
 
     @JvmStatic
@@ -332,7 +318,7 @@ object ExternalInfoService {
     @JvmStatic
     fun fetchWeather(cityName: String, timeoutMs: Int = DEFAULT_TIMEOUT_MS): String? {
         return try {
-            val reading = OpenMeteo.fetchByCity(cityName)
+            val reading = OpenMeteo.fetchByCity(cityName, timeoutMs)
             if (reading != null) {
                 formatWeatherResult(reading, cityName)
             } else {

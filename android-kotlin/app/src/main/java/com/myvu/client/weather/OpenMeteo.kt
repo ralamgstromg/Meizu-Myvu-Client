@@ -30,10 +30,10 @@ object OpenMeteo {
 
     @JvmStatic
     @Throws(IOException::class, JSONException::class)
-    fun geocode(cityName: String): GeoLocation? {
+    fun geocode(cityName: String, timeoutMs: Int = TIMEOUT_MS): GeoLocation? {
         val encoded = java.net.URLEncoder.encode(cityName.trim(), "UTF-8")
         val url = "$GEO_BASE?name=$encoded&count=1&language=es&format=json"
-        val root = JSONObject(get(url))
+        val root = JSONObject(get(url, timeoutMs))
         val results = root.optJSONArray("results")
         if (results != null && results.length() > 0) {
             val first = results.getJSONObject(0)
@@ -50,15 +50,15 @@ object OpenMeteo {
 
     @JvmStatic
     @Throws(IOException::class, JSONException::class)
-    fun fetchByCity(cityName: String): Weather.Reading? {
-        val geo = geocode(cityName) ?: return null
+    fun fetchByCity(cityName: String, timeoutMs: Int = TIMEOUT_MS): Weather.Reading? {
+        val geo = geocode(cityName, timeoutMs) ?: return null
         val displayName = if (!geo.country.isNullOrBlank()) "${geo.name}, ${geo.country}" else geo.name
-        return fetch(geo.latitude, geo.longitude, displayName)
+        return fetch(geo.latitude, geo.longitude, displayName, timeoutMs)
     }
 
     @JvmStatic
     @Throws(IOException::class, JSONException::class)
-    fun fetch(lat: Double, lon: Double, areaName: String?): Weather.Reading {
+    fun fetch(lat: Double, lon: Double, areaName: String?, timeoutMs: Int = TIMEOUT_MS): Weather.Reading {
         val url = (BASE +
                 "?latitude=" + fmt(lat) +
                 "&longitude=" + fmt(lon) +
@@ -67,7 +67,7 @@ object OpenMeteo {
                 "&timezone=auto" +
                 "&forecast_days=" + FORECAST_DAYS)
 
-        val root = JSONObject(get(url))
+        val root = JSONObject(get(url, timeoutMs))
         val r = Weather.Reading()
         r.areaName = areaName
         r.lastUpdate = Weather.timestamp(System.currentTimeMillis())
