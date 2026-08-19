@@ -832,6 +832,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         addIfMissing(needed, Manifest.permission.ACCESS_FINE_LOCATION)
         addIfMissing(needed, Manifest.permission.RECORD_AUDIO)
         addIfMissing(needed, Manifest.permission.READ_CONTACTS)
+        addIfMissing(needed, Manifest.permission.READ_CALENDAR)
         addIfMissing(needed, Manifest.permission.CALL_PHONE)
         if (needed.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, needed.toTypedArray(), REQ_PERMISSIONS)

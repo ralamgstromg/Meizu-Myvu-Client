@@ -350,16 +350,46 @@ Todos los eventos del panel virtual se envían empaquetados en JSON con enrutami
 
 ---
 
-## 🛠️ Comandos de Compilación y Test
+## 🔐 Permisos y Optimización de Hardware (CPU / GPU / NPU)
 
-Ejecutar desde el directorio `android-kotlin/`:
+El cliente Android implementa configuración avanzada de permisos y aceleración de hardware para garantizar la máxima velocidad de inferencia en LLMs On-Device y estabilidad en segundo plano:
+
+### ⚙️ Aceleración por Hardware y Gestión de Memoria (`AndroidManifest.xml`)
+- **Aceleración Gráfica Completa**: `android:hardwareAccelerated="true"` activado a nivel de aplicación para renderizado UI de alta velocidad y compatibilidad con aceleradores OpenGL ES/Vulkan.
+- **Ampliación de Heap de Memoria**: `android:largeHeap="true"` configurado para permitir que la JVM disponga de memoria suficiente al cargar modelos On-Device de más de 1GB en la RAM del celular sin generar `OutOfMemoryError`.
+- **Soporte de Vulkan y OpenGL AEP**: Declaación de características de hardware opcionales (`android.hardware.vulkan.version`, `android.hardware.opengles.aep`) para delegar tareas de tensores a la **GPU (Vulkan/OpenCL)** y **NPU** del SoC (Snapdragon/MediaTek/Tensor).
+
+### 📋 Matriz de Permisos del Sistema
+
+| Permiso | Propósito / Funcionalidad | Solicitud Runtime (`ConnectActivity`) |
+| :--- | :--- | :--- |
+| `BLUETOOTH_CONNECT` / `BLUETOOTH_SCAN` | Enlace y comunicación RFCOMM / BLE StarryNet con gafas MYVU | ✅ Sí |
+| `RECORD_AUDIO` / `MODIFY_AUDIO_SETTINGS` | Captura de voz para STT, filtro pasa-altos 80Hz y control de ganancia AGC | ✅ Sí |
+| `READ_CALENDAR` | Consulta de agendas y reuniones en `MeetingAiProcessor` y `ExternalInfoService` | ✅ Sí |
+| `READ_CONTACTS` / `CALL_PHONE` | Búsqueda de contactos y llamadas directas por voz | ✅ Sí |
+| `ACCESS_FINE_LOCATION` / `COARSE_LOCATION` | Navegación HUD y servicios de clima Open-Meteo local | ✅ Sí |
+| `POST_NOTIFICATIONS` | Espejo de notificaciones en gafas y alarmas exactas | ✅ Sí |
+| `ACCESS_NETWORK_STATE` / `INTERNET` | Consultas HTTP a APIs de IA, descargas de modelos y DuckDuckGo/Google | Directo Manifest |
+| `USE_EXACT_ALARM` / `SCHEDULE_EXACT_ALARM` | Programación precisa de recordatorios y eventos | Directo Manifest |
+| `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | Exención de Doze para mantener el socket RFCOMM activo sin desconexiones | Solicitud Directa Settings |
+
+---
+
+## 🛠️ Compilación y Pruebas Unitarias
 
 ```bash
-# Compilar APK Debug (Con librerías nativas JNI empaquetadas)
-./gradlew assembleDebug
+# Compilar y ejecutar la suite completa de pruebas unitarias (259 tests)
+./gradlew test
 
-# Ejecutar Android Lint
-./gradlew lintDebug
+# Generar APK de depuración
+./gradlew assembleDebug
+```
+
+---
+
+## 📜 Licencia y Reconocimientos
+
+Desarrollado para el cliente Android Meizu Myvu AR. Basado en las especificaciones del protocolo StarryNet / Upuphone y el motor **Google AI Edge Gallery**.
 
 # Compilar APK Release (Firma automática si keystore.properties existe)
 ./gradlew assembleRelease
