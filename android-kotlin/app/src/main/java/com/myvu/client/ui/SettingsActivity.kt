@@ -637,6 +637,7 @@ class SettingsActivity : AppCompatActivity() {
         val currentModelId = Prefs.gemmaModelId(this)
         btnGemmaModelVersionGroup.check(
             when (currentModelId) {
+                com.myvu.client.ai.GemmaLocalClient.GEMMA_4_E2B_LITERT.id -> R.id.btnGemma4B
                 com.myvu.client.ai.GemmaLocalClient.GEMMA_2B_IT_GPU.id -> R.id.btnGemma2B
                 com.myvu.client.ai.GemmaLocalClient.GEMMA_2_2B_IT_GPU.id -> R.id.btnGemma2B2
                 com.myvu.client.ai.GemmaLocalClient.GEMMA_2B_IT_CPU.id -> R.id.btnGemma2BCpu
@@ -647,6 +648,7 @@ class SettingsActivity : AppCompatActivity() {
         btnGemmaModelVersionGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
             val selectedOption = when (checkedId) {
+                R.id.btnGemma4B -> com.myvu.client.ai.GemmaLocalClient.GEMMA_4_E2B_LITERT
                 R.id.btnGemma2B -> com.myvu.client.ai.GemmaLocalClient.GEMMA_2B_IT_GPU
                 R.id.btnGemma2B2 -> com.myvu.client.ai.GemmaLocalClient.GEMMA_2_2B_IT_GPU
                 R.id.btnGemma2BCpu -> com.myvu.client.ai.GemmaLocalClient.GEMMA_2B_IT_CPU
@@ -668,24 +670,24 @@ class SettingsActivity : AppCompatActivity() {
                     when (state) {
                         is com.myvu.client.ai.GemmaDownloadState.Downloading -> {
                             progressGemmaDownload.progress = state.progressPercent
-                            lblGemmaModelStatus.text = "Descargando ${selectedOption.name}: ${state.progressPercent}% (${state.downloadedBytes / (1024 * 1024)}MB / ${state.totalBytes / (1024 * 1024)}MB)"
+                            lblGemmaModelStatus.text = "Descargando ${selectedOption.name} [${selectedOption.engineType.name}]: ${state.progressPercent}% (${state.downloadedBytes / (1024 * 1024)}MB / ${state.totalBytes / (1024 * 1024)}MB)"
                         }
                         is com.myvu.client.ai.GemmaDownloadState.Completed -> {
                             btnDownloadGemmaModel.isEnabled = true
                             progressGemmaDownload.visibility = View.GONE
-                            lblGemmaModelStatus.text = "Modelo ${selectedOption.name}: Listo para uso offline"
+                            lblGemmaModelStatus.text = "${selectedOption.name} [${selectedOption.engineType.name}]: Listo para uso offline"
                             Toast.makeText(this, "Modelo descargado correctamente", Toast.LENGTH_SHORT).show()
                         }
                         is com.myvu.client.ai.GemmaDownloadState.Error -> {
                             btnDownloadGemmaModel.isEnabled = true
                             progressGemmaDownload.visibility = View.GONE
-                            lblGemmaModelStatus.text = "Error al descargar: ${state.message}"
+                            lblGemmaModelStatus.text = "Error al descargar [${selectedOption.engineType.name}]: ${state.message}"
                             Toast.makeText(this, "Error de descarga: ${state.message}", Toast.LENGTH_LONG).show()
                         }
                         else -> {
                             btnDownloadGemmaModel.isEnabled = true
                             progressGemmaDownload.visibility = View.GONE
-                            lblGemmaModelStatus.text = "Modelo ${selectedOption.name}: No descargado"
+                            lblGemmaModelStatus.text = "${selectedOption.name} [${selectedOption.engineType.name}]: No descargado"
                         }
                     }
                 }
@@ -714,7 +716,7 @@ class SettingsActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            Toast.makeText(this, "⏳ Probando inferencia con ${file.name}...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "⏳ Probando inferencia con ${file.name} [${selectedOption.engineType.name}]...", Toast.LENGTH_SHORT).show()
             val aiProviderId = Prefs.aiProvider(this)
             val provider = com.myvu.client.ai.AiProvider.fromId(aiProviderId)
             val apiKey = Prefs.aiApiKey(this, aiProviderId)
@@ -727,7 +729,7 @@ class SettingsActivity : AppCompatActivity() {
                     val response = client.ask("Hola, responde en una frase corta.")
                     runOnUiThread {
                         if (response.isNotBlank()) {
-                            Toast.makeText(this, "✅ Test On-Device Exitoso: ${response.take(70)}", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this, "✅ Test On-Device Exitoso [${selectedOption.engineType.name}]: ${response.take(70)}", Toast.LENGTH_LONG).show()
                         } else {
                             Toast.makeText(this, "❌ El modelo respondió vacío", Toast.LENGTH_LONG).show()
                         }
@@ -748,8 +750,8 @@ class SettingsActivity : AppCompatActivity() {
         val downloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption).also { gemmaDownloader = it }
         val state = downloader.getInitialState()
         lblGemmaModelStatus.text = when (state) {
-            is com.myvu.client.ai.GemmaDownloadState.Completed -> "Modelo ${selectedOption.name}: Listo para uso offline"
-            else -> "Modelo ${selectedOption.name}: No descargado"
+            is com.myvu.client.ai.GemmaDownloadState.Completed -> "${selectedOption.name} [${selectedOption.engineType.name}]: Listo para uso offline"
+            else -> "${selectedOption.name} [${selectedOption.engineType.name}]: No descargado"
         }
     }
 
