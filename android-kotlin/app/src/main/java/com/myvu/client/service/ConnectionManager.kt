@@ -203,8 +203,8 @@ class ConnectionManager(
             TouchGestureManager.handleTrigger(this.context, code, createGestureActionExecutor())
         }
 
-        inbound.setTouchGestureListener { _, rawCode, _ ->
-            TouchGestureManager.handleTrigger(this.context, rawCode, createGestureActionExecutor())
+        inbound.setTouchGestureListener { gestureType, rawCode, _ ->
+            TouchGestureManager.handleGesture(this.context, gestureType, rawCode, createGestureActionExecutor())
         }
 
         inbound.setWeatherRequestListener {
@@ -220,6 +220,14 @@ class ConnectionManager(
         return object : TouchGestureManager.ActionExecutor {
             override fun executeAiAssistant(triggerCode: Int) {
                 ai().onTrigger(triggerCode)
+            }
+
+            override fun executePhoneAssistant() {
+                TouchGestureManager.launchPhoneAssistant(this@ConnectionManager.context)
+                try {
+                    sendAction(Notifications.buildShow("MYVU", "Asistente activado"))
+                } catch (ignored: Exception) {
+                }
             }
 
             override fun executeWeatherSync() {
@@ -242,20 +250,52 @@ class ConnectionManager(
 
             override fun executeMediaPlayPause() {
                 LogBus.log("Touchpad gesture -> Media Play/Pause")
-                try {
-                    val am = this@ConnectionManager.context.getSystemService(Context.AUDIO_SERVICE) as? android.media.AudioManager
-                    if (am != null) {
-                        val now = android.os.SystemClock.uptimeMillis()
-                        am.dispatchMediaKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0))
-                        am.dispatchMediaKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0))
-                    }
-                } catch (e: Exception) {
-                    LogBus.error("could not send media play/pause key event", e)
-                }
+                TouchGestureManager.sendMediaKey(this@ConnectionManager.context, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
                 try {
                     sendAction(Notifications.buildShow("MYVU", "Música: Play / Pausa"))
                 } catch (ignored: Exception) {
                 }
+            }
+
+            override fun executeMediaNext() {
+                LogBus.log("Touchpad gesture -> Media Next")
+                TouchGestureManager.sendMediaKey(this@ConnectionManager.context, android.view.KeyEvent.KEYCODE_MEDIA_NEXT)
+                try {
+                    sendAction(Notifications.buildShow("MYVU", "Música: Siguiente"))
+                } catch (ignored: Exception) {
+                }
+            }
+
+            override fun executeMediaPrevious() {
+                LogBus.log("Touchpad gesture -> Media Previous")
+                TouchGestureManager.sendMediaKey(this@ConnectionManager.context, android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+                try {
+                    sendAction(Notifications.buildShow("MYVU", "Música: Anterior"))
+                } catch (ignored: Exception) {
+                }
+            }
+
+            override fun executeOpenTeleprompter() {
+                LogBus.log("Touchpad gesture -> Open Teleprompter")
+                try {
+                    sendAction(Teleprompter.buildOpen("", "MYVU"))
+                } catch (ignored: Exception) {
+                }
+            }
+
+            override fun executeZenMode() {
+                val enabled = !Prefs.zenModeEnabled(this@ConnectionManager.context)
+                Prefs.setZenModeEnabled(this@ConnectionManager.context, enabled)
+                LogBus.log("Touchpad gesture -> Zen mode " + if (enabled) "ON" else "OFF")
+                try {
+                    setZenMode(enabled)
+                    sendAction(Notifications.buildShow("MYVU", "Modo Zen: " + if (enabled) "Activado" else "Desactivado"))
+                } catch (ignored: Exception) {
+                }
+            }
+
+            override fun executeNone() {
+                LogBus.log("Touchpad gesture -> None")
             }
         }
     }

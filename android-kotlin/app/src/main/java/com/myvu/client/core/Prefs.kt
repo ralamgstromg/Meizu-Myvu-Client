@@ -597,6 +597,16 @@ object Prefs {
     }
 
     @JvmStatic
+    fun touchpadTapAction(c: Context): String {
+        return prefs(c).getString("touchpad_tap_action", "none") ?: "none"
+    }
+
+    @JvmStatic
+    fun setTouchpadTapAction(c: Context, action: String) {
+        prefs(c).edit().putString("touchpad_tap_action", action).apply()
+    }
+
+    @JvmStatic
     fun touchpadDoubleTapAction(c: Context): String {
         return prefs(c).getString("touchpad_double_tap_action", "media_play_pause") ?: "media_play_pause"
     }
@@ -608,12 +618,32 @@ object Prefs {
 
     @JvmStatic
     fun touchpadTripleTapAction(c: Context): String {
-        return prefs(c).getString("touchpad_triple_tap_action", "ai_assistant") ?: "ai_assistant"
+        return prefs(c).getString("touchpad_triple_tap_action", "phone_assistant") ?: "phone_assistant"
     }
 
     @JvmStatic
     fun setTouchpadTripleTapAction(c: Context, action: String) {
         prefs(c).edit().putString("touchpad_triple_tap_action", action).apply()
+    }
+
+    @JvmStatic
+    fun touchpadSwipeForwardAction(c: Context): String {
+        return prefs(c).getString("touchpad_swipe_forward_action", "media_next") ?: "media_next"
+    }
+
+    @JvmStatic
+    fun setTouchpadSwipeForwardAction(c: Context, action: String) {
+        prefs(c).edit().putString("touchpad_swipe_forward_action", action).apply()
+    }
+
+    @JvmStatic
+    fun touchpadSwipeBackwardAction(c: Context): String {
+        return prefs(c).getString("touchpad_swipe_backward_action", "media_prev") ?: "media_prev"
+    }
+
+    @JvmStatic
+    fun setTouchpadSwipeBackwardAction(c: Context, action: String) {
+        prefs(c).edit().putString("touchpad_swipe_backward_action", action).apply()
     }
 
     @JvmStatic

@@ -1,18 +1,18 @@
 package com.myvu.client.app
 
 import android.content.Context
-import android.media.AudioManager
-import android.os.SystemClock
 import android.view.KeyEvent
 import com.myvu.client.app.feature.Notifications
+import com.myvu.client.app.feature.SystemSettings
+import com.myvu.client.app.feature.Teleprompter
 import com.myvu.client.app.feature.TouchGestureManager
 import com.myvu.client.core.LogBus
 import com.myvu.client.core.Prefs
 import org.json.JSONObject
 
 /**
- * Handles incoming events registered with InboundRouter (AI triggers, weather requests,
- * and battery updates).
+ * Handles incoming events registered with InboundRouter (AI triggers, touch gestures,
+ * weather requests, and battery updates).
  */
 class GlassesEventHandler(
     context: Context?,
@@ -45,8 +45,8 @@ class GlassesEventHandler(
             TouchGestureManager.handleTrigger(this.context, code, createActionExecutor())
         }
 
-        inbound.setTouchGestureListener { _, rawCode, _ ->
-            TouchGestureManager.handleTrigger(this.context, rawCode, createActionExecutor())
+        inbound.setTouchGestureListener { gestureType, rawCode, _ ->
+            TouchGestureManager.handleGesture(this.context, gestureType, rawCode, createActionExecutor())
         }
 
         inbound.setWeatherRequestListener {
@@ -62,6 +62,17 @@ class GlassesEventHandler(
         return object : TouchGestureManager.ActionExecutor {
             override fun executeAiAssistant(triggerCode: Int) {
                 delegate.triggerAi(triggerCode)
+            }
+
+            override fun executePhoneAssistant() {
+                val ctx = this@GlassesEventHandler.context
+                if (ctx != null) {
+                    TouchGestureManager.launchPhoneAssistant(ctx)
+                }
+                try {
+                    delegate.sendAction(Notifications.buildShow("MYVU", "Asistente activado"))
+                } catch (ignored: Exception) {
+                }
             }
 
             override fun executeWeatherSync() {
@@ -92,25 +103,65 @@ class GlassesEventHandler(
                 LogBus.log("Touchpad gesture -> Media Play/Pause")
                 val ctx = this@GlassesEventHandler.context
                 if (ctx != null) {
-                    try {
-                        val am = ctx.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-                        if (am != null) {
-                            val now = SystemClock.uptimeMillis()
-                            am.dispatchMediaKeyEvent(
-                                KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0)
-                            )
-                            am.dispatchMediaKeyEvent(
-                                KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0)
-                            )
-                        }
-                    } catch (e: Exception) {
-                        LogBus.error("could not send media play/pause key event", e)
-                    }
+                    TouchGestureManager.sendMediaKey(ctx, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
                 }
                 try {
                     delegate.sendAction(Notifications.buildShow("MYVU", "Música: Play / Pausa"))
                 } catch (ignored: Exception) {
                 }
+            }
+
+            override fun executeMediaNext() {
+                LogBus.log("Touchpad gesture -> Media Next")
+                val ctx = this@GlassesEventHandler.context
+                if (ctx != null) {
+                    TouchGestureManager.sendMediaKey(ctx, KeyEvent.KEYCODE_MEDIA_NEXT)
+                }
+                try {
+                    delegate.sendAction(Notifications.buildShow("MYVU", "Música: Siguiente"))
+                } catch (ignored: Exception) {
+                }
+            }
+
+            override fun executeMediaPrevious() {
+                LogBus.log("Touchpad gesture -> Media Previous")
+                val ctx = this@GlassesEventHandler.context
+                if (ctx != null) {
+                    TouchGestureManager.sendMediaKey(ctx, KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+                }
+                try {
+                    delegate.sendAction(Notifications.buildShow("MYVU", "Música: Anterior"))
+                } catch (ignored: Exception) {
+                }
+            }
+
+            override fun executeOpenTeleprompter() {
+                LogBus.log("Touchpad gesture -> Open Teleprompter")
+                try {
+                    delegate.sendAction(Teleprompter.buildOpen("", "MYVU"))
+                } catch (ignored: Exception) {
+                }
+            }
+
+            override fun executeZenMode() {
+                val ctx = this@GlassesEventHandler.context ?: return
+                val enabled = !Prefs.zenModeEnabled(ctx)
+                Prefs.setZenModeEnabled(ctx, enabled)
+                LogBus.log("Touchpad gesture -> Zen mode " + if (enabled) "ON" else "OFF")
+                try {
+                    delegate.sendAction(SystemSettings.setZenMode(enabled))
+                    delegate.sendAction(
+                        Notifications.buildShow(
+                            "MYVU",
+                            "Modo Zen: " + if (enabled) "Activado" else "Desactivado"
+                        )
+                    )
+                } catch (ignored: Exception) {
+                }
+            }
+
+            override fun executeNone() {
+                LogBus.log("Touchpad gesture -> None")
             }
         }
     }

@@ -130,9 +130,9 @@ class InboundGestureTest {
         val handler = GlassesEventHandler(null, router, delegate)
         TouchGestureManager.resetDebounceForTesting()
         val json = "{\"action\":\"event_tracking\",\"data\":{\"action\":\"sync_glass_event\"," +
-                "\"value\":[{\"action_name\":\"touch_gesture\",\"action_value\":1}]}}"
+                "\"value\":[{\"action_name\":\"long_press\",\"action_value\":4}]}}"
         router.handle(json)
 
-        assertEquals(1, lastTriggerCode)
+        assertEquals(4, lastTriggerCode)
     }
 }
