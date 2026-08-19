@@ -200,47 +200,11 @@ class ConnectionManager(
             // press like the glasses asking for the relay back.
             supervisor?.wake()
 
-            TouchGestureManager.handleTrigger(this.context, code, object : TouchGestureManager.ActionExecutor {
-                override fun executeAiAssistant(triggerCode: Int) {
-                    ai().onTrigger(triggerCode)
-                }
+            TouchGestureManager.handleTrigger(this.context, code, createGestureActionExecutor())
+        }
 
-                override fun executeWeatherSync() {
-                    weather().refresh()
-                    try {
-                        sendAction(Notifications.buildShow("MYVU", "Actualizando clima..."))
-                    } catch (ignored: Exception) {
-                    }
-                }
-
-                override fun executeToggleMirror() {
-                    val enabled = !Prefs.mirrorEnabled(this@ConnectionManager.context)
-                    Prefs.setMirrorEnabled(this@ConnectionManager.context, enabled)
-                    LogBus.log("Touchpad gesture -> Notification mirroring " + (if (enabled) "ON" else "OFF"))
-                    try {
-                        sendAction(Notifications.buildShow("MYVU", "Espejo notificaciones: " + (if (enabled) "Activado" else "Desactivado")))
-                    } catch (ignored: Exception) {
-                    }
-                }
-
-                override fun executeMediaPlayPause() {
-                    LogBus.log("Touchpad gesture -> Media Play/Pause")
-                    try {
-                        val am = this@ConnectionManager.context.getSystemService(Context.AUDIO_SERVICE) as? android.media.AudioManager
-                        if (am != null) {
-                            val now = android.os.SystemClock.uptimeMillis()
-                            am.dispatchMediaKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0))
-                            am.dispatchMediaKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0))
-                        }
-                    } catch (e: Exception) {
-                        LogBus.error("could not send media play/pause key event", e)
-                    }
-                    try {
-                        sendAction(Notifications.buildShow("MYVU", "Música: Play / Pausa"))
-                    } catch (ignored: Exception) {
-                    }
-                }
-            })
+        inbound.setTouchGestureListener { _, rawCode, _ ->
+            TouchGestureManager.handleTrigger(this.context, rawCode, createGestureActionExecutor())
         }
 
         inbound.setWeatherRequestListener {
@@ -249,6 +213,50 @@ class ConnectionManager(
 
         inbound.setBatteryUpdateListener { battery, isCharging ->
             updateGlassesBattery(battery, isCharging)
+        }
+    }
+
+    private fun createGestureActionExecutor(): TouchGestureManager.ActionExecutor {
+        return object : TouchGestureManager.ActionExecutor {
+            override fun executeAiAssistant(triggerCode: Int) {
+                ai().onTrigger(triggerCode)
+            }
+
+            override fun executeWeatherSync() {
+                weather().refresh()
+                try {
+                    sendAction(Notifications.buildShow("MYVU", "Actualizando clima..."))
+                } catch (ignored: Exception) {
+                }
+            }
+
+            override fun executeToggleMirror() {
+                val enabled = !Prefs.mirrorEnabled(this@ConnectionManager.context)
+                Prefs.setMirrorEnabled(this@ConnectionManager.context, enabled)
+                LogBus.log("Touchpad gesture -> Notification mirroring " + (if (enabled) "ON" else "OFF"))
+                try {
+                    sendAction(Notifications.buildShow("MYVU", "Espejo notificaciones: " + (if (enabled) "Activado" else "Desactivado")))
+                } catch (ignored: Exception) {
+                }
+            }
+
+            override fun executeMediaPlayPause() {
+                LogBus.log("Touchpad gesture -> Media Play/Pause")
+                try {
+                    val am = this@ConnectionManager.context.getSystemService(Context.AUDIO_SERVICE) as? android.media.AudioManager
+                    if (am != null) {
+                        val now = android.os.SystemClock.uptimeMillis()
+                        am.dispatchMediaKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0))
+                        am.dispatchMediaKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0))
+                    }
+                } catch (e: Exception) {
+                    LogBus.error("could not send media play/pause key event", e)
+                }
+                try {
+                    sendAction(Notifications.buildShow("MYVU", "Música: Play / Pausa"))
+                } catch (ignored: Exception) {
+                }
+            }
         }
     }
 

@@ -26,6 +26,11 @@ object TouchGestureManager {
     private var lastTriggerTime = 0L
 
     @JvmStatic
+    fun resetDebounceForTesting() {
+        lastTriggerTime = 0L
+    }
+
+    @JvmStatic
     fun handleTrigger(context: Context?, code: Int, executor: ActionExecutor?) {
         if (executor == null) return
 

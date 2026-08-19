@@ -1,8 +1,10 @@
 package com.myvu.client.app
 
 import com.myvu.client.app.feature.ClockSync
+import com.myvu.client.app.feature.GlassGesture
 import com.myvu.client.app.feature.Weather
 import com.myvu.client.core.LogBus
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -32,9 +34,15 @@ class InboundRouter(private val sender: Sender) {
         fun onBatteryUpdated(battery: Int, isCharging: Boolean)
     }
 
+    /** Fired when the glasses send a physical temple touch gesture event. */
+    fun interface TouchGestureListener {
+        fun onTouchGesture(gestureType: GlassGesture, rawCode: Int, gestureName: String)
+    }
+
     private var aiListener: AiTriggerListener? = null
     private var weatherListener: WeatherRequestListener? = null
     private var batteryListener: BatteryUpdateListener? = null
+    private var touchGestureListener: TouchGestureListener? = null
 
     fun setAiTriggerListener(listener: AiTriggerListener?) {
         this.aiListener = listener
@@ -46,6 +54,10 @@ class InboundRouter(private val sender: Sender) {
 
     fun setBatteryUpdateListener(listener: BatteryUpdateListener?) {
         this.batteryListener = listener
+    }
+
+    fun setTouchGestureListener(listener: TouchGestureListener?) {
+        this.touchGestureListener = listener
     }
 
     /** Inspects one inbound relay body and answers anything that needs answering. */
@@ -61,6 +73,7 @@ class InboundRouter(private val sender: Sender) {
             checkWeatherRequest(obj)
             checkAiTrigger(obj)
             checkBatteryInfo(obj)
+            checkGestureTracking(obj)
         }
     }
 
@@ -190,6 +203,113 @@ class InboundRouter(private val sender: Sender) {
             }
         } catch (ignored: JSONException) {
         }
+    }
+
+    private fun checkGestureTracking(msg: JSONObject) {
+        val listener = touchGestureListener ?: return
+        val action = msg.optString("action", "")
+
+        if (action == "event_tracking") {
+            val dataObj = msg.optJSONObject("data")
+            if (dataObj != null) {
+                val dataAction = dataObj.optString("action", "")
+                if (dataAction == "sync_glass_event" || dataAction.contains("event") || dataAction.contains("gesture")) {
+                    processGestureValue(dataObj.opt("value"), listener)
+                    return
+                }
+            } else {
+                val dataStr = msg.optString("data", "")
+                if (dataStr.isNotEmpty()) {
+                    try {
+                        val parsedData = JSONObject(dataStr)
+                        val dataAction = parsedData.optString("action", "")
+                        if (dataAction == "sync_glass_event" || dataAction.contains("event") || dataAction.contains("gesture")) {
+                            processGestureValue(parsedData.opt("value"), listener)
+                            return
+                        }
+                    } catch (ignored: JSONException) {
+                    }
+                }
+            }
+            if (msg.has("value")) {
+                processGestureValue(msg.opt("value"), listener)
+            }
+            return
+        }
+
+        if (action == "sync_glass_event" || action == "touch_gesture") {
+            if (msg.has("value")) {
+                processGestureValue(msg.opt("value"), listener)
+            } else if (msg.has("data")) {
+                val dataObj = msg.optJSONObject("data")
+                if (dataObj != null) {
+                    processGestureValue(dataObj.opt("value"), listener)
+                } else {
+                    processGestureValue(msg.opt("data"), listener)
+                }
+            }
+        }
+    }
+
+    private fun processGestureValue(valueRaw: Any?, listener: TouchGestureListener) {
+        if (valueRaw == null) return
+
+        when (valueRaw) {
+            is JSONArray -> {
+                for (i in 0 until valueRaw.length()) {
+                    val item = valueRaw.optJSONObject(i)
+                    if (item != null) {
+                        dispatchGestureItem(item, listener)
+                    }
+                }
+            }
+            is JSONObject -> {
+                dispatchGestureItem(valueRaw, listener)
+            }
+            is String -> {
+                val str = valueRaw.trim()
+                if (str.startsWith("[")) {
+                    try {
+                        val arr = JSONArray(str)
+                        for (i in 0 until arr.length()) {
+                            val item = arr.optJSONObject(i)
+                            if (item != null) {
+                                dispatchGestureItem(item, listener)
+                            }
+                        }
+                    } catch (ignored: JSONException) {
+                    }
+                } else if (str.startsWith("{")) {
+                    try {
+                        dispatchGestureItem(JSONObject(str), listener)
+                    } catch (ignored: JSONException) {
+                    }
+                }
+            }
+            is Number -> {
+                val code = valueRaw.toInt()
+                val gesture = GlassGesture.fromCode(code)
+                LogBus.log("Touch gesture received: $gesture (code=$code)")
+                listener.onTouchGesture(gesture, code, "touch_gesture")
+            }
+        }
+    }
+
+    private fun dispatchGestureItem(item: JSONObject, listener: TouchGestureListener) {
+        val actionName = item.optString("action_name", item.optString("event_name", item.optString("name", "")))
+        var actionValue = item.optInt("action_value", -1)
+        if (actionValue == -1 && item.has("action_value")) {
+            actionValue = item.optString("action_value").toIntOrNull() ?: -1
+        }
+        if (actionValue == -1) {
+            actionValue = item.optInt("value", item.optInt("code", -1))
+        }
+
+        if (actionName.isEmpty() && actionValue == -1) return
+
+        val gesture = GlassGesture.fromCode(actionValue, actionName)
+        LogBus.log("Touch gesture received: $gesture (code=$actionValue, name=$actionName)")
+        listener.onTouchGesture(gesture, actionValue, actionName)
     }
 
     companion object {

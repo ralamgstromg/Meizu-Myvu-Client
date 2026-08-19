@@ -42,61 +42,11 @@ class GlassesEventHandler(
                 return@setAiTriggerListener
             }
             delegate.wakeRelay()
+            TouchGestureManager.handleTrigger(this.context, code, createActionExecutor())
+        }
 
-            TouchGestureManager.handleTrigger(this.context, code, object : TouchGestureManager.ActionExecutor {
-                override fun executeAiAssistant(triggerCode: Int) {
-                    delegate.triggerAi(triggerCode)
-                }
-
-                override fun executeWeatherSync() {
-                    delegate.refreshWeather()
-                    try {
-                        delegate.sendAction(Notifications.buildShow("MYVU", "Actualizando clima..."))
-                    } catch (ignored: Exception) {
-                    }
-                }
-
-                override fun executeToggleMirror() {
-                    val ctx = this@GlassesEventHandler.context ?: return
-                    val enabled = !Prefs.mirrorEnabled(ctx)
-                    Prefs.setMirrorEnabled(ctx, enabled)
-                    LogBus.log("Touchpad gesture -> Notification mirroring " + if (enabled) "ON" else "OFF")
-                    try {
-                        delegate.sendAction(
-                            Notifications.buildShow(
-                                "MYVU",
-                                "Espejo notificaciones: " + if (enabled) "Activado" else "Desactivado"
-                            )
-                        )
-                    } catch (ignored: Exception) {
-                    }
-                }
-
-                override fun executeMediaPlayPause() {
-                    LogBus.log("Touchpad gesture -> Media Play/Pause")
-                    val ctx = this@GlassesEventHandler.context
-                    if (ctx != null) {
-                        try {
-                            val am = ctx.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-                            if (am != null) {
-                                val now = SystemClock.uptimeMillis()
-                                am.dispatchMediaKeyEvent(
-                                    KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0)
-                                )
-                                am.dispatchMediaKeyEvent(
-                                    KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0)
-                                )
-                            }
-                        } catch (e: Exception) {
-                            LogBus.error("could not send media play/pause key event", e)
-                        }
-                    }
-                    try {
-                        delegate.sendAction(Notifications.buildShow("MYVU", "Música: Play / Pausa"))
-                    } catch (ignored: Exception) {
-                    }
-                }
-            })
+        inbound.setTouchGestureListener { _, rawCode, _ ->
+            TouchGestureManager.handleTrigger(this.context, rawCode, createActionExecutor())
         }
 
         inbound.setWeatherRequestListener {
@@ -105,6 +55,63 @@ class GlassesEventHandler(
 
         inbound.setBatteryUpdateListener { battery, isCharging ->
             delegate.updateBattery(battery, isCharging)
+        }
+    }
+
+    private fun createActionExecutor(): TouchGestureManager.ActionExecutor {
+        return object : TouchGestureManager.ActionExecutor {
+            override fun executeAiAssistant(triggerCode: Int) {
+                delegate.triggerAi(triggerCode)
+            }
+
+            override fun executeWeatherSync() {
+                delegate.refreshWeather()
+                try {
+                    delegate.sendAction(Notifications.buildShow("MYVU", "Actualizando clima..."))
+                } catch (ignored: Exception) {
+                }
+            }
+
+            override fun executeToggleMirror() {
+                val ctx = this@GlassesEventHandler.context ?: return
+                val enabled = !Prefs.mirrorEnabled(ctx)
+                Prefs.setMirrorEnabled(ctx, enabled)
+                LogBus.log("Touchpad gesture -> Notification mirroring " + if (enabled) "ON" else "OFF")
+                try {
+                    delegate.sendAction(
+                        Notifications.buildShow(
+                            "MYVU",
+                            "Espejo notificaciones: " + if (enabled) "Activado" else "Desactivado"
+                        )
+                    )
+                } catch (ignored: Exception) {
+                }
+            }
+
+            override fun executeMediaPlayPause() {
+                LogBus.log("Touchpad gesture -> Media Play/Pause")
+                val ctx = this@GlassesEventHandler.context
+                if (ctx != null) {
+                    try {
+                        val am = ctx.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+                        if (am != null) {
+                            val now = SystemClock.uptimeMillis()
+                            am.dispatchMediaKeyEvent(
+                                KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0)
+                            )
+                            am.dispatchMediaKeyEvent(
+                                KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0)
+                            )
+                        }
+                    } catch (e: Exception) {
+                        LogBus.error("could not send media play/pause key event", e)
+                    }
+                }
+                try {
+                    delegate.sendAction(Notifications.buildShow("MYVU", "Música: Play / Pausa"))
+                } catch (ignored: Exception) {
+                }
+            }
         }
     }
 }
