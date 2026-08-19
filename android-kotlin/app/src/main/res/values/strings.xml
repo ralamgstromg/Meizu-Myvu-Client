@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">MYVU Client</string>
+    <string name="trackpad_status_connected">Connected · tap, swipe, long-press to control the glasses</string>
+    <string name="trackpad_status_connecting">Connecting to glasses…</string>
+    <string name="trackpad_status_not_connected">Glasses not connected</string>
+    <string name="trackpad_status_failed">Connection failed</string>
+    <string name="trackpad_status_require_connection">⚠️ Connect glasses to use trackpad</string>
+    <string name="trackpad_gesture_hint">Tap = select · double-tap · long-press · swipe to move</string>
 </resources>

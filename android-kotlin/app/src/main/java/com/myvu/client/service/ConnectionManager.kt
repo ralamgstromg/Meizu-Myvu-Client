@@ -1118,17 +1118,35 @@ class ConnectionManager(
 
     // ----------------------------------------------------------- trackpad
 
-    fun trackpadStart() { sendAction(Trackpad.start()) }
-    fun trackpadStop() { sendAction(Trackpad.stop()) }
-    fun trackpadClick() { sendAction(Trackpad.click()) }
-    fun trackpadDoubleClick() { sendAction(Trackpad.doubleClick()) }
-    fun trackpadLongPress() { sendAction(Trackpad.longPress()) }
+    fun trackpadStart() {
+        wakeRelay()
+        sendAction(Trackpad.start(), AppLayer.PKG_LAUNCHER, AppLayer.PKG_LAUNCHER)
+    }
+
+    fun trackpadStop() {
+        sendAction(Trackpad.stop(), AppLayer.PKG_LAUNCHER, AppLayer.PKG_LAUNCHER)
+    }
+
+    fun trackpadClick() {
+        sendAction(Trackpad.click(), AppLayer.PKG_LAUNCHER, AppLayer.PKG_LAUNCHER)
+    }
+
+    fun trackpadDoubleClick() {
+        sendAction(Trackpad.doubleClick(), AppLayer.PKG_LAUNCHER, AppLayer.PKG_LAUNCHER)
+    }
+
+    fun trackpadLongPress() {
+        sendAction(Trackpad.longPress(), AppLayer.PKG_LAUNCHER, AppLayer.PKG_LAUNCHER)
+    }
 
     fun trackpadSwipe(
         direction: Int, startX: Float, startY: Float,
         endX: Float, endY: Float, speedX: Float, speedY: Float
     ) {
-        sendAction(Trackpad.swipe(direction, startX, startY, endX, endY, speedX, speedY))
+        sendAction(
+            Trackpad.swipe(direction, startX, startY, endX, endY, speedX, speedY),
+            AppLayer.PKG_LAUNCHER, AppLayer.PKG_LAUNCHER
+        )
     }
 
     fun setVolume(value: Int) { safeSend(safeVolume(value)) }

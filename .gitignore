@@ -8,10 +8,16 @@
 **/keystore.properties
 
 # ---- Android / Gradle build output ----
+.gradle/
+**/.gradle/
 android/build/
 android/.gradle/
 android/.kotlin/
 android/app/build/
+android-kotlin/build/
+android-kotlin/.gradle/
+android-kotlin/.kotlin/
+android-kotlin/app/build/
 **/build/
 *.apk
 *.aab

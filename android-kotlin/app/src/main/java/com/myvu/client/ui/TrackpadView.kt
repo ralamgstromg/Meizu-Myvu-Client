@@ -34,16 +34,24 @@ class TrackpadView @JvmOverloads constructor(
     private lateinit var detector: GestureDetector
 
     private var scrolled: Boolean = false
+    private var isTouching: Boolean = false
     private var beginX: Float = 0f
     private var beginY: Float = 0f
     private var endX: Float = 0f
     private var endY: Float = 0f
+    private var currentTouchX: Float = 0f
+    private var currentTouchY: Float = 0f
     private var beginTime: Long = 0
 
     private var swipeThreshold: Float = 0f
     private val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val touchGlowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val touchRingPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val touchCenterPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val trailPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var dotGap: Float = 0f
     private var dotRadius: Float = 0f
+    private var density: Float = 1f
 
     init {
         initView()
@@ -55,12 +63,35 @@ class TrackpadView @JvmOverloads constructor(
 
     private fun initView() {
         val d = resources.displayMetrics.density
+        density = d
         swipeThreshold = 64 * d
         dotGap = 26 * d
         dotRadius = 1.6f * d
         dotPaint.color = Color.parseColor("#33FFFFFF")
 
+        touchGlowPaint.apply {
+            color = Color.parseColor("#2600F0FF")
+            style = Paint.Style.FILL
+        }
+        touchRingPaint.apply {
+            color = Color.parseColor("#8000F0FF")
+            style = Paint.Style.STROKE
+            strokeWidth = 2f * d
+        }
+        touchCenterPaint.apply {
+            color = Color.parseColor("#E600F0FF")
+            style = Paint.Style.FILL
+        }
+        trailPaint.apply {
+            color = Color.parseColor("#5500F0FF")
+            style = Paint.Style.STROKE
+            strokeWidth = 3f * d
+            strokeCap = Paint.Cap.ROUND
+        }
+
         detector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(e: MotionEvent): Boolean = true
+
             override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
                 listener?.onTap()
                 return true
@@ -84,6 +115,9 @@ class TrackpadView @JvmOverloads constructor(
                 scrolled = true
                 endX = e2.x
                 endY = e2.y
+                currentTouchX = e2.x
+                currentTouchY = e2.y
+                invalidate()
                 return true
             }
         })
@@ -99,12 +133,32 @@ class TrackpadView @JvmOverloads constructor(
                 beginY = event.y
                 endX = beginX
                 endY = beginY
+                currentTouchX = beginX
+                currentTouchY = beginY
                 beginTime = System.currentTimeMillis()
                 scrolled = false
+                isTouching = true
+                invalidate()
+                return true
+            }
+            MotionEvent.ACTION_MOVE -> {
+                currentTouchX = event.x
+                currentTouchY = event.y
+                endX = event.x
+                endY = event.y
+                invalidate()
                 return true
             }
             MotionEvent.ACTION_UP -> {
+                isTouching = false
                 emitSwipeIfAny()
+                invalidate()
+                return true
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                isTouching = false
+                scrolled = false
+                invalidate()
                 return true
             }
             else -> return true
@@ -137,6 +191,17 @@ class TrackpadView @JvmOverloads constructor(
                 x += dotGap
             }
             y += dotGap
+        }
+
+        if (isTouching) {
+            val d = density
+            if (scrolled) {
+                canvas.drawLine(beginX, beginY, currentTouchX, currentTouchY, trailPaint)
+            }
+            val touchRadius = 26f * d
+            canvas.drawCircle(currentTouchX, currentTouchY, touchRadius, touchGlowPaint)
+            canvas.drawCircle(currentTouchX, currentTouchY, touchRadius, touchRingPaint)
+            canvas.drawCircle(currentTouchX, currentTouchY, 3.5f * d, touchCenterPaint)
         }
     }
 }
