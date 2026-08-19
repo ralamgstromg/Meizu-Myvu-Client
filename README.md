@@ -26,14 +26,21 @@ Each folder has its own README with build/run details:
 - **Notifications** — send your own, or mirror real phone notifications to the lens with per-app filters and custom vibration alerts.
 - **Teleprompter**, **system settings** (volume, brightness, Wi-Fi, wear detection, zen mode, screen-off, standby position…), **clock sync**, and status **queries**.
 - **Weather Sync** — manual and periodic weather data fetching via Open-Meteo API, updating the glasses' weather widget on the lens HUD.
-- **Custom Touch & Gesture Controls (`TouchGestureManager`)** — map the glasses' temple touch/button long-press trigger to customizable phone actions:
-  - Launch AI Assistant
-  - Force Weather Sync
-  - Toggle Notification Mirroring
-  - Media Play / Pause
-  - None (disabled)
+- **Custom Temple Touch & Gesture Controls (`TouchGestureManager`)** — map physical touch gestures from the glasses' temple trackpad and hardware buttons to customizable phone actions:
+  - **6 Recognized Physical Gestures (`GlassGesture`)**: Tap, Double Tap, Triple Tap, Long Press / Deep Touch, Swipe Forward, Swipe Backward.
+  - **Configurable Actions (`GestureAction`)**:
+    - **Phone Voice Assistant (Google Assistant / Gemini)**: Injects `KEYCODE_VOICE_ASSIST` and launches voice command intent, waking up the phone's native assistant using the phone's microphone with instant HUD feedback.
+    - **Glasses Local-First AI Assistant**: Activates on-device STT (Whisper) + LLM (Gemma) / Cloud AI using the glasses' Opus microphone stream.
+    - **Media Controls**: Play / Pause, Next Track, Previous Track via Android system media keys.
+    - **Force Weather Sync**: On-demand Open-Meteo refresh sent to the glasses' weather widget.
+    - **Toggle Notification Mirroring**: Switch notification mirroring on/off dynamically.
+    - **Open Teleprompter**: Launch the HUD teleprompter display.
+    - **Zen Mode**: Toggle Do-Not-Disturb / Zen Mode on the glasses.
+    - **None (Disabled)**: Ignore specific gestures.
+  - **Anti-Rebound Debounce**: 350ms software filter preventing accidental repeated triggers.
+  - **Material 3 Settings UI**: 6 Exposed Dropdown Menus in `SettingsActivity` for individual per-gesture mapping.
 - **Navigation** — full turn-by-turn HUD (OSRM routing, Nominatim geocoding), driven by the phone's location.
-- **Trackpad** — the phone as a remote touchpad for the glasses' launcher (tap / double-tap / long-press / swipe).
+- **Virtual Trackpad ("Phonepad")** — use the phone screen as a remote touchpad for the glasses' launcher HUD (`com.upuphone.star.launcher`) with support for tap, double-tap, long-press, and 4-directional swipes (up, down, left, right), reactive `StateFlow` lifecycle tracking, obsidian visual state indicators, and haptic feedback.
 - **Diagnostics & Live Logging (`LogBus`)** — centralized thread-safe log bus delivering real-time diagnostics to the app UI with full file export capabilities.
 - **Local-First AI assistant** — press the glasses' button or speak; speech-to-text, an LLM answer, and text-to-speech back to the glasses:
   - **STT**: Whisper Large v3 Turbo INT4 On-Device with Groq API fallback, Spanish voice-command priming.
@@ -56,10 +63,9 @@ The glasses require **two Bluetooth links at once**:
 2. **Classic-BT (RFCOMM) second**, to that per-session UUID. This is the link
    that actually carries app traffic. Each feature is a JSON
    `{"action": …}` message over a "RunAsOne" relay, routed to a target package
-   on the glasses (e.g. `com.upuphone.star.launcher`).
+   on the glasses (e.g. `com.upuphone.star.launcher` or `com.upuphone.star.interconnect`).
 
-The glasses' microphone streams back as Opus frames; navigation, the trackpad
-("phonepad"), weather, gestures, and the assistant are all JSON actions over the same relay.
+The glasses stream audio back as Opus frames and report physical touch telemetry (`sync_glass_event` / `event_tracking`). Navigation, the virtual trackpad ("phonepad"), weather, notifications, and the assistant are all JSON actions over the same relay.
 
 ## Hardware / prerequisites
 
