@@ -15,9 +15,46 @@ import java.util.Locale
 
 object OpenMeteo {
     private const val BASE = "https://api.open-meteo.com/v1/forecast"
+    private const val GEO_BASE = "https://geocoding-api.open-meteo.com/v1/search"
     private const val USER_AGENT = "myvu-android-client/1.0"
     private const val TIMEOUT_MS = 20000
     private const val FORECAST_DAYS = 7
+
+    data class GeoLocation(
+        val name: String,
+        val latitude: Double,
+        val longitude: Double,
+        val country: String? = null,
+        val admin1: String? = null
+    )
+
+    @JvmStatic
+    @Throws(IOException::class, JSONException::class)
+    fun geocode(cityName: String): GeoLocation? {
+        val encoded = java.net.URLEncoder.encode(cityName.trim(), "UTF-8")
+        val url = "$GEO_BASE?name=$encoded&count=1&language=es&format=json"
+        val root = JSONObject(get(url))
+        val results = root.optJSONArray("results")
+        if (results != null && results.length() > 0) {
+            val first = results.getJSONObject(0)
+            return GeoLocation(
+                name = first.optString("name", cityName),
+                latitude = first.optDouble("latitude"),
+                longitude = first.optDouble("longitude"),
+                country = first.optString("country").takeIf { it.isNotBlank() },
+                admin1 = first.optString("admin1").takeIf { it.isNotBlank() }
+            )
+        }
+        return null
+    }
+
+    @JvmStatic
+    @Throws(IOException::class, JSONException::class)
+    fun fetchByCity(cityName: String): Weather.Reading? {
+        val geo = geocode(cityName) ?: return null
+        val displayName = if (!geo.country.isNullOrBlank()) "${geo.name}, ${geo.country}" else geo.name
+        return fetch(geo.latitude, geo.longitude, displayName)
+    }
 
     @JvmStatic
     @Throws(IOException::class, JSONException::class)
@@ -83,14 +120,14 @@ object OpenMeteo {
     private fun fmt(d: Double): String = String.format(Locale.US, "%.4f", d)
 
     @Throws(IOException::class)
-    private fun get(url: String): String {
+    internal fun get(url: String, timeoutMs: Int = TIMEOUT_MS): String {
         val c = URL(url).openConnection() as HttpURLConnection
         SslUtils.applySslBypass(c)
         try {
             c.requestMethod = "GET"
             c.setRequestProperty("User-Agent", USER_AGENT)
-            c.connectTimeout = TIMEOUT_MS
-            c.readTimeout = TIMEOUT_MS
+            c.connectTimeout = timeoutMs
+            c.readTimeout = timeoutMs
             val code = c.responseCode
             if (code != 200) throw IOException("weather HTTP $code")
             val input = c.inputStream
