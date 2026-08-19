@@ -262,9 +262,11 @@ En la sección **"Control Táctil de Patilla (Gafas)"** de `SettingsActivity`, l
 
 ## 🛡️ Resiliencia de Conexión y Estabilidad Anticaídas
 
+- **Intercepción Rápida de WhatsApp y Acciones Nativas (`VoiceActionRouter.kt`)**: Extensión de expresiones regulares en el router de canal rápido (<5ms) para soportar todas las variaciones gramaticales y fonéticas del español (*envió, envía, mandó, mandar, escribirle*). Al decir *"envió un mensaje de WhatsApp a [Contacto] [Mensaje]"*, la app resuelve el contacto y dispara la acción de WhatsApp inmediatamente sin depender de la inferencia LLM.
+- **Cadena de Buscadores Multi-Fuente en 5 Niveles (`ExternalInfoService.kt`)**: Ante cualquier consulta de información o conocimiento general, la app evalúa primero las fuentes locales configuradas y luego ejecuta una cadena de resiliencia:
+  `Fuentes Configuraas (Clima/Divisas/Noticias) → Wikipedia API → DuckDuckGo Instant Answer API → Google Search HTML → DuckDuckGo HTML Fallback`
 - **Procesamiento de Audio STT de Alta Fidelidad**: En `AiConversation.kt`, el remuestreo de audio 48kHz -> 16kHz integra un **filtro Pasa-Altos (High-Pass Filter a 80Hz)** que elimina el retumbo de baja frecuencia y ruido de fricción de las gafas, y un **Control de Ganancia por Picos (Peak AGC)** que escala discursos suaves al 75% del rango dinámico máximo, optimizando la precisión de transcripción en Whisper.
-- **Motor de Búsquedas e Información Externa (`ExternalInfoService.kt`)**: Extracción geográfica mejorada para consultas de clima (ej. *"Qué temperatura para mañana en Barranquilla"* -> `"Barranquilla"` en Open-Meteo), integrando además **Google Noticias RSS** (`https://news.google.com/rss/search`) para titulares de actualidad, conversor de divisas y raspado inteligente de Google Search HTML.
-- **Agente Multiacción**: El prompt de sistema en `AiClient.kt` e instrucciones en `PhoneActionExecutor.kt` permiten al agente interpretar y ejecutar múltiples acciones por turno de manera secuencial (ej. consultar clima, crear nota y enviar WhatsApp simultáneamente).
+- **Agente Multiacción**: El prompt de sistema en `AiClient.kt` e instrucciones en `PhoneActionExecutor.kt` permiten al agente interpretar y ejecutar múltiples acciones por turno de manera secuencial.
 
 ---
 

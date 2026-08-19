@@ -420,6 +420,42 @@ object ExternalInfoService {
             LogBus.warn("ExternalInfoService -> Google Search failed: ${e.message}")
         }
 
+        // 4. DuckDuckGo HTML Snippet Fallback
+        try {
+            val encoded = URLEncoder.encode(cleanQuery, "UTF-8")
+            val ddgHtmlUrl = "https://html.duckduckgo.com/html/?q=$encoded"
+            val html = httpGet(ddgHtmlUrl, USER_AGENT_MOBILE, timeoutMs)
+            val snippetMatch = Regex("<a[^>]+class=\"result__snippet\"[^>]*>(.*?)</a>").find(html)
+            if (snippetMatch != null) {
+                val raw = snippetMatch.groupValues[1]
+                val cleaned = cleanForGlasses(raw)
+                if (cleaned.length >= 15) {
+                    return cleaned
+                }
+            }
+        } catch (e: Exception) {
+            LogBus.log("ExternalInfoService -> DuckDuckGo HTML fallback: ${e.message}")
+        }
+
+        // 5. Wikipedia OpenSearch API Fallback
+        try {
+            val encoded = URLEncoder.encode(cleanQuery, "UTF-8")
+            val wikiSearchUrl = "https://es.wikipedia.org/w/api.php?action=opensearch&search=$encoded&limit=1&format=json"
+            val jsonStr = httpGet(wikiSearchUrl, USER_AGENT_APP, timeoutMs)
+            val arr = org.json.JSONArray(jsonStr)
+            if (arr.length() >= 3) {
+                val descs = arr.optJSONArray(2)
+                if (descs != null && descs.length() > 0) {
+                    val desc = descs.optString(0, "")
+                    if (desc.isNotBlank() && !desc.contains("pueden referirse a")) {
+                        return cleanForGlasses(desc)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            LogBus.log("ExternalInfoService -> Wikipedia OpenSearch fallback: ${e.message}")
+        }
+
         return null
     }
 

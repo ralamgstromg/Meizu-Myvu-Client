@@ -436,7 +436,7 @@ class PhoneActionExecutor(context: Context) {
         try {
             if (text.isNullOrBlank()) return
             val cleanRaw = text.trim()
-                .replace(Regex("(?i)^(enviar?\\s+(un\\s+)?(mensaje|whatsapp)(\\s+de\\s+whatsapp)?(\\s+a|\\s+al)?\\s*|manda\\s+(un\\s+)?(mensaje|whatsapp)(\\s+de\\s+whatsapp)?(\\s+a|\\s+al)?\\s*|a\\s+mi\\s+|a\\s+|al\\s+)"), "")
+                .replace(Regex("(?i)^(enviar?|envio|envió|envia|envía|manda|mandar?|mando|mandó|mandale|escribe|escribir?|escribirle)\\s+(un\\s+)?(mensaje|whatsapp)(\\s+de\\s+whatsapp)?(\\s+a|\\s+al)?\\s*|(?i)^(a\\s+mi|a|al)\\s+"), "")
                 .trim()
 
             var recipient: String? = null

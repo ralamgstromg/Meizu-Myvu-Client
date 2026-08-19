@@ -33,8 +33,8 @@ class VoiceActionRouter(
         val trimmed = rawQuery.trim()
         val normalized = normalize(trimmed)
 
-        // 1. Llamadas telefónicas (incluyendo variaciones fonéticas comunes de STT: jamar, yamar, llama, marcar)
-        val callMatch = Regex("^(llamar?|marcar?|marca|llama|call|jamar?|yamar?|llamas|llamame)\\s+(a|al|a\\s+mi)?\\s*(.+)$", RegexOption.IGNORE_CASE).find(normalized)
+        // 1. Llamadas telefónicas (incluyendo variaciones fonéticas: llamar, marca, llamo, llamó, llama, marcale, etc.)
+        val callMatch = Regex("^(llamar?|marcar?|marca|llama|llamo|llamó|llamas|llamame|marcale|marcarle|call|jamar?|yamar?)\\s+(a|al|a\\s+mi)?\\s*(.+)$", RegexOption.IGNORE_CASE).find(normalized)
         if (callMatch != null) {
             val rawTarget = trimmed.substring(callMatch.groups[1]!!.range.last + 1)
             val target = cleanTarget(rawTarget)
@@ -45,8 +45,8 @@ class VoiceActionRouter(
             }
         }
 
-        // 2. WhatsApp y Mensajes (incluyendo frases como "enviar mensaje de whatsapp a Matías Castro, hola cómo vas")
-        val waMatch = Regex("^(enviar?|manda|mandar?|escribir?|mensaje\\s+para|para)\\s+(un\\s+)?(mensaje\\s+de\\s+whatsapp|whatsapp|mensaje)?\\s*(a|al|a\\s+mi|para)?\\s*(.+)$", RegexOption.IGNORE_CASE).find(normalized)
+        // 2. WhatsApp y Mensajes (incluyendo frases como "envió un mensaje de whatsapp a Matías Castro hola cómo estás")
+        val waMatch = Regex("^(enviar?|envio|envió|envia|envía|envias|envías|manda|mandar?|mando|mandó|mandale|enviarle|mandarle|escribe|escribir?|escribirle|mensaje\\s+para|para)\\s+(un\\s+)?(mensaje\\s+de\\s+whatsapp|whatsapp|mensaje)?\\s*(a|al|a\\s+mi|para)?\\s*(.+)$", RegexOption.IGNORE_CASE).find(normalized)
         if (waMatch != null && !normalized.startsWith("para las ") && !normalized.startsWith("para el ")) {
             val payload = trimmed.substring(waMatch.groups[1]!!.range.last + 1)
                 .replace(Regex("(?i)^(un\\s+)?(mensaje\\s+de\\s+whatsapp|whatsapp|mensaje)\\s*(a|al|a\\s+mi|para)?\\s*"), "")
@@ -58,8 +58,17 @@ class VoiceActionRouter(
             }
         }
 
+        if (normalized.contains("whatsapp")) {
+            val waPayload = trimmed.replace(Regex("(?i)^(enviar?|envio|envió|envia|envía|manda|mandar?|mandó|escribe|escribir?)\\s+(un\\s+)?(mensaje\\s+de\\s+whatsapp|whatsapp|mensaje)?\\s*(a|al|a\\s+mi|para)?\\s*"), "").trim()
+            if (waPayload.isNotBlank() && waPayload.length > 3) {
+                LogBus.log("VoiceActionRouter -> Fast-Path WhatsApp fallback: '$waPayload'")
+                actionExecutor.openWhatsApp(waPayload)
+                return RouteResult(handled = true, responseText = "Preparando mensaje de WhatsApp...")
+            }
+        }
+
         // 3. Telegram
-        val tgMatch = Regex("^(enviar?|manda|mandar?|escribir?)\\s+(un\\s+)?(telegram)\\s+(a|al)?\\s*(.+)$", RegexOption.IGNORE_CASE).find(normalized)
+        val tgMatch = Regex("^(enviar?|envio|envió|envia|envía|manda|mandar?|mandó|mandale|escribe|escribir?)\\s+(un\\s+)?(telegram)\\s+(a|al)?\\s*(.+)$", RegexOption.IGNORE_CASE).find(normalized)
         if (tgMatch != null) {
             val payload = trimmed.substring(tgMatch.groups[1]!!.range.last + 1)
                 .replace(Regex("(?i)^(un\\s+)?(telegram)\\s+(a|al|a\\s+mi)?\\s*"), "")
