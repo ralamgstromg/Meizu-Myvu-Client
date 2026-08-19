@@ -1590,6 +1590,91 @@
                         android:visibility="gone" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== User Profile ===== -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Card.Myvu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/CardTitle.Myvu"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Perfil de Usuario (IA)" />
+
+                    <TextView
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="El agente de IA aprende de tus consultas para personalizar las respuestas. Puedes extender o personalizar tu perfil manualmente aquí." />
+
+                    <!-- User Name -->
+                    <TextView
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Nombre del Usuario" />
+
+                    <EditText
+                        android:id="@+id/edtUserName"
+                        style="@style/Input.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Ej. Carlos"
+                        android:inputType="textPersonName" />
+
+                    <!-- Interest Tags -->
+                    <TextView
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Intereses y Etiquetas (separadas por comas)" />
+
+                    <EditText
+                        android:id="@+id/edtUserInterests"
+                        style="@style/Input.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="clima, música, tecnología, viajes"
+                        android:inputType="text" />
+
+                    <!-- Custom Instructions -->
+                    <TextView
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Instrucciones Personalizadas para el Agente" />
+
+                    <EditText
+                        android:id="@+id/edtUserCustomInstructions"
+                        style="@style/Input.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:lines="3"
+                        android:gravity="top|start"
+                        android:hint="Ej. Responder en frases cortas y concisas. Dar prioridad a datos métricos."
+                        android:inputType="textMultiLine" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSaveUserProfile"
+                        style="@style/Button.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Guardar Perfil de Usuario" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </LinearLayout>

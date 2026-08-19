@@ -9,6 +9,8 @@ import com.myvu.client.core.Prefs
 import com.myvu.client.database.ReminderRepository
 import com.myvu.client.service.ConnectionState
 import com.myvu.client.service.MyvuService
+import com.myvu.client.data.UserProfileAnalyzer
+import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -470,12 +472,19 @@ class AiConversation(
                 "$text a las ${SimpleDateFormat("HH:mm", locale).format(Date(it.triggerAt))}"
             }
 
-        return "[Contexto del Sistema: $currentDateTime | $batteryInfo | Próximos recordatorios: ${upcoming.ifEmpty { "Ninguno" }}]\n"
+        val profileContext = runBlocking { UserProfileAnalyzer.getInstance(context).buildProfilePromptContext() }
+        return profileContext + "[Contexto del Sistema: $currentDateTime | $batteryInfo | Próximos recordatorios: ${upcoming.ifEmpty { "Ninguno" }}]\n"
     }
 
     private val voiceRouter: VoiceActionRouter = VoiceActionRouter(context, actionExecutor)
 
     private fun askAi(question: String) {
+        UserProfileAnalyzer.getInstance(context).recordMessage(
+            sessionId = sessionId,
+            direction = "USER",
+            content = question,
+            mediaType = if (textMode) "TEXT" else "VOICE"
+        )
         val route = voiceRouter.tryRoute(question)
         if (route.handled) {
             if (route.isAsyncWeather) {
@@ -613,6 +622,13 @@ class AiConversation(
     private fun deliverFinal(answer: String, source: AiResponse.Source) {
         if (!active) return
         LogBus.log("AI_ACTION_PROCESSED sessionId=$sessionId source=$source answerLength=${answer.length}")
+        UserProfileAnalyzer.getInstance(context).recordMessage(
+            sessionId = sessionId,
+            direction = "AI",
+            content = answer,
+            mediaType = "TEXT",
+            actionResult = source.name
+        )
         responseDelivery.deliver(
             AiResponse(
                 sessionId = sessionId,

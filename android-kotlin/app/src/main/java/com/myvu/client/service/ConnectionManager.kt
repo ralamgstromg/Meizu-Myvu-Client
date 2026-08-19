@@ -200,7 +200,7 @@ class ConnectionManager(
             // press like the glasses asking for the relay back.
             supervisor?.wake()
 
-            TouchGestureManager.handleTrigger(this.context, code, createGestureActionExecutor())
+            ai().onTrigger(code)
         }
 
         inbound.setTouchGestureListener { gestureType, rawCode, _ ->

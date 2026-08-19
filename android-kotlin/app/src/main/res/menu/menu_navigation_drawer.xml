@@ -6,6 +6,10 @@
             android:icon="@drawable/ic_glasses"
             android:title="Dashboard" />
         <item
+            android:id="@+id/nav_chat_sidebar"
+            android:icon="@android:drawable/ic_menu_send"
+            android:title="Chat IA con Historial" />
+        <item
             android:id="@+id/nav_ai_config"
             android:icon="@drawable/ic_settings"
             android:title="Ajustes de IA" />

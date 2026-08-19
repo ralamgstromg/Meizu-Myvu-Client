@@ -42,7 +42,7 @@ class GlassesEventHandler(
                 return@setAiTriggerListener
             }
             delegate.wakeRelay()
-            TouchGestureManager.handleTrigger(this.context, code, createActionExecutor())
+            delegate.triggerAi(code)
         }
 
         inbound.setTouchGestureListener { gestureType, rawCode, _ ->

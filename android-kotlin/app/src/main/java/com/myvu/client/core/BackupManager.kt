@@ -90,6 +90,19 @@ object BackupManager {
                 dbFile.copyTo(dbTarget, overwrite = true)
             }
 
+            val chatDbFile = appContext.getDatabasePath("myvu_chat.db")
+            if (chatDbFile.exists()) {
+                try {
+                    val cDb = com.myvu.client.database.AppDatabase.getInstance(appContext).openHelper.writableDatabase
+                    val cursor = cDb.query("PRAGMA wal_checkpoint(FULL)")
+                    cursor.close()
+                } catch (e: Exception) {
+                    LogBus.error("BackupManager -> Chat DB WAL checkpoint warning", e)
+                }
+                val chatDbTarget = File(backupDir, "myvu_chat.db")
+                chatDbFile.copyTo(chatDbTarget, overwrite = true)
+            }
+
             // 2. Export SharedPreferences
             onProgress("Exportando configuraciones y claves de IA...")
             @Suppress("DEPRECATION")
@@ -251,6 +264,17 @@ object BackupManager {
                 // 3. Re-open DB and run any needed upgrades
                 val newDb = LocalDatabase.getInstance(appContext).writableDatabase
                 LogBus.log("BackupManager -> DB restored successfully (version: ${newDb.version})")
+            }
+
+            val chatDbBackupFile = File(extractDir, "myvu_chat.db")
+            if (chatDbBackupFile.exists()) {
+                val appChatDbFile = appContext.getDatabasePath("myvu_chat.db")
+                appChatDbFile.parentFile?.mkdirs()
+                File(appChatDbFile.parentFile, "myvu_chat.db-wal").delete()
+                File(appChatDbFile.parentFile, "myvu_chat.db-shm").delete()
+                File(appChatDbFile.parentFile, "myvu_chat.db-journal").delete()
+                chatDbBackupFile.copyTo(appChatDbFile, overwrite = true)
+                LogBus.log("BackupManager -> myvu_chat.db restored successfully")
             }
 
             // Restore SharedPreferences

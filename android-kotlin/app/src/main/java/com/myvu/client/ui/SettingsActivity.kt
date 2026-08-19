@@ -193,6 +193,8 @@ class SettingsActivity : AppCompatActivity() {
         btnRestoreBackup = findViewById(R.id.btnRestoreBackup)
         progressBackup = findViewById(R.id.progressBackup)
         txtBackupStatus = findViewById(R.id.txtBackupStatus)
+
+        setupUserProfileControls()
     }
 
     private val providerClickListener = View.OnClickListener { v ->
@@ -1355,6 +1357,35 @@ class SettingsActivity : AppCompatActivity() {
                     saver(text?.toString() ?: "")
                 }
             })
+        }
+    }
+
+    private fun setupUserProfileControls() {
+        val edtUserName: android.widget.EditText? = findViewById(R.id.edtUserName)
+        val edtUserInterests: android.widget.EditText? = findViewById(R.id.edtUserInterests)
+        val edtUserCustomInstructions: android.widget.EditText? = findViewById(R.id.edtUserCustomInstructions)
+        val btnSaveUserProfile: MaterialButton? = findViewById(R.id.btnSaveUserProfile)
+
+        lifecycleScope.launch {
+            val analyzer = com.myvu.client.data.UserProfileAnalyzer.getInstance(this@SettingsActivity)
+            val profile = analyzer.getOrCreateProfile()
+            edtUserName?.setText(profile.name)
+            edtUserInterests?.setText(profile.interestTags)
+            try {
+                val json = org.json.JSONObject(profile.preferencesJson)
+                edtUserCustomInstructions?.setText(json.optString("customInstructions"))
+            } catch (_: Exception) {}
+        }
+
+        btnSaveUserProfile?.setOnClickListener {
+            val name = edtUserName?.text?.toString()?.trim() ?: ""
+            val interests = edtUserInterests?.text?.toString()?.trim() ?: ""
+            val custom = edtUserCustomInstructions?.text?.toString()?.trim() ?: ""
+
+            lifecycleScope.launch {
+                com.myvu.client.data.UserProfileAnalyzer.getInstance(this@SettingsActivity).saveProfile(name, interests, custom)
+                Toast.makeText(this@SettingsActivity, "Perfil de usuario actualizado correctamente", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 }

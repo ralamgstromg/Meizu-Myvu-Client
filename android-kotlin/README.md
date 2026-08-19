@@ -98,10 +98,12 @@ graph TD
 - [**`nav/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/nav): Motor de navegación OSRM con renderizado HUD paso a paso en las gafas.
 - [**`weather/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/weather): Sincronización periódica con Open-Meteo para widget meteorológico en visor.
 - [**`reminder/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/reminder): Recordatorios con alarmas exactas vía `AlarmManager` y reenvío al HUD.
-- [**`database/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/database): Almacenamiento local SQLite nativo v4 (`notes`, `reminders`, `todos`) sin sobrecarga de ORMs.
-- [**`ui/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ui): Actividades con interfaz **Kinetic Obsidian Dark**:
-  - `ConnectActivity`: Enlace reactivo a `StateFlow`, overlay de conexión con auto-dismiss seguro, control de posición FOV del dashboard en tiempo real.
-  - `SettingsActivity`: Configuración de proveedores de IA/STT/TTS, ajustes del sistema de las gafas y 6 selectores desplegables Material 3 para control gestual de la patilla.
+- [**`database/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/database): Almacenamiento local SQLite nativo v4 (`notes`, `reminders`, `todos`) y Room Database `AppDatabase` (`myvu_chat.db` para historial de chat y perfil de usuario).
+- [**`data/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/data): Entidades y persistencia de chat (`ChatMessage`, `ChatSession`, `UserProfile`), DAO `ChatDao` y analizador dinámico `UserProfileAnalyzer` que incrementa etiquetas de interés e inyecta el perfil en el prompt del LLM.
+- [**`ui/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ui) & [**`ui/chat/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ui/chat): Actividades e interfaz **Kinetic Obsidian Dark**:
+  - `ConnectActivity`: Enlace reactivo a `StateFlow`, overlay de conexión, control de posición FOV y menú de navegación lateral.
+  - `ChatSidebarBottomSheet`: Interfaz general de chat accesible desde el menú lateral en cualquier momento, con soporte de texto, entrada de voz, adjuntos de cámara/galería y control de acciones en el dispositivo.
+  - `SettingsActivity`: Configuración de proveedores de IA/STT/TTS, gestión de perfiles de usuario (intereses e instrucciones personalizadas), respaldo/restauración local y Google Drive.
   - `TrackpadActivity`: Panel táctil virtual remoto para controlar el lanzador de las gafas con gestos multitáctiles y respuesta háptica.
   - `TeleprompterActivity`, `NotesActivity`, `VoiceRecorderActivity`, `NotificationAppsActivity`.
 
