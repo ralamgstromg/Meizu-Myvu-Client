@@ -87,6 +87,10 @@
             android:name=".ui.NotificationAppsActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ui.chat.ChatActivity"
+            android:exported="false" />
+
 
         <!-- Foreground & Background Services -->
         <service

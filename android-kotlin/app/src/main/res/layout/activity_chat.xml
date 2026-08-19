@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/obsidian_bg"
+    android:fitsSystemWindows="false"
+    android:paddingHorizontal="16dp">
+
+    <!-- ===== Top Header Bar (topBar for EdgeToEdgeHelper) ===== -->
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp">
+
+        <ImageButton
+            android:id="@+id/btnBackChat"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_arrow_back_cyber"
+            app:tint="@color/on_surface_obsidian"
+            android:contentDescription="Regresar" />
+
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_glasses"
+            app:tint="@color/cyber_teal"
+            android:contentDescription="Chat IA" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Chat IA y Control Móvil"
+                android:textColor="@color/on_surface_obsidian"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pantalla Completa • Historial en Backup"
+                android:textColor="@color/on_surface_variant_obsidian"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnChatSettings"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_settings"
+            app:tint="@color/cyber_teal"
+            android:contentDescription="Perfil y Ajustes" />
+    </LinearLayout>
+
+    <!-- ===== Chat History List ===== -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvChatHistory"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingVertical="8dp" />
+
+    <!-- Progress Indicator for processing -->
+    <ProgressBar
+        android:id="@+id/progressChat"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:indeterminate="true"
+        android:visibility="gone" />
+
+    <!-- ===== Attached Media Preview ===== -->
+    <LinearLayout
+        android:id="@+id/layImagePreview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="@color/obsidian_container_low"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/imgAttachedPreview"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="Imagen adjunta" />
+
+        <TextView
+            android:id="@+id/txtImageAttachedLabel"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Imagen adjunta para IA"
+            android:textColor="@color/cyber_teal"
+            android:textSize="12sp" />
+
+        <ImageButton
+            android:id="@+id/btnRemoveAttachedImage"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_delete"
+            app:tint="@color/on_surface_variant_obsidian"
+            android:contentDescription="Quitar imagen" />
+    </LinearLayout>
+
+    <!-- ===== Input Control Bar (bottomBar for EdgeToEdgeHelper) ===== -->
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="8dp"
+        android:paddingBottom="12dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAttachImage"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            app:icon="@android:drawable/ic_menu_camera"
+            app:iconTint="@color/cyber_teal"
+            android:contentDescription="Adjuntar Imagen" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnVoiceMic"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            app:icon="@drawable/ic_mic"
+            app:iconTint="@color/cyber_teal"
+            android:contentDescription="Voz STT" />
+
+        <EditText
+            android:id="@+id/edtChatMessage"
+            style="@style/Input.Myvu"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="6dp"
+            android:hint="Escribe consulta o comando..."
+            android:inputType="textCapSentences|textMultiLine"
+            android:maxLines="4" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSendChat"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:icon="@android:drawable/ic_menu_send"
+            app:iconTint="@color/on_cyber_teal"
+            app:backgroundTint="@color/cyber_teal"
+            android:contentDescription="Enviar" />
+    </LinearLayout>
+</LinearLayout>

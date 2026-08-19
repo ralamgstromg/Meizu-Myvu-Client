@@ -115,7 +115,7 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
     companion object {
         private const val BOUNDARY = "----myvuclientboundary"
         private const val TIMEOUT_MS = 30000
-        private const val MIN_PCM_BYTES = 16000
+        private const val MIN_PCM_BYTES = 8000
 
         @Throws(IOException::class)
         private fun extractText(body: String): String {

@@ -68,12 +68,16 @@ class InboundRouter(private val sender: Sender) {
             } catch (e: JSONException) {
                 continue
             }
-            checkLaunchAppRequest(obj)
-            checkTimeSyncRequest(obj)
-            checkWeatherRequest(obj)
-            checkAiTrigger(obj)
-            checkBatteryInfo(obj)
-            checkGestureTracking(obj)
+            try {
+                checkLaunchAppRequest(obj)
+                checkTimeSyncRequest(obj)
+                checkWeatherRequest(obj)
+                checkAiTrigger(obj)
+                checkBatteryInfo(obj)
+                checkGestureTracking(obj)
+            } catch (e: Throwable) {
+                LogBus.error("InboundRouter: Exception handling candidate packet", e)
+            }
         }
     }
 

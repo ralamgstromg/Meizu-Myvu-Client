@@ -5,7 +5,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,21 +17,22 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.button.MaterialButton
 import com.myvu.client.R
 import com.myvu.client.ai.AiProvider
 import com.myvu.client.ai.PhoneActionExecutor
 import com.myvu.client.ai.VoiceActionRouter
+import com.myvu.client.core.EdgeToEdgeHelper
 import com.myvu.client.core.LogBus
 import com.myvu.client.core.Prefs
 import com.myvu.client.data.ChatMessage
-import com.myvu.client.data.ChatSession
 import com.myvu.client.data.UserProfileAnalyzer
 import com.myvu.client.database.AppDatabase
+import com.myvu.client.ui.SettingsActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -45,17 +45,20 @@ import java.util.Locale
 import java.util.UUID
 
 /**
- * Sidebar Chat Interface sheet accessible from anywhere in the app.
- * Provides history tracking, voice/text/image inputs, and mobile device control actions.
+ * Full-Screen Chat Activity supporting history tracking, voice/text/image inputs,
+ * and mobile device control actions with native Edge-to-Edge window insets.
  */
-class ChatSidebarBottomSheet : BottomSheetDialogFragment() {
+class ChatActivity : AppCompatActivity() {
 
+    private lateinit var topBar: View
+    private lateinit var bottomBar: View
+    private lateinit var btnBackChat: ImageButton
+    private lateinit var btnChatSettings: ImageButton
     private lateinit var rvChatHistory: RecyclerView
     private lateinit var edtChatMessage: EditText
     private lateinit var btnSendChat: MaterialButton
     private lateinit var btnAttachImage: MaterialButton
     private lateinit var btnVoiceMic: MaterialButton
-    private lateinit var btnCloseChatSidebar: MaterialButton
     private lateinit var progressChat: ProgressBar
     private lateinit var layImagePreview: LinearLayout
     private lateinit var imgAttachedPreview: ImageView
@@ -92,34 +95,37 @@ class ChatSidebarBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_chat_sidebar, container, false)
-    }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_chat)
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+        topBar = findViewById(R.id.topBar)
+        bottomBar = findViewById(R.id.bottomBar)
+        btnBackChat = findViewById(R.id.btnBackChat)
+        btnChatSettings = findViewById(R.id.btnChatSettings)
+        rvChatHistory = findViewById(R.id.rvChatHistory)
+        edtChatMessage = findViewById(R.id.edtChatMessage)
+        btnSendChat = findViewById(R.id.btnSendChat)
+        btnAttachImage = findViewById(R.id.btnAttachImage)
+        btnVoiceMic = findViewById(R.id.btnVoiceMic)
+        progressChat = findViewById(R.id.progressChat)
+        layImagePreview = findViewById(R.id.layImagePreview)
+        imgAttachedPreview = findViewById(R.id.imgAttachedPreview)
+        btnRemoveAttachedImage = findViewById(R.id.btnRemoveAttachedImage)
 
-        rvChatHistory = view.findViewById(R.id.rvChatHistory)
-        edtChatMessage = view.findViewById(R.id.edtChatMessage)
-        btnSendChat = view.findViewById(R.id.btnSendChat)
-        btnAttachImage = view.findViewById(R.id.btnAttachImage)
-        btnVoiceMic = view.findViewById(R.id.btnVoiceMic)
-        btnCloseChatSidebar = view.findViewById(R.id.btnCloseChatSidebar)
-        progressChat = view.findViewById(R.id.progressChat)
-        layImagePreview = view.findViewById(R.id.layImagePreview)
-        imgAttachedPreview = view.findViewById(R.id.imgAttachedPreview)
-        btnRemoveAttachedImage = view.findViewById(R.id.btnRemoveAttachedImage)
+        // Configure Edge-To-Edge for status bar / notch & navigation bar
+        EdgeToEdgeHelper.setupEdgeToEdge(this, topBar, bottomBar, rvChatHistory)
 
-        rvChatHistory.layoutManager = LinearLayoutManager(requireContext()).apply {
+        rvChatHistory.layoutManager = LinearLayoutManager(this).apply {
             stackFromEnd = true
         }
         rvChatHistory.adapter = chatAdapter
 
-        btnCloseChatSidebar.setOnClickListener { dismiss() }
+        btnBackChat.setOnClickListener { finish() }
+
+        btnChatSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
 
         btnRemoveAttachedImage.setOnClickListener {
             attachedImageUri = null
@@ -142,11 +148,9 @@ class ChatSidebarBottomSheet : BottomSheetDialogFragment() {
 
     private fun observeChatHistory() {
         lifecycleScope.launch {
-            if (!isAdded) return@launch
-            val ctx = context ?: return@launch
-            val dao = AppDatabase.getInstance(ctx).chatDao()
+            val dao = AppDatabase.getInstance(this@ChatActivity).chatDao()
             dao.getAllMessagesFlow().collectLatest { messages ->
-                if (isAdded && !isDetached && view != null) {
+                if (!isFinishing && !isDestroyed) {
                     chatAdapter.submitList(messages)
                     if (messages.isNotEmpty()) {
                         rvChatHistory.smoothScrollToPosition(messages.size - 1)
@@ -164,19 +168,19 @@ class ChatSidebarBottomSheet : BottomSheetDialogFragment() {
 
     private fun saveBitmapToCache(bitmap: Bitmap): Uri? {
         return try {
-            val file = File(requireContext().cacheDir, "chat_attach_${System.currentTimeMillis()}.jpg")
+            val file = File(cacheDir, "chat_attach_${System.currentTimeMillis()}.jpg")
             FileOutputStream(file).use { out ->
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
             }
             Uri.fromFile(file)
         } catch (e: Exception) {
-            LogBus.error("ChatSidebar -> Error saving attached bitmap", e)
+            LogBus.error("ChatActivity -> Error saving attached bitmap", e)
             null
         }
     }
 
     private fun showImageSourceDialog() {
-        AlertDialog.Builder(requireContext())
+        AlertDialog.Builder(this)
             .setTitle("Adjuntar Imagen")
             .setItems(arrayOf("Cámara", "Galería")) { _, which ->
                 if (which == 0) {
@@ -193,11 +197,11 @@ class ChatSidebarBottomSheet : BottomSheetDialogFragment() {
             val intent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Habla tu comando o consulta...")
+                putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Habla tu consulta o comando...")
             }
             sttLauncher.launch(intent)
         } catch (e: Exception) {
-            Toast.makeText(requireContext(), "Reconocimiento de voz no disponible en este dispositivo", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Reconocimiento de voz no disponible en este dispositivo", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -210,31 +214,30 @@ class ChatSidebarBottomSheet : BottomSheetDialogFragment() {
         attachedImageUri = null
         layImagePreview.visibility = View.GONE
 
-        // Record User Query
-        val analyzer = UserProfileAnalyzer.getInstance(requireContext())
+        val analyzer = UserProfileAnalyzer.getInstance(this)
         analyzer.recordMessage(currentSessionId, "USER", queryText, mediaType, imageUriString)
 
         progressChat.visibility = View.VISIBLE
 
         lifecycleScope.launch(Dispatchers.IO) {
-            val executor = PhoneActionExecutor(requireContext())
-            val router = VoiceActionRouter(requireContext(), executor)
+            val executor = PhoneActionExecutor(this@ChatActivity)
+            val router = VoiceActionRouter(this@ChatActivity, executor)
 
             val route = router.tryRoute(queryText)
             var responseText = ""
-            var sourceName = "SIDEBAR_CHAT"
+            var sourceName = "CHAT_UI"
 
             if (route.handled) {
                 responseText = route.responseText
                 sourceName = route.source.name
             } else {
-                val providerId = Prefs.aiProvider(requireContext())
+                val providerId = Prefs.aiProvider(this@ChatActivity)
                 val provider = AiProvider.fromId(providerId)
-                val apiKey = Prefs.aiApiKey(requireContext(), providerId)
-                val model = Prefs.aiModel(requireContext(), providerId)
-                val endpoint = Prefs.aiEndpoint(requireContext(), providerId)
-                val prompt = Prefs.systemPrompt(requireContext())
-                val client = provider.newClient(requireContext(), apiKey, model, endpoint, prompt)
+                val apiKey = Prefs.aiApiKey(this@ChatActivity, providerId)
+                val model = Prefs.aiModel(this@ChatActivity, providerId)
+                val endpoint = Prefs.aiEndpoint(this@ChatActivity, providerId)
+                val prompt = Prefs.systemPrompt(this@ChatActivity)
+                val client = provider.newClient(this@ChatActivity, apiKey, model, endpoint, prompt)
 
                 if (!client.isConfigured()) {
                     responseText = "El proveedor de IA (${provider.displayName}) no está configurado en Ajustes."
@@ -248,7 +251,7 @@ class ChatSidebarBottomSheet : BottomSheetDialogFragment() {
                         responseText = if (processed.isNotBlank()) processed else (rawAnswer ?: "Respuesta vacía de la IA.")
                         sourceName = provider.displayName
                     } catch (e: Exception) {
-                        LogBus.error("ChatSidebar -> Error querying AI", e)
+                        LogBus.error("ChatActivity -> Error querying AI", e)
                         responseText = "Error al consultar la IA: ${e.message}"
                         sourceName = "ERROR"
                     }
@@ -258,14 +261,13 @@ class ChatSidebarBottomSheet : BottomSheetDialogFragment() {
             analyzer.recordMessage(currentSessionId, "AI", responseText, "TEXT", sourceName)
 
             withContext(Dispatchers.Main) {
-                if (isAdded && !isDetached && view != null) {
+                if (!isFinishing && !isDestroyed) {
                     progressChat.visibility = View.GONE
                 }
             }
         }
     }
 
-    // RecyclerView Adapter for Chat Messages
     private class ChatAdapter : RecyclerView.Adapter<ChatViewHolder>() {
         private var items: List<ChatMessage> = emptyList()
 
@@ -307,7 +309,7 @@ class ChatSidebarBottomSheet : BottomSheetDialogFragment() {
                 (itemView as LinearLayout).gravity = android.view.Gravity.START
             }
 
-            if (!msg.actionResult.isNullOrBlank() && msg.actionResult.startsWith("content://") || msg.actionResult?.startsWith("file://") == true) {
+            if (!msg.actionResult.isNullOrBlank() && (msg.actionResult.startsWith("content://") || msg.actionResult.startsWith("file://"))) {
                 imgMessageAttached.visibility = View.VISIBLE
                 try {
                     imgMessageAttached.setImageURI(Uri.parse(msg.actionResult))

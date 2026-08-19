@@ -222,7 +222,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
                     // Dashboard (current activity)
                 }
                 R.id.nav_chat_sidebar -> {
-                    com.myvu.client.ui.chat.ChatSidebarBottomSheet().show(supportFragmentManager, "ChatSidebarBottomSheet")
+                    startActivity(Intent(this, com.myvu.client.ui.chat.ChatActivity::class.java))
                 }
                 R.id.nav_notes -> {
                     startActivity(Intent(this, NotesActivity::class.java))

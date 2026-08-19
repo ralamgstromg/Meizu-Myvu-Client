@@ -337,7 +337,39 @@ class AiConversation(
             finish()
             return
         }
-        transcribe(pcm, decoder.sampleRate(), decoder.channels())
+
+        val targetPcm: ByteArray
+        val targetSampleRate: Int
+        if (decoder.sampleRate() == 48000) {
+            targetPcm = downsample48kTo16k(pcm)
+            targetSampleRate = 16000
+            LogBus.log("AI: Resampled PCM 48000Hz -> 16000Hz (${pcm.size} B -> ${targetPcm.size} B)")
+        } else {
+            targetPcm = pcm
+            targetSampleRate = decoder.sampleRate()
+        }
+
+        transcribe(targetPcm, targetSampleRate, decoder.channels())
+    }
+
+    private fun downsample48kTo16k(pcm: ByteArray): ByteArray {
+        val totalSamples = pcm.size / 2
+        val outSamples = totalSamples / 3
+        if (outSamples <= 0) return pcm
+        val out = ByteArray(outSamples * 2)
+        var inIdx = 0
+        var outIdx = 0
+        while (inIdx + 5 < pcm.size && outIdx + 1 < out.size) {
+            val s1 = ((pcm[inIdx].toInt() and 0xFF) or (pcm[inIdx + 1].toInt() shl 8)).toShort().toInt()
+            val s2 = ((pcm[inIdx + 2].toInt() and 0xFF) or (pcm[inIdx + 3].toInt() shl 8)).toShort().toInt()
+            val s3 = ((pcm[inIdx + 4].toInt() and 0xFF) or (pcm[inIdx + 5].toInt() shl 8)).toShort().toInt()
+            val avg = (s1 + s2 + s3) / 3
+            out[outIdx] = (avg and 0xFF).toByte()
+            out[outIdx + 1] = ((avg shr 8) and 0xFF).toByte()
+            inIdx += 6
+            outIdx += 2
+        }
+        return out
     }
 
     private fun transcribe(pcm: ByteArray, sampleRate: Int, channels: Int) {

@@ -69,7 +69,11 @@ open class BtTransport @JvmOverloads constructor(
         startTx(s)
 
         connHandler?.post {
-            listener?.onConnected(this)
+            try {
+                listener?.onConnected(this)
+            } catch (t: Throwable) {
+                LogBus.error("BtTransport: Exception in onConnected listener", t)
+            }
         }
     }
 
@@ -137,7 +141,11 @@ open class BtTransport @JvmOverloads constructor(
                     for (frame in frames) {
                         _payloadFlow.emit(frame)
                         connHandler?.post {
-                            listener?.onPayload(this@BtTransport, frame)
+                            try {
+                                listener?.onPayload(this@BtTransport, frame)
+                            } catch (t: Throwable) {
+                                LogBus.error("BtTransport: Exception in onPayload listener", t)
+                            }
                         }
                     }
                 }
@@ -189,7 +197,11 @@ open class BtTransport @JvmOverloads constructor(
         if (!disconnectReported.compareAndSet(false, true)) return
         _isConnected = false
         connHandler?.post {
-            listener?.onDisconnected(this, cause)
+            try {
+                listener?.onDisconnected(this, cause)
+            } catch (t: Throwable) {
+                LogBus.error("BtTransport: Exception in onDisconnected listener", t)
+            }
         }
     }
 

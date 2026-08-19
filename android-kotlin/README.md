@@ -61,7 +61,7 @@ graph TD
 
 ## 📂 Estructura del Código (`app/src/main/java/com/myvu/client/`)
 
-- [**`core/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/core): Fundaciones, preferencias seguras (`SecurePrefs`), configuración de gafas (`GlassesConfig`), buffer circular de logs (`LogBus`), gestión de memoria (`BufferPool`) y utilidades edge-to-edge.
+- [**`core/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/core): Fundaciones, preferencias seguras (`SecurePrefs`), configuración de gafas (`GlassesConfig`), buffer circular de logs (`LogBus`), gestión de memoria (`BufferPool`), cazador de excepciones e iniciación de rescate en caliente (`CrashReporter`) y utilidades edge-to-edge.
 - [**`crypto/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/crypto): Criptografía para enlace StarryNet y negociación de claves ECDH.
 - [**`protocol/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/protocol): Codecs binarios de alto rendimiento (TLV `TlvBox`, Protobuf `Pb`, `Session`, `RelayMessage`, `LinkProtocol`).
 - [**`transport/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/transport): Capa de transporte asíncrona con Kotlin Coroutines y Flow para BLE GATT (`BleTransport`), escáner automático (`GlassesScanner`) y RFCOMM Classic (`BtTransport`).
@@ -72,7 +72,7 @@ graph TD
   - `TouchGestureManager`: Motor de filtrado anti-rebote (350ms debounce), mapeo y ejecución de acciones para gestos táctiles.
   - `Trackpad`: Generador de mensajes JSON del protocolo "phonepad" para el lanzador de las gafas (`com.upuphone.star.launcher`).
 - [**`ai/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ai): Asistente de voz inteligente con arquitectura híbrida **Local-First**:
-  - **STT**: Whisper Large v3 Turbo INT4 On-Device y fallback transparente a Groq Whisper API configurado por defecto en **Español (`es`)** con prompt contextual de comandos de voz para prevenir transcripciones erróneas (`"Jamar"` -> `"Llamar"`), además de Android Speech Recognizer.
+  - **STT**: Decodificación Opus y re-muestreo PCM lineal 3:1 de **48,000 Hz a 16,000 Hz** (`downsample48kTo16k`) para garantizar coincidencia de velocidad de audio con modelos Whisper (on-device y Groq Whisper API). Whisper Large v3 Turbo INT4 On-Device con fallback transparente a Groq Whisper API configurado por defecto en **Español (`es`)** con prompt contextual de comandos de voz para prevenir transcripciones erróneas (`"Jamar"` -> `"Llamar"`). Manejo robusto de fallas nativas JNI en arquitecturas MediaTek (`mt6878`) y fallback automático en Android Speech Recognizer (`code 12` / `code 5`).
   - **LLM On-Device & Formato de Turnos**: Motor de inferencia nativo on-device **LiteRT-LM & MediaPipe Tasks GenAI** con soporte para:
     - ⭐ **Gemma 4 E2B IT** (`gemma-4-E2B-it.litertlm` ~1.12GB con SentencePiece tokenizer integrado).
     - **Gemma 2B IT GPU / CPU** (`gemma-2b-it-gpu-int4.bin` ~1.35GB oficial de Google AI Edge).
@@ -102,7 +102,7 @@ graph TD
 - [**`data/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/data): Entidades y persistencia de chat (`ChatMessage`, `ChatSession`, `UserProfile`), DAO `ChatDao` y analizador dinámico `UserProfileAnalyzer` que incrementa etiquetas de interés e inyecta el perfil en el prompt del LLM.
 - [**`ui/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ui) & [**`ui/chat/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ui/chat): Actividades e interfaz **Kinetic Obsidian Dark**:
   - `ConnectActivity`: Enlace reactivo a `StateFlow`, overlay de conexión, control de posición FOV y menú de navegación lateral.
-  - `ChatSidebarBottomSheet`: Interfaz general de chat accesible desde el menú lateral en cualquier momento, con soporte de texto, entrada de voz, adjuntos de cámara/galería y control de acciones en el dispositivo.
+  - `ChatActivity`: Interfaz general de chat a **pantalla completa** accesible desde el menú lateral en cualquier momento, con soporte de texto, entrada de voz, adjuntos de cámara/galería, control de acciones nativas del dispositivo e integración Edge-to-Edge para inserciones dinámicas de barras de estado y gestos.
   - `SettingsActivity`: Configuración de proveedores de IA/STT/TTS, gestión de perfiles de usuario (intereses e instrucciones personalizadas), respaldo/restauración local y Google Drive.
   - `TrackpadActivity`: Panel táctil virtual remoto para controlar el lanzador de las gafas con gestos multitáctiles y respuesta háptica.
   - `TeleprompterActivity`, `NotesActivity`, `VoiceRecorderActivity`, `NotificationAppsActivity`.
