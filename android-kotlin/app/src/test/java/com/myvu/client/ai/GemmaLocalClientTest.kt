@@ -183,9 +183,10 @@ class GemmaLocalClientTest {
         val client = GemmaLocalClient(context, GemmaLocalClient.GEMMA_4_E2B_LITERT, customEngine = testEngine)
         assertTrue(client.isConfigured())
 
+        val expectedPrompt = GemmaLocalClient.formatPrompt(null, "Hola Gemma").trim()
         val result = client.ask("Hola Gemma")
         assertTrue(generateCalled)
-        assertEquals("Respuesta simulada para: Hola Gemma", result)
+        assertEquals("Respuesta simulada para: $expectedPrompt", result)
     }
 
     @Test
@@ -291,10 +292,11 @@ class GemmaLocalClientTest {
             }
         )
 
+        val expectedPrompt = GemmaLocalClient.formatPrompt(null, "¿Cuál es la fórmula del agua?").trim()
         val response = client.ask("¿Cuál es la fórmula del agua?")
         assertTrue(fallbackEngineInitCalled)
         assertTrue(fallbackEngineGenerateCalled)
-        assertEquals("Respuesta acelerada por MediaPipe GPU: ¿Cuál es la fórmula del agua?", response)
+        assertEquals("Respuesta acelerada por MediaPipe GPU: $expectedPrompt", response)
     }
 
     @Test
@@ -332,5 +334,55 @@ class GemmaLocalClientTest {
             assertTrue(e.message?.contains("auto-conmutación a gemma-2b-it-gpu-int4.bin") == true)
             assertTrue(e.message?.contains("GPU driver crash") == true)
         }
+    }
+
+    @Test
+    fun askWithPreformattedPromptDoesNotDoubleWrap() {
+        createSparseModelFile(GemmaLocalClient.GEMMA_4_E2B_LITERT.fileName, 60_000_000L)
+
+        var receivedPrompt = ""
+        val testEngine = object : OnDeviceLlmEngine {
+            override fun initialize(context: Context, modelFile: File, maxTokens: Int) {}
+            override fun generate(prompt: String): String {
+                receivedPrompt = prompt
+                return "Respuesta"
+            }
+            override fun isReady(): Boolean = true
+            override fun close() {}
+        }
+
+        val client = GemmaLocalClient(context, GemmaLocalClient.GEMMA_4_E2B_LITERT, customEngine = testEngine)
+        val preformatted = "<start_of_turn>user\nPregunta ya formateada<end_of_turn>\n<start_of_turn>model\n"
+        client.ask(preformatted)
+
+        assertEquals(preformatted, receivedPrompt)
+    }
+
+    @Test
+    fun askWithSystemPromptFormatsCorrectly() {
+        createSparseModelFile(GemmaLocalClient.GEMMA_4_E2B_LITERT.fileName, 60_000_000L)
+
+        var receivedPrompt = ""
+        val testEngine = object : OnDeviceLlmEngine {
+            override fun initialize(context: Context, modelFile: File, maxTokens: Int) {}
+            override fun generate(prompt: String): String {
+                receivedPrompt = prompt
+                return "Respuesta"
+            }
+            override fun isReady(): Boolean = true
+            override fun close() {}
+        }
+
+        val client = GemmaLocalClient(
+            context,
+            GemmaLocalClient.GEMMA_4_E2B_LITERT,
+            systemPrompt = "Instrucciones de prueba",
+            customEngine = testEngine
+        )
+        client.ask("Hola")
+
+        val expected = GemmaLocalClient.formatPrompt("Instrucciones de prueba", "Hola")
+        assertEquals(expected, receivedPrompt)
+        assertEquals("<start_of_turn>user\nInstrucciones de prueba\n\nHola<end_of_turn>\n<start_of_turn>model\n", receivedPrompt)
     }
 }

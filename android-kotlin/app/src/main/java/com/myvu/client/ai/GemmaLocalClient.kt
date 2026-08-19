@@ -25,6 +25,7 @@ data class GemmaModelOption(
 class GemmaLocalClient(
     private val context: Context,
     val modelOption: GemmaModelOption = DEFAULT_OPTION,
+    private val systemPrompt: String? = null,
     private val customEngine: OnDeviceLlmEngine? = null,
     private val fallbackEngineFactory: ((GemmaModelOption) -> OnDeviceLlmEngine)? = null
 ) : AiClient {
@@ -103,6 +104,11 @@ class GemmaLocalClient(
             cachedModelPath = null
         }
 
+        fun formatPrompt(systemPrompt: String?, userQuery: String): String {
+            val sys = if (!systemPrompt.isNullOrBlank()) "$systemPrompt\n\n" else ""
+            return "<start_of_turn>user\n${sys}${userQuery.trim()}<end_of_turn>\n<start_of_turn>model\n"
+        }
+
         fun getModelFile(context: Context, fileName: String): File {
             val dir = File(context.filesDir, "models/gemma")
             if (!dir.exists()) dir.mkdirs()
@@ -162,10 +168,16 @@ class GemmaLocalClient(
             throw IOException("Modelo local Gemma no descargado o incompleto (${modelOption.fileName})")
         }
 
-        LogBus.log("AI_GEMMA_LOCAL_START questionLength=${question.length} model=${modelOption.fileName} engine=${modelOption.engineType}")
+        val prompt = if (question.contains("<start_of_turn>")) {
+            question
+        } else {
+            formatPrompt(systemPrompt, question)
+        }
+
+        LogBus.log("AI_GEMMA_LOCAL_START questionLength=${prompt.length} model=${modelOption.fileName} engine=${modelOption.engineType}")
         try {
             val engine = getOrInitEngine()
-            val response = engine.generate(question)
+            val response = engine.generate(prompt)
             if (response.isBlank()) {
                 throw IOException("El motor ${engine.javaClass.simpleName} retornó una respuesta vacía")
             }
@@ -184,7 +196,7 @@ class GemmaLocalClient(
                     val fallbackEngine = fallbackEngineFactory?.invoke(fallbackOption)
                         ?: createEngine(fallbackOption)
                     fallbackEngine.initialize(context, fallbackFile, maxTokens = 512)
-                    val response = fallbackEngine.generate(question)
+                    val response = fallbackEngine.generate(prompt)
                     if (response.isBlank()) {
                         throw IOException("El motor MediaPipe (${fallbackOption.fileName}) retornó una respuesta vacía")
                     }

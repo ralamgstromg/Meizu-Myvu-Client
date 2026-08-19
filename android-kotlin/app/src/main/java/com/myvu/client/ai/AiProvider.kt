@@ -60,8 +60,8 @@ enum class AiProvider(
             }
             GEMMA_LOCAL -> context?.let { 
                 val opt = GemmaLocalClient.findOption(Prefs.gemmaModelId(it))
-                GemmaLocalClient(it, opt) 
-            } ?: GemmaLocalClient(context = context ?: error("Context required for GEMMA_LOCAL"))
+                GemmaLocalClient(it, opt, systemPrompt = effectivePrompt) 
+            } ?: GemmaLocalClient(context = context ?: error("Context required for GEMMA_LOCAL"), systemPrompt = effectivePrompt)
             GROQ -> LocalAiClient("https://api.groq.com/openai/v1/chat/completions", apiKey, model, effectivePrompt, false)
             NVIDIA -> LocalAiClient("https://integrate.api.nvidia.com/v1/chat/completions", apiKey, model, effectivePrompt, false)
             ASSISTANT -> AndroidAssistantClient(context!!)
@@ -73,7 +73,7 @@ enum class AiProvider(
             val isLocalGemmaActive = Prefs.useLocalGemmaIfAvailable(context) || this == GEMMA_LOCAL
             val optionId = Prefs.gemmaModelId(context)
             val option = GemmaLocalClient.findOption(optionId)
-            val gemmaClient = GemmaLocalClient(context, option)
+            val gemmaClient = GemmaLocalClient(context, option, systemPrompt = effectivePrompt)
 
             // Construir cliente de rescate en la nube con cualquier API Key disponible (o groq de STT)
             val rescueProviderId = listOf("groq", "gemini", "openai", "claude", "nvidia")
