@@ -49,7 +49,7 @@ class GemmaLocalClient(
 
         val GEMMA_4_E2B_LITERT = GemmaModelOption(
             id = "gemma-4-e2b-it-litert-lm",
-            name = "⚡ Gemma 4 E2B IT (LiteRT-LM ~1.12GB) - Ultrarrápido",
+            name = "⚡ Gemma 4 E2B IT (Google AI Edge Gallery ~1.12GB) - Ultrarrápido",
             downloadUrl = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm",
             fileName = "gemma-4-E2B-it.litertlm",
             sizeBytes = 1_120_000_000L
@@ -57,7 +57,7 @@ class GemmaLocalClient(
 
         val GEMMA_4_E4B_LITERT = GemmaModelOption(
             id = "gemma-4-e4b-it-litert-lm",
-            name = "🔬 Gemma 4 E4B IT (LiteRT-LM ~2.35GB) - Razonamiento Avanzado",
+            name = "🔬 Gemma 4 E4B IT (Google AI Edge Gallery ~2.35GB) - Razonamiento Avanzado",
             downloadUrl = "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it.litertlm",
             fileName = "gemma-4-E4B-it.litertlm",
             sizeBytes = 2_350_000_000L

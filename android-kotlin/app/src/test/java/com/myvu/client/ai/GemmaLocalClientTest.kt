@@ -55,7 +55,7 @@ class GemmaLocalClientTest {
     fun gemma4E2BOptionHasValidConfigAndLiteRtType() {
         val option = GemmaLocalClient.GEMMA_4_E2B_LITERT
         assertEquals("gemma-4-e2b-it-litert-lm", option.id)
-        assertEquals("⚡ Gemma 4 E2B IT (LiteRT-LM ~1.12GB) - Ultrarrápido", option.name)
+        assertEquals("⚡ Gemma 4 E2B IT (Google AI Edge Gallery ~1.12GB) - Ultrarrápido", option.name)
         assertEquals("gemma-4-E2B-it.litertlm", option.fileName)
         assertEquals(1_120_000_000L, option.sizeBytes)
         assertEquals(GemmaEngineType.LITERT_LM, option.engineType)
