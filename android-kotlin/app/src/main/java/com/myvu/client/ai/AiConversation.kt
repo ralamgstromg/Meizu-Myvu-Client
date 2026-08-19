@@ -539,8 +539,8 @@ class AiConversation(
                 "$text a las ${SimpleDateFormat("HH:mm", locale).format(Date(it.triggerAt))}"
             }
 
-        val profileContext = runBlocking { UserProfileAnalyzer.getInstance(context).buildProfilePromptContext() }
-        return profileContext + "[Contexto del Sistema: $currentDateTime | $batteryInfo | Próximos recordatorios: ${upcoming.ifEmpty { "Ninguno" }}]\n"
+        val fullContext = runBlocking { UserProfileAnalyzer.getInstance(context).buildFullPromptContext(recentLimit = 5) }
+        return fullContext + "[Contexto del Sistema: $currentDateTime | $batteryInfo | Próximos recordatorios: ${upcoming.ifEmpty { "Ninguno" }}]\n"
     }
 
     private val voiceRouter: VoiceActionRouter = VoiceActionRouter(context, actionExecutor)

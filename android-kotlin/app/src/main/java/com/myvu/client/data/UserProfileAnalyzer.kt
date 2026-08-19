@@ -152,6 +152,37 @@ class UserProfileAnalyzer(context: Context) {
     }
 
     /**
+     * Builds context containing the last [limit] messages from the chat history.
+     */
+    suspend fun buildRecentHistoryContext(limit: Int = 5): String = withContext(Dispatchers.IO) {
+        try {
+            val dao = AppDatabase.getInstance(appContext).chatDao()
+            val recent = dao.getRecentMessages(limit).reversed()
+            if (recent.isEmpty()) return@withContext ""
+
+            val sb = StringBuilder("[Historial Reciente de la Conversación (últimos ").append(recent.size).append(" mensajes)]:\n")
+            for (msg in recent) {
+                val role = if ("USER" == msg.direction) "Usuario" else "Asistente"
+                val text = msg.content.trim().replace("\n", " ")
+                sb.append(role).append(": ").append(text).append("\n")
+            }
+            sb.append("\n")
+            sb.toString()
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    /**
+     * Builds unified prompt context containing both user profile and recent 5 messages history.
+     */
+    suspend fun buildFullPromptContext(recentLimit: Int = 5): String = withContext(Dispatchers.IO) {
+        val profileContext = buildProfilePromptContext()
+        val historyContext = buildRecentHistoryContext(recentLimit)
+        profileContext + historyContext
+    }
+
+    /**
      * Updates profile details manually (from Settings UI).
      */
     suspend fun saveProfile(name: String, interestTags: String, customInstructions: String) = withContext(Dispatchers.IO) {

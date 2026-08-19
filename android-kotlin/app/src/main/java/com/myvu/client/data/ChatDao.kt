@@ -24,6 +24,9 @@ interface ChatDao {
     @Query("SELECT * FROM chat_message ORDER BY timestamp ASC")
     suspend fun getAllMessages(): List<ChatMessage>
 
+    @Query("SELECT * FROM chat_message ORDER BY timestamp DESC LIMIT :limit")
+    suspend fun getRecentMessages(limit: Int): List<ChatMessage>
+
     @Query("DELETE FROM chat_message")
     suspend fun deleteAllMessages()
 
