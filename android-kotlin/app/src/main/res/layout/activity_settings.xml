@@ -241,15 +241,6 @@
                                 app:selectionRequired="true">
 
                                 <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/btnGemma4B"
-                                    style="@style/Button.Myvu.Outlined"
-                                    android:layout_width="0dp"
-                                    android:layout_weight="1"
-                                    android:layout_height="wrap_content"
-                                    android:textSize="9sp"
-                                    android:text="Gemma 4 E2B (1.12GB)" />
-
-                                <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnGemma2B"
                                     style="@style/Button.Myvu.Outlined"
                                     android:layout_width="0dp"
@@ -257,6 +248,15 @@
                                     android:layout_height="wrap_content"
                                     android:textSize="9sp"
                                     android:text="Gemma 2B GPU (1.35GB)" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnGemma2B2"
+                                    style="@style/Button.Myvu.Outlined"
+                                    android:layout_width="0dp"
+                                    android:layout_weight="1"
+                                    android:layout_height="wrap_content"
+                                    android:textSize="9sp"
+                                    android:text="Gemma 2 2B GPU (1.48GB)" />
 
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnGemma2BCpu"

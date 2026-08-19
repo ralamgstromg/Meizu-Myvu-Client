@@ -638,8 +638,9 @@ class SettingsActivity : AppCompatActivity() {
         btnGemmaModelVersionGroup.check(
             when (currentModelId) {
                 com.myvu.client.ai.GemmaLocalClient.GEMMA_2B_IT_GPU.id -> R.id.btnGemma2B
+                com.myvu.client.ai.GemmaLocalClient.GEMMA_2_2B_IT_GPU.id -> R.id.btnGemma2B2
                 com.myvu.client.ai.GemmaLocalClient.GEMMA_2B_IT_CPU.id -> R.id.btnGemma2BCpu
-                else -> R.id.btnGemma4B
+                else -> R.id.btnGemma2B
             }
         )
 
@@ -647,8 +648,9 @@ class SettingsActivity : AppCompatActivity() {
             if (!isChecked) return@addOnButtonCheckedListener
             val selectedOption = when (checkedId) {
                 R.id.btnGemma2B -> com.myvu.client.ai.GemmaLocalClient.GEMMA_2B_IT_GPU
+                R.id.btnGemma2B2 -> com.myvu.client.ai.GemmaLocalClient.GEMMA_2_2B_IT_GPU
                 R.id.btnGemma2BCpu -> com.myvu.client.ai.GemmaLocalClient.GEMMA_2B_IT_CPU
-                else -> com.myvu.client.ai.GemmaLocalClient.GEMMA_4_E2B_LITERT
+                else -> com.myvu.client.ai.GemmaLocalClient.DEFAULT_OPTION
             }
             Prefs.setGemmaModelId(this, selectedOption.id)
             gemmaDownloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption)
@@ -722,10 +724,10 @@ class SettingsActivity : AppCompatActivity() {
 
             Thread {
                 try {
-                    val response = fullClient.ask("Hola, responde 'OK'")
+                    val response = client.ask("Hola, responde en una frase corta.")
                     runOnUiThread {
                         if (response.isNotBlank()) {
-                            Toast.makeText(this, "✅ Test Exitoso: ${response.take(60)}", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this, "✅ Test On-Device Exitoso: ${response.take(70)}", Toast.LENGTH_LONG).show()
                         } else {
                             Toast.makeText(this, "❌ El modelo respondió vacío", Toast.LENGTH_LONG).show()
                         }

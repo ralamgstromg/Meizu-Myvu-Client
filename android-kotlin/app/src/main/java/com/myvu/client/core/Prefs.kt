@@ -124,7 +124,7 @@ object Prefs {
 
     @JvmStatic
     fun gemmaModelId(c: Context): String {
-        return prefs(c).getString(KEY_GEMMA_MODEL_ID, "gemma-4-e2b-it-litert-lm") ?: "gemma-4-e2b-it-litert-lm"
+        return prefs(c).getString(KEY_GEMMA_MODEL_ID, "gemma-2b-it-gpu-int4") ?: "gemma-2b-it-gpu-int4"
     }
 
     @JvmStatic

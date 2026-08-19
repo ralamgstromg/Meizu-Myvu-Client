@@ -58,7 +58,10 @@ enum class AiProvider(
                 val apiBackend = GeminiApiBackend(apiApiKey, apiModel)
                 GeminiHybridClient(nanoBackend, apiBackend, policy)
             }
-            GEMMA_LOCAL -> context?.let { GemmaLocalClient(it) } ?: GemmaLocalClient(context = context ?: error("Context required for GEMMA_LOCAL"))
+            GEMMA_LOCAL -> context?.let { 
+                val opt = GemmaLocalClient.findOption(Prefs.gemmaModelId(it))
+                GemmaLocalClient(it, opt) 
+            } ?: GemmaLocalClient(context = context ?: error("Context required for GEMMA_LOCAL"))
             GROQ -> LocalAiClient("https://api.groq.com/openai/v1/chat/completions", apiKey, model, effectivePrompt, false)
             NVIDIA -> LocalAiClient("https://integrate.api.nvidia.com/v1/chat/completions", apiKey, model, effectivePrompt, false)
             ASSISTANT -> AndroidAssistantClient(context!!)
