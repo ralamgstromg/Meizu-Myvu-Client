@@ -6,6 +6,8 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -28,6 +30,7 @@ import com.myvu.client.ai.AiProvider
 import com.myvu.client.ai.AiResponseMode
 import com.myvu.client.ai.SttProvider
 import com.myvu.client.ai.TtsProvider
+import com.myvu.client.app.feature.GestureAction
 import com.myvu.client.app.feature.TouchGestureManager
 import com.myvu.client.core.BackupManager
 import com.myvu.client.core.GlassesConfig
@@ -352,32 +355,63 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun wireTouchpad() {
-        val grp: MaterialButtonToggleGroup? = findViewById(R.id.btnTouchpadGroup)
-        if (grp == null) return
+        val actions = GestureAction.entries.toTypedArray()
+        val displayNames = actions.map { it.displayName }.toTypedArray()
 
-        val action = Prefs.touchpadLongPressAction(this)
-        var checkedId = R.id.btnTouchpadAi
-        if (TouchGestureManager.ACTION_MEDIA_PLAY_PAUSE == action) {
-            checkedId = R.id.btnTouchpadMedia
-        } else if (TouchGestureManager.ACTION_WEATHER_SYNC == action) {
-            checkedId = R.id.btnTouchpadWeather
-        } else if (TouchGestureManager.ACTION_TOGGLE_MIRROR == action) {
-            checkedId = R.id.btnTouchpadMirror
-        }
-        grp.check(checkedId)
+        fun setupDropdown(
+            actId: Int,
+            getSavedActionId: () -> String,
+            saveActionId: (String) -> Unit
+        ) {
+            val act = findViewById<AutoCompleteTextView?>(actId) ?: return
+            val adapter = ArrayAdapter(
+                this,
+                android.R.layout.simple_dropdown_item_1line,
+                displayNames
+            )
+            act.setAdapter(adapter)
 
-        grp.addOnButtonCheckedListener { _, id, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            var selectedAction = TouchGestureManager.ACTION_AI_ASSISTANT
-            if (id == R.id.btnTouchpadMedia) {
-                selectedAction = TouchGestureManager.ACTION_MEDIA_PLAY_PAUSE
-            } else if (id == R.id.btnTouchpadWeather) {
-                selectedAction = TouchGestureManager.ACTION_WEATHER_SYNC
-            } else if (id == R.id.btnTouchpadMirror) {
-                selectedAction = TouchGestureManager.ACTION_TOGGLE_MIRROR
+            val currentAction = GestureAction.fromId(getSavedActionId())
+            act.setText(currentAction.displayName, false)
+
+            act.setOnItemClickListener { _, _, position, _ ->
+                if (position in actions.indices) {
+                    val selected = actions[position]
+                    saveActionId(selected.id)
+                }
             }
-            Prefs.setTouchpadLongPressAction(this, selectedAction)
         }
+
+        setupDropdown(
+            R.id.actTouchpadTap,
+            { Prefs.touchpadTapAction(this) },
+            { Prefs.setTouchpadTapAction(this, it) }
+        )
+        setupDropdown(
+            R.id.actTouchpadDoubleTap,
+            { Prefs.touchpadDoubleTapAction(this) },
+            { Prefs.setTouchpadDoubleTapAction(this, it) }
+        )
+        setupDropdown(
+            R.id.actTouchpadTripleTap,
+            { Prefs.touchpadTripleTapAction(this) },
+            { Prefs.setTouchpadTripleTapAction(this, it) }
+        )
+        setupDropdown(
+            R.id.actTouchpadSwipeForward,
+            { Prefs.touchpadSwipeForwardAction(this) },
+            { Prefs.setTouchpadSwipeForwardAction(this, it) }
+        )
+        setupDropdown(
+            R.id.actTouchpadSwipeBackward,
+            { Prefs.touchpadSwipeBackwardAction(this) },
+            { Prefs.setTouchpadSwipeBackwardAction(this, it) }
+        )
+        setupDropdown(
+            R.id.actTouchpadLongPress,
+            { Prefs.touchpadLongPressAction(this) },
+            { Prefs.setTouchpadLongPressAction(this, it) }
+        )
     }
 
     private fun wireLogging() {

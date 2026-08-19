@@ -1319,59 +1319,146 @@
                         style="@style/CardTitle.Myvu"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Acción del Botón / Pulsación Larga (3s)" />
+                        android:text="Gestos de la Patilla Táctil (Touchpad)" />
 
                     <TextView
                         style="@style/Label.Myvu"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Acción a disparar al mantener presionado el botón de las gafas:" />
+                        android:layout_marginBottom="12dp"
+                        android:text="Personaliza la acción disparada por cada gesto físico sobre el sensor táctil de las gafas:" />
 
-                    <com.google.android.material.button.MaterialButtonToggleGroup
-                        android:id="@+id/btnTouchpadGroup"
+                    <!-- 1. Toque Simple -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layTouchpadTap"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        app:singleSelection="true"
-                        app:selectionRequired="true">
+                        android:layout_marginBottom="10dp"
+                        android:hint="Toque Simple (Tap)"
+                        app:boxBackgroundColor="@color/obsidian_container_high"
+                        app:boxStrokeColor="@color/input_box_stroke"
+                        app:hintTextColor="@color/cyber_teal"
+                        android:textColorHint="@color/on_surface_variant_obsidian">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnTouchpadAi"
-                            style="@style/Button.Myvu.Outlined"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actTouchpadTap"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:textSize="10sp"
-                            android:text="AI Voice" />
+                            android:inputType="none"
+                            android:textColor="@color/on_surface_obsidian"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnTouchpadMedia"
-                            style="@style/Button.Myvu.Outlined"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:textSize="10sp"
-                            android:text="Música" />
+                    <!-- 2. Doble Toque -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layTouchpadDoubleTap"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp"
+                        android:hint="Doble Toque (Double Tap)"
+                        app:boxBackgroundColor="@color/obsidian_container_high"
+                        app:boxStrokeColor="@color/input_box_stroke"
+                        app:hintTextColor="@color/cyber_teal"
+                        android:textColorHint="@color/on_surface_variant_obsidian">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnTouchpadWeather"
-                            style="@style/Button.Myvu.Outlined"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actTouchpadDoubleTap"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:textSize="10sp"
-                            android:text="Clima" />
+                            android:inputType="none"
+                            android:textColor="@color/on_surface_obsidian"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnTouchpadMirror"
-                            style="@style/Button.Myvu.Outlined"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
+                    <!-- 3. Triple Toque -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layTouchpadTripleTap"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp"
+                        android:hint="Triple Toque (Triple Tap)"
+                        app:boxBackgroundColor="@color/obsidian_container_high"
+                        app:boxStrokeColor="@color/input_box_stroke"
+                        app:hintTextColor="@color/cyber_teal"
+                        android:textColorHint="@color/on_surface_variant_obsidian">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actTouchpadTripleTap"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:textSize="10sp"
-                            android:text="Espejo Notif." />
-                    </com.google.android.material.button.MaterialButtonToggleGroup>
+                            android:inputType="none"
+                            android:textColor="@color/on_surface_obsidian"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- 4. Deslizar Adelante -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layTouchpadSwipeForward"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp"
+                        android:hint="Deslizar Adelante (Swipe Forward)"
+                        app:boxBackgroundColor="@color/obsidian_container_high"
+                        app:boxStrokeColor="@color/input_box_stroke"
+                        app:hintTextColor="@color/cyber_teal"
+                        android:textColorHint="@color/on_surface_variant_obsidian">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actTouchpadSwipeForward"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textColor="@color/on_surface_obsidian"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- 5. Deslizar Atrás -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layTouchpadSwipeBackward"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp"
+                        android:hint="Deslizar Atrás (Swipe Backward)"
+                        app:boxBackgroundColor="@color/obsidian_container_high"
+                        app:boxStrokeColor="@color/input_box_stroke"
+                        app:hintTextColor="@color/cyber_teal"
+                        android:textColorHint="@color/on_surface_variant_obsidian">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actTouchpadSwipeBackward"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textColor="@color/on_surface_obsidian"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- 6. Pulsación Larga -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layTouchpadLongPress"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Pulsación Larga (Long Press)"
+                        app:boxBackgroundColor="@color/obsidian_container_high"
+                        app:boxStrokeColor="@color/input_box_stroke"
+                        app:hintTextColor="@color/cyber_teal"
+                        android:textColorHint="@color/on_surface_variant_obsidian">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actTouchpadLongPress"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textColor="@color/on_surface_obsidian"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
