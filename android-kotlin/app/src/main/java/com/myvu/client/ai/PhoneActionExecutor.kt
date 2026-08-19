@@ -97,26 +97,35 @@ class PhoneActionExecutor(context: Context) {
         if (lower.contains("action:app_play=")) {
             val appPlayVal = extractValue(aiText, "ACTION:APP_PLAY=")
             playInThirdPartyApp(appPlayVal)
-        } else if (lower.contains("action:app_open=")) {
+        }
+        if (lower.contains("action:app_open=")) {
             val appName = extractValue(aiText, "ACTION:APP_OPEN=")
             openAppByName(appName)
-        } else if (lower.contains("action:opentune_play=")) {
+        }
+        if (lower.contains("action:opentune_play=")) {
             val query = extractValue(aiText, "ACTION:OPENTUNE_PLAY=")
             playFromSearchInOpenTune(query)
-        } else if (lower.contains("action:opentune_search=")) {
+        }
+        if (lower.contains("action:opentune_search=")) {
             val query = extractValue(aiText, "ACTION:OPENTUNE_SEARCH=")
             playFromSearchInOpenTune(query)
-        } else if (lower.contains("action:opentune_pause")) {
+        }
+        if (lower.contains("action:opentune_pause")) {
             sendMediaKey(KeyEvent.KEYCODE_MEDIA_PAUSE)
-        } else if (lower.contains("action:opentune_resume")) {
+        }
+        if (lower.contains("action:opentune_resume")) {
             sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY)
-        } else if (lower.contains("action:opentune_next") || lower.contains("action:media_next")) {
+        }
+        if (lower.contains("action:opentune_next") || lower.contains("action:media_next")) {
             sendMediaKey(KeyEvent.KEYCODE_MEDIA_NEXT)
-        } else if (lower.contains("action:opentune_prev") || lower.contains("action:media_prev")) {
+        }
+        if (lower.contains("action:opentune_prev") || lower.contains("action:media_prev")) {
             sendMediaKey(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
-        } else if (lower.contains("action:opentune_repeat")) {
+        }
+        if (lower.contains("action:opentune_repeat")) {
             sendMediaKey(KeyEvent.KEYCODE_MEDIA_RECORD)
-        } else if (lower.contains("action:media_play")) {
+        }
+        if (lower.contains("action:media_play")) {
             sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
         }
 

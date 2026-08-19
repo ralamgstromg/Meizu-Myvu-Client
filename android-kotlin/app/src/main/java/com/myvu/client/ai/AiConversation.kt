@@ -356,18 +356,53 @@ class AiConversation(
         val totalSamples = pcm.size / 2
         val outSamples = totalSamples / 3
         if (outSamples <= 0) return pcm
-        val out = ByteArray(outSamples * 2)
+        val rawOut = ShortArray(outSamples)
         var inIdx = 0
         var outIdx = 0
-        while (inIdx + 5 < pcm.size && outIdx + 1 < out.size) {
+        var maxPeak = 0
+
+        // 1. Decimate 48kHz -> 16kHz with 3-point FIR averaging
+        while (inIdx + 5 < pcm.size && outIdx < outSamples) {
             val s1 = ((pcm[inIdx].toInt() and 0xFF) or (pcm[inIdx + 1].toInt() shl 8)).toShort().toInt()
             val s2 = ((pcm[inIdx + 2].toInt() and 0xFF) or (pcm[inIdx + 3].toInt() shl 8)).toShort().toInt()
             val s3 = ((pcm[inIdx + 4].toInt() and 0xFF) or (pcm[inIdx + 5].toInt() shl 8)).toShort().toInt()
             val avg = (s1 + s2 + s3) / 3
-            out[outIdx] = (avg and 0xFF).toByte()
-            out[outIdx + 1] = ((avg shr 8) and 0xFF).toByte()
+            rawOut[outIdx] = avg.toShort()
+            val absVal = Math.abs(avg)
+            if (absVal > maxPeak) maxPeak = absVal
             inIdx += 6
-            outIdx += 2
+            outIdx++
+        }
+
+        // 2. High-pass filter (~80Hz cutoff at 16kHz) to strip DC bias and low-frequency rumble
+        val filtered = ShortArray(outSamples)
+        var prevIn = 0.0
+        var prevOut = 0.0
+        val alpha = 0.96
+        for (i in 0 until outSamples) {
+            val x = rawOut[i].toDouble()
+            val y = alpha * (prevOut + x - prevIn)
+            prevIn = x
+            prevOut = y
+            val clamped = Math.max(-32768.0, Math.min(32767.0, y))
+            filtered[i] = clamped.toInt().toShort()
+        }
+
+        // 3. Peak Automatic Gain Normalization (target ~75% max amplitude, max 3.5x gain)
+        val targetPeak = 24000.0
+        val gain = if (maxPeak in 1200..20000) {
+            Math.min(3.5, targetPeak / maxPeak)
+        } else {
+            1.0
+        }
+
+        val out = ByteArray(outSamples * 2)
+        var bIdx = 0
+        for (i in 0 until outSamples) {
+            val sample = (filtered[i] * gain).toInt().coerceIn(-32768, 32767)
+            out[bIdx] = (sample and 0xFF).toByte()
+            out[bIdx + 1] = ((sample shr 8) and 0xFF).toByte()
+            bIdx += 2
         }
         return out
     }

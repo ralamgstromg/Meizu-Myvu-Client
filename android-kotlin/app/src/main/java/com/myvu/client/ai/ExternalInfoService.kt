@@ -89,16 +89,32 @@ object ExternalInfoService {
     @JvmStatic
     fun extractCityFromWeatherQuery(query: String): String? {
         val trimmed = query.trim()
-        val norm = normalize(trimmed)
+        // Strip temporal phrases before matching prepositions to avoid matching "para mañana" as city
+        val timeCleaned = trimmed
+            .replace(Regex("(?i)\\b(para|de|en)?\\s*(hoy|mañana|manana|ayer|ahora|esta tarde|esta semana|este fin de semana|el fin de semana)\\b"), "")
+            .trim()
+        val norm = normalize(timeCleaned)
 
-        // Match weather queries with location prepositions: "clima en Barranquilla", "qué temperatura era mañana en Barranquilla", "temperatura de París hoy", "pronóstico para Madrid"
+        // Match weather queries with location prepositions: "clima en Barranquilla", "qué temperatura en Barranquilla", "temperatura de París", "pronóstico para Madrid"
         val pattern = Regex("(?:clima|temperatura|tiempo|pronostico|llover|lluvia|frio|calor|grados)\\b(?:.+?)?\\b(?:en|de|para|por)\\s+([a-z0-9áéíóúñü\\s]+)", RegexOption.IGNORE_CASE)
         val match = pattern.find(norm)
         if (match != null) {
             val rawStart = match.groups[1]!!.range.first
             val rawEnd = match.groups[1]!!.range.last + 1
-            var city = trimmed.substring(rawStart, minOf(rawEnd, trimmed.length)).trim()
-            city = city.replace(Regex("(?i)\\s+(hoy|mañana|manana|ahora|ayer|esta tarde|esta semana|el fin de semana|este fin de semana)$"), "").trim()
+            var city = timeCleaned.substring(rawStart, minOf(rawEnd, timeCleaned.length)).trim()
+            city = city.replace(Regex("[?.,!;:]+$"), "").trim()
+            if (city.isNotBlank() && !isGenericStopword(city)) {
+                return city
+            }
+        }
+
+        // Direct fallback: if no preposition matched but a city word remains
+        val directPattern = Regex("(?:clima|temperatura|tiempo|pronostico|grados)\\s+([a-z0-9áéíóúñü\\s]+)", RegexOption.IGNORE_CASE)
+        val directMatch = directPattern.find(norm)
+        if (directMatch != null) {
+            val rawStart = directMatch.groups[1]!!.range.first
+            val rawEnd = directMatch.groups[1]!!.range.last + 1
+            var city = timeCleaned.substring(rawStart, minOf(rawEnd, timeCleaned.length)).trim()
             city = city.replace(Regex("[?.,!;:]+$"), "").trim()
             if (city.isNotBlank() && !isGenericStopword(city)) {
                 return city
@@ -407,6 +423,43 @@ object ExternalInfoService {
         return null
     }
 
+    @JvmStatic
+    fun isNewsQuery(query: String): Boolean {
+        val norm = normalize(query)
+        return norm.contains("noticia") || norm.contains("noticias") ||
+                norm.contains("novedades") || norm.contains("titulares") ||
+                norm.startsWith("que pasa en ") || norm.startsWith("que paso en ")
+    }
+
+    @JvmStatic
+    fun fetchNewsSearch(rawQuery: String, timeoutMs: Int = DEFAULT_TIMEOUT_MS): String? {
+        val topic = rawQuery
+            .replace(Regex("(?i)^(dame|busca|buscar|ver|cuales son|noticias sobre|noticias de|noticias|titulares de|titulares)\\s+"), "")
+            .trim()
+        if (topic.isBlank()) return null
+        try {
+            val encoded = URLEncoder.encode(topic, "UTF-8")
+            val newsUrl = "https://news.google.com/rss/search?q=$encoded&hl=es-419&gl=CO&ceid=CO:es-419"
+            val xmlStr = httpGet(newsUrl, USER_AGENT_APP, timeoutMs)
+            val titles = mutableListOf<String>()
+            val itemMatcher = Regex("<item>.*?<title>(.*?)</title>", RegexOption.DOT_MATCHES_ALL)
+            val matches = itemMatcher.findAll(xmlStr)
+            for (m in matches) {
+                val rawTitle = m.groupValues[1].replace(Regex("(?i)\\s*-\\s*[^-]+$"), "").replace(Regex("<[^>]*>"), "")
+                val t = cleanForGlasses(rawTitle)
+                if (t.isNotBlank() && !t.contains("Google News") && titles.size < 3) {
+                    titles.add(t)
+                }
+            }
+            if (titles.isNotEmpty()) {
+                return "Noticias de $topic: " + titles.joinToString(". ") + "."
+            }
+        } catch (e: Exception) {
+            LogBus.warn("ExternalInfoService -> Google News RSS failed for '$topic': ${e.message}")
+        }
+        return null
+    }
+
     private fun isDefinitionQuery(query: String): Boolean {
         val norm = normalize(query)
         return norm.startsWith("quien es ") ||
@@ -452,7 +505,15 @@ object ExternalInfoService {
             }
         }
 
-        // 3. Google / Web Search
+        // 3. News Query
+        if (isNewsQuery(trimmed)) {
+            val newsResult = fetchNewsSearch(trimmed, timeoutMs)
+            if (newsResult != null && newsResult.isNotBlank()) {
+                return newsResult
+            }
+        }
+
+        // 4. Google / Web Search
         val webResult = fetchGoogleOrWebSearch(trimmed, timeoutMs)
         if (webResult != null && webResult.isNotBlank()) {
             return webResult

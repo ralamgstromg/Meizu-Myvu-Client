@@ -262,8 +262,9 @@ En la sección **"Control Táctil de Patilla (Gafas)"** de `SettingsActivity`, l
 
 ## 🛡️ Resiliencia de Conexión y Estabilidad Anticaídas
 
-- **Persistencia de Conexión ante Rotación de Pantalla**: Todas las actividades en `AndroidManifest.xml` cuentan con la propiedad `android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"`. Esto previene que Android destruya la interfaz o desvincule el servicio `MyvuService` al girar el dispositivo entre vertical y horizontal, manteniendo los sockets BLE/RFCOMM 100% estables.
-- **Cola Defensiva durante la Inicialización**: En `ConnectionManager.sendAction()`, si la sesión se encuentra en proceso de apretón de manos (*init burst*), los mensajes del sistema (como respuestas de sincronización de hora `SyncOffSetTime`) se retienen en una cola temporal (`pendingNotifications`) y se transmiten automáticamente tan pronto como la sesión se declara `ready`.
+- **Procesamiento de Audio STT de Alta Fidelidad**: En `AiConversation.kt`, el remuestreo de audio 48kHz -> 16kHz integra un **filtro Pasa-Altos (High-Pass Filter a 80Hz)** que elimina el retumbo de baja frecuencia y ruido de fricción de las gafas, y un **Control de Ganancia por Picos (Peak AGC)** que escala discursos suaves al 75% del rango dinámico máximo, optimizando la precisión de transcripción en Whisper.
+- **Motor de Búsquedas e Información Externa (`ExternalInfoService.kt`)**: Extracción geográfica mejorada para consultas de clima (ej. *"Qué temperatura para mañana en Barranquilla"* -> `"Barranquilla"` en Open-Meteo), integrando además **Google Noticias RSS** (`https://news.google.com/rss/search`) para titulares de actualidad, conversor de divisas y raspado inteligente de Google Search HTML.
+- **Agente Multiacción**: El prompt de sistema en `AiClient.kt` e instrucciones en `PhoneActionExecutor.kt` permiten al agente interpretar y ejecutar múltiples acciones por turno de manera secuencial (ej. consultar clima, crear nota y enviar WhatsApp simultáneamente).
 
 ---
 
