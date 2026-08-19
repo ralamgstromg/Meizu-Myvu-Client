@@ -87,46 +87,6 @@
             android:name=".ui.NotificationAppsActivity"
             android:exported="false" />
 
-        <!-- Tasker Action Plugin (Tasker -> Gafas) -->
-        <activity
-            android:name=".plugin.tasker.action.TaskerActionActivity"
-            android:icon="@drawable/ic_launcher_ar"
-            android:label="MYVU Gafas Acción"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" />
-            </intent-filter>
-        </activity>
-
-        <receiver
-            android:name=".plugin.tasker.action.TaskerActionReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.twofortyfouram.locale.intent.action.FIRE_SETTING" />
-                <action android:name="com.myvu.client.TASKER_ACTION" />
-            </intent-filter>
-        </receiver>
-
-        <!-- Tasker Event / Condition Plugin (Gafas -> Tasker) -->
-        <activity
-            android:name=".plugin.tasker.event.TaskerEventActivity"
-            android:icon="@drawable/ic_launcher_ar"
-            android:label="MYVU Gafas Evento"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="net.dinglisch.android.tasker.ACTION_EDIT_EVENT" />
-                <action android:name="com.twofortyfouram.locale.intent.action.EDIT_EVENT" />
-                <action android:name="com.twofortyfouram.locale.intent.action.EDIT_CONDITION" />
-            </intent-filter>
-        </activity>
-
-        <receiver
-            android:name=".plugin.tasker.event.TaskerConditionReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.twofortyfouram.locale.intent.action.QUERY_CONDITION" />
-            </intent-filter>
-        </receiver>
 
         <!-- Foreground & Background Services -->
         <service

@@ -25,7 +25,6 @@ graph TD
         Weather[WeatherService\nOpen-Meteo]
         Reminders[ReminderScheduler\nAlarmManager + SQLite]
         Notifs[MirrorNotificationListener\nApp Filters]
-        Tasker[Tasker Plugin Module\nBidirectional Automation]
     end
     
     InRouter --> Subsystems
@@ -41,10 +40,6 @@ graph TD
 - [**`protocol/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/protocol): Codecs binarios de alto rendimiento (TLV `TlvBox`, Protobuf `Pb`, `Session`, `RelayMessage`, `LinkProtocol`).
 - [**`transport/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/transport): Capa de transporte asíncrona con Kotlin Coroutines y Flow para BLE GATT (`BleTransport`), escáner automático (`GlassesScanner`) y RFCOMM Classic (`BtTransport`).
 - [**`service/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/service): `ConnectionManager` con flujo reactivo `StateFlow<ConnectionState>`, Foreground Service `MyvuService`, supervisor de reconexión `RelaySupervisor` y `MirrorNotificationListener`.
-- [**`plugin/tasker/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/plugin/tasker): **Módulo de Automatización Tasker / Locale Plugin**:
-  - **Acciones (Tasker ➡️ Gafas)**: [`TaskerActionActivity`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/plugin/tasker/action/TaskerActionActivity.kt) y [`TaskerActionReceiver`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/plugin/tasker/action/TaskerActionReceiver.kt) para proyectar HUD, teleprompter, ajustar brillo/volumen/WiFi/modo Zen y enviar comandos raw con soporte de variables dinámicas (`%var`).
-  - **Eventos (Gafas ➡️ Tasker)**: [`TaskerEventActivity`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/plugin/tasker/event/TaskerEventActivity.kt) y [`TaskerEventBroadcaster`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/plugin/tasker/event/TaskerEventBroadcaster.kt) para disparar tareas desde gestos táctiles, botón AI, estado de conexión y nivel de batería.
-  - *Guía completa:* [docs/TASKER_INTEGRATION.md](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/docs/TASKER_INTEGRATION.md).
 - [**`ai/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ai): Asistente de voz inteligente con arquitectura híbrida **Local-First**:
   - **STT**: Whisper Large v3 Turbo INT4 On-Device y fallback transparente a Groq Whisper API configurado por defecto en **Español (`es`)** con prompt contextual de comandos de voz para prevenir transcripciones erróneas (`"Jamar"` -> `"Llamar"`), además de Android Speech Recognizer.
   - **LLM**: Motor de inferencia nativo on-device **LiteRT-LM & MediaPipe Tasks GenAI** ejecutando:
@@ -87,7 +82,7 @@ flowchart LR
         LLMServer -.->|Rescate Automático| LLMCloud[Groq / Gemini / Claude API]
     end
     
-    LLM --> Actions[PhoneActionExecutor: Llamadas, WhatsApp, Notificaciones, GPS, Música, Tasker]
+    LLM --> Actions[PhoneActionExecutor: Llamadas, WhatsApp, Notificaciones, GPS, Música]
     Actions --> HUD[Renderizado HUD Gafas + Lectura TTS]
     
     LLMLocal --> HUD
@@ -135,7 +130,7 @@ Ejecutar desde el directorio `android-kotlin/`:
 ./gradlew test
 
 # Ejecutar test suite específico
-./gradlew :app:testDebugUnitTest --tests "com.myvu.client.plugin.tasker.*"
+./gradlew :app:testDebugUnitTest --tests "com.myvu.client.ai.*"
 ```
 
 Para configuración de keystore y detalles de release, consultar [BUILD_INSTRUCTIONS.md](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/BUILD_INSTRUCTIONS.md).

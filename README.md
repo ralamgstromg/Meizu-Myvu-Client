@@ -6,13 +6,13 @@
 A reverse-engineered client for the **Meizu MYVU (Star Air, model `XGA010C`)**
 AR glasses. It speaks the glasses' own Bluetooth protocol directly — no official
 app required — to pair, drive the on-lens UI, push notifications, run a
-teleprompter and turn-by-turn navigation, act as a remote trackpad, customizable gesture controls, host an on-device local AI voice assistant, and integrate bi-directionally with **Tasker** automation.
+teleprompter and turn-by-turn navigation, act as a remote trackpad, customizable gesture controls, and host an on-device local AI voice assistant.
 
 There are three implementations of the protocol in this repository:
 
 | Folder | What it is | Runs on |
 |---|---|---|
-| [⭐ `android-kotlin/`](android-kotlin/) | **Modern Native Kotlin 2.1+ Client** (`com.myvu.client`). Reactive `StateFlow` connection engine, Material 3 Kinetic Obsidian UI, Local-First AI (Gemma 4 E2B IT / Whisper v3 Turbo), and bi-directional **Tasker Plugin**. **Recommended.** | Android (minSdk 26, tested on API 31–35) |
+| [⭐ `android-kotlin/`](android-kotlin/) | **Modern Native Kotlin 2.1+ Client** (`com.myvu.client`). Reactive `StateFlow` connection engine, Material 3 Kinetic Obsidian UI, and Local-First AI (Gemma 4 E2B IT / Whisper v3 Turbo). **Recommended.** | Android (minSdk 26, tested on API 31–35) |
 | [`android/`](android/) | Full-featured Java Android app (`com.myvu.client`). Stable baseline client. | Android (minSdk 26, tested on API 31+) |
 | [`python/`](python/) | The original reverse-engineering reference the Android ports were built from. **Rough and not stable** — kept for protocol study. | Windows / Linux (BLE + classic-BT) |
 
@@ -23,10 +23,6 @@ Each folder has its own README with build/run details:
 
 - **Connection & Reactive State Engine** — BLE bring-up + ECDH bond, then the classic-Bluetooth app relay with reactive Kotlin `StateFlow` synchronization and auto-reconnect. Optional **auto-search** discovers the glasses over a BLE scan without needing the MAC address.
 - **"Phone connected" state** — connects standard HFP/A2DP profiles so the glasses light their own connected indicator, not just the app relay.
-- **Tasker Plugin & Bidirectional Automation** — native Locale/Tasker plugin support:
-  - **Tasker ➡️ Glasses**: Show HUD messages with dynamic variables (`%var`), trigger teleprompter, adjust brightness/volume, toggle Wi-Fi / Zen Mode / Air Mode, set standby FOV position, and send raw JSON commands.
-  - **Glasses ➡️ Tasker**: Temple touch gestures, AI button / voice trigger, connection states, and battery level events exported directly as Tasker variables (`%myvu_gesture`, `%myvu_event`, `%myvu_battery`, `%myvu_state`).
-  - *Full Tasker manual:* [android-kotlin/docs/TASKER_INTEGRATION.md](android-kotlin/docs/TASKER_INTEGRATION.md).
 - **Notifications** — send your own, or mirror real phone notifications to the lens with per-app filters and custom vibration alerts.
 - **Teleprompter**, **system settings** (volume, brightness, Wi-Fi, wear detection, zen mode, screen-off, standby position…), **clock sync**, and status **queries**.
 - **Weather Sync** — manual and periodic weather data fetching via Open-Meteo API, updating the glasses' weather widget on the lens HUD.
@@ -35,7 +31,6 @@ Each folder has its own README with build/run details:
   - Force Weather Sync
   - Toggle Notification Mirroring
   - Media Play / Pause
-  - Tasker Event Trigger
   - None (disabled)
 - **Navigation** — full turn-by-turn HUD (OSRM routing, Nominatim geocoding), driven by the phone's location.
 - **Trackpad** — the phone as a remote touchpad for the glasses' launcher (tap / double-tap / long-press / swipe).
@@ -61,7 +56,7 @@ The glasses require **two Bluetooth links at once**:
    on the glasses (e.g. `com.upuphone.star.launcher`).
 
 The glasses' microphone streams back as Opus frames; navigation, the trackpad
-("phonepad"), weather, gestures, Tasker triggers, and the assistant are all JSON actions over the same relay.
+("phonepad"), weather, gestures, and the assistant are all JSON actions over the same relay.
 
 ## Hardware / prerequisites
 
