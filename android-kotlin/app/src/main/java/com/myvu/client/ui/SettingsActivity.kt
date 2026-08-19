@@ -670,29 +670,23 @@ class SettingsActivity : AppCompatActivity() {
         txtGemmaHfToken.setText(Prefs.gemmaHfToken(this))
         txtGemmaCustomUrl.setText(Prefs.gemmaCustomUrl(this))
 
-        val currentModelId = Prefs.gemmaModelId(this)
-        btnGemmaModelVersionGroup.check(
-            when (currentModelId) {
-                com.myvu.client.ai.GemmaLocalClient.GEMMA_4_E2B_LITERT.id -> R.id.btnGemma4B
-                com.myvu.client.ai.GemmaLocalClient.GEMMA_2B_IT_GPU.id -> R.id.btnGemma2B
-                com.myvu.client.ai.GemmaLocalClient.GEMMA_2_2B_IT_GPU.id -> R.id.btnGemma2B2
-                com.myvu.client.ai.GemmaLocalClient.GEMMA_2B_IT_CPU.id -> R.id.btnGemma2BCpu
-                else -> R.id.btnGemma2B
-            }
-        )
+        val spnDropdown = findViewById<AutoCompleteTextView?>(R.id.spnGemmaModelDropdown)
+        val modelOptions = com.myvu.client.ai.GemmaLocalClient.OPTIONS
+        val modelNames = modelOptions.map { it.name }
+        
+        if (spnDropdown != null) {
+            val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, modelNames)
+            spnDropdown.setAdapter(adapter)
 
-        btnGemmaModelVersionGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            val selectedOption = when (checkedId) {
-                R.id.btnGemma4B -> com.myvu.client.ai.GemmaLocalClient.GEMMA_4_E2B_LITERT
-                R.id.btnGemma2B -> com.myvu.client.ai.GemmaLocalClient.GEMMA_2B_IT_GPU
-                R.id.btnGemma2B2 -> com.myvu.client.ai.GemmaLocalClient.GEMMA_2_2B_IT_GPU
-                R.id.btnGemma2BCpu -> com.myvu.client.ai.GemmaLocalClient.GEMMA_2B_IT_CPU
-                else -> com.myvu.client.ai.GemmaLocalClient.DEFAULT_OPTION
+            val currentModel = com.myvu.client.ai.GemmaLocalClient.findOption(Prefs.gemmaModelId(this))
+            spnDropdown.setText(currentModel.name, false)
+
+            spnDropdown.setOnItemClickListener { _, _, position, _ ->
+                val selectedOption = modelOptions.getOrNull(position) ?: com.myvu.client.ai.GemmaLocalClient.DEFAULT_OPTION
+                Prefs.setGemmaModelId(this, selectedOption.id)
+                gemmaDownloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption)
+                updateGemmaModelStatus()
             }
-            Prefs.setGemmaModelId(this, selectedOption.id)
-            gemmaDownloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption)
-            updateGemmaModelStatus()
         }
 
         btnDownloadGemmaModel.setOnClickListener {
@@ -704,8 +698,10 @@ class SettingsActivity : AppCompatActivity() {
             downloader.startDownload { state ->
                 runOnUiThread {
                     val notice = if (selectedOption.engineType == com.myvu.client.ai.GemmaEngineType.LITERT_LM) {
-                        "\n💡 Recomendado: Gemma 2B GPU para aceleración por hardware nativa"
-                    } else ""
+                        "\n💡 Motor: LiteRT-LM (Optimizado para CPU/NPU Móvil)"
+                    } else {
+                        "\n💡 Motor: MediaPipe LLM Inference Engine (Aceleración por GPU)"
+                    }
                     when (state) {
                         is com.myvu.client.ai.GemmaDownloadState.Downloading -> {
                             progressGemmaDownload.progress = state.progressPercent
@@ -715,7 +711,7 @@ class SettingsActivity : AppCompatActivity() {
                             btnDownloadGemmaModel.isEnabled = true
                             progressGemmaDownload.visibility = View.GONE
                             lblGemmaModelStatus.text = "${selectedOption.name} [${selectedOption.engineType.name}]: Listo para uso offline$notice"
-                            Toast.makeText(this, "Modelo descargado correctamente", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this, "Modelo ${selectedOption.fileName} descargado correctamente", Toast.LENGTH_SHORT).show()
                         }
                         is com.myvu.client.ai.GemmaDownloadState.Error -> {
                             btnDownloadGemmaModel.isEnabled = true
@@ -792,12 +788,12 @@ class SettingsActivity : AppCompatActivity() {
             is com.myvu.client.ai.GemmaDownloadState.Completed -> "${selectedOption.name} [${selectedOption.engineType.name}]: Listo para uso offline"
             else -> "${selectedOption.name} [${selectedOption.engineType.name}]: No descargado"
         }
-        val warning = if (selectedOption.engineType == com.myvu.client.ai.GemmaEngineType.LITERT_LM) {
-            "\n💡 Recomendado: Gemma 2B GPU para aceleración por hardware nativa"
+        val notice = if (selectedOption.engineType == com.myvu.client.ai.GemmaEngineType.LITERT_LM) {
+            "\n💡 Motor: LiteRT-LM (Optimizado para CPU/NPU Móvil)"
         } else {
-            ""
+            "\n💡 Motor: MediaPipe LLM Inference Engine (Aceleración por GPU)"
         }
-        lblGemmaModelStatus.text = "$baseStatus$warning"
+        lblGemmaModelStatus.text = "$baseStatus$notice"
     }
 
     private fun configureWhisperOnDeviceControls() {

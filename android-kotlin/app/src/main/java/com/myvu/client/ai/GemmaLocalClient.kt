@@ -31,6 +31,46 @@ class GemmaLocalClient(
 ) : AiClient {
 
     companion object {
+        val QWEN_2_5_1_5B_LITERT = GemmaModelOption(
+            id = "qwen-2.5-1.5b-it-litert",
+            name = "⭐ Qwen 2.5 1.5B Instruct (LiteRT ~1.15GB) - Recomendado Entidades/Tareas",
+            downloadUrl = "https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct-litert-lm/resolve/main/Qwen2.5-1.5B-Instruct.litertlm",
+            fileName = "qwen2.5-1.5b-instruct.litertlm",
+            sizeBytes = 1_150_000_000L
+        )
+
+        val LLAMA_3_2_1B_LITERT = GemmaModelOption(
+            id = "llama-3.2-1b-it-litert",
+            name = "⚡ Llama 3.2 1B Instruct (LiteRT ~1.10GB) - Ultrarrápido",
+            downloadUrl = "https://huggingface.co/litert-community/Llama-3.2-1B-Instruct-litert-lm/resolve/main/Llama-3.2-1B-Instruct.litertlm",
+            fileName = "llama-3.2-1b-instruct.litertlm",
+            sizeBytes = 1_100_000_000L
+        )
+
+        val LLAMA_3_2_3B_GPU = GemmaModelOption(
+            id = "llama-3.2-3b-it-gpu-int4",
+            name = "🧠 Llama 3.2 3B IT (Google AI Edge GPU ~1.95GB) - Alta Capacidad",
+            downloadUrl = "https://huggingface.co/google/llama-3.2-3b-it-tflite/resolve/main/llama-3.2-3b-it-gpu-int4.bin",
+            fileName = "llama-3.2-3b-it-gpu-int4.bin",
+            sizeBytes = 1_950_000_000L
+        )
+
+        val PHI_3_5_MINI_LITERT = GemmaModelOption(
+            id = "phi-3.5-mini-it-litert",
+            name = "🔬 Phi 3.5 Mini Instruct (LiteRT ~2.18GB) - Razonamiento Avanzado",
+            downloadUrl = "https://huggingface.co/litert-community/Phi-3.5-mini-instruct-litert-lm/resolve/main/Phi-3.5-mini-instruct.litertlm",
+            fileName = "phi-3.5-mini-instruct.litertlm",
+            sizeBytes = 2_180_000_000L
+        )
+
+        val GEMMA_2_2B_IT_GPU = GemmaModelOption(
+            id = "gemma-2-2b-it-gpu-int4",
+            name = "💎 Gemma 2 2B IT (Google AI Edge GPU ~1.48GB) - Oficial Google",
+            downloadUrl = "https://huggingface.co/google/gemma-2-2b-it-tflite/resolve/main/gemma-2-2b-it-gpu-int4.bin",
+            fileName = "gemma-2-2b-it-gpu-int4.bin",
+            sizeBytes = 1_480_000_000L
+        )
+
         val GEMMA_4_E2B_LITERT = GemmaModelOption(
             id = "gemma-4-e2b-it-litert-lm",
             name = "Gemma 4 E2B IT (LiteRT-LM ~1.12GB)",
@@ -55,14 +95,6 @@ class GemmaLocalClient(
             sizeBytes = 1_350_000_000L
         )
 
-        val GEMMA_2_2B_IT_GPU = GemmaModelOption(
-            id = "gemma-2-2b-it-gpu-int4",
-            name = "Gemma 2 2B IT (Google AI Edge GPU ~1.48GB)",
-            downloadUrl = "https://huggingface.co/google/gemma-2-2b-it-tflite/resolve/main/gemma-2-2b-it-gpu-int4.bin",
-            fileName = "gemma-2-2b-it-gpu-int4.bin",
-            sizeBytes = 1_480_000_000L
-        )
-
         val GEMMA_1_1_2B_IT_GPU = GemmaModelOption(
             id = "gemma-1.1-2b-it-gpu-int4",
             name = "Gemma 1.1 2B IT (Google AI Edge GPU ~1.35GB)",
@@ -72,14 +104,18 @@ class GemmaLocalClient(
         )
 
         val OPTIONS = listOf(
+            QWEN_2_5_1_5B_LITERT,
+            LLAMA_3_2_1B_LITERT,
+            LLAMA_3_2_3B_GPU,
+            PHI_3_5_MINI_LITERT,
+            GEMMA_2_2B_IT_GPU,
             GEMMA_4_E2B_LITERT,
             GEMMA_2B_IT_GPU,
-            GEMMA_2_2B_IT_GPU,
             GEMMA_2B_IT_CPU,
             GEMMA_1_1_2B_IT_GPU
         )
 
-        val DEFAULT_OPTION = GEMMA_2B_IT_GPU
+        val DEFAULT_OPTION = QWEN_2_5_1_5B_LITERT
 
         @Volatile
         private var cachedEngine: OnDeviceLlmEngine? = null

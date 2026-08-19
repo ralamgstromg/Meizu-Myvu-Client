@@ -223,20 +223,31 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:text="Ejecuta modelos Gemma directamente en la GPU del celular sin conexión. Si está activo y el modelo está listo, se usará automáticamente. De lo contrario, se usará el AI Provider configurado arriba." />
+                                android:text="Ejecuta modelos LLM (Qwen, Llama, Phi, Gemma) directamente en la CPU/GPU del celular sin conexión. Si está activo y el modelo está listo, se usará automáticamente. De lo contrario, se usará el AI Provider configurado arriba." />
 
-                            <TextView
-                                style="@style/Label.Myvu"
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/layGemmaModelDropdown"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="8dp"
-                                android:text="Versión del modelo Gemma:" />
+                                android:hint="Modelo On-Device (CPU/GPU):">
+
+                                <AutoCompleteTextView
+                                    android:id="@+id/spnGemmaModelDropdown"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="none"
+                                    android:textColor="@color/on_surface_obsidian"
+                                    android:textSize="12sp" />
+                            </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.button.MaterialButtonToggleGroup
                                 android:id="@+id/btnGemmaModelVersionGroup"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
+                                android:visibility="gone"
                                 app:checkedButton="@+id/btnGemma2B"
                                 app:singleSelection="true"
                                 app:selectionRequired="true">

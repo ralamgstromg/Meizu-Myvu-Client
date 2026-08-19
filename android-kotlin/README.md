@@ -262,6 +262,10 @@ En la sección **"Control Táctil de Patilla (Gafas)"** de `SettingsActivity`, l
 
 ## 🛡️ Resiliencia de Conexión y Estabilidad Anticaídas
 
+- **Modelos de IA Locales en CPU/GPU (`GemmaLocalClient.kt` & `SettingsActivity.kt`)**:
+  - **Catálogo de Modelos Robusto**: Selección y descarga directa de **Qwen 2.5 1.5B Instruct** (Recomendado para extracción de entidades y tareas), **Llama 3.2 1B Instruct** (Ultrarrápido), **Llama 3.2 3B IT GPU** (Alta capacidad en GPU móvil), **Phi 3.5 Mini Instruct** (Razonamiento lógico avanzado) y **Gemma 2 2B IT GPU**.
+  - **Motores duales LiteRT-LM & MediaPipe**: Ejecución directa offline con aceleración por hardware NPU/CPU (`.litertlm`) y GPU (`.bin`).
+  - **Interfaz de Ajustes Dinámica**: Selector desplegable (`AutoCompleteTextView`) con indicador de progreso de descarga y prueba instantánea de inferencia local.
 - **Integración Multimodal e Inteligente para Notas, Recordatorios y Grabadora de Voz (`NoteAiProcessor.kt` & `MeetingAiProcessor.kt`)**: 
   - **Transcripción STT y Diarización**: Soporte para Whisper Groq/OpenAI y Android Speech con resumen ejecutivo, tareas estructuradas (exportables a To-Do), mapa mental Mermaid y Chat IA interactivo sobre notas y grabaciones.
   - **Enriquecimiento LLM Automático**: Al crear notas o recordatorios mediante comandos de voz del Agente de IA o desde la app, se inicia automáticamente el procesamiento en segundo plano para generar resúmenes, tareas y mapas mentales.

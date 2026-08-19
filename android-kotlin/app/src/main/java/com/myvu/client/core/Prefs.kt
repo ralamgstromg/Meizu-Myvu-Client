@@ -26,7 +26,7 @@ object Prefs {
     private const val KEY_GEMINI_FALLBACK_POLICY = "gemini_fallback_policy"
     private const val KEY_USE_LOCAL_GEMMA = "use_local_gemma"
     private const val KEY_GEMMA_MODEL_ID = "gemma_model_id"
-    const val DEFAULT_GEMMA_MODEL_ID = "gemma-2b-it-gpu-int4"
+    const val DEFAULT_GEMMA_MODEL_ID = "qwen-2.5-1.5b-it-litert"
     private const val KEY_GEMMA_HF_TOKEN = "gemma_hf_token"
     private const val KEY_GEMMA_CUSTOM_URL = "gemma_custom_url"
 

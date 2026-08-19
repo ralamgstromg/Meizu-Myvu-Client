@@ -66,34 +66,41 @@ class GemmaLocalClientTest {
     @Test
     fun defaultOptionHasValidConfig() {
         val option = GemmaLocalClient.DEFAULT_OPTION
-        assertEquals("gemma-2b-it-gpu-int4", option.id)
-        assertEquals("gemma-2b-it-gpu-int4.bin", option.fileName)
-        assertEquals(GemmaEngineType.MEDIAPIPE, option.engineType)
-        assertTrue(option.downloadUrl.contains("huggingface.co/google/gemma-2b-it-tflite"))
+        assertEquals("qwen-2.5-1.5b-it-litert", option.id)
+        assertEquals("qwen2.5-1.5b-instruct.litertlm", option.fileName)
+        assertEquals(GemmaEngineType.LITERT_LM, option.engineType)
+        assertTrue(option.downloadUrl.contains("Qwen2.5-1.5B-Instruct"))
     }
 
     @Test
     fun googleAiEdgeGalleryOptionsAreAvailable() {
+        assertEquals("qwen-2.5-1.5b-it-litert", GemmaLocalClient.QWEN_2_5_1_5B_LITERT.id)
+        assertEquals("llama-3.2-1b-it-litert", GemmaLocalClient.LLAMA_3_2_1B_LITERT.id)
+        assertEquals("llama-3.2-3b-it-gpu-int4", GemmaLocalClient.LLAMA_3_2_3B_GPU.id)
+        assertEquals("phi-3.5-mini-it-litert", GemmaLocalClient.PHI_3_5_MINI_LITERT.id)
+        assertEquals("gemma-2-2b-it-gpu-int4", GemmaLocalClient.GEMMA_2_2B_IT_GPU.id)
         assertEquals("gemma-2b-it-gpu-int4", GemmaLocalClient.GEMMA_2B_IT_GPU.id)
         assertEquals("gemma-2b-it-cpu-int4", GemmaLocalClient.GEMMA_2B_IT_CPU.id)
-        assertEquals("gemma-2-2b-it-gpu-int4", GemmaLocalClient.GEMMA_2_2B_IT_GPU.id)
-        assertEquals("gemma-1.1-2b-it-gpu-int4", GemmaLocalClient.GEMMA_1_1_2B_IT_GPU.id)
 
-        assertEquals(GemmaEngineType.MEDIAPIPE, GemmaLocalClient.GEMMA_2B_IT_GPU.engineType)
-        assertEquals(GemmaEngineType.MEDIAPIPE, GemmaLocalClient.GEMMA_2B_IT_CPU.engineType)
+        assertEquals(GemmaEngineType.LITERT_LM, GemmaLocalClient.QWEN_2_5_1_5B_LITERT.engineType)
+        assertEquals(GemmaEngineType.LITERT_LM, GemmaLocalClient.LLAMA_3_2_1B_LITERT.engineType)
+        assertEquals(GemmaEngineType.MEDIAPIPE, GemmaLocalClient.LLAMA_3_2_3B_GPU.engineType)
+        assertEquals(GemmaEngineType.LITERT_LM, GemmaLocalClient.PHI_3_5_MINI_LITERT.engineType)
         assertEquals(GemmaEngineType.MEDIAPIPE, GemmaLocalClient.GEMMA_2_2B_IT_GPU.engineType)
-        assertEquals(GemmaEngineType.MEDIAPIPE, GemmaLocalClient.GEMMA_1_1_2B_IT_GPU.engineType)
+        assertEquals(GemmaEngineType.MEDIAPIPE, GemmaLocalClient.GEMMA_2B_IT_GPU.engineType)
     }
 
     @Test
     fun optionsCatalogContainsAllFiveModels() {
         val options = GemmaLocalClient.OPTIONS
-        assertEquals(5, options.size)
+        assertEquals(9, options.size)
+        assertTrue(options.contains(GemmaLocalClient.QWEN_2_5_1_5B_LITERT))
+        assertTrue(options.contains(GemmaLocalClient.LLAMA_3_2_1B_LITERT))
+        assertTrue(options.contains(GemmaLocalClient.LLAMA_3_2_3B_GPU))
+        assertTrue(options.contains(GemmaLocalClient.PHI_3_5_MINI_LITERT))
+        assertTrue(options.contains(GemmaLocalClient.GEMMA_2_2B_IT_GPU))
         assertTrue(options.contains(GemmaLocalClient.GEMMA_4_E2B_LITERT))
         assertTrue(options.contains(GemmaLocalClient.GEMMA_2B_IT_GPU))
-        assertTrue(options.contains(GemmaLocalClient.GEMMA_2_2B_IT_GPU))
-        assertTrue(options.contains(GemmaLocalClient.GEMMA_2B_IT_CPU))
-        assertTrue(options.contains(GemmaLocalClient.GEMMA_1_1_2B_IT_GPU))
     }
 
     @Test

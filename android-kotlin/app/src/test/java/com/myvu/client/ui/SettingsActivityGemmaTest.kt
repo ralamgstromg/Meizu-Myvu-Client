@@ -52,27 +52,27 @@ class SettingsActivityGemmaTest {
     }
 
     @Test
-    fun defaultGemmaModelInPrefsIsGemma2BGpu() {
+    fun defaultGemmaModelInPrefsIsQwen25() {
         val context = RuntimeEnvironment.getApplication()
-        assertEquals(GemmaLocalClient.GEMMA_2B_IT_GPU.id, Prefs.gemmaModelId(context))
-        assertEquals("gemma-2b-it-gpu-int4", Prefs.DEFAULT_GEMMA_MODEL_ID)
+        assertEquals(GemmaLocalClient.QWEN_2_5_1_5B_LITERT.id, Prefs.gemmaModelId(context))
+        assertEquals("qwen-2.5-1.5b-it-litert", Prefs.DEFAULT_GEMMA_MODEL_ID)
     }
 
     @Test
-    fun activityInitializesWithGemma2BGpuByDefault() {
+    fun activityInitializesWithQwen25ByDefault() {
         val controller = Robolectric.buildActivity(SettingsActivity::class.java).setup()
         val activity = controller.get()
 
-        val group = activity.findViewById<MaterialButtonToggleGroup>(R.id.btnGemmaModelVersionGroup)
-        assertNotNull(group)
-        assertEquals(R.id.btnGemma2B, group.checkedButtonId)
+        val dropdown = activity.findViewById<android.widget.AutoCompleteTextView>(R.id.spnGemmaModelDropdown)
+        assertNotNull(dropdown)
+        assertEquals(GemmaLocalClient.QWEN_2_5_1_5B_LITERT.name, dropdown.text.toString())
 
         val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
         assertNotNull(lblStatus)
-        assertTrue(lblStatus.text.contains("MEDIAPIPE"))
-        assertTrue(lblStatus.text.contains("Gemma 2B IT (Google AI Edge GPU"))
+        assertTrue(lblStatus.text.contains("LITERT_LM"))
+        assertTrue(lblStatus.text.contains("Qwen 2.5 1.5B Instruct"))
         assertTrue(lblStatus.text.contains("No descargado"))
-        assertTrue(!lblStatus.text.contains("💡 Recomendado"))
+        assertTrue(lblStatus.text.contains("Motor: LiteRT-LM"))
     }
 
     @Test
@@ -83,15 +83,15 @@ class SettingsActivityGemmaTest {
         val controller = Robolectric.buildActivity(SettingsActivity::class.java).setup()
         val activity = controller.get()
 
-        val group = activity.findViewById<MaterialButtonToggleGroup>(R.id.btnGemmaModelVersionGroup)
-        assertNotNull(group)
-        assertEquals(R.id.btnGemma4B, group.checkedButtonId)
+        val dropdown = activity.findViewById<android.widget.AutoCompleteTextView>(R.id.spnGemmaModelDropdown)
+        assertNotNull(dropdown)
+        assertEquals(GemmaLocalClient.GEMMA_4_E2B_LITERT.name, dropdown.text.toString())
 
         val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
         assertNotNull(lblStatus)
         assertTrue(lblStatus.text.contains("LITERT_LM"))
         assertTrue(lblStatus.text.contains("Gemma 4 E2B"))
-        assertTrue(lblStatus.text.contains("💡 Recomendado: Gemma 2B GPU para aceleración por hardware nativa"))
+        assertTrue(lblStatus.text.contains("Motor: LiteRT-LM"))
     }
 
     @Test
@@ -99,8 +99,10 @@ class SettingsActivityGemmaTest {
         val controller = Robolectric.buildActivity(SettingsActivity::class.java).setup()
         val activity = controller.get()
 
-        val group = activity.findViewById<MaterialButtonToggleGroup>(R.id.btnGemmaModelVersionGroup)
-        group.check(R.id.btnGemma4B)
+        val dropdown = activity.findViewById<android.widget.AutoCompleteTextView>(R.id.spnGemmaModelDropdown)
+        val pos = GemmaLocalClient.OPTIONS.indexOf(GemmaLocalClient.GEMMA_4_E2B_LITERT)
+        dropdown.performCompletion()
+        dropdown.onItemClickListener?.onItemClick(null, null, pos, 0)
 
         val savedId = Prefs.gemmaModelId(activity)
         assertEquals(GemmaLocalClient.GEMMA_4_E2B_LITERT.id, savedId)
@@ -108,7 +110,7 @@ class SettingsActivityGemmaTest {
         val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
         assertTrue(lblStatus.text.contains("LITERT_LM"))
         assertTrue(lblStatus.text.contains("Gemma 4 E2B"))
-        assertTrue(lblStatus.text.contains("💡 Recomendado: Gemma 2B GPU para aceleración por hardware nativa"))
+        assertTrue(lblStatus.text.contains("Motor: LiteRT-LM"))
     }
 
     @Test
@@ -119,8 +121,9 @@ class SettingsActivityGemmaTest {
         val controller = Robolectric.buildActivity(SettingsActivity::class.java).setup()
         val activity = controller.get()
 
-        val group = activity.findViewById<MaterialButtonToggleGroup>(R.id.btnGemmaModelVersionGroup)
-        group.check(R.id.btnGemma2B)
+        val dropdown = activity.findViewById<android.widget.AutoCompleteTextView>(R.id.spnGemmaModelDropdown)
+        val pos = GemmaLocalClient.OPTIONS.indexOf(GemmaLocalClient.GEMMA_2B_IT_GPU)
+        dropdown.onItemClickListener?.onItemClick(null, null, pos, 0)
 
         val savedId = Prefs.gemmaModelId(activity)
         assertEquals(GemmaLocalClient.GEMMA_2B_IT_GPU.id, savedId)
@@ -128,7 +131,7 @@ class SettingsActivityGemmaTest {
         val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
         assertTrue(lblStatus.text.contains("MEDIAPIPE"))
         assertTrue(lblStatus.text.contains("Gemma 2B IT (Google AI Edge GPU"))
-        assertTrue(!lblStatus.text.contains("💡 Recomendado"))
+        assertTrue(lblStatus.text.contains("MediaPipe LLM Inference Engine"))
     }
 
     @Test
@@ -136,8 +139,9 @@ class SettingsActivityGemmaTest {
         val controller = Robolectric.buildActivity(SettingsActivity::class.java).setup()
         val activity = controller.get()
 
-        val group = activity.findViewById<MaterialButtonToggleGroup>(R.id.btnGemmaModelVersionGroup)
-        group.check(R.id.btnGemma2B2)
+        val dropdown = activity.findViewById<android.widget.AutoCompleteTextView>(R.id.spnGemmaModelDropdown)
+        val pos = GemmaLocalClient.OPTIONS.indexOf(GemmaLocalClient.GEMMA_2_2B_IT_GPU)
+        dropdown.onItemClickListener?.onItemClick(null, null, pos, 0)
 
         val savedId = Prefs.gemmaModelId(activity)
         assertEquals(GemmaLocalClient.GEMMA_2_2B_IT_GPU.id, savedId)
@@ -145,7 +149,7 @@ class SettingsActivityGemmaTest {
         val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
         assertTrue(lblStatus.text.contains("MEDIAPIPE"))
         assertTrue(lblStatus.text.contains("Gemma 2 2B IT"))
-        assertTrue(!lblStatus.text.contains("💡 Recomendado"))
+        assertTrue(lblStatus.text.contains("MediaPipe LLM Inference Engine"))
     }
 
     @Test
@@ -153,8 +157,9 @@ class SettingsActivityGemmaTest {
         val controller = Robolectric.buildActivity(SettingsActivity::class.java).setup()
         val activity = controller.get()
 
-        val group = activity.findViewById<MaterialButtonToggleGroup>(R.id.btnGemmaModelVersionGroup)
-        group.check(R.id.btnGemma2BCpu)
+        val dropdown = activity.findViewById<android.widget.AutoCompleteTextView>(R.id.spnGemmaModelDropdown)
+        val pos = GemmaLocalClient.OPTIONS.indexOf(GemmaLocalClient.GEMMA_2B_IT_CPU)
+        dropdown.onItemClickListener?.onItemClick(null, null, pos, 0)
 
         val savedId = Prefs.gemmaModelId(activity)
         assertEquals(GemmaLocalClient.GEMMA_2B_IT_CPU.id, savedId)
@@ -162,7 +167,7 @@ class SettingsActivityGemmaTest {
         val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
         assertTrue(lblStatus.text.contains("MEDIAPIPE"))
         assertTrue(lblStatus.text.contains("Gemma 2B IT (Google AI Edge CPU"))
-        assertTrue(!lblStatus.text.contains("💡 Recomendado"))
+        assertTrue(lblStatus.text.contains("MediaPipe LLM Inference Engine"))
     }
 
     @Test
@@ -177,7 +182,7 @@ class SettingsActivityGemmaTest {
         val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
         assertTrue(lblStatus.text.contains("Listo para uso offline"))
         assertTrue(lblStatus.text.contains("[LITERT_LM]"))
-        assertTrue(lblStatus.text.contains("💡 Recomendado: Gemma 2B GPU para aceleración por hardware nativa"))
+        assertTrue(lblStatus.text.contains("Motor: LiteRT-LM"))
     }
 
     @Test
@@ -192,6 +197,6 @@ class SettingsActivityGemmaTest {
         val lblStatus = activity.findViewById<TextView>(R.id.lblGemmaModelStatus)
         assertTrue(lblStatus.text.contains("Listo para uso offline"))
         assertTrue(lblStatus.text.contains("[MEDIAPIPE]"))
-        assertTrue(!lblStatus.text.contains("💡 Recomendado"))
+        assertTrue(lblStatus.text.contains("MediaPipe LLM Inference Engine"))
     }
 }
