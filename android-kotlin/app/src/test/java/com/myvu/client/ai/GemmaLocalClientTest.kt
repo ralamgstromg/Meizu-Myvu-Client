@@ -55,7 +55,7 @@ class GemmaLocalClientTest {
     fun gemma4E2BOptionHasValidConfigAndLiteRtType() {
         val option = GemmaLocalClient.GEMMA_4_E2B_LITERT
         assertEquals("gemma-4-e2b-it-litert-lm", option.id)
-        assertEquals("Gemma 4 E2B IT (LiteRT-LM ~1.12GB)", option.name)
+        assertEquals("⚡ Gemma 4 E2B IT (LiteRT-LM ~1.12GB) - Ultrarrápido", option.name)
         assertEquals("gemma-4-E2B-it.litertlm", option.fileName)
         assertEquals(1_120_000_000L, option.sizeBytes)
         assertEquals(GemmaEngineType.LITERT_LM, option.engineType)
@@ -67,7 +67,7 @@ class GemmaLocalClientTest {
     fun defaultOptionHasValidConfig() {
         val option = GemmaLocalClient.DEFAULT_OPTION
         assertEquals("qwen-2.5-1.5b-it-litert", option.id)
-        assertEquals("qwen2.5-1.5b-instruct.litertlm", option.fileName)
+        assertEquals("Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm", option.fileName)
         assertEquals(GemmaEngineType.LITERT_LM, option.engineType)
         assertTrue(option.downloadUrl.contains("Qwen2.5-1.5B-Instruct"))
     }
@@ -75,17 +75,18 @@ class GemmaLocalClientTest {
     @Test
     fun googleAiEdgeGalleryOptionsAreAvailable() {
         assertEquals("qwen-2.5-1.5b-it-litert", GemmaLocalClient.QWEN_2_5_1_5B_LITERT.id)
-        assertEquals("llama-3.2-1b-it-litert", GemmaLocalClient.LLAMA_3_2_1B_LITERT.id)
-        assertEquals("llama-3.2-3b-it-gpu-int4", GemmaLocalClient.LLAMA_3_2_3B_GPU.id)
-        assertEquals("phi-3.5-mini-it-litert", GemmaLocalClient.PHI_3_5_MINI_LITERT.id)
+        assertEquals("deepseek-r1-1.5b-it-litert", GemmaLocalClient.DEEPSEEK_R1_1_5B_LITERT.id)
+        assertEquals("gemma-4-e2b-it-litert-lm", GemmaLocalClient.GEMMA_4_E2B_LITERT.id)
+        assertEquals("gemma-4-e4b-it-litert-lm", GemmaLocalClient.GEMMA_4_E4B_LITERT.id)
+        assertEquals("tinyllama-1.1b-chat-task", GemmaLocalClient.TINYLLAMA_1_1B_TASK.id)
         assertEquals("gemma-2-2b-it-gpu-int4", GemmaLocalClient.GEMMA_2_2B_IT_GPU.id)
         assertEquals("gemma-2b-it-gpu-int4", GemmaLocalClient.GEMMA_2B_IT_GPU.id)
         assertEquals("gemma-2b-it-cpu-int4", GemmaLocalClient.GEMMA_2B_IT_CPU.id)
 
         assertEquals(GemmaEngineType.LITERT_LM, GemmaLocalClient.QWEN_2_5_1_5B_LITERT.engineType)
-        assertEquals(GemmaEngineType.LITERT_LM, GemmaLocalClient.LLAMA_3_2_1B_LITERT.engineType)
-        assertEquals(GemmaEngineType.MEDIAPIPE, GemmaLocalClient.LLAMA_3_2_3B_GPU.engineType)
-        assertEquals(GemmaEngineType.LITERT_LM, GemmaLocalClient.PHI_3_5_MINI_LITERT.engineType)
+        assertEquals(GemmaEngineType.LITERT_LM, GemmaLocalClient.DEEPSEEK_R1_1_5B_LITERT.engineType)
+        assertEquals(GemmaEngineType.LITERT_LM, GemmaLocalClient.GEMMA_4_E2B_LITERT.engineType)
+        assertEquals(GemmaEngineType.LITERT_LM, GemmaLocalClient.GEMMA_4_E4B_LITERT.engineType)
         assertEquals(GemmaEngineType.MEDIAPIPE, GemmaLocalClient.GEMMA_2_2B_IT_GPU.engineType)
         assertEquals(GemmaEngineType.MEDIAPIPE, GemmaLocalClient.GEMMA_2B_IT_GPU.engineType)
     }
@@ -95,11 +96,11 @@ class GemmaLocalClientTest {
         val options = GemmaLocalClient.OPTIONS
         assertEquals(9, options.size)
         assertTrue(options.contains(GemmaLocalClient.QWEN_2_5_1_5B_LITERT))
-        assertTrue(options.contains(GemmaLocalClient.LLAMA_3_2_1B_LITERT))
-        assertTrue(options.contains(GemmaLocalClient.LLAMA_3_2_3B_GPU))
-        assertTrue(options.contains(GemmaLocalClient.PHI_3_5_MINI_LITERT))
-        assertTrue(options.contains(GemmaLocalClient.GEMMA_2_2B_IT_GPU))
+        assertTrue(options.contains(GemmaLocalClient.DEEPSEEK_R1_1_5B_LITERT))
         assertTrue(options.contains(GemmaLocalClient.GEMMA_4_E2B_LITERT))
+        assertTrue(options.contains(GemmaLocalClient.GEMMA_4_E4B_LITERT))
+        assertTrue(options.contains(GemmaLocalClient.TINYLLAMA_1_1B_TASK))
+        assertTrue(options.contains(GemmaLocalClient.GEMMA_2_2B_IT_GPU))
         assertTrue(options.contains(GemmaLocalClient.GEMMA_2B_IT_GPU))
     }
 
