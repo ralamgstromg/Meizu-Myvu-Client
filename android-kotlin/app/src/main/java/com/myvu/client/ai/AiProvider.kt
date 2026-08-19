@@ -16,6 +16,7 @@ enum class AiProvider(
     GROQ("groq", "Groq (Ultra-Fast)", "console.groq.com", "llama-3.3-70b-versatile"),
     NVIDIA("nvidia", "NVIDIA NIM (Free Credits)", "build.nvidia.com", "meta/llama-3.3-70b-instruct"),
     GEMMA_LOCAL("gemma_local", "Gemma Local (On-Device GPU)", "huggingface.co/google", "gemma-2b-it-gpu-int4"),
+    POCKET_LLM("pocket_llm", "Pocket LLM Server (Edge Gallery API)", "http://127.0.0.1:8080/v1/chat/completions", "gemma-4-e2b-it"),
     ASSISTANT("assistant", "Asistente de Android (Google/Gemini)", "", ""),
     LOCAL("local", "Custom / Local AI", "", "");
 
@@ -64,6 +65,7 @@ enum class AiProvider(
             } ?: GemmaLocalClient(context = context ?: error("Context required for GEMMA_LOCAL"), systemPrompt = effectivePrompt)
             GROQ -> LocalAiClient("https://api.groq.com/openai/v1/chat/completions", apiKey, model, effectivePrompt, false)
             NVIDIA -> LocalAiClient("https://integrate.api.nvidia.com/v1/chat/completions", apiKey, model, effectivePrompt, false)
+            POCKET_LLM -> PocketLlmClient(endpoint, apiKey, model, effectivePrompt, ignoreSsl)
             ASSISTANT -> AndroidAssistantClient(context!!)
             LOCAL -> LocalAiClient(endpoint, apiKey, model, effectivePrompt, ignoreSsl)
             else -> ClaudeClient(apiKey, model, effectivePrompt)
