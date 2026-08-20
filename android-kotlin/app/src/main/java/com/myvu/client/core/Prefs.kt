@@ -31,8 +31,8 @@ object Prefs {
     private const val KEY_GEMMA_CUSTOM_URL = "gemma_custom_url"
 
     const val DEFAULT_MAC = "2C:6F:4E:00:DC:47"
-    const val DEFAULT_LOCAL_AI_ENDPOINT = "http://10.0.0.2:1234/v1/chat/completions"
-    const val DEFAULT_LOCAL_STT_ENDPOINT = "http://10.0.0.2:1235/v1/audio/transcriptions"
+    const val DEFAULT_LOCAL_AI_ENDPOINT = "http://127.0.0.1:8080/v1/chat/completions"
+    const val DEFAULT_LOCAL_STT_ENDPOINT = "http://127.0.0.1:8181/v1/audio/transcriptions"
     const val DEFAULT_HTTP_TTS_ENDPOINT = "http://10.0.0.2:1236/v1/audio/speech"
 
     private val DEFAULT_BLOCKED: Set<String> = setOf(

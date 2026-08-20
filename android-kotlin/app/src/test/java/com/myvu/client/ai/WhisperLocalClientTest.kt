@@ -231,7 +231,7 @@ class WhisperLocalClientTest {
         val client = WhisperLocalClient(context, WhisperLocalClient.WHISPER_TINY_ACFT)
 
         try {
-            client.transcribe(ByteArray(100), 16000, 1, "es")
+            client.transcribe(ByteArray(16000), 16000, 1, "es")
             fail("Expected IOException")
         } catch (e: IOException) {
             assertTrue(e.message?.contains("Activando fallback") == true)
