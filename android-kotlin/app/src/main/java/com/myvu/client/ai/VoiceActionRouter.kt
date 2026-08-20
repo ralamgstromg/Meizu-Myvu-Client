@@ -223,6 +223,15 @@ class VoiceActionRouter(
             return RouteResult(handled = true, responseText = summary)
         }
 
+        // 7c. Consultar Grabaciones de Voz / Reuniones: ej: "mis grabaciones", "que grabé", "reunión grabada", "audio de voz"
+        if (normalized.contains("grabacion") || normalized.contains("grabaciones") || normalized.contains("que grabe") || normalized.contains("audios grabados") || normalized.contains("audio de voz") || normalized.contains("ultima reunion")) {
+            val query = if (normalized.contains("sobre ") || normalized.contains("de ")) {
+                trimmed.substringAfter("de ").substringAfter("sobre ").trim()
+            } else ""
+            val summary = actionExecutor.searchVoiceRecordingsSummary(if (query.isNotBlank()) query else null)
+            return RouteResult(handled = true, responseText = summary)
+        }
+
         // 7c. Crear Nota: ej: "toma nota que la cita es a las 4"
         val noteMatch = Regex("^(toma\\s+nota|anota\\s+que|anota|nueva\\s+nota|apunta\\s+que|apunta)\\s+(.+)$", RegexOption.IGNORE_CASE).find(normalized)
         if (noteMatch != null) {

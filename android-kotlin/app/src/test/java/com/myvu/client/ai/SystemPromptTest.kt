@@ -12,7 +12,7 @@ class SystemPromptTest {
         assertTrue(prompt.contains("ACTION:SEARCH="))
         assertTrue(prompt.contains("ACTION:CALL="))
         assertTrue(prompt.contains("ACTION:WHATSAPP="))
-        // Asegurar que no supere los 1000 caracteres para no saturar modelos 2B
-        assertTrue(prompt.length < 1500)
+        // Asegurar que se mantenga en tamaño compacto para modelos locales 2B/7B
+        assertTrue(prompt.length < 2500)
     }
 }

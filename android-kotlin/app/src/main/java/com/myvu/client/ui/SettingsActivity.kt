@@ -110,7 +110,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var txtTtsApiKey: TextInputEditText
     private lateinit var txtTtsModel: TextInputEditText
     private lateinit var txtTtsVoice: TextInputEditText
-    private lateinit var txtSystemPrompt: TextInputEditText
+
     private var chkIgnoreSsl: MaterialSwitch? = null
 
     private lateinit var aiProvider: AiProvider
@@ -156,7 +156,7 @@ class SettingsActivity : AppCompatActivity() {
         txtTtsApiKey = findViewById(R.id.txtTtsApiKey)
         txtTtsModel = findViewById(R.id.txtTtsModel)
         txtTtsVoice = findViewById(R.id.txtTtsVoice)
-        txtSystemPrompt = findViewById(R.id.txtSystemPrompt)
+
 
         // Backup views
         txtGoogleAccountName = findViewById(R.id.txtGoogleAccountName)
@@ -228,7 +228,6 @@ class SettingsActivity : AppCompatActivity() {
         bindAiFields()
         bindSttFields()
         bindTtsFields()
-        txtSystemPrompt.setText(Prefs.systemPrompt(this))
     }
 
     private fun configureResponseMode() {
@@ -284,20 +283,12 @@ class SettingsActivity : AppCompatActivity() {
         persist(txtTtsVoice) { value ->
             if (!bindingTts) Prefs.setTtsVoice(this, value.trim())
         }
-        persist(txtSystemPrompt) { value ->
-            Prefs.setSystemPrompt(this, value)
-        }
         chkIgnoreSsl?.setOnCheckedChangeListener { _, isChecked ->
             Prefs.setIgnoreSsl(this, isChecked)
         }
     }
 
     private fun configureButtons() {
-        val btnResetPrompt = findViewById<View>(R.id.btnResetSystemPrompt)
-        btnResetPrompt?.setOnClickListener {
-            txtSystemPrompt.setText(AiClient.DEFAULT_SYSTEM_PROMPT)
-            Prefs.setSystemPrompt(this, AiClient.DEFAULT_SYSTEM_PROMPT)
-        }
         wireWeather()
         wireMirror()
         wireGlassesSettings()

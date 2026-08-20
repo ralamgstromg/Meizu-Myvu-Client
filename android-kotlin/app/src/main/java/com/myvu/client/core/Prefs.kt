@@ -308,9 +308,7 @@ object Prefs {
 
     @JvmStatic
     fun systemPrompt(c: Context): String {
-        val custom = prefs(c).getString("custom_system_prompt", null)
-            ?: prefs(c).getString(KEY_SYSTEM_PROMPT, null)
-        val template = if (!custom.isNullOrBlank()) custom else com.myvu.client.ai.AiClient.DEFAULT_SYSTEM_PROMPT
+        val template = com.myvu.client.ai.AiClient.DEFAULT_SYSTEM_PROMPT
         val locale = Locale.getDefault()
         val langTag = locale.toLanguageTag() // e.g. "es-CO"
         val langName = locale.getDisplayName(locale).ifBlank { locale.displayLanguage }

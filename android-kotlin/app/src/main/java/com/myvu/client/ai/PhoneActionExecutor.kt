@@ -229,11 +229,27 @@ class PhoneActionExecutor(context: Context) {
             createNote(noteText)
         }
 
-        // 13. Search Notes
-        if (lower.contains("action:search_notes=")) {
-            val query = extractValue(aiText, "ACTION:SEARCH_NOTES=")
+        // 13. Multi-Module Agentic Search (Notes, Reminders, Voice Recordings, Todos)
+        if (lower.contains("action:note_search=") || lower.contains("action:search_notes=")) {
+            val query = extractValue(aiText, "ACTION:NOTE_SEARCH=").ifBlank { extractValue(aiText, "ACTION:SEARCH_NOTES=") }
             val searchResults = searchNotesSummary(query)
             return stripActionTags(aiText) + "\n\n" + searchResults
+        }
+        if (lower.contains("action:reminder_search=") || lower.contains("action:search_reminders=")) {
+            val summary = listRemindersSummary()
+            return stripActionTags(aiText) + "\n\n" + summary
+        }
+        if (lower.contains("action:voice_recording_search=") || lower.contains("action:recording_search=") || lower.contains("action:search_recordings=")) {
+            val query = extractValue(aiText, "ACTION:VOICE_RECORDING_SEARCH=").ifBlank {
+                extractValue(aiText, "ACTION:RECORDING_SEARCH=").ifBlank { extractValue(aiText, "ACTION:SEARCH_RECORDINGS=") }
+            }
+            val searchResults = searchVoiceRecordingsSummary(if (query.isNotBlank()) query else null)
+            return stripActionTags(aiText) + "\n\n" + searchResults
+        }
+        if (lower.contains("action:todo_search=") || lower.contains("action:search_todos=")) {
+            val list = extractValue(aiText, "ACTION:TODO_SEARCH=").ifBlank { extractValue(aiText, "ACTION:SEARCH_TODOS=") }
+            val summary = listTodosSummary(if (list.isNotBlank()) list else null)
+            return stripActionTags(aiText) + "\n\n" + summary
         }
 
         // 13. Teleprompter
@@ -1205,6 +1221,28 @@ class PhoneActionExecutor(context: Context) {
         } catch (e: Exception) {
             LogBus.error("could not search notes for $query", e)
             return "Error al buscar notas."
+        }
+    }
+
+    fun searchVoiceRecordingsSummary(query: String?): String {
+        try {
+            val repo = com.myvu.client.database.VoiceRecordingRepository(context)
+            val recordings = repo.searchRecordings(query = query)
+            if (recordings.isEmpty()) {
+                return "No se encontraron grabaciones de voz" + (if (!query.isNullOrBlank()) " para: '$query'." else ".")
+            }
+            val sb = StringBuilder("🎙️ Grabaciones de voz (${recordings.size}):\n")
+            recordings.take(5).forEachIndexed { index, rec ->
+                val titleStr = rec.title.ifBlank { "Grabación #${rec.id}" }
+                val summaryText = rec.summary.ifBlank { rec.rawTranscript }
+                val snippet = if (summaryText.length > 100) summaryText.substring(0, 100) + "..." else summaryText
+                val tagsStr = if (rec.tags.isNotBlank()) " [${rec.tags}]" else ""
+                sb.append("${index + 1}. $titleStr: $snippet$tagsStr\n")
+            }
+            return sb.toString().trim()
+        } catch (e: Exception) {
+            LogBus.error("could not search voice recordings for $query", e)
+            return "Error al buscar grabaciones de voz."
         }
     }
 

@@ -817,57 +817,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <!-- ===== Assistant behaviour ===== -->
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Card.Myvu"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/CardTitle.Myvu"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Assistant system prompt" />
-
-                    <TextView
-                        style="@style/Label.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Shapes how the assistant replies. Answers are spoken aloud, so keep them short and free of markdown, lists and emoji. Applies to your next question — no reconnect needed." />
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/laySystemPrompt"
-                        style="@style/Input.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="System prompt">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/txtSystemPrompt"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:minLines="5"
-                            android:gravity="top|start"
-                            android:inputType="textMultiLine|textCapSentences"
-                            android:textColor="@color/on_surface_obsidian"
-                            android:importantForAutofill="no" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnResetSystemPrompt"
-                        style="@style/Button.Myvu.Outlined"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Restablecer Prompt AR" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
             <!-- ===== Application Logging ===== -->
             <com.google.android.material.card.MaterialCardView

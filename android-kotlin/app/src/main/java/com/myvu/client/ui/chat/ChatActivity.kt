@@ -246,7 +246,16 @@ class ChatActivity : AppCompatActivity() {
                     try {
                         val profileContext = analyzer.buildProfilePromptContext()
                         val fullPrompt = profileContext + queryText
-                        val rawAnswer = client.ask(fullPrompt)
+                        val rawAnswer = if (!imageUriString.isNullOrBlank()) {
+                            val imageBytes = contentResolver.openInputStream(Uri.parse(imageUriString))?.use { it.readBytes() }
+                            if (imageBytes != null && imageBytes.isNotEmpty()) {
+                                client.askWithImage(fullPrompt, imageBytes)
+                            } else {
+                                client.ask(fullPrompt)
+                            }
+                        } else {
+                            client.ask(fullPrompt)
+                        }
                         val processed = executor.processAndExecute(rawAnswer)
                         responseText = if (processed.isNotBlank()) processed else (rawAnswer ?: "Respuesta vacía de la IA.")
                         sourceName = provider.displayName

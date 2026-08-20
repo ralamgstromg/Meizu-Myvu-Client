@@ -25,7 +25,11 @@ interface AiClient {
             "  - Agenda / Reuniones: ACTION:CALENDAR\n" +
             "  - Notificaciones: ACTION:NOTIFICATIONS\n" +
             "  - Correos Pendientes: ACTION:EMAILS\n" +
-            "  - Estado de Batería: ACTION:BATTERY"
+            "  - Estado de Batería: ACTION:BATTERY\n" +
+            "  - Consultar Notas: ACTION:NOTE_SEARCH={consulta}\n" +
+            "  - Consultar Recordatorios: ACTION:REMINDER_SEARCH={consulta}\n" +
+            "  - Consultar Grabaciones de Voz / Reuniones: ACTION:VOICE_RECORDING_SEARCH={consulta}\n" +
+            "  - Consultar Tareas / Listas: ACTION:TODO_SEARCH={consulta}"
     }
 
     fun isConfigured(): Boolean
