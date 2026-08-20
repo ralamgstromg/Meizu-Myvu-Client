@@ -321,60 +321,87 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
 
     private fun wireFeatures() {
         findViewById<View>(R.id.btnNotify).setOnClickListener {
-            if (!need()) return@setOnClickListener
             var title = text(txtNotifyTitle)
             var body = text(txtNotifyBody)
             if (body.isEmpty() && title.isEmpty()) {
                 body = "Hello from the MYVU client"
             }
-            service?.connection()?.sendTestNotification(
-                if (title.isEmpty()) "Notification" else title, body
-            )
+            val nTitle = if (title.isEmpty()) "Notification" else title
+            if (need()) {
+                service?.connection()?.sendTestNotification(nTitle, body)
+            } else {
+                LogBus.log("Modo Celular: Notificación local -> $nTitle: $body")
+                android.widget.Toast.makeText(this, "📱 Notificación local: $nTitle", android.widget.Toast.LENGTH_SHORT).show()
+            }
         }
 
         findViewById<View>(R.id.btnAsk).setOnClickListener {
-            if (!need()) return@setOnClickListener
             val q = text(txtAsk)
-            if (q.isNotEmpty()) service?.connection()?.askAi(q)
+            if (need()) {
+                if (q.isNotEmpty()) service?.connection()?.askAi(q)
+            } else {
+                // Standalone mode: Open Full-Screen AI Chat Activity
+                LogBus.log("Modo Celular: Abriendo Chat de IA")
+                startActivity(Intent(this, com.myvu.client.ui.chat.ChatActivity::class.java))
+            }
         }
 
         findViewById<View>(R.id.btnTici).setOnClickListener {
-            if (!need()) return@setOnClickListener
             val t = text(txtTici)
-            service?.connection()?.openTeleprompter(
-                if (t.isEmpty()) "Hello from the MYVU client." else t, "Prompter"
-            )
+            val content = if (t.isEmpty()) "Hello from the MYVU client." else t
+            if (need()) {
+                service?.connection()?.openTeleprompter(content, "Prompter")
+            } else {
+                // Standalone mode: Open Teleprompter in NoteDetailActivity
+                LogBus.log("Modo Celular: Abriendo Teleprompter en teléfono")
+                val intent = Intent(this, NoteDetailActivity::class.java).apply {
+                    putExtra("EXTRA_NOTE_TITLE", "Teleprompter")
+                    putExtra("EXTRA_NOTE_CONTENT", content)
+                }
+                startActivity(intent)
+            }
         }
 
         val swMirror: MaterialSwitch = findViewById(R.id.swMirror)
         swMirror.setOnClickListener { toggleMirroring(it as MaterialSwitch) }
 
         findViewById<View>(R.id.btnNavStart).setOnClickListener {
-            if (!need()) return@setOnClickListener
             val dest = text(txtDest)
-            if (dest.isEmpty()) {
-                try {
-                    service?.connection()?.sendAction(
-                        NavCommands.buildStart(
-                            1, 1000, 1000, 120, "Demo Road",
-                            300, "0", 0, 1, 0, 0, 0, false, false
-                        ),
-                        NavCommands.LAUNCH_TARGET_PKG, NavCommands.SOURCE_PKG
-                    )
-                } catch (e: Exception) {
-                    LogBus.error("nav HUD failed", e)
+            if (need()) {
+                if (dest.isEmpty()) {
+                    try {
+                        service?.connection()?.sendAction(
+                            NavCommands.buildStart(
+                                1, 1000, 1000, 120, "Demo Road",
+                                300, "0", 0, 1, 0, 0, 0, false, false
+                            ),
+                            NavCommands.LAUNCH_TARGET_PKG, NavCommands.SOURCE_PKG
+                        )
+                    } catch (e: Exception) {
+                        LogBus.error("nav HUD failed", e)
+                    }
+                } else {
+                    service?.connection()?.nav()?.start(dest)
                 }
             } else {
-                service?.connection()?.nav()?.start(dest)
+                LogBus.log("Modo Celular: Calculando ruta de navegación para -> ${dest.ifEmpty { "Demo Road" }}")
+                android.widget.Toast.makeText(this, "📱 Navegación Celular: ${dest.ifEmpty { "Demo Road" }}", android.widget.Toast.LENGTH_SHORT).show()
             }
         }
         findViewById<View>(R.id.btnNavStop).setOnClickListener {
-            if (need()) service?.connection()?.nav()?.stop()
+            if (need()) {
+                service?.connection()?.nav()?.stop()
+            } else {
+                LogBus.log("Modo Celular: Navegación detenida")
+            }
         }
         findViewById<View>(R.id.btnIcNext).setOnClickListener {
-            if (!need()) return@setOnClickListener
             calibrationIc = if (calibrationIc >= 16) 1 else calibrationIc + 1
-            service?.connection()?.nav()?.sendCalibrationFrame(calibrationIc, "ic=$calibrationIc")
+            if (need()) {
+                service?.connection()?.nav()?.sendCalibrationFrame(calibrationIc, "ic=$calibrationIc")
+            } else {
+                LogBus.log("Modo Celular: Frame de calibración ic=$calibrationIc")
+            }
         }
 
         findViewById<View>(R.id.btnShareLog).setOnClickListener { shareLog() }
