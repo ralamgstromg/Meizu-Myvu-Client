@@ -661,15 +661,6 @@
                         app:selectionRequired="true">
 
                         <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSttOnDevice"
-                            style="@style/Button.Myvu.Outlined"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:textSize="10sp"
-                            android:text="Whisper Local" />
-
-                        <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSttGroq"
                             style="@style/Button.Myvu.Outlined"
                             android:layout_width="0dp"
@@ -685,7 +676,7 @@
                             android:layout_weight="1"
                             android:layout_height="wrap_content"
                             android:textSize="9sp"
-                            android:text="Servidor HTTP" />
+                            android:text="Servidor HTTP (8181)" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSttWhisperCpp"
@@ -694,103 +685,8 @@
                             android:layout_weight="1"
                             android:layout_height="wrap_content"
                             android:textSize="9sp"
-                            android:text="Whisper.cpp" />
+                            android:text="Whisper.cpp (8282)" />
                     </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                    <LinearLayout
-                        android:id="@+id/layWhisperControls"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_marginTop="8dp"
-                        android:visibility="gone">
-
-                        <TextView
-                            style="@style/Label.Myvu"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Versión del modelo Whisper LiteRT:" />
-
-                        <com.google.android.material.button.MaterialButtonToggleGroup
-                            android:id="@+id/btnWhisperModelVersionGroup"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            app:singleSelection="true"
-                            app:selectionRequired="true">
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnWhisperLargeV3Turbo"
-                                style="@style/Button.Myvu.Outlined"
-                                android:layout_width="0dp"
-                                android:layout_weight="1"
-                                android:layout_height="wrap_content"
-                                android:textSize="10sp"
-                                android:text="Large v3 Turbo (721MB)" />
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnWhisperTiny"
-                                style="@style/Button.Myvu.Outlined"
-                                android:layout_width="0dp"
-                                android:layout_weight="1"
-                                android:layout_height="wrap_content"
-                                android:textSize="10sp"
-                                android:text="Tiny ACFT (75MB)" />
-                        </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                        <TextView
-                            android:id="@+id/lblWhisperModelStatus"
-                            style="@style/Label.Myvu"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:textColor="@color/cyber_teal"
-                            android:text="Modelo Whisper: No descargado" />
-
-                        <com.google.android.material.progressindicator.LinearProgressIndicator
-                            android:id="@+id/progressWhisperDownload"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:visibility="gone"
-                            app:trackColor="@color/obsidian_bg"
-                            app:indicatorColor="@color/cyber_teal" />
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:layout_marginTop="8dp">
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnDownloadWhisperModel"
-                                style="@style/Button.Myvu.Outlined"
-                                android:layout_width="0dp"
-                                android:layout_weight="1"
-                                android:layout_height="wrap_content"
-                                android:textSize="11sp"
-                                android:layout_marginEnd="4dp"
-                                android:text="Descargar Whisper" />
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnDeleteWhisperModel"
-                                style="@style/Button.Myvu.Outlined"
-                                android:layout_width="0dp"
-                                android:layout_weight="1"
-                                android:layout_height="wrap_content"
-                                android:textSize="11sp"
-                                android:text="Eliminar Whisper" />
-                        </LinearLayout>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnTestWhisperModel"
-                            style="@style/Button.Myvu.Outlined"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:textSize="12sp"
-                            android:text="🧪 Probar Modelo Whisper Local / Diagnóstico" />
-                    </LinearLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/laySttApiKey"

@@ -227,7 +227,6 @@ class SettingsActivity : AppCompatActivity() {
         val sttGroup: MaterialButtonToggleGroup = findViewById(R.id.btnSttProviderGroup)
         sttGroup.check(
             when (sttProvider) {
-                SttProvider.ON_DEVICE -> R.id.btnSttOnDevice
                 SttProvider.LOCAL -> R.id.btnSttLocal
                 SttProvider.WHISPER_CPP -> R.id.btnSttWhisperCpp
                 else -> R.id.btnSttGroq
@@ -236,7 +235,6 @@ class SettingsActivity : AppCompatActivity() {
         sttGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
             sttProvider = when (checkedId) {
-                R.id.btnSttOnDevice -> SttProvider.ON_DEVICE
                 R.id.btnSttLocal -> SttProvider.LOCAL
                 R.id.btnSttWhisperCpp -> SttProvider.WHISPER_CPP
                 else -> SttProvider.GROQ
@@ -244,7 +242,6 @@ class SettingsActivity : AppCompatActivity() {
             Prefs.setSttProvider(this, sttProvider.id)
             bindSttFields()
         }
-        configureWhisperOnDeviceControls()
         bindSttFields()
 
         ttsProvider = TtsProvider.fromId(Prefs.ttsProvider(this))
@@ -579,14 +576,12 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun bindSttFields() {
         bindingStt = true
-        val onDevice = sttProvider == SttProvider.ON_DEVICE
         val local = sttProvider == SttProvider.LOCAL
         val whisperCpp = sttProvider == SttProvider.WHISPER_CPP
         val isLocalOrWhisperCpp = local || whisperCpp
 
-        findViewById<View?>(R.id.layWhisperControls)?.visibility = if (onDevice) View.VISIBLE else View.GONE
-        laySttApiKey.visibility = if (onDevice) View.GONE else View.VISIBLE
-        laySttModel.visibility = if (onDevice) View.GONE else View.VISIBLE
+        laySttApiKey.visibility = View.VISIBLE
+        laySttModel.visibility = View.VISIBLE
         laySttEndpoint.visibility = if (isLocalOrWhisperCpp) View.VISIBLE else View.GONE
 
         laySttApiKey.hint = if (whisperCpp) "Whisper.cpp Token / Bearer Key (Opcional)" else sttProvider.label + " API key"
@@ -600,7 +595,6 @@ class SettingsActivity : AppCompatActivity() {
         txtSttApiKey.setText(Prefs.sttApiKey(this, sttProvider.id))
         txtSttEndpoint.setText(Prefs.sttEndpoint(this, sttProvider.id))
         txtSttModel.setText(Prefs.sttModel(this, sttProvider.id))
-        if (onDevice) updateWhisperModelStatus()
         bindingStt = false
     }
 
@@ -802,141 +796,6 @@ class SettingsActivity : AppCompatActivity() {
             "\n💡 Motor: MediaPipe LLM Inference Engine (Aceleración por GPU)"
         }
         lblGemmaModelStatus.text = "$baseStatus$notice"
-    }
-
-    private fun configureWhisperOnDeviceControls() {
-        val btnDownload: View? = findViewById(R.id.btnDownloadWhisperModel)
-        val btnDelete: View? = findViewById(R.id.btnDeleteWhisperModel)
-        val progress: com.google.android.material.progressindicator.LinearProgressIndicator? = findViewById(R.id.progressWhisperDownload)
-        val versionGroup: MaterialButtonToggleGroup? = findViewById(R.id.btnWhisperModelVersionGroup)
-
-        val currentModelId = Prefs.whisperModelId(this)
-        versionGroup?.check(
-            if (currentModelId == com.myvu.client.ai.WhisperLocalClient.WHISPER_TINY_ACFT.id) R.id.btnWhisperTiny else R.id.btnWhisperLargeV3Turbo
-        )
-
-        versionGroup?.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            val selectedOption = if (checkedId == R.id.btnWhisperTiny) {
-                com.myvu.client.ai.WhisperLocalClient.WHISPER_TINY_ACFT
-            } else {
-                com.myvu.client.ai.WhisperLocalClient.WHISPER_LARGE_V3_TURBO_I4
-            }
-            Prefs.setWhisperModelId(this, selectedOption.id)
-            updateWhisperModelStatus()
-        }
-
-        btnDownload?.setOnClickListener {
-            val option = com.myvu.client.ai.WhisperLocalClient.findOption(Prefs.whisperModelId(this))
-            val downloader = com.myvu.client.ai.WhisperModelDownloader(this, option)
-            btnDownload.isEnabled = false
-            progress?.visibility = View.VISIBLE
-            progress?.isIndeterminate = false
-            progress?.progress = 0
-
-            downloader.startDownload { state ->
-                runOnUiThread {
-                    when (state) {
-                        is com.myvu.client.ai.WhisperDownloadState.Downloading -> {
-                            progress?.progress = state.progressPercent
-                            findViewById<TextView?>(R.id.lblWhisperModelStatus)?.text =
-                                "Descargando ${option.name}: ${state.progressPercent}% (${state.bytesDownloaded / (1024 * 1024)}MB / ${state.totalBytes / (1024 * 1024)}MB)"
-                        }
-                        is com.myvu.client.ai.WhisperDownloadState.Completed -> {
-                            progress?.visibility = View.GONE
-                            btnDownload.isEnabled = true
-                            updateWhisperModelStatus()
-                            Toast.makeText(this, "✅ ${option.name} descargado con éxito", Toast.LENGTH_SHORT).show()
-                        }
-                        is com.myvu.client.ai.WhisperDownloadState.Error -> {
-                            progress?.visibility = View.GONE
-                            btnDownload.isEnabled = true
-                            updateWhisperModelStatus()
-                            Toast.makeText(this, "❌ Error al descargar Whisper: ${state.message}", Toast.LENGTH_LONG).show()
-                        }
-                        else -> {
-                            btnDownload.isEnabled = true
-                            progress?.visibility = View.GONE
-                            updateWhisperModelStatus()
-                        }
-                    }
-                }
-            }
-        }
-
-        btnDelete?.setOnClickListener {
-            val option = com.myvu.client.ai.WhisperLocalClient.findOption(Prefs.whisperModelId(this))
-            val downloader = com.myvu.client.ai.WhisperModelDownloader(this, option)
-            val deleted = downloader.deleteModel()
-            progress?.visibility = View.GONE
-            btnDownload?.isEnabled = true
-            updateWhisperModelStatus()
-            val msg = if (deleted) "Modelo Whisper eliminado" else "No se pudo eliminar el modelo Whisper"
-            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-        }
-
-        findViewById<View?>(R.id.btnTestWhisperModel)?.setOnClickListener {
-            val option = com.myvu.client.ai.WhisperLocalClient.findOption(Prefs.whisperModelId(this))
-            val client = com.myvu.client.ai.WhisperLocalClient(this, option)
-            val isReady = client.isConfigured()
-            val file = com.myvu.client.ai.WhisperLocalClient.getModelFile(this, option.fileName)
-
-            if (!isReady) {
-                Toast.makeText(this, "❌ Modelo no descargado (${option.name})", Toast.LENGTH_LONG).show()
-                return@setOnClickListener
-            }
-
-            Toast.makeText(this, "⏳ Probando transcripción con ${file.name}...", Toast.LENGTH_SHORT).show()
-
-            Thread {
-                try {
-                    // Generar buffer PCM de prueba (1 segundo de tono/silencio a 16kHz)
-                    val sampleRate = 16000
-                    val testPcm = ByteArray(sampleRate * 2)
-                    val lang = java.util.Locale.getDefault().language.ifBlank { "es" }
-
-                    // Probar inferencia local y si conmuta a fallback, verificar respuesta
-                    var resultText = ""
-                    try {
-                        resultText = client.transcribe(testPcm, sampleRate, 1, lang)
-                    } catch (e: Exception) {
-                        // Si falla on-device, probar con el cliente de fallback configurado (ej. Groq Whisper API)
-                        val fallbackClient = com.myvu.client.ai.OpenAiTranscriptionClient(
-                            Prefs.sttEndpoint(this, "groq").ifBlank { "https://api.groq.com/openai/v1/audio/transcriptions" },
-                            Prefs.sttModel(this, "groq").ifBlank { "whisper-large-v3-turbo" },
-                            Prefs.sttApiKey(this, "groq"),
-                            "Groq STT Fallback"
-                        )
-                        if (fallbackClient.isConfigured()) {
-                            resultText = fallbackClient.transcribe(testPcm, sampleRate, 1)
-                        } else {
-                            throw e
-                        }
-                    }
-
-                    runOnUiThread {
-                        Toast.makeText(this, "✅ STT Verificado y Operativo (${file.name})", Toast.LENGTH_LONG).show()
-                    }
-                } catch (e: Exception) {
-                    runOnUiThread {
-                        Toast.makeText(this, "❌ Falló Test STT: ${e.message}", Toast.LENGTH_LONG).show()
-                    }
-                }
-            }.start()
-        }
-
-        updateWhisperModelStatus()
-    }
-
-    private fun updateWhisperModelStatus() {
-        val option = com.myvu.client.ai.WhisperLocalClient.findOption(Prefs.whisperModelId(this))
-        val downloader = com.myvu.client.ai.WhisperModelDownloader(this, option)
-        val state = downloader.getInitialState()
-        val lbl = findViewById<TextView?>(R.id.lblWhisperModelStatus)
-        lbl?.text = when (state) {
-            is com.myvu.client.ai.WhisperDownloadState.Completed -> "Modelo ${option.name}: Listo para transcripción offline"
-            else -> "Modelo ${option.name}: No descargado (${option.sizeBytes / (1024 * 1024)}MB)"
-        }
     }
 
     private fun configureGeminiAndroidControls() {

@@ -26,12 +26,12 @@ class AiConversation(
     private val sender: Sender
 ) {
 
-    private var whisperClientFactory: ((Context, WhisperModelOption) -> WhisperLocalClient)? = null
+    private var whisperClientFactory: ((Context) -> WhisperLocalClient)? = null
 
     constructor(
         context: Context,
         sender: Sender,
-        whisperClientFactory: ((Context, WhisperModelOption) -> WhisperLocalClient)?
+        whisperClientFactory: ((Context) -> WhisperLocalClient)?
     ) : this(context, sender) {
         this.whisperClientFactory = whisperClientFactory
     }
@@ -56,10 +56,7 @@ class AiConversation(
     private var nativeSpeechSessionId: String? = null
 
     private val usesAndroidSpeech: Boolean
-        get() = Prefs.useAndroidStt(context) || 
-                Prefs.sttProvider(context) == SttProvider.ON_DEVICE.id || 
-                Prefs.rawSttProvider(context) == SttProvider.ON_DEVICE.id ||
-                Prefs.rawSttProvider(context) == "android"
+        get() = Prefs.useAndroidStt(context) || Prefs.rawSttProvider(context) == "android"
     private val tts = TtsPlayer(this.context)
     private val responseDelivery = AiResponseDelivery(
         sender = ::send,
@@ -408,30 +405,7 @@ class AiConversation(
     }
 
     private fun transcribe(pcm: ByteArray, sampleRate: Int, channels: Int) {
-        var sttProviderId = Prefs.sttProvider(context)
-        if (sttProviderId == SttProvider.ON_DEVICE.id) {
-            val modelOption = WhisperLocalClient.findOption(Prefs.whisperModelId(context))
-            val localWhisper = whisperClientFactory?.invoke(context, modelOption)
-                ?: WhisperLocalClient(context, modelOption)
-            if (localWhisper.isConfigured()) {
-                worker.execute {
-                    try {
-                        val lang = Locale.getDefault().language.ifBlank { "es" }
-                        val text = localWhisper.transcribe(pcm, sampleRate, channels, lang)
-                        main.post { onTranscript(text) }
-                        return@execute
-                    } catch (e: Exception) {
-                        LogBus.warn("Whisper On-Device falló (${e.message}). Conmutando automáticamente a Groq Whisper API...")
-                    }
-                    // Fallback a Groq API
-                    transcribeWithApi(pcm, sampleRate, channels, "groq")
-                }
-                return
-            } else {
-                LogBus.warn("Whisper On-Device (${modelOption.name}) no descargado. Usando API remota...")
-                sttProviderId = "groq"
-            }
-        }
+        val sttProviderId = Prefs.sttProvider(context)
         transcribeWithApi(pcm, sampleRate, channels, sttProviderId)
     }
 

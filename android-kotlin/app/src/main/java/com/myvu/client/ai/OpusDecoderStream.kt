@@ -195,7 +195,12 @@ class OpusDecoderStream {
 
     fun channels(): Int = outputChannels
 
+    fun reset() {
+        all.reset()
+    }
+
     fun stop() {
+        all.reset()
         if (codec == null) return
         try {
             codec?.stop()

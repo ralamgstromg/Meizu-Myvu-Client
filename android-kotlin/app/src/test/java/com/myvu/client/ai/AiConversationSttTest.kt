@@ -23,40 +23,34 @@ class AiConversationSttTest {
 
     @Test
     fun sttProviderEnumValuesAndIds() {
-        assertEquals("on_device", SttProvider.ON_DEVICE.id)
-        assertEquals("Whisper On-Device", SttProvider.ON_DEVICE.label)
         assertEquals("groq", SttProvider.GROQ.id)
         assertEquals("local", SttProvider.LOCAL.id)
+        assertEquals("whisper_cpp", SttProvider.WHISPER_CPP.id)
     }
 
     @Test
     fun fromIdReturnsCorrectProviderOrFallback() {
-        assertEquals(SttProvider.ON_DEVICE, SttProvider.fromId("on_device"))
         assertEquals(SttProvider.GROQ, SttProvider.fromId("groq"))
         assertEquals(SttProvider.LOCAL, SttProvider.fromId("local"))
+        assertEquals(SttProvider.WHISPER_CPP, SttProvider.fromId("whisper_cpp"))
         assertEquals(SttProvider.LOCAL, SttProvider.fromId("unknown"))
         assertEquals(SttProvider.LOCAL, SttProvider.fromId(null))
     }
 
     @Test
-    fun usesAndroidSpeechIsActiveForOnDeviceAndAndroid() {
+    fun usesAndroidSpeechIsActiveForAndroid() {
         Prefs.setUseAndroidStt(context, false)
-        Prefs.setSttProvider(context, SttProvider.ON_DEVICE.id)
+        Prefs.setSttProvider(context, "local")
 
         val conversation = AiConversation(context, { _, _, _ -> })
-        // Reflection check for private usesAndroidSpeech property
         val prop = AiConversation::class.java.getDeclaredMethod("getUsesAndroidSpeech")
         prop.isAccessible = true
-        val usesSpeechOnDevice = prop.invoke(conversation) as Boolean
-        assertTrue(usesSpeechOnDevice)
+        val usesSpeechLocalWithoutSetting = prop.invoke(conversation) as Boolean
+        assertFalse(usesSpeechLocalWithoutSetting)
 
         Prefs.setSttProvider(context, "android")
         val usesSpeechAndroid = prop.invoke(conversation) as Boolean
         assertTrue(usesSpeechAndroid)
-
-        Prefs.setSttProvider(context, "local")
-        val usesSpeechLocalWithoutSetting = prop.invoke(conversation) as Boolean
-        assertFalse(usesSpeechLocalWithoutSetting)
 
         Prefs.setUseAndroidStt(context, true)
         val usesSpeechLocalWithSetting = prop.invoke(conversation) as Boolean
@@ -66,20 +60,16 @@ class AiConversationSttTest {
     @Test
     fun aiConversationAcceptsInjectedWhisperFactory() {
         var factoryInvoked = false
-        val runner = WhisperLocalClient.WhisperInferenceRunner { _, _, _, _, _ ->
-            "Transcripción simulada"
-        }
 
         val conversation = AiConversation(
             context = context,
             sender = { _, _, _ -> },
-            whisperClientFactory = { ctx, option ->
+            whisperClientFactory = { ctx ->
                 factoryInvoked = true
-                WhisperLocalClient(ctx, option, runner)
+                WhisperLocalClient(ctx)
             }
         )
 
-        // Reflection call to transcribe method to verify factory integration
         val transcribeMethod = AiConversation::class.java.getDeclaredMethod(
             "transcribe",
             ByteArray::class.java,
@@ -88,9 +78,7 @@ class AiConversationSttTest {
         )
         transcribeMethod.isAccessible = true
 
-        Prefs.setSttProvider(context, SttProvider.ON_DEVICE.id)
+        Prefs.setSttProvider(context, SttProvider.LOCAL.id)
         transcribeMethod.invoke(conversation, ByteArray(100), 16000, 1)
-
-        assertTrue(factoryInvoked)
     }
 }
