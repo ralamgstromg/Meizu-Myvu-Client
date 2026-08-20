@@ -185,7 +185,14 @@ class MeetingAiProcessor(private val context: Context) {
                     sb.toString()
                 } else ""
 
-                val fullContent = "TRANSCRIPCIÓN DE LA REUNIÓN / GRABACIÓN:\n\n$rawTranscript$attachmentsText"
+                val fullRaw = "TRANSCRIPCIÓN DE LA REUNIÓN / GRABACIÓN:\n\n$rawTranscript$attachmentsText"
+                val fullContent = if (fullRaw.length > MAX_TRANSCRIPT_CHARS) {
+                    val half = MAX_TRANSCRIPT_CHARS / 2
+                    val startPart = fullRaw.substring(0, half)
+                    val endPart = fullRaw.substring(fullRaw.length - half)
+                    "$startPart\n\n... [CONTENIDO INTERMEDIO TRUNCADO POR LONGITUD PARA EVITAR TIMEOUT] ...\n\n$endPart"
+                } else fullRaw
+
                 val aiResponse = aiClient.ask(fullContent)
                 LogBus.log("MeetingAiProcessor: Received AI analysis (${aiResponse.length} chars)")
 
@@ -378,5 +385,9 @@ class MeetingAiProcessor(private val context: Context) {
                 Ideas Clave
                   Temas Tratados
         """.trimIndent()
+    }
+
+    companion object {
+        private const val MAX_TRANSCRIPT_CHARS = 24000
     }
 }

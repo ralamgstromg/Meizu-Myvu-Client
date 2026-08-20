@@ -64,29 +64,57 @@ class NoteAiProcessor(private val context: Context) {
                     return@launch
                 }
 
-                // 1. Resumen Ejecutivo
-                onProgress("Generando resumen ejecutivo multimodal...")
-                val summaryClient = getAiClient("Eres un asistente ejecutivo para usuarios con gafas inteligentes AR. Resume de forma estructurada en formato Markdown claro, considerando tanto el texto de la nota como los documentos/imágenes adjuntos.")
-                val summary = summaryClient.ask("Sintetiza la siguiente nota y sus adjuntos usando negritas, viñetas y encabezados concisos:\n\n$content").trim()
+                // 1. Análisis Multimodal Unificado con IA en una sola llamada
+                onProgress("🧠 Analizando nota, adjuntos, tareas y mapa mental con IA...")
+                val aiPrompt = """
+                    Eres un asistente ejecutivo inteligente para usuarios de gafas inteligentes AR.
+                    Analiza la siguiente nota y sus documentos/imágenes adjuntos y genera un JSON ESTRICTO con la siguiente estructura exacta:
+                    {
+                      "summary": "### 🎯 Resumen\n...\n\n### 💬 Puntos Clave\n...",
+                      "action_items": [
+                        {"task": "Descripción de tarea", "owner": "Responsable o vacío", "deadline": "Plazo o vacío", "completed": false}
+                      ],
+                      "mindmap": "mindmap\n  root((Título))\n    Tema 1\n      Subtema A\n    Tema 2\n      Subtema B",
+                      "tags": ["etiqueta1", "etiqueta2"]
+                    }
+                    Reglas estrictas:
+                    - Responde ÚNICAMENTE el bloque JSON válido, sin delimitadores adicionales ni texto antes o después.
+                    - En 'summary' usa sintaxis Markdown clara con viñetas y negritas.
+                    - Si no hay tareas pendientes responde [] en 'action_items'.
+                    - En 'tags' sugiere de 2 a 4 etiquetas útiles en español.
+                """.trimIndent()
 
-                // 2. Extracción de Tareas
-                onProgress("Detectando tareas y compromisos...")
-                val taskClient = getAiClient("Analiza la nota y sus documentos adjuntos. Responde ÚNICAMENTE con un array JSON válido con la estructura: [{\"task\": \"descripción\", \"owner\": \"persona o vacío\", \"deadline\": \"plazo o vacío\", \"completed\": false}]. Si no hay tareas responde [].")
-                val taskRaw = taskClient.ask(content).trim()
-                val actionItems = sanitizeJsonArray(taskRaw)
+                val aiClient = getAiClient(aiPrompt)
+                val response = aiClient.ask("CONTENIDO DE LA NOTA Y ADJUNTOS:\n\n$content")
+                val cleanJson = sanitizeJsonObject(response)
 
-                // 3. Mapa Mental
-                onProgress("Estructurando mapa mental...")
-                val mindmapClient = getAiClient("Crea un mapa mental jerárquico estructurado a partir de esta nota y sus adjuntos usando sangría con guiones para ramas y sub-ramas.")
-                val mindmap = mindmapClient.ask(content).trim()
+                var summary = ""
+                var actionItems = "[]"
+                var mindmap = ""
+                var tags = ""
 
-                // 4. Tags
-                onProgress("Generando etiquetas...")
-                val tagsClient = getAiClient("Genera de 2 a 4 tags cortos separados por comas para esta nota. Responde solo los tags sin texto adicional.")
-                val tags = tagsClient.ask(content).replace("#", "").trim()
+                try {
+                    val json = JSONObject(cleanJson)
+                    summary = json.optString("summary", "").trim()
+                    actionItems = json.optJSONArray("action_items")?.toString() ?: "[]"
+                    mindmap = json.optString("mindmap", "").trim()
+                    val tagsArr = json.optJSONArray("tags")
+                    if (tagsArr != null && tagsArr.length() > 0) {
+                        val tagList = mutableListOf<String>()
+                        for (i in 0 until tagsArr.length()) {
+                            tagList.add(tagsArr.getString(i).replace("#", "").trim())
+                        }
+                        tags = tagList.joinToString(", ")
+                    } else {
+                        tags = json.optString("tags", "").replace("#", "").trim()
+                    }
+                } catch (e: Exception) {
+                    LogBus.warn("NoteAiProcessor -> Failed to parse pure JSON response, using text fallback")
+                    summary = response
+                }
 
                 // Guardar en base de datos
-                note.summary = summary
+                note.summary = if (summary.isNotBlank()) summary else note.body
                 note.actionItems = actionItems
                 note.mindmapData = mindmap
                 if (note.tags.isBlank()) {
@@ -120,23 +148,38 @@ class NoteAiProcessor(private val context: Context) {
                 val attachmentsText = formatAttachmentsForPrompt(reminder.getAttachments())
                 val content = (baseContent + attachmentsText).trim()
 
-                // 1. Resumen y contexto
-                onProgress("Analizando contexto del recordatorio y adjuntos...")
-                val summaryClient = getAiClient("Genera un resumen y desglose ejecutivo en formato Markdown para este recordatorio y sus archivos adjuntos.")
-                val summary = summaryClient.ask("Fecha programada: ${reminder.formattedTriggerDate()}\nDetalle: $content").trim()
+                // Análisis unificado con IA
+                onProgress("🧠 Analizando contexto del recordatorio y adjuntos con IA...")
+                val aiPrompt = """
+                    Eres un asistente ejecutivo experto. Analiza el recordatorio y sus adjuntos y genera un JSON ESTRICTO:
+                    {
+                      "summary": "### ⏰ Contexto y Detalles\n...",
+                      "action_items": [
+                        {"task": "Sub-tarea", "owner": "", "deadline": "", "completed": false}
+                      ],
+                      "mindmap": "mindmap\n  root((Recordatorio))\n    Paso 1\n    Paso 2"
+                    }
+                    Responde ÚNICAMENTE con el objeto JSON válido.
+                """.trimIndent()
 
-                // 2. Sub-tareas
-                onProgress("Extrayendo acciones necesarias...")
-                val taskClient = getAiClient("Extrae las sub-tareas necesarias para cumplir con este recordatorio. Responde ÚNICAMENTE con un array JSON: [{\"task\": \"descripción\", \"owner\": \"\", \"deadline\": \"\", \"completed\": false}].")
-                val taskRaw = taskClient.ask(content).trim()
-                val actionItems = sanitizeJsonArray(taskRaw)
+                val aiClient = getAiClient(aiPrompt)
+                val response = aiClient.ask("Fecha programada: ${reminder.formattedTriggerDate()}\nDetalle:\n$content")
+                val cleanJson = sanitizeJsonObject(response)
 
-                // 3. Mapa Mental
-                onProgress("Estructurando mapa mental...")
-                val mindmapClient = getAiClient("Crea un mapa mental jerárquico con sangría y guiones para este recordatorio.")
-                val mindmap = mindmapClient.ask(content).trim()
+                var summary = ""
+                var actionItems = "[]"
+                var mindmap = ""
 
-                reminder.summary = summary
+                try {
+                    val json = JSONObject(cleanJson)
+                    summary = json.optString("summary", "").trim()
+                    actionItems = json.optJSONArray("action_items")?.toString() ?: "[]"
+                    mindmap = json.optString("mindmap", "").trim()
+                } catch (e: Exception) {
+                    summary = response
+                }
+
+                reminder.summary = if (summary.isNotBlank()) summary else reminder.body
                 reminder.actionItems = actionItems
                 reminder.mindmapData = mindmap
                 reminderRepo.update(reminder)
@@ -235,6 +278,16 @@ class NoteAiProcessor(private val context: Context) {
             LogBus.error("NoteAiProcessor -> Error exporting action items to todos", e)
         }
         return exported
+    }
+
+    private fun sanitizeJsonObject(raw: String): String {
+        val start = raw.indexOf('{')
+        val end = raw.lastIndexOf('}')
+        return if (start != -1 && end != -1 && end > start) {
+            raw.substring(start, end + 1).trim()
+        } else {
+            "{}"
+        }
     }
 
     private fun sanitizeJsonArray(raw: String): String {

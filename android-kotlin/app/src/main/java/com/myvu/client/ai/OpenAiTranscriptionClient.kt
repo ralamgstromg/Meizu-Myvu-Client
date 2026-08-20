@@ -81,9 +81,9 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
                 conn.setRequestProperty("Authorization", "Bearer $apiKey")
             }
             conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=$BOUNDARY")
-            val timeout = if (endpoint.contains("127.0.0.1") || endpoint.contains("localhost") || endpoint.contains("10.0.0.2")) 12000 else TIMEOUT_MS
-            conn.connectTimeout = timeout
-            conn.readTimeout = timeout
+            val isLocal = endpoint.contains("127.0.0.1") || endpoint.contains("localhost") || endpoint.contains("10.0.0.") || endpoint.contains("192.168.")
+            conn.connectTimeout = if (isLocal) LOCAL_CONNECT_TIMEOUT_MS else CONNECT_TIMEOUT_MS
+            conn.readTimeout = if (isLocal) LOCAL_READ_TIMEOUT_MS else READ_TIMEOUT_MS
             conn.doOutput = true
 
             val lang = customLanguage?.ifBlank { "es" } ?: java.util.Locale.getDefault().language.ifBlank { "es" }
@@ -118,7 +118,10 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
 
     companion object {
         private const val BOUNDARY = "----myvuclientboundary"
-        private const val TIMEOUT_MS = 30000
+        private const val CONNECT_TIMEOUT_MS = 15000
+        private const val READ_TIMEOUT_MS = 120000
+        private const val LOCAL_CONNECT_TIMEOUT_MS = 8000
+        private const val LOCAL_READ_TIMEOUT_MS = 180000
         private const val MIN_PCM_BYTES = 8000
 
         @Throws(IOException::class)
