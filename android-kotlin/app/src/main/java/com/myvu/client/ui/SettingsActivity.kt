@@ -55,20 +55,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var layTtsApiKey: TextInputLayout
     private lateinit var layTtsModel: TextInputLayout
     private lateinit var layTtsVoice: TextInputLayout
-    private lateinit var layGeminiAndroidControls: LinearLayout
-    private lateinit var lblGeminiNanoStatus: TextView
-    private lateinit var btnGeminiFallbackGroup: MaterialButtonToggleGroup
-    private lateinit var btnCheckGeminiCapability: MaterialButton
 
-    private lateinit var swUseLocalGemma: MaterialSwitch
-    private lateinit var btnGemmaModelVersionGroup: MaterialButtonToggleGroup
-    private lateinit var txtGemmaHfToken: TextInputEditText
-    private lateinit var txtGemmaCustomUrl: TextInputEditText
-    private lateinit var lblGemmaModelStatus: TextView
-    private lateinit var progressGemmaDownload: com.google.android.material.progressindicator.LinearProgressIndicator
-    private lateinit var btnDownloadGemmaModel: MaterialButton
-    private lateinit var btnDeleteGemmaModel: MaterialButton
-    private var gemmaDownloader: com.myvu.client.ai.GemmaModelDownloader? = null
 
     // Backup & Cloud Sync UI
     private var txtGoogleAccountName: TextView? = null
@@ -145,6 +132,7 @@ class SettingsActivity : AppCompatActivity() {
         setupBackupRestoreUi()
     }
 
+
     private fun bindViews() {
         layApiKey = findViewById(R.id.layApiKey)
         layModel = findViewById(R.id.layModel)
@@ -169,21 +157,6 @@ class SettingsActivity : AppCompatActivity() {
         txtTtsModel = findViewById(R.id.txtTtsModel)
         txtTtsVoice = findViewById(R.id.txtTtsVoice)
         txtSystemPrompt = findViewById(R.id.txtSystemPrompt)
-        layGeminiAndroidControls = findViewById<LinearLayout>(R.id.layGeminiAndroidControls)
-        lblGeminiNanoStatus = findViewById(R.id.lblGeminiNanoStatus)
-        btnGeminiFallbackGroup = findViewById(R.id.btnGeminiFallbackGroup)
-        btnCheckGeminiCapability = findViewById(R.id.btnCheckGeminiCapability)
-
-        swUseLocalGemma = findViewById(R.id.swUseLocalGemma)
-        btnGemmaModelVersionGroup = findViewById(R.id.btnGemmaModelVersionGroup)
-        txtGemmaHfToken = findViewById(R.id.txtGemmaHfToken)
-        txtGemmaCustomUrl = findViewById(R.id.txtGemmaCustomUrl)
-        lblGemmaModelStatus = findViewById(R.id.lblGemmaModelStatus)
-        progressGemmaDownload = findViewById(R.id.progressGemmaDownload)
-        btnDownloadGemmaModel = findViewById(R.id.btnDownloadGemmaModel)
-        btnDeleteGemmaModel = findViewById(R.id.btnDeleteGemmaModel)
-        val selectedOption = com.myvu.client.ai.GemmaLocalClient.findOption(Prefs.gemmaModelId(this))
-        gemmaDownloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption)
 
         // Backup views
         txtGoogleAccountName = findViewById(R.id.txtGoogleAccountName)
@@ -206,16 +179,12 @@ class SettingsActivity : AppCompatActivity() {
     private fun configureProviderSelectors() {
         aiProvider = AiProvider.fromId(Prefs.aiProvider(this))
         val buttonIds = intArrayOf(
-            R.id.btnProviderAssistant, R.id.btnProviderGemini, R.id.btnProviderOpenai,
-            R.id.btnProviderClaude, R.id.btnProviderGroq, R.id.btnProviderNvidia,
-            R.id.btnProviderLocal, R.id.btnProviderPocketLlm, R.id.btnProviderGeminiAndroid
+            R.id.btnProviderOpenai, R.id.btnProviderClaude, R.id.btnProviderGroq,
+            R.id.btnProviderNvidia, R.id.btnProviderLocal
         )
         for (id in buttonIds) {
             findViewById<View?>(id)?.setOnClickListener(providerClickListener)
         }
-
-        configureGeminiAndroidControls()
-        configureGemmaLocalControls()
 
         val swUseAndroidStt: com.google.android.material.materialswitch.MaterialSwitch? = findViewById(R.id.swUseAndroidStt)
         swUseAndroidStt?.isChecked = Prefs.useAndroidStt(this)
@@ -317,12 +286,6 @@ class SettingsActivity : AppCompatActivity() {
         }
         persist(txtSystemPrompt) { value ->
             Prefs.setSystemPrompt(this, value)
-        }
-        persist(txtGemmaHfToken) { value ->
-            Prefs.setGemmaHfToken(this, value)
-        }
-        persist(txtGemmaCustomUrl) { value ->
-            Prefs.setGemmaCustomUrl(this, value)
         }
         chkIgnoreSsl?.setOnCheckedChangeListener { _, isChecked ->
             Prefs.setIgnoreSsl(this, isChecked)
@@ -518,56 +481,29 @@ class SettingsActivity : AppCompatActivity() {
     private fun bindAiFields() {
         bindingAi = true
         val local = aiProvider == AiProvider.LOCAL
-        val isPocketLlm = aiProvider == AiProvider.POCKET_LLM
-        val isLocalOrPocket = local || isPocketLlm
-        val assistant = aiProvider == AiProvider.ASSISTANT
 
         val selectedId = aiButtonFor(aiProvider)
         val buttonIds = intArrayOf(
-            R.id.btnProviderAssistant, R.id.btnProviderGemini, R.id.btnProviderOpenai,
-            R.id.btnProviderClaude, R.id.btnProviderGroq, R.id.btnProviderNvidia,
-            R.id.btnProviderLocal, R.id.btnProviderPocketLlm, R.id.btnProviderGeminiAndroid
+            R.id.btnProviderOpenai, R.id.btnProviderClaude, R.id.btnProviderGroq,
+            R.id.btnProviderNvidia, R.id.btnProviderLocal
         )
         for (id in buttonIds) {
             val btn: MaterialButton? = findViewById(id)
             btn?.alpha = if (id == selectedId) 1.0f else 0.45f
         }
 
-        val isGeminiAndroid = aiProvider == AiProvider.GEMINI_ANDROID
-
-        layGeminiAndroidControls.visibility = if (isGeminiAndroid) View.VISIBLE else View.GONE
-
-        if (isGeminiAndroid) {
-            val policy = com.myvu.client.ai.GeminiFallbackPolicy.fromId(Prefs.geminiFallbackPolicy(this))
-            val showApiKey = policy.allowsApiFallback
-            layApiKey.visibility = if (showApiKey) View.VISIBLE else View.GONE
-            layModel.visibility = if (showApiKey) View.VISIBLE else View.GONE
-            layAiEndpoint.visibility = View.GONE
-            chkIgnoreSsl?.visibility = View.GONE
-
-            btnGeminiFallbackGroup.check(
-                when (policy) {
-                    com.myvu.client.ai.GeminiFallbackPolicy.NANO_THEN_API -> R.id.btnFallbackNanoThenApi
-                    com.myvu.client.ai.GeminiFallbackPolicy.NANO_ONLY -> R.id.btnFallbackNanoOnly
-                    com.myvu.client.ai.GeminiFallbackPolicy.API_ONLY -> R.id.btnFallbackApiOnly
-                }
-            )
-
-            updateGeminiNanoStatus()
-        } else {
-            layApiKey.visibility = if (assistant) View.GONE else View.VISIBLE
-            layModel.visibility = if (assistant) View.GONE else View.VISIBLE
-            layAiEndpoint.visibility = if (isLocalOrPocket) View.VISIBLE else View.GONE
-            chkIgnoreSsl?.let {
-                it.visibility = if (isLocalOrPocket) View.VISIBLE else View.GONE
-                it.isChecked = Prefs.ignoreSsl(this)
-            }
+        layApiKey.visibility = View.VISIBLE
+        layModel.visibility = View.VISIBLE
+        layAiEndpoint.visibility = if (local) View.VISIBLE else View.GONE
+        chkIgnoreSsl?.let {
+            it.visibility = if (local) View.VISIBLE else View.GONE
+            it.isChecked = Prefs.ignoreSsl(this)
         }
 
-        layApiKey.hint = if (isPocketLlm) "Pocket LLM Token / Bearer Key (Opcional)" else aiProvider.label + " API key"
-        layApiKey.helperText = if (isLocalOrPocket) "Token Opcional (si tu servidor local/Pocket LLM requiere autenticación Bearer)" else "Create one at " + aiProvider.console
-        layAiEndpoint.hint = if (isPocketLlm) "URL Pocket LLM (default: http://127.0.0.1:8080/v1/chat/completions)" else "URL Endpoint API (OpenAI Compatible)"
-        layModel.helperText = if (isLocalOrPocket) "Requerido/Opcional: ID de modelo expuesto en Pocket LLM (ej: gemma-4-e2b-it)" else "Blank uses " + aiProvider.defaultModel
+        layApiKey.hint = aiProvider.label + " API key"
+        layApiKey.helperText = if (local) "Token Opcional (si tu servidor local requiere autenticación Bearer)" else "Create one at " + aiProvider.console
+        layAiEndpoint.hint = "URL Endpoint API (OpenAI Compatible)"
+        layModel.helperText = if (local) "Opcional: ID de modelo expuesto en el servidor local" else "Blank uses " + aiProvider.defaultModel
         txtApiKey.setText(Prefs.aiApiKey(this, aiProvider.id))
         txtModel.setText(Prefs.aiModel(this, aiProvider.id))
         txtAiEndpoint.setText(Prefs.aiEndpoint(this, aiProvider.id))
@@ -663,173 +599,7 @@ class SettingsActivity : AppCompatActivity() {
         if (announce) Toast.makeText(this, "Syncing weather…", Toast.LENGTH_SHORT).show()
     }
 
-    private fun configureGemmaLocalControls() {
-        swUseLocalGemma.isChecked = Prefs.useLocalGemmaIfAvailable(this)
-        swUseLocalGemma.setOnCheckedChangeListener { _, isChecked ->
-            Prefs.setUseLocalGemmaIfAvailable(this, isChecked)
-        }
 
-        txtGemmaHfToken.setText(Prefs.gemmaHfToken(this))
-        txtGemmaCustomUrl.setText(Prefs.gemmaCustomUrl(this))
-
-        val spnDropdown = findViewById<AutoCompleteTextView?>(R.id.spnGemmaModelDropdown)
-        val modelOptions = com.myvu.client.ai.GemmaLocalClient.OPTIONS
-        val modelNames = modelOptions.map { it.name }
-        
-        if (spnDropdown != null) {
-            val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, modelNames)
-            spnDropdown.setAdapter(adapter)
-
-            val currentModel = com.myvu.client.ai.GemmaLocalClient.findOption(Prefs.gemmaModelId(this))
-            spnDropdown.setText(currentModel.name, false)
-
-            spnDropdown.setOnItemClickListener { _, _, position, _ ->
-                val selectedOption = modelOptions.getOrNull(position) ?: com.myvu.client.ai.GemmaLocalClient.DEFAULT_OPTION
-                Prefs.setGemmaModelId(this, selectedOption.id)
-                gemmaDownloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption)
-                updateGemmaModelStatus()
-            }
-        }
-
-        btnDownloadGemmaModel.setOnClickListener {
-            val selectedOption = com.myvu.client.ai.GemmaLocalClient.findOption(Prefs.gemmaModelId(this))
-            val downloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption).also { gemmaDownloader = it }
-            btnDownloadGemmaModel.isEnabled = false
-            progressGemmaDownload.visibility = View.VISIBLE
-
-            downloader.startDownload { state ->
-                runOnUiThread {
-                    val notice = if (selectedOption.engineType == com.myvu.client.ai.GemmaEngineType.LITERT_LM) {
-                        "\n💡 Motor: LiteRT-LM (Optimizado para CPU/NPU Móvil)"
-                    } else {
-                        "\n💡 Motor: MediaPipe LLM Inference Engine (Aceleración por GPU)"
-                    }
-                    when (state) {
-                        is com.myvu.client.ai.GemmaDownloadState.Downloading -> {
-                            progressGemmaDownload.progress = state.progressPercent
-                            lblGemmaModelStatus.text = "Descargando ${selectedOption.name} [${selectedOption.engineType.name}]: ${state.progressPercent}% (${state.downloadedBytes / (1024 * 1024)}MB / ${state.totalBytes / (1024 * 1024)}MB)$notice"
-                        }
-                        is com.myvu.client.ai.GemmaDownloadState.Completed -> {
-                            btnDownloadGemmaModel.isEnabled = true
-                            progressGemmaDownload.visibility = View.GONE
-                            lblGemmaModelStatus.text = "${selectedOption.name} [${selectedOption.engineType.name}]: Listo para uso offline$notice"
-                            Toast.makeText(this, "Modelo ${selectedOption.fileName} descargado correctamente", Toast.LENGTH_SHORT).show()
-                        }
-                        is com.myvu.client.ai.GemmaDownloadState.Error -> {
-                            btnDownloadGemmaModel.isEnabled = true
-                            progressGemmaDownload.visibility = View.GONE
-                            lblGemmaModelStatus.text = "Error al descargar [${selectedOption.engineType.name}]: ${state.message}$notice"
-                            Toast.makeText(this, "Error de descarga: ${state.message}", Toast.LENGTH_LONG).show()
-                        }
-                        else -> {
-                            btnDownloadGemmaModel.isEnabled = true
-                            progressGemmaDownload.visibility = View.GONE
-                            lblGemmaModelStatus.text = "${selectedOption.name} [${selectedOption.engineType.name}]: No descargado$notice"
-                        }
-                    }
-                }
-            }
-        }
-
-        btnDeleteGemmaModel.setOnClickListener {
-            val selectedOption = com.myvu.client.ai.GemmaLocalClient.findOption(Prefs.gemmaModelId(this))
-            val downloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption).also { gemmaDownloader = it }
-            val deleted = downloader.deleteModel()
-            progressGemmaDownload.visibility = View.GONE
-            btnDownloadGemmaModel.isEnabled = true
-            updateGemmaModelStatus()
-            val msg = if (deleted) "Modelo eliminado" else "No se pudo eliminar el archivo del modelo"
-            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-        }
-
-        findViewById<View?>(R.id.btnTestGemmaModel)?.setOnClickListener {
-            val selectedOption = com.myvu.client.ai.GemmaLocalClient.findOption(Prefs.gemmaModelId(this))
-            val client = com.myvu.client.ai.GemmaLocalClient(this, selectedOption)
-            val isReady = client.isConfigured()
-            val file = com.myvu.client.ai.GemmaLocalClient.getModelFile(this, selectedOption.fileName)
-
-            if (!isReady) {
-                Toast.makeText(this, "❌ Modelo no descargado (${selectedOption.name})", Toast.LENGTH_LONG).show()
-                return@setOnClickListener
-            }
-
-            Toast.makeText(this, "⏳ Probando inferencia con ${file.name} [${selectedOption.engineType.name}]...", Toast.LENGTH_SHORT).show()
-            val aiProviderId = Prefs.aiProvider(this)
-            val provider = com.myvu.client.ai.AiProvider.fromId(aiProviderId)
-            val apiKey = Prefs.aiApiKey(this, aiProviderId)
-            val model = Prefs.aiModel(this, aiProviderId)
-            val endpoint = Prefs.aiEndpoint(this, aiProviderId)
-            val fullClient = provider.newClient(this, apiKey, model, endpoint, "")
-
-            Thread {
-                try {
-                    val response = client.ask("Hola, responde en una frase corta.")
-                    runOnUiThread {
-                        if (response.isNotBlank()) {
-                            Toast.makeText(this, "✅ Test On-Device Exitoso [${selectedOption.engineType.name}]: ${response.take(70)}", Toast.LENGTH_LONG).show()
-                        } else {
-                            Toast.makeText(this, "❌ El modelo respondió vacío", Toast.LENGTH_LONG).show()
-                        }
-                    }
-                } catch (e: Exception) {
-                    runOnUiThread {
-                        Toast.makeText(this, "❌ Error en Test: ${e.message}", Toast.LENGTH_LONG).show()
-                    }
-                }
-            }.start()
-        }
-
-        updateGemmaModelStatus()
-    }
-
-    private fun updateGemmaModelStatus() {
-        val selectedOption = com.myvu.client.ai.GemmaLocalClient.findOption(Prefs.gemmaModelId(this))
-        val downloader = com.myvu.client.ai.GemmaModelDownloader(this, selectedOption).also { gemmaDownloader = it }
-        val state = downloader.getInitialState()
-        val baseStatus = when (state) {
-            is com.myvu.client.ai.GemmaDownloadState.Completed -> "${selectedOption.name} [${selectedOption.engineType.name}]: Listo para uso offline"
-            else -> "${selectedOption.name} [${selectedOption.engineType.name}]: No descargado"
-        }
-        val notice = if (selectedOption.engineType == com.myvu.client.ai.GemmaEngineType.LITERT_LM) {
-            "\n💡 Motor: LiteRT-LM (Optimizado para CPU/NPU Móvil)"
-        } else {
-            "\n💡 Motor: MediaPipe LLM Inference Engine (Aceleración por GPU)"
-        }
-        lblGemmaModelStatus.text = "$baseStatus$notice"
-    }
-
-    private fun configureGeminiAndroidControls() {
-        btnGeminiFallbackGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            val policy = when (checkedId) {
-                R.id.btnFallbackNanoOnly -> com.myvu.client.ai.GeminiFallbackPolicy.NANO_ONLY
-                R.id.btnFallbackApiOnly -> com.myvu.client.ai.GeminiFallbackPolicy.API_ONLY
-                else -> com.myvu.client.ai.GeminiFallbackPolicy.NANO_THEN_API
-            }
-            Prefs.setGeminiFallbackPolicy(this, policy.id)
-            bindAiFields()
-        }
-
-        btnCheckGeminiCapability.setOnClickListener {
-            updateGeminiNanoStatus()
-            Toast.makeText(this, "Verificación de capacidad realizada", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun updateGeminiNanoStatus() {
-        val detector = object : com.myvu.client.ai.GeminiCapabilityDetector {
-            override fun detect(): com.myvu.client.ai.GeminiAvailability {
-                return com.myvu.client.ai.GeminiAvailability(com.myvu.client.ai.GeminiAvailability.State.UNAVAILABLE, "not_supported")
-            }
-        }
-        val availability = detector.detect()
-        lblGeminiNanoStatus.text = when (availability.state) {
-            com.myvu.client.ai.GeminiAvailability.State.AVAILABLE -> "Estado Gemini Nano: Disponible en el dispositivo"
-            com.myvu.client.ai.GeminiAvailability.State.MODEL_MISSING -> "Estado Gemini Nano: Modelo no descargado"
-            com.myvu.client.ai.GeminiAvailability.State.TASK_UNSUPPORTED -> "Estado Gemini Nano: Tarea no soportada"
-            else -> "Estado Gemini Nano: No disponible en este dispositivo"
-        }
-    }
 
     // ==================== BACKUP & CLOUD SYNC ====================
 
@@ -1189,13 +959,9 @@ class SettingsActivity : AppCompatActivity() {
         private fun aiButtonFor(provider: AiProvider): Int {
             return when (provider) {
                 AiProvider.OPENAI -> R.id.btnProviderOpenai
-                AiProvider.GEMINI -> R.id.btnProviderGemini
-                AiProvider.GEMINI_ANDROID -> R.id.btnProviderGeminiAndroid
                 AiProvider.GROQ -> R.id.btnProviderGroq
                 AiProvider.NVIDIA -> R.id.btnProviderNvidia
-                AiProvider.ASSISTANT -> R.id.btnProviderAssistant
                 AiProvider.LOCAL -> R.id.btnProviderLocal
-                AiProvider.POCKET_LLM -> R.id.btnProviderPocketLlm
                 else -> R.id.btnProviderClaude
             }
         }
@@ -1203,13 +969,9 @@ class SettingsActivity : AppCompatActivity() {
         private fun aiProviderFor(buttonId: Int): AiProvider {
             return when (buttonId) {
                 R.id.btnProviderOpenai -> AiProvider.OPENAI
-                R.id.btnProviderGemini -> AiProvider.GEMINI
-                R.id.btnProviderGeminiAndroid -> AiProvider.GEMINI_ANDROID
                 R.id.btnProviderGroq -> AiProvider.GROQ
                 R.id.btnProviderNvidia -> AiProvider.NVIDIA
-                R.id.btnProviderAssistant -> AiProvider.ASSISTANT
                 R.id.btnProviderLocal -> AiProvider.LOCAL
-                R.id.btnProviderPocketLlm -> AiProvider.POCKET_LLM
                 else -> AiProvider.CLAUDE
             }
         }

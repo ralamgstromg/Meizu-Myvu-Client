@@ -47,7 +47,7 @@ graph TD
 
     subgraph AI_Core [Arquitectura de IA y Acciones Nativas]
         AI --> VAR[VoiceActionRouter\nFast-Path <5ms]
-        AI --> LLM_ENG[GemmaLocalClient / Cloud LLMs\nTurn Format & Prompt HUD]
+        AI --> LLM_ENG[Cloud & Remote REST LLM APIs\nOpenAI, Claude, Groq, NVIDIA, Custom]
         VAR -->|Consultas Externas| EXT[ExternalInfoService\nGoogle / OpenMeteo / Divisas]
         VAR -->|Acciones Sistema| PAE[PhoneActionExecutor\n100% Android Nativo]
         LLM_ENG -->|ACTION Tags| PAE
@@ -68,16 +68,18 @@ graph TD
 - [**`service/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/service): `ConnectionManager` con flujo reactivo `StateFlow<ConnectionState>`, Foreground Service `MyvuService`, supervisor de reconexión `RelaySupervisor` y `MirrorNotificationListener`.
 - [**`app/`** & **`app/feature/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/app): Enrutador de paquetes de aplicación (`InboundRouter`), constantes de paquetes (`AppLayer`), y subsistemas de características:
   - `GlassGesture`: Enum de gestos táctiles físicos reconocidos en la patilla (Tap, Double Tap, Triple Tap, Long Press, Swipe Forward, Swipe Backward).
-  - `GestureAction`: Catálogo de 10 acciones ejecutables (Asistente del Teléfono con Gemini/Google, IA local de gafas, multimedia, clima, teleprompter, modo Zen).
+  - `GestureAction`: Catálogo de 10 acciones ejecutables (Asistente del Teléfono, IA de gafas, multimedia, clima, teleprompter, modo Zen).
   - `TouchGestureManager`: Motor de filtrado anti-rebote (350ms debounce), mapeo y ejecución de acciones para gestos táctiles.
   - `Trackpad`: Generador de mensajes JSON del protocolo "phonepad" para el lanzador de las gafas (`com.upuphone.star.launcher`).
-- [**`ai/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ai): Asistente de voz inteligente con arquitectura híbrida **Local-First**:
-  - **STT**: Decodificación Opus y re-muestreo PCM lineal 3:1 de **48,000 Hz a 16,000 Hz** (`downsample48kTo16k`) para garantizar coincidencia de velocidad de audio con modelos Whisper (on-device y Groq Whisper API). Whisper Large v3 Turbo INT4 On-Device con fallback transparente a Groq Whisper API configurado por defecto en **Español (`es`)** con prompt contextual de comandos de voz para prevenir transcripciones erróneas (`"Jamar"` -> `"Llamar"`). Manejo robusto de fallas nativas JNI en arquitecturas MediaTek (`mt6878`) y fallback automático en Android Speech Recognizer (`code 12` / `code 5`).
-  - **LLM On-Device & Formato de Turnos**: Motor de inferencia nativo on-device **LiteRT-LM & MediaPipe Tasks GenAI** con soporte para:
-    - ⭐ **Gemma 4 E2B IT** (`gemma-4-E2B-it.litertlm` ~1.12GB con SentencePiece tokenizer integrado).
-    - **Gemma 2B IT GPU / CPU** (`gemma-2b-it-gpu-int4.bin` ~1.35GB oficial de Google AI Edge).
-    - **Formato Estructurado de Turnos Gemma**: `<start_of_turn>user\n[Contexto del Sistema...]\n{pregunta}<end_of_turn>\n<start_of_turn>model\n`.
-    - **System Prompt Optimizado para HUD**: Reglas estrictas para respuestas en texto plano directo (1-2 oraciones breves), prohibición de markdown/viñetas/emojis y etiquetado estructurado de acciones (`ACTION:...`).
+- [**`ai/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ai): Asistente de voz inteligente basado en APIs REST:
+  - **STT**: Decodificación Opus y re-muestreo PCM lineal 3:1 de **48,000 Hz a 16,000 Hz** (`downsample48kTo16k`) para integración con servicios Whisper (Groq Whisper API, Local HTTP 8181 y Whisper.cpp HTTP 8282) configurado por defecto en **Español (`es`)** con prompt contextual.
+  - **Proveedores de LLM vía API**: Soporte exclusivo para servicios de IA en la nube e integración HTTP OpenAI-compatible:
+    - **ChatGPT (OpenAI)** (`OpenAiClient`)
+    - **Claude (Anthropic)** (`ClaudeClient`)
+    - **Groq Cloud** (`LocalAiClient`)
+    - **NVIDIA NIM** (`LocalAiClient`)
+    - **Custom / Local API Endpoint** (`LocalAiClient` en `http://127.0.0.1:8080/v1/chat/completions`)
+  - **System Prompt Optimizado para HUD**: Reglas estrictas para respuestas en texto plano directo (1-2 oraciones breves), prohibición de markdown/viñetas/emojis y etiquetado estructurado de acciones (`ACTION:...`).
     - Rescate en cascada automático hacia APIs en la nube (Groq, Gemini, Claude, OpenAI).
   - **ExternalInfoService (Búsquedas y Datos en Tiempo Real)**:
     - **Google & Web Search**: Extracción en vivo mediante parser HTML de respuestas rápidas y snippets de Google, con fallback a Wikipedia Summary REST API y DuckDuckGo Instant Answer API.

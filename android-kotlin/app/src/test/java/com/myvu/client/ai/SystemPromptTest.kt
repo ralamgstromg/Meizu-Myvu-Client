@@ -15,12 +15,4 @@ class SystemPromptTest {
         // Asegurar que no supere los 1000 caracteres para no saturar modelos 2B
         assertTrue(prompt.length < 1500)
     }
-
-    @Test
-    fun testGemmaTurnFormatting() {
-        val formatted = GemmaLocalClient.formatPrompt("Instrucciones de sistema", "Hola")
-        assertTrue(formatted.contains("<start_of_turn>user"))
-        assertTrue(formatted.contains("<end_of_turn>"))
-        assertTrue(formatted.contains("<start_of_turn>model"))
-    }
 }

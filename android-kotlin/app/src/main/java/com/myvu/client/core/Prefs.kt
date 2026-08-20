@@ -20,15 +20,7 @@ object Prefs {
     private const val KEY_SYSTEM_PROMPT = "ai_system_prompt"
     private const val KEY_WEATHER_ENABLED = "weather_enabled"
     private const val KEY_WEATHER_PLACE = "weather_place"
-    private const val KEY_GEMINI_API_KEY = "gemini_api_key"
-    private const val KEY_GEMINI_MODEL = "gemini_model"
-    const val DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
-    private const val KEY_GEMINI_FALLBACK_POLICY = "gemini_fallback_policy"
-    private const val KEY_USE_LOCAL_GEMMA = "use_local_gemma"
-    private const val KEY_GEMMA_MODEL_ID = "gemma_model_id"
-    const val DEFAULT_GEMMA_MODEL_ID = "qwen-2.5-1.5b-it-litert"
-    private const val KEY_GEMMA_HF_TOKEN = "gemma_hf_token"
-    private const val KEY_GEMMA_CUSTOM_URL = "gemma_custom_url"
+
 
     const val DEFAULT_MAC = "2C:6F:4E:00:DC:47"
     const val DEFAULT_LOCAL_AI_ENDPOINT = "http://127.0.0.1:8080/v1/chat/completions"
@@ -104,86 +96,7 @@ object Prefs {
         prefs(c).edit().putString(KEY_AI_PROVIDER, providerId).apply()
     }
 
-    @JvmStatic
-    fun geminiFallbackPolicy(c: Context): String {
-        return prefs(c).getString(KEY_GEMINI_FALLBACK_POLICY, "nano_then_api") ?: "nano_then_api"
-    }
 
-    @JvmStatic
-    fun setGeminiFallbackPolicy(c: Context, policyId: String) {
-        prefs(c).edit().putString(KEY_GEMINI_FALLBACK_POLICY, policyId).apply()
-    }
-
-    @JvmStatic
-    fun useLocalGemmaIfAvailable(c: Context): Boolean {
-        return prefs(c).getBoolean(KEY_USE_LOCAL_GEMMA, false)
-    }
-
-    @JvmStatic
-    fun setUseLocalGemmaIfAvailable(c: Context, enable: Boolean) {
-        prefs(c).edit().putBoolean(KEY_USE_LOCAL_GEMMA, enable).apply()
-    }
-
-    @JvmStatic
-    fun gemmaModelId(c: Context): String {
-        return prefs(c).getString(KEY_GEMMA_MODEL_ID, DEFAULT_GEMMA_MODEL_ID) ?: DEFAULT_GEMMA_MODEL_ID
-    }
-
-    @JvmStatic
-    fun setGemmaModelId(c: Context, id: String) {
-        prefs(c).edit().putString(KEY_GEMMA_MODEL_ID, id).apply()
-    }
-
-    @JvmStatic
-    fun gemmaHfToken(c: Context): String {
-        return SecurePrefs.getSecret(c, KEY_GEMMA_HF_TOKEN, "")
-    }
-
-    @JvmStatic
-    fun setGemmaHfToken(c: Context, token: String) {
-        SecurePrefs.setSecret(c, KEY_GEMMA_HF_TOKEN, token)
-    }
-
-    @JvmStatic
-    fun gemmaCustomUrl(c: Context): String {
-        return prefs(c).getString(KEY_GEMMA_CUSTOM_URL, "") ?: ""
-    }
-
-    @JvmStatic
-    fun setGemmaCustomUrl(c: Context, url: String) {
-        prefs(c).edit().putString(KEY_GEMMA_CUSTOM_URL, url).apply()
-    }
-
-    @JvmStatic
-    fun geminiApiKey(c: Context): String {
-        val value = SecurePrefs.getSecret(c, KEY_GEMINI_API_KEY, "")
-        if (value.isNotEmpty()) return value
-        val legacy = prefs(c).getString(KEY_GEMINI_API_KEY, "") ?: ""
-        if (legacy.isNotEmpty()) {
-            SecurePrefs.setSecret(c, KEY_GEMINI_API_KEY, legacy)
-            prefs(c).edit().remove(KEY_GEMINI_API_KEY).apply()
-        }
-        return legacy
-    }
-
-    @JvmStatic
-    fun setGeminiApiKey(c: Context, value: String) {
-        SecurePrefs.setSecret(c, KEY_GEMINI_API_KEY, value)
-        prefs(c).edit().remove(KEY_GEMINI_API_KEY).apply()
-    }
-
-    @JvmStatic
-    fun geminiModel(c: Context): String {
-        return prefs(c).getString(KEY_GEMINI_MODEL, DEFAULT_GEMINI_MODEL)
-            ?.trim()
-            ?.takeIf { it.isNotEmpty() }
-            ?: DEFAULT_GEMINI_MODEL
-    }
-
-    @JvmStatic
-    fun setGeminiModel(c: Context, model: String) {
-        prefs(c).edit().putString(KEY_GEMINI_MODEL, model.trim()).apply()
-    }
 
     @JvmStatic
     fun aiApiKey(c: Context, providerId: String): String {
