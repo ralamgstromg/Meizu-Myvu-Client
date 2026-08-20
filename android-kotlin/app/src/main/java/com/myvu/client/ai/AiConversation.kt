@@ -795,12 +795,12 @@ class AiConversation(
     }
 
     companion object {
-        private const val SILENCE_HOLD_MS = 450L
+        private const val SILENCE_HOLD_MS = 380L
         private const val SPEECH_ENERGY = 75.0
-        private const val SPEECH_OVER_NOISE = 2.8
+        private const val SPEECH_OVER_NOISE = 3.0
         private const val NOISE_CALIBRATION_CHUNKS = 12
         private const val CALIBRATION_LOUD_STREAK = 3
-        private const val NO_SPEECH_TIMEOUT_MS = 5000L
+        private const val NO_SPEECH_TIMEOUT_MS = 3000L
         private const val MAX_UTTERANCE_MS = 20000L
         private const val CAPTION_WORD_MS = 180L
         private const val DUPLICATE_TRIGGER_MS = 1500L
