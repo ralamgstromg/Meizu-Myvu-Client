@@ -245,10 +245,18 @@ open class BleTransport(
         if (ic == null || ec == null) return
 
         internalChannel = BleMessageChannel("internal", writerFor(ic), conn) { pkgType, payload ->
-            listener?.onInternalMessage(pkgType, payload)
+            try {
+                listener?.onInternalMessage(pkgType, payload)
+            } catch (t: Throwable) {
+                LogBus.error("BleTransport: Exception in onInternalMessage listener", t)
+            }
         }
         externalChannel = BleMessageChannel("external", writerFor(ec), conn) { pkgType, payload ->
-            listener?.onExternalMessage(pkgType, payload)
+            try {
+                listener?.onExternalMessage(pkgType, payload)
+            } catch (t: Throwable) {
+                LogBus.error("BleTransport: Exception in onExternalMessage listener", t)
+            }
         }
         applyDmtu()
 
@@ -270,7 +278,11 @@ open class BleTransport(
         conn.postDelayed({
             if (!_isConnected) return@postDelayed
             isReady = true
-            listener?.onReady(this)
+            try {
+                listener?.onReady(this)
+            } catch (t: Throwable) {
+                LogBus.error("BleTransport: Exception in onReady listener", t)
+            }
         }, LIVENESS_CHECK_MS)
     }
 
@@ -294,7 +306,11 @@ open class BleTransport(
         _isConnected = false
         isReady = false
         conn.post {
-            listener?.onDisconnected(reason)
+            try {
+                listener?.onDisconnected(reason)
+            } catch (t: Throwable) {
+                LogBus.error("BleTransport: Exception in onDisconnected listener", t)
+            }
         }
     }
 

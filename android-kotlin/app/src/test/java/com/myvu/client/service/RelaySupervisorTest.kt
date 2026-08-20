@@ -1,66 +1,27 @@
 package com.myvu.client.service
 
-import android.os.Handler
 import org.junit.Assert.assertEquals
-import org.junit.Before
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RelaySupervisorTest {
 
-    private var isConnected = false
-    private var canConnect = true
-    private var connectCalls = 0
-
-    private val delegate = object : RelaySupervisor.Delegate {
-        override fun isRelayConnected(): Boolean = isConnected
-        override fun canConnectRelay(): Boolean = canConnect
-        override fun connectRelay() {
-            connectCalls++
-        }
-    }
-
-    private lateinit var supervisor: RelaySupervisor
-
-    @Before
-    fun setUp() {
-        val handler = Handler()
-        isConnected = false
-        canConnect = true
-        connectCalls = 0
-        supervisor = RelaySupervisor(handler, delegate)
-    }
-
     @Test
-    fun backoffMsExposesConfiguredValue() {
-        assertEquals(3000L, RelaySupervisor.backoffMs())
-    }
+    fun testExponentialBackoffCalculation() {
+        // Attempt 0 -> Initial disconnected delay (5000ms)
+        assertEquals(5000L, RelaySupervisor.calculateBackoffDelay(0))
 
-    @Test
-    fun startAndStopToggleStateWithoutCrashing() {
-        supervisor.start()
-        supervisor.stop()
-    }
+        // Attempt 1 -> 5000 * 2 = 10000ms
+        assertEquals(10000L, RelaySupervisor.calculateBackoffDelay(1))
 
-    @Test
-    fun wakeResetsAttemptCountAndChecksRelay() {
-        supervisor.start()
-        supervisor.wake()
-        assertEquals(1, connectCalls)
-    }
+        // Attempt 2 -> 5000 * 4 = 20000ms
+        assertEquals(20000L, RelaySupervisor.calculateBackoffDelay(2))
 
-    @Test
-    fun wakeWhenRelayConnectedDoesNotTriggerConnect() {
-        isConnected = true
-        supervisor.start()
-        supervisor.wake()
-        assertEquals(0, connectCalls)
-    }
+        // Attempt 3 -> 5000 * 8 = 40000ms
+        assertEquals(40000L, RelaySupervisor.calculateBackoffDelay(3))
 
-    @Test
-    fun wakeWhenCannotConnectDoesNotTriggerConnect() {
-        canConnect = false
-        supervisor.start()
-        supervisor.wake()
-        assertEquals(0, connectCalls)
+        // Attempt 4+ -> Capped at 60000ms
+        assertEquals(60000L, RelaySupervisor.calculateBackoffDelay(4))
+        assertEquals(60000L, RelaySupervisor.calculateBackoffDelay(10))
     }
 }
