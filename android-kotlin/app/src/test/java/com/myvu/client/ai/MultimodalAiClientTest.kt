@@ -59,8 +59,9 @@ class MultimodalAiClientTest {
         val root = JSONObject(bodyStr)
         assertEquals("model", root.getString("model"))
         val messages = root.getJSONArray("messages")
-        val userMsg = messages.getJSONObject(1)
+        assertEquals(1, messages.length())
+        val userMsg = messages.getJSONObject(0)
         val contentArray = userMsg.getJSONArray("content")
-        assertEquals(2, contentArray.length())
+        assertEquals(3, contentArray.length())
     }
 }

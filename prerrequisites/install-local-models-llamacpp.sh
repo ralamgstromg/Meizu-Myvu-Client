@@ -23,22 +23,22 @@ ln -s $HOME/llama.cpp/build/bin/llama-server $PREFIX/bin/
 
 # export HF_HUB_TOKEN="tu_token_aqui" # Opcional si se requiere autenticacion
 
-# Descargar modelo base cuantizado
-# 1. Descargar el modelo LLM cuantizado (Q4_K_M)
-wget -c -O models/MiniCPM-V-4_6-Q4_K_M.gguf \
-  https://huggingface.co/openbmb/MiniCPM-V-4.6-gguf/resolve/main/MiniCPM-V-4_6-Q4_K_M.gguf
+# Descargar modelo base cuantizado Gemma 4 E2B QAT Q4_0
+# 1. Descargar el modelo LLM cuantizado
+wget -c -O models/gemma-4-E2B-it-qat-q4_0.gguf \
+  https://huggingface.co/google/gemma-4-E2B-it-qat-q4_0-gguf/resolve/main/gemma-4-E2B_q4_0-it.gguf
 
 # 2. Descargar el proyector visual (mmproj)
-wget -c -O models/mmproj-model-f16.gguf \
-  https://huggingface.co/openbmb/MiniCPM-V-4.6-gguf/resolve/main/mmproj-model-f16.gguf
+wget -c -O models/gemma-4-E2B-it-mmproj.gguf \
+  https://huggingface.co/google/gemma-4-E2B-it-qat-q4_0-gguf/resolve/main/gemma-4-E2B-it-mmproj.gguf
 
 
 llama-server \
-  -m $HOME/llama.cpp/models/MiniCPM-V-4_6-Q4_K_M.gguf \
-  --mmproj $HOME/llama.cpp/models/mmproj-model-f16.gguf \
+  -m $HOME/llama.cpp/models/gemma-4-E2B-it-qat-q4_0.gguf \
+  --mmproj $HOME/llama.cpp/models/gemma-4-E2B-it-mmproj.gguf \
   --host 127.0.0.1 \
   --port 8080 \
   -t 6 \
   -c 4096 \
-  -ngl 66 \
-  --chat-template minicpm-v-4_6
+  -ngl 35 \
+  --chat-template gemma

@@ -66,17 +66,30 @@ class LocalAiClient @JvmOverloads constructor(
             question
         }
 
+        val messages = JSONArray()
+        if (!systemPrompt.isNullOrBlank()) {
+            if (userContentObj is String) {
+                val combinedText = "$systemPrompt\n\n=== PREGUNTA DEL USUARIO ===\n$userContentObj"
+                messages.put(JSONObject().put("role", "user").put("content", combinedText))
+            } else if (userContentObj is JSONArray) {
+                val newArr = JSONArray()
+                newArr.put(JSONObject().put("type", "text").put("text", "$systemPrompt\n\n=== PREGUNTA DEL USUARIO ==="))
+                for (i in 0 until userContentObj.length()) {
+                    newArr.put(userContentObj.get(i))
+                }
+                messages.put(JSONObject().put("role", "user").put("content", newArr))
+            } else {
+                messages.put(JSONObject().put("role", "user").put("content", userContentObj))
+            }
+        } else {
+            messages.put(JSONObject().put("role", "user").put("content", userContentObj))
+        }
+
         return JSONObject()
             .put("model", model)
             .put("stream", false)
             .put("max_tokens", MAX_TOKENS)
-            .put("messages", JSONArray()
-                .put(JSONObject()
-                    .put("role", "system")
-                    .put("content", systemPrompt))
-                .put(JSONObject()
-                    .put("role", "user")
-                    .put("content", userContentObj)))
+            .put("messages", messages)
             .toString()
     }
 

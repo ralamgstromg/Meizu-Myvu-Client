@@ -11,14 +11,13 @@ whisper-server \
 
 
 llama-server \
-  -m $HOME/llama.cpp/models/MiniCPM-V-4_6-Q4_K_M.gguf \
-  --mmproj $HOME/llama.cpp/models/mmproj-model-f16.gguf \
+  -m $HOME/llama.cpp/models/gemma-4-E2B-it-qat-q4_0.gguf \
+  --mmproj $HOME/llama.cpp/models/gemma-4-E2B-it-mmproj.gguf \
   --host 127.0.0.1 \
   --port 8080 \
-  --api-key "123" \
   -t 6 \
   -c 4096 \
-  -ngl 66 \
-  --chat-template minicpm-v-4_6 &
+  -ngl 35 \
+  --chat-template gemma &
 
 wait
