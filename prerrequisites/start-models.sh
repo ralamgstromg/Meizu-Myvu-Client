@@ -18,6 +18,6 @@ llama-server \
   -t 6 \
   -c 4096 \
   -ngl 35 \
-  --chat-template gemma &
+  --cache-reuse 256 &
 
 wait

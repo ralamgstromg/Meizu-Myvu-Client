@@ -112,8 +112,8 @@ abstract class AiHttpClient @JvmOverloads constructor(
     companion object {
         private const val CONNECT_TIMEOUT_MS = 15000
         private const val READ_TIMEOUT_MS = 90000
-        private const val LOCAL_CONNECT_TIMEOUT_MS = 8000
-        private const val LOCAL_READ_TIMEOUT_MS = 180000
+        private const val LOCAL_CONNECT_TIMEOUT_MS = 15000
+        private const val LOCAL_READ_TIMEOUT_MS = 240000
 
         private fun extractError(response: String): String {
             try {
