@@ -23,8 +23,8 @@ enum class SttProvider(
     ),
     LOCAL(
         "local",
-        "Local STT",
-        "http://10.0.0.2:1235/v1/audio/transcriptions",
+        "Local STT (Port 8181)",
+        "http://127.0.0.1:8181/v1/audio/transcriptions",
         "whisper",
         false
     );
@@ -42,7 +42,7 @@ enum class SttProvider(
             for (provider in values()) {
                 if (provider.id == id) return provider
             }
-            return GROQ
+            return LOCAL
         }
     }
 }

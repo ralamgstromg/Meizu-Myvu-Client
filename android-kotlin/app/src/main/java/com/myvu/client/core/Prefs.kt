@@ -259,13 +259,13 @@ object Prefs {
 
     @JvmStatic
     fun rawSttProvider(c: Context): String {
-        return prefs(c).getString(KEY_STT_PROVIDER, "groq") ?: "groq"
+        return prefs(c).getString(KEY_STT_PROVIDER, "local") ?: "local"
     }
 
     @JvmStatic
     fun sttProvider(c: Context): String {
-        val prov = prefs(c).getString(KEY_STT_PROVIDER, "groq") ?: "groq"
-        return if (prov == "android") "groq" else prov
+        val prov = prefs(c).getString(KEY_STT_PROVIDER, "local") ?: "local"
+        return if (prov == "android") "local" else prov
     }
 
     @JvmStatic

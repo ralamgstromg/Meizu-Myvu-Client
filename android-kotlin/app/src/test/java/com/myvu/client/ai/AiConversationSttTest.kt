@@ -34,8 +34,8 @@ class AiConversationSttTest {
         assertEquals(SttProvider.ON_DEVICE, SttProvider.fromId("on_device"))
         assertEquals(SttProvider.GROQ, SttProvider.fromId("groq"))
         assertEquals(SttProvider.LOCAL, SttProvider.fromId("local"))
-        assertEquals(SttProvider.GROQ, SttProvider.fromId("unknown"))
-        assertEquals(SttProvider.GROQ, SttProvider.fromId(null))
+        assertEquals(SttProvider.LOCAL, SttProvider.fromId("unknown"))
+        assertEquals(SttProvider.LOCAL, SttProvider.fromId(null))
     }
 
     @Test

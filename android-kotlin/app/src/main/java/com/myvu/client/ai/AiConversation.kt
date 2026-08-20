@@ -449,7 +449,7 @@ class AiConversation(
         }
         val storedEndpoint = Prefs.sttEndpoint(context, sttProviderId).trim()
         val endpoint = if (storedEndpoint.isEmpty()) {
-            if ("groq" == sttProviderId) "https://api.groq.com/openai/v1/audio/transcriptions" else "http://10.0.0.2:1235/v1/audio/transcriptions"
+            if ("groq" == sttProviderId) "https://api.groq.com/openai/v1/audio/transcriptions" else Prefs.DEFAULT_LOCAL_STT_ENDPOINT
         } else {
             storedEndpoint
         }
