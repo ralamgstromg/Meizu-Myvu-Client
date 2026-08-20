@@ -220,7 +220,7 @@ class AiConversation(
         } else {
             if (!speechStarted && noiseChunks >= NOISE_CALIBRATION_CHUNKS) {
                 noiseFloor = (noiseFloor * 0.95) + (level * 0.05)
-                speechThreshold = Math.max(SPEECH_ENERGY, noiseFloor * SPEECH_OVER_NOISE)
+                speechThreshold = Math.min(MAX_SPEECH_THRESHOLD, Math.max(SPEECH_ENERGY, noiseFloor * SPEECH_OVER_NOISE))
             }
             if (speechStarted && System.currentTimeMillis() - lastSpeechAt > SILENCE_HOLD_MS) {
                 decoding = false
@@ -741,12 +741,13 @@ class AiConversation(
     }
 
     companion object {
-        private const val SILENCE_HOLD_MS = 380L
+        private const val SILENCE_HOLD_MS = 1200L
         private const val SPEECH_ENERGY = 75.0
-        private const val SPEECH_OVER_NOISE = 3.0
+        private const val MAX_SPEECH_THRESHOLD = 200.0
+        private const val SPEECH_OVER_NOISE = 2.5
         private const val NOISE_CALIBRATION_CHUNKS = 12
         private const val CALIBRATION_LOUD_STREAK = 3
-        private const val NO_SPEECH_TIMEOUT_MS = 3000L
+        private const val NO_SPEECH_TIMEOUT_MS = 5500L
         private const val MAX_UTTERANCE_MS = 20000L
         private const val CAPTION_WORD_MS = 180L
         private const val DUPLICATE_TRIGGER_MS = 1500L
