@@ -72,14 +72,14 @@ graph TD
   - `TouchGestureManager`: Motor de filtrado anti-rebote (350ms debounce), mapeo y ejecución de acciones para gestos táctiles.
   - `Trackpad`: Generador de mensajes JSON del protocolo "phonepad" para el lanzador de las gafas (`com.upuphone.star.launcher`).
 - [**`ai/`**](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ai): Asistente de voz inteligente basado en APIs REST:
-  - **STT**: Decodificación Opus y re-muestreo PCM lineal 3:1 de **48,000 Hz a 16,000 Hz** (`downsample48kTo16k`) para integración con servicios Whisper (Groq Whisper API, Local HTTP 8181 y Whisper.cpp HTTP 8282) configurado por defecto en **Español (`es`)** con prompt contextual.
-  - **Proveedores de LLM vía API**: Soporte exclusivo para servicios de IA en la nube e integración HTTP OpenAI-compatible:
+  - **STT**: Procesador digital de señal `AudioOptimizer` con **filtro antialiasing FIR de 5 taps**, filtro pasa-alto IIR (80Hz), puerta de ruido (recorte de silencios) y normalización adaptativa de ganancia (Soft Peak Normalization ~85% FS) previa al re-muestreo PCM 3:1 (**48,000 Hz a 16,000 Hz**) para máxima precisión en servicios Whisper (Groq Whisper API, Local HTTP 8181 y Whisper.cpp HTTP 8282) con `temperature=0.0` y soporte predeterminado en **Español (`es`)**.
+  - **Proveedores de LLM vía API REST con Capacidad Multimodal**: Soporte completo para consultas de texto e imágenes (visión de fotos de cámara/gafas en Base64 `image_url` y Anthropic Blocks) en:
     - **ChatGPT (OpenAI)** (`OpenAiClient`)
     - **Claude (Anthropic)** (`ClaudeClient`)
     - **Groq Cloud** (`LocalAiClient`)
     - **NVIDIA NIM** (`LocalAiClient`)
     - **Custom / Local API Endpoint** (`LocalAiClient` en `http://127.0.0.1:8080/v1/chat/completions`)
-  - **System Prompt Optimizado para HUD**: Reglas estrictas para respuestas en texto plano directo (1-2 oraciones breves), prohibición de markdown/viñetas/emojis y etiquetado estructurado de acciones (`ACTION:...`).
+  - **System Prompt Optimizado para HUD & Multimodal**: Reglas estrictas para respuestas en texto plano directo (1-2 oraciones breves), descripción/análisis conciso de imágenes en el HUD, prohibición de markdown/viñetas/emojis y etiquetado estructurado de acciones (`ACTION:...`).
     - Rescate en cascada automático hacia APIs en la nube (Groq, Gemini, Claude, OpenAI).
   - **ExternalInfoService (Búsquedas y Datos en Tiempo Real)**:
     - **Google & Web Search**: Extracción en vivo mediante parser HTML de respuestas rápidas y snippets de Google, con fallback a Wikipedia Summary REST API y DuckDuckGo Instant Answer API.

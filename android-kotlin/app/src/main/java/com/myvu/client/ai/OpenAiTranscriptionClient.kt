@@ -96,6 +96,7 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
                 }
                 writeTextPart(out, "language", lang)
                 writeTextPart(out, "prompt", whisperPrompt)
+                writeTextPart(out, "temperature", "0.0")
                 writeTextPart(out, "response_format", "json")
                 out.writeBytes("--$BOUNDARY--\r\n")
                 out.flush()

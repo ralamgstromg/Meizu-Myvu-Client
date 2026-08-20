@@ -57,7 +57,7 @@ class LocalAiClient @JvmOverloads constructor(
     @Throws(JSONException::class)
     fun buildBodyWithImage(question: String, imageBytes: ByteArray?, mimeType: String = "image/jpeg"): String {
         val userContentObj: Any = if (imageBytes != null && imageBytes.isNotEmpty()) {
-            val b64 = android.util.Base64.encodeToString(imageBytes, android.util.Base64.NO_WRAP)
+            val b64 = java.util.Base64.getEncoder().encodeToString(imageBytes)
             val dataUrl = "data:$mimeType;base64,$b64"
             JSONArray()
                 .put(JSONObject().put("type", "text").put("text", question))
