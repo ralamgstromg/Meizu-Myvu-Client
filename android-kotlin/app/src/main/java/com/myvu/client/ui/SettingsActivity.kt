@@ -229,6 +229,7 @@ class SettingsActivity : AppCompatActivity() {
             when (sttProvider) {
                 SttProvider.ON_DEVICE -> R.id.btnSttOnDevice
                 SttProvider.LOCAL -> R.id.btnSttLocal
+                SttProvider.WHISPER_CPP -> R.id.btnSttWhisperCpp
                 else -> R.id.btnSttGroq
             }
         )
@@ -237,6 +238,7 @@ class SettingsActivity : AppCompatActivity() {
             sttProvider = when (checkedId) {
                 R.id.btnSttOnDevice -> SttProvider.ON_DEVICE
                 R.id.btnSttLocal -> SttProvider.LOCAL
+                R.id.btnSttWhisperCpp -> SttProvider.WHISPER_CPP
                 else -> SttProvider.GROQ
             }
             Prefs.setSttProvider(this, sttProvider.id)
@@ -579,19 +581,22 @@ class SettingsActivity : AppCompatActivity() {
         bindingStt = true
         val onDevice = sttProvider == SttProvider.ON_DEVICE
         val local = sttProvider == SttProvider.LOCAL
+        val whisperCpp = sttProvider == SttProvider.WHISPER_CPP
+        val isLocalOrWhisperCpp = local || whisperCpp
 
         findViewById<View?>(R.id.layWhisperControls)?.visibility = if (onDevice) View.VISIBLE else View.GONE
         laySttApiKey.visibility = if (onDevice) View.GONE else View.VISIBLE
         laySttModel.visibility = if (onDevice) View.GONE else View.VISIBLE
-        laySttEndpoint.visibility = if (local) View.VISIBLE else View.GONE
+        laySttEndpoint.visibility = if (isLocalOrWhisperCpp) View.VISIBLE else View.GONE
 
-        laySttApiKey.hint = sttProvider.label + " API key"
-        laySttApiKey.helperText = if (local) {
+        laySttApiKey.hint = if (whisperCpp) "Whisper.cpp Token / Bearer Key (Opcional)" else sttProvider.label + " API key"
+        laySttApiKey.helperText = if (isLocalOrWhisperCpp) {
             "Opcional (si tu servidor local requiere token Bearer)"
         } else {
             "Obtén una key gratuita en console.groq.com"
         }
-        laySttModel.helperText = "Dejar en blanco para usar " + sttProvider.defaultModel
+        laySttEndpoint.hint = if (whisperCpp) "URL Endpoint whisper-server (default: http://127.0.0.1:8282/v1/audio/transcriptions)" else "URL Endpoint STT Local"
+        laySttModel.helperText = if (whisperCpp) "Opcional/Omitir: Modelo predeterminado cargado por whisper-server" else "Dejar en blanco para usar " + sttProvider.defaultModel
         txtSttApiKey.setText(Prefs.sttApiKey(this, sttProvider.id))
         txtSttEndpoint.setText(Prefs.sttEndpoint(this, sttProvider.id))
         txtSttModel.setText(Prefs.sttModel(this, sttProvider.id))

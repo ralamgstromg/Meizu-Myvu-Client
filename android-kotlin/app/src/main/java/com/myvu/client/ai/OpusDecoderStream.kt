@@ -150,7 +150,10 @@ class OpusDecoderStream {
                 all.write(chunk, 0, bufferInfo.size)
                 BufferPool.recycle(chunk)
             }
-            c.releaseOutputBuffer(outIndex, false)
+            try {
+                c.releaseOutputBuffer(outIndex, false)
+            } catch (ignored: Exception) {
+            }
         }
         return out.toByteArray()
     }
@@ -179,7 +182,10 @@ class OpusDecoderStream {
                 consumer?.onPcm(chunk, bufferInfo.size)
                 BufferPool.recycle(chunk)
             }
-            c.releaseOutputBuffer(outIndex, false)
+            try {
+                c.releaseOutputBuffer(outIndex, false)
+            } catch (ignored: Exception) {
+            }
         }
     }
 

@@ -27,6 +27,13 @@ enum class SttProvider(
         "http://127.0.0.1:8181/v1/audio/transcriptions",
         "whisper",
         false
+    ),
+    WHISPER_CPP(
+        "whisper_cpp",
+        "Whisper.cpp (Local Server)",
+        "http://127.0.0.1:8282/v1/audio/transcriptions",
+        "whisper",
+        false
     );
 
     val isNative: Boolean get() = false

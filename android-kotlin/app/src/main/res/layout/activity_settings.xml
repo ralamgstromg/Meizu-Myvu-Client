@@ -684,8 +684,17 @@
                             android:layout_width="0dp"
                             android:layout_weight="1"
                             android:layout_height="wrap_content"
-                            android:textSize="10sp"
+                            android:textSize="9sp"
                             android:text="Servidor HTTP" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSttWhisperCpp"
+                            style="@style/Button.Myvu.Outlined"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:textSize="9sp"
+                            android:text="Whisper.cpp" />
                     </com.google.android.material.button.MaterialButtonToggleGroup>
 
                     <LinearLayout
