@@ -30,6 +30,7 @@ import com.myvu.client.skills.handlers.SmartAgendaPlannerHandler
 import com.myvu.client.skills.handlers.SmartTranslateHudHandler
 import com.myvu.client.skills.handlers.RagHistorySearchHandler
 import com.myvu.client.skills.handlers.QuickAlarmTimerHandler
+import com.myvu.client.skills.handlers.OpenAppHandler
 
 object SkillRegistry {
 
@@ -71,6 +72,7 @@ object SkillRegistry {
         registerHandler("smart-translate-hud", SmartTranslateHudHandler())
         registerHandler("rag-history-search", RagHistorySearchHandler())
         registerHandler("quick-alarm-timer", QuickAlarmTimerHandler())
+        registerHandler("open-app", OpenAppHandler())
 
         // 2. Load SKILL.md manifests from Assets
         val skills = SkillLoader.loadSkillsFromAssets(context)
