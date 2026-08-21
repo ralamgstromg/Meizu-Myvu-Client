@@ -236,7 +236,8 @@ class ChatActivity : AppCompatActivity() {
                 val apiKey = Prefs.aiApiKey(this@ChatActivity, providerId)
                 val model = Prefs.aiModel(this@ChatActivity, providerId)
                 val endpoint = Prefs.aiEndpoint(this@ChatActivity, providerId)
-                val prompt = Prefs.systemPrompt(this@ChatActivity)
+                val basePrompt = Prefs.systemPrompt(this@ChatActivity)
+                val prompt = basePrompt + com.myvu.client.skills.SkillRegistry.buildSystemPromptAddendum()
                 val client = provider.newClient(this@ChatActivity, apiKey, model, endpoint, prompt)
 
                 if (!client.isConfigured()) {
@@ -257,7 +258,8 @@ class ChatActivity : AppCompatActivity() {
                             client.ask(fullPrompt)
                         }
                         val processed = executor.processAndExecute(rawAnswer)
-                        responseText = if (processed.isNotBlank()) processed else (rawAnswer ?: "Respuesta vacía de la IA.")
+                        val skillProcessed = com.myvu.client.skills.SkillExecutor.processAndExecute(this@ChatActivity, processed)
+                        responseText = if (skillProcessed.isNotBlank()) skillProcessed else (rawAnswer ?: "Respuesta vacía de la IA.")
                         sourceName = provider.displayName
                     } catch (e: Exception) {
                         LogBus.error("ChatActivity -> Error querying AI", e)

@@ -49,6 +49,7 @@ Each folder has its own README with build/run details:
   - **Live Web & External Search (`ExternalInfoService`)**: Real-time Google search via HTML snippet parsing with Wikipedia and DuckDuckGo fallbacks, Open-Meteo worldwide city weather geocoding, and live currency conversions (USD, EUR, COP, MXN, ARS, etc.).
   - **Fast-Path Voice Actions (<5ms)**: Intercepts direct commands deterministically before reaching the LLM (fuzzy contact search & background calling via `TelecomManager`, WhatsApp/Telegram E.164 messages, SQLite v4 to-do lists, alarms/timers, unread notification summaries, HUD navigation, teleprompter, OpenTune/Spotify media control).
   - **Native Phone Actions Architecture**: 100% native Android execution without external plugins (legacy Tasker module removed in favor of direct Android framework APIs and internal SQLite database).
+  - **Extensible Skill Engine (`SKILL.md`)**: Dynamic YAML frontmatter skill loader and parser supporting `SKILL.md` manifests (`skills/built-in/...`) for phone calls, email sending, WhatsApp, and Telegram. See [docs/SKILLS.md](docs/SKILLS.md) for full details.
 
 ## How it works (short version)
 
