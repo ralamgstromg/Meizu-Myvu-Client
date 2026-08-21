@@ -516,15 +516,18 @@ class PhoneActionExecutor(context: Context) {
                     val tokens = cleanRaw.split(Regex("\\s+"))
                     var foundRecipient: String? = null
                     var foundMessage = cleanRaw
-                    var longestMatchLen = 0
+                    var bestCandidateScore = 0
 
                     for (i in 1..Math.min(4, tokens.size)) {
                         val candidate = tokens.take(i).joinToString(" ")
-                        val num = lookupContactNumber(candidate)
-                        if (!num.isNullOrEmpty()) {
-                            foundRecipient = candidate
-                            foundMessage = tokens.drop(i).joinToString(" ")
-                            longestMatchLen = i
+                        val matchInfo = lookupContactNumberWithScore(candidate)
+                        if (!matchInfo.number.isNullOrEmpty()) {
+                            if (matchInfo.isExact || matchInfo.score > bestCandidateScore) {
+                                bestCandidateScore = matchInfo.score
+                                foundRecipient = candidate
+                                foundMessage = tokens.drop(i).joinToString(" ")
+                                if (matchInfo.isExact) break
+                            }
                         }
                     }
 
@@ -694,11 +697,17 @@ class PhoneActionExecutor(context: Context) {
         return dp[s1.length][s2.length]
     }
 
-    private fun lookupContactNumber(name: String?): String? {
-        if (name.isNullOrBlank()) return null
+    data class ContactMatchInfo(
+        val number: String?,
+        val score: Int,
+        val isExact: Boolean
+    )
+
+    fun lookupContactNumberWithScore(name: String?): ContactMatchInfo {
+        if (name.isNullOrBlank()) return ContactMatchInfo(null, 0, false)
         if (context.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             LogBus.warn("READ_CONTACTS permission not granted -- cannot lookup $name")
-            return null
+            return ContactMatchInfo(null, 0, false)
         }
         try {
             val normalizedSearch = normalize(name)
@@ -706,6 +715,7 @@ class PhoneActionExecutor(context: Context) {
 
             var bestNumber: String? = null
             var bestScore = Int.MIN_VALUE
+            var bestIsExact = false
 
             context.contentResolver.query(
                 android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
@@ -728,7 +738,8 @@ class PhoneActionExecutor(context: Context) {
 
                         // 1. Coincidencia Exacta
                         if (normalizedContact == normalizedSearch) {
-                            return contactNumber
+                            LogBus.log("contact exact match -> '$name' matched number ($contactNumber)")
+                            return ContactMatchInfo(contactNumber, 200, true)
                         }
 
                         // 2. Cálculo de puntuación por proximidad y tokens compartidos (FTS)
@@ -762,12 +773,16 @@ class PhoneActionExecutor(context: Context) {
             }
             if (bestNumber != null) {
                 LogBus.log("contact fuzzy match -> '$name' matched number ($bestScore pts)")
-                return bestNumber
+                return ContactMatchInfo(bestNumber, bestScore, false)
             }
         } catch (e: Exception) {
             LogBus.warn("could not lookup contact: ${e.message}")
         }
-        return null
+        return ContactMatchInfo(null, 0, false)
+    }
+
+    private fun lookupContactNumber(name: String?): String? {
+        return lookupContactNumberWithScore(name).number
     }
 
     fun queryExternal(query: String?, callback: (String, Boolean) -> Unit) {

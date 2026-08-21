@@ -22,6 +22,7 @@ class OpusDecoderStream {
 
     private val bufferInfo = MediaCodec.BufferInfo()
 
+    @Synchronized
     @Throws(Exception::class)
     fun start() {
         stop()
@@ -32,29 +33,32 @@ class OpusDecoderStream {
         format.setByteBuffer("csd-1", ByteBuffer.wrap(OpusStream.preSkipNs()))
         format.setByteBuffer("csd-2", ByteBuffer.wrap(OpusStream.preSkipNs()))
 
-        codec = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_AUDIO_OPUS)
-        codec?.configure(format, null, null, 0)
-        codec?.start()
+        val c = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_AUDIO_OPUS)
+        c.configure(format, null, null, 0)
+        c.start()
+        codec = c
         presentationUs = 0
         outputSampleRate = OpusStream.SAMPLE_RATE
         outputChannels = OpusStream.CHANNELS
         all.reset()
     }
 
+    @Synchronized
     @JvmOverloads
     fun feed(packet: ByteArray?, length: Int = packet?.size ?: 0): ByteArray {
-        if (codec == null || packet == null || length <= 0) return EMPTY_PCM
+        val c = codec ?: return EMPTY_PCM
+        if (packet == null || length <= 0) return EMPTY_PCM
         try {
             val out = ByteArrayOutputStream()
             var queued = false
             var attempt = 0
             while (attempt < 100 && !queued) {
-                val inIndex = codec?.dequeueInputBuffer(DEQUEUE_TIMEOUT_US) ?: -1
+                val inIndex = c.dequeueInputBuffer(DEQUEUE_TIMEOUT_US)
                 if (inIndex >= 0) {
-                    val inputBuf = codec?.getInputBuffer(inIndex)
+                    val inputBuf = c.getInputBuffer(inIndex)
                     inputBuf?.clear()
                     inputBuf?.put(packet, 0, length)
-                    codec?.queueInputBuffer(inIndex, 0, length, presentationUs, 0)
+                    c.queueInputBuffer(inIndex, 0, length, presentationUs, 0)
                     presentationUs += 20000
                     queued = true
                 }
@@ -65,23 +69,26 @@ class OpusDecoderStream {
             if (!queued) LogBus.warn("Opus decoder never freed an input buffer -- packet lost")
             return out.toByteArray()
         } catch (e: Exception) {
-            LogBus.error("Opus decode failed", e)
+            LogBus.warn("Opus decode feed recovered from exception: ${e.message}")
+            stop()
             return EMPTY_PCM
         }
     }
 
+    @Synchronized
     fun feed(packet: ByteArray?, length: Int, consumer: PcmConsumer) {
-        if (codec == null || packet == null || length <= 0) return
+        val c = codec ?: return
+        if (packet == null || length <= 0) return
         try {
             var queued = false
             var attempt = 0
             while (attempt < 100 && !queued) {
-                val inIndex = codec?.dequeueInputBuffer(DEQUEUE_TIMEOUT_US) ?: -1
+                val inIndex = c.dequeueInputBuffer(DEQUEUE_TIMEOUT_US)
                 if (inIndex >= 0) {
-                    val inputBuf = codec?.getInputBuffer(inIndex)
+                    val inputBuf = c.getInputBuffer(inIndex)
                     inputBuf?.clear()
                     inputBuf?.put(packet, 0, length)
-                    codec?.queueInputBuffer(inIndex, 0, length, presentationUs, 0)
+                    c.queueInputBuffer(inIndex, 0, length, presentationUs, 0)
                     presentationUs += 20000
                     queued = true
                 }
@@ -90,20 +97,24 @@ class OpusDecoderStream {
             }
             if (!queued) LogBus.warn("Opus decoder never freed an input buffer -- packet lost")
         } catch (e: Exception) {
-            LogBus.error("Opus decode failed", e)
+            LogBus.warn("Opus decode feed consumer recovered from exception: ${e.message}")
+            stop()
         }
     }
 
+    @Synchronized
     fun finish() {
         val c = codec ?: return
         try {
-            val inIndex = c.dequeueInputBuffer(50000)
+            val inIndex = try { c.dequeueInputBuffer(50000) } catch (_: Exception) { -1 }
             if (inIndex >= 0) {
-                c.queueInputBuffer(inIndex, 0, 0, presentationUs, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                try {
+                    c.queueInputBuffer(inIndex, 0, 0, presentationUs, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                } catch (_: Exception) {}
             }
             val info = MediaCodec.BufferInfo()
             for (i in 0 until 200) {
-                val outIndex = c.dequeueOutputBuffer(info, 20000)
+                val outIndex = try { c.dequeueOutputBuffer(info, 20000) } catch (_: Exception) { -1 }
                 if (outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) continue
                 if (outIndex < 0) {
                     if (outIndex == MediaCodec.INFO_TRY_AGAIN_LATER) break
@@ -117,11 +128,15 @@ class OpusDecoderStream {
                     all.write(chunk, 0, info.size)
                     BufferPool.recycle(chunk)
                 }
-                c.releaseOutputBuffer(outIndex, false)
+                try {
+                    c.releaseOutputBuffer(outIndex, false)
+                } catch (_: Exception) {}
                 if ((info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) break
             }
         } catch (e: Exception) {
-            LogBus.error("Opus decoder flush failed", e)
+            LogBus.warn("Opus decoder flush safely completed: ${e.message}")
+        } finally {
+            stop()
         }
     }
 
@@ -129,15 +144,17 @@ class OpusDecoderStream {
         val c = codec ?: return EMPTY_PCM
         val out = ByteArrayOutputStream()
         while (true) {
-            val outIndex = c.dequeueOutputBuffer(bufferInfo, 0)
+            val outIndex = try { c.dequeueOutputBuffer(bufferInfo, 0) } catch (_: Exception) { -1 }
             if (outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-                val actual = c.outputFormat
-                outputSampleRate = actual.getInteger(MediaFormat.KEY_SAMPLE_RATE)
-                outputChannels = actual.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
-                LogBus.log(
-                    "Opus decoder output: ${outputSampleRate}Hz, ${outputChannels}ch" +
-                            if (outputSampleRate != OpusStream.SAMPLE_RATE) " (NOT the declared ${OpusStream.SAMPLE_RATE}Hz)" else ""
-                )
+                try {
+                    val actual = c.outputFormat
+                    outputSampleRate = actual.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+                    outputChannels = actual.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+                    LogBus.log(
+                        "Opus decoder output: ${outputSampleRate}Hz, ${outputChannels}ch" +
+                                if (outputSampleRate != OpusStream.SAMPLE_RATE) " (NOT the declared ${OpusStream.SAMPLE_RATE}Hz)" else ""
+                    )
+                } catch (_: Exception) {}
                 continue
             }
             if (outIndex < 0) break
@@ -161,15 +178,17 @@ class OpusDecoderStream {
     private fun drainToConsumer(consumer: PcmConsumer?) {
         val c = codec ?: return
         while (true) {
-            val outIndex = c.dequeueOutputBuffer(bufferInfo, 0)
+            val outIndex = try { c.dequeueOutputBuffer(bufferInfo, 0) } catch (_: Exception) { -1 }
             if (outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-                val actual = c.outputFormat
-                outputSampleRate = actual.getInteger(MediaFormat.KEY_SAMPLE_RATE)
-                outputChannels = actual.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
-                LogBus.log(
-                    "Opus decoder output: ${outputSampleRate}Hz, ${outputChannels}ch" +
-                            if (outputSampleRate != OpusStream.SAMPLE_RATE) " (NOT the declared ${OpusStream.SAMPLE_RATE}Hz)" else ""
-                )
+                try {
+                    val actual = c.outputFormat
+                    outputSampleRate = actual.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+                    outputChannels = actual.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+                    LogBus.log(
+                        "Opus decoder output: ${outputSampleRate}Hz, ${outputChannels}ch" +
+                                if (outputSampleRate != OpusStream.SAMPLE_RATE) " (NOT the declared ${OpusStream.SAMPLE_RATE}Hz)" else ""
+                    )
+                } catch (_: Exception) {}
                 continue
             }
             if (outIndex < 0) break
@@ -199,18 +218,19 @@ class OpusDecoderStream {
         all.reset()
     }
 
+    @Synchronized
     fun stop() {
         all.reset()
-        if (codec == null) return
-        try {
-            codec?.stop()
-        } catch (ignored: Exception) {
-        }
-        try {
-            codec?.release()
-        } catch (ignored: Exception) {
-        }
+        val c = codec ?: return
         codec = null
+        try {
+            c.stop()
+        } catch (ignored: Exception) {
+        }
+        try {
+            c.release()
+        } catch (ignored: Exception) {
+        }
     }
 
     companion object {

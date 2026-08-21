@@ -6,9 +6,21 @@ La aplicación móvil Kotlin para los lentes inteligentes **Meizu MYVU** integra
 
 ---
 
+## Análisis de Logs y Mejoras de Estabilidad Incorporadas
+
+### 1. Robustez del Decodificador de Audio Opus (`OpusDecoderStream`)
+- **Problema Detectado en Logs**: Ocurrencia de `IllegalStateException: Invalid to call at Uninitialized state; only valid in executing state` cuando el decodificador MediaCodec ingresaba a estado no inicializado tras un fallo puntual de trama.
+- **Solución Implementada**: Se protegieron todas las invocaciones a `dequeueInputBuffer`, `dequeueOutputBuffer` y `queueInputBuffer` mediante bloques try-catch sincronizados y reinicio seguro del estado del decodificador (`stop()`), evitando cierres forzados o excepciones no capturadas.
+
+### 2. Algoritmo de Extracción de Contactos para WhatsApp/Llamadas (`PhoneActionExecutor`)
+- **Problema Detectado en Logs**: Al dictar comandos compuestos (ej. *"Enviar mensaje de WhatsApp a Matías Castro hola hijo cómo vas"*), la búsqueda heurística por longitud máxima consumía palabras del mensaje (*"Matías Castro hola hijo"*) como destinatario, dejando solo *"cómo vas"* como mensaje.
+- **Solución Implementada**: Se implementó `lookupContactNumberWithScore` con detección de coincidencias exactas (`isExact = true`, 200 pts). La búsqueda evalúa candidatos y detiene inmediatamente el bucle al hallar el contacto exacto, separando con precisión el nombre del contacto y el cuerpo del mensaje (*Destinatario: Matías Castro*, *Mensaje: hola hijo cómo vas*).
+
+---
+
 ## Servicio de Transcripción de Audio (STT Simplificado)
 
-El cliente HTTP de transcripción (`OpenAiTranscriptionClient`) ha sido ajustado para cumplir estrictamente con las siguientes especificaciones:
+El cliente HTTP de transcripción (`OpenAiTranscriptionClient`) cumple estrictamente con las siguientes especificaciones:
 
 1. **Envío del Archivo de Audio e Idioma Español (`es`)**:
    - Se envía la parte `file` del archivo de audio, el parámetro de modelo `model` y la especificación del idioma `language = "es"`.
