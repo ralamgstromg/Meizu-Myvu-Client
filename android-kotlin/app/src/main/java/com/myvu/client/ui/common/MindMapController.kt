@@ -35,6 +35,7 @@ class MindMapController(
 
     private fun setupWebView() {
         try {
+            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
             webView.settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
