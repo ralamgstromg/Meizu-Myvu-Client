@@ -44,3 +44,22 @@ Se ajustó la lógica de procesamiento de Inteligencia Artificial para los módu
 | `duckduckgo-search` | Búsqueda DuckDuckGo | Búsqueda directa en DuckDuckGo refinando categoría y términos. | `query` (String), `category` (String) |
 | `x-twitter-search` | Búsqueda en X / Twitter | Consulta tendencias e información en tiempo real en X (Twitter). | `query` (String), `topic` (String), `author` (String) |
 | `hud-navigation` | Navegación AR en Lentes | Inicia navegación GPS proyectada en la interfaz AR / HUD indicando dirección, barrio o ciudad. | `destination` (String), `city` (String), `neighborhood` (String), `mode` (String) |
+| `gemini-live-assistant` | Asistente Gemini de Voz e Interacción en Gafas | Interacción conversacional continua dúplex con Gemini utilizando el micrófono Bluetooth de las gafas y salida por altavoz A2DP/SCO + HUD AR. | `trigger_mode` (String: "voice_wakeword" / "touch_gesture"), `enable_hud` (Boolean), `context_skills` (String) |
+
+---
+
+## Especificación Detallada: Habilidad Gemini Voice Assistant (`gemini-live-assistant`)
+
+La habilidad **`gemini-live-assistant`** conecta el micrófono dual de las gafas inteligentes Meizu MYVU con la API Multimodal Live de Google Gemini en el teléfono Android:
+
+1. **Captura y Stream de Audio en Tiempo Real**:
+   - Flujo de audio capturado vía [`GlassesMicStream.kt`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ai/GlassesMicStream.kt) mediante paquetes protobuf Bluetooth Code 109.
+   - Filtrado, normalización Peak Soft-Knee y resampling a 16kHz PCM en [`AudioPipeline.kt`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ai/AudioPipeline.kt).
+2. **Conexión WebSocket Dúplex**:
+   - Transmisión continua de fragmentos PCM a la WebSocket de Gemini Multimodal Live API (`GeminiLiveService.kt`).
+   - Recepción de audio sintetizado PCM de alta fidelidad enviado al altavoz A2DP/SCO de las gafas.
+3. **Proyección en Pantalla AR (HUD)**:
+   - Filtrado y remoción de cualquier elemento de sintaxis Markdown (`#`, `*`, `_`, `` ` ``, viñetas) para transmitir **exclusivamente texto limpio de máximo 2 a 3 líneas** al visor MicroLED mediante [`HudDisplayManager.kt`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ui/HudDisplayManager.kt).
+4. **Orquestación mediante Function Calling**:
+   - Gemini analiza la intención del usuario y puede ejecutar cualquiera de las otras 21 habilidades nativas registrando llamadas a [`SkillEngine.kt`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ai/SkillEngine.kt) (WhatsApp, llamadas, recordatorios, clima, calendario, navegación).
+
