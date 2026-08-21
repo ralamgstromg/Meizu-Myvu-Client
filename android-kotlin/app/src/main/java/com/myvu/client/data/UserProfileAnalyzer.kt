@@ -11,7 +11,7 @@ import org.json.JSONObject
 import java.util.UUID
 
 /**
- * Manages chat history persistence and dynamic user profile enrichment based on queries.
+ * Manages chat history persistence and personalized user profile (name only, no history or interests in prompt).
  */
 class UserProfileAnalyzer(context: Context) {
 
@@ -42,7 +42,7 @@ class UserProfileAnalyzer(context: Context) {
                 profileId = DEFAULT_PROFILE_ID,
                 name = "Usuario",
                 preferencesJson = "{\"language\":\"es\",\"tone\":\"concise\"}",
-                interestTags = "general,asistente",
+                interestTags = "",
                 messageCount = 0,
                 lastInteraction = System.currentTimeMillis()
             )
@@ -52,7 +52,7 @@ class UserProfileAnalyzer(context: Context) {
     }
 
     /**
-     * Saves a user message or AI response to Room DB and updates the user profile.
+     * Saves a user message or AI response to Room DB for UI display purposes.
      */
     fun recordMessage(
         sessionId: String,
@@ -94,7 +94,7 @@ class UserProfileAnalyzer(context: Context) {
     }
 
     /**
-     * Analyzes query content to update user profile interests and interaction metadata.
+     * Updates profile interaction metadata (message count and last interaction time).
      */
     private suspend fun updateProfileFromQuery(query: String) = withContext(Dispatchers.IO) {
         try {
@@ -103,102 +103,49 @@ class UserProfileAnalyzer(context: Context) {
 
             profile.messageCount += 1
             profile.lastInteraction = System.currentTimeMillis()
-
-            val currentTags = profile.interestTags.split(",").map { it.trim().lowercase() }.filter { it.isNotBlank() }.toMutableSet()
-
-            val lower = query.lowercase()
-            if (lower.contains("clima") || lower.contains("tiempo") || lower.contains("temperatura")) currentTags.add("clima")
-            if (lower.contains("música") || lower.contains("canción") || lower.contains("reproduc")) currentTags.add("música")
-            if (lower.contains("teleprompter") || lower.contains("guion") || lower.contains("discurso")) currentTags.add("teleprompter")
-            if (lower.contains("nota") || lower.contains("recordatorio") || lower.contains("tarea")) currentTags.add("productividad")
-            if (lower.contains("notificación") || lower.contains("mensaje") || lower.contains("aviso")) currentTags.add("notificaciones")
-            if (lower.contains("buscar") || lower.contains("google") || lower.contains("quién") || lower.contains("qué es")) currentTags.add("búsquedas")
-            if (lower.contains("foto") || lower.contains("imagen") || lower.contains("cámara")) currentTags.add("visión_ia")
-
-            profile.interestTags = currentTags.joinToString(",")
             dao.insertProfile(profile)
         } catch (e: Exception) {
-            LogBus.error("UserProfileAnalyzer -> Error updating profile", e)
+            LogBus.error("UserProfileAnalyzer -> Error updating profile metadata", e)
         }
     }
 
     /**
-     * Builds system prompt context derived from user profile.
+     * Builds system prompt context derived exclusively from the user's name for personalized addressing.
      */
     suspend fun buildProfilePromptContext(): String = withContext(Dispatchers.IO) {
         try {
             val profile = getOrCreateProfile()
-            val sb = StringBuilder()
             if (profile.name.isNotBlank()) {
-                sb.append("Nombre del usuario: ").append(profile.name).append(". ")
+                "[Perfil del Usuario: El nombre del usuario es ${profile.name}. Dirígete a él de forma personalizada.]\n"
+            } else {
+                ""
             }
-            if (profile.interestTags.isNotBlank()) {
-                sb.append("Intereses detectados del usuario: ").append(profile.interestTags).append(". ")
-            }
-            try {
-                val json = JSONObject(profile.preferencesJson)
-                if (json.has("customInstructions")) {
-                    val custom = json.optString("customInstructions")
-                    if (custom.isNotBlank()) {
-                        sb.append("Instrucciones personalizadas del usuario: ").append(custom).append(". ")
-                    }
-                }
-            } catch (_: Exception) {}
-
-            if (sb.isNotEmpty()) "[Perfil del Usuario: ${sb.toString().trim()}]\n" else ""
         } catch (e: Exception) {
             ""
         }
     }
 
     /**
-     * Builds context containing the last [limit] messages from the chat history.
+     * History context is disabled: returns empty string to ensure only current request is processed.
      */
     suspend fun buildRecentHistoryContext(limit: Int = 5): String = withContext(Dispatchers.IO) {
-        try {
-            val dao = AppDatabase.getInstance(appContext).chatDao()
-            val recent = dao.getRecentMessages(limit).reversed()
-            if (recent.isEmpty()) return@withContext ""
-
-            val sb = StringBuilder("[Historial Reciente de la Conversación (últimos ").append(recent.size).append(" mensajes)]:\n")
-            for (msg in recent) {
-                val role = if ("USER" == msg.direction) "Usuario" else "Asistente"
-                val text = msg.content.trim().replace("\n", " ")
-                sb.append(role).append(": ").append(text).append("\n")
-            }
-            sb.append("\n")
-            sb.toString()
-        } catch (e: Exception) {
-            ""
-        }
+        ""
     }
 
     /**
-     * Builds unified prompt context containing both user profile and recent 5 messages history.
+     * Returns profile context containing ONLY the user's name. Bypasses conversation history.
      */
     suspend fun buildFullPromptContext(recentLimit: Int = 5): String = withContext(Dispatchers.IO) {
-        val profileContext = buildProfilePromptContext()
-        val historyContext = buildRecentHistoryContext(recentLimit)
-        profileContext + historyContext
+        buildProfilePromptContext()
     }
 
     /**
-     * Updates profile details manually (from Settings UI).
+     * Updates profile details manually from Settings UI.
      */
-    suspend fun saveProfile(name: String, interestTags: String, customInstructions: String) = withContext(Dispatchers.IO) {
+    suspend fun saveProfile(name: String, interestTags: String = "", customInstructions: String = "") = withContext(Dispatchers.IO) {
         val dao = AppDatabase.getInstance(appContext).chatDao()
         val profile = getOrCreateProfile()
         profile.name = name
-        profile.interestTags = interestTags
-
-        val json = try {
-            JSONObject(profile.preferencesJson)
-        } catch (_: Exception) {
-            JSONObject()
-        }
-        json.put("customInstructions", customInstructions)
-        profile.preferencesJson = json.toString()
-
         dao.insertProfile(profile)
     }
 }

@@ -6,6 +6,17 @@ La aplicación móvil Kotlin para los lentes inteligentes **Meizu MYVU** integra
 
 ---
 
+## Proceso del Agente de IA y Personalización Ligera
+
+Se ha ajustado el proceso de inyección de contexto en `UserProfileAnalyzer`:
+
+### Reglas de Procesamiento de Solicitudes:
+1. **Aislamiento de la Petición Actual**: Se deshabilitó la inclusión del historial de conversaciones previas (`buildRecentHistoryContext` retorna cadena vacía `""`). Cada consulta procesa única y exclusivamente la solicitud actual del usuario.
+2. **Eliminación de Intereses e Instrucciones Detectadas**: Se removió la extracción automática de etiquetas de interés (`interestTags`) y la inyección de instrucciones personalizadas (`customInstructions`) en el Prompt de Sistema.
+3. **Personalización por Nombre**: Se almacena y conserva el **Nombre del usuario** (`profile.name`) para que el agente **Aura** se dirija al usuario de forma personalizada en cada respuesta.
+
+---
+
 ## Modos de Interacción
 
 ### 1. Interfaz de Chat Móvil (`ChatActivity`)
@@ -14,7 +25,7 @@ La aplicación móvil Kotlin para los lentes inteligentes **Meizu MYVU** integra
 - **Botón `⚡ Skills`**: Despliega un cuadro de diálogo con el catálogo completo de las 12 habilidades registradas.
 
 ### 2. Asistente por Voz desde Micrófono de las Gafas (`AiConversation`)
-- **Prompt de Sistema Unificado**: Inyecta `SkillRegistry.buildSystemPromptAddendum()` a todas las consultas generadas por voz.
+- **Prompt de Sistema Unificado**: Inyecta `SkillRegistry.buildSystemPromptAddendum()` a todas las consultas generadas por voz junto con el nombre del usuario.
 - **Ejecución Automática de Handlers**: Invoca `SkillExecutor.processAndExecute` en segundo plano cuando el LLM emite etiquetas `[SKILL: id_habilidad {...}]`.
 - **Sanitización de Respuestas**: Limpia etiquetas JSON o bloques de formato crudo antes de proyectar en el HUD y sintetizar la voz mediante el reproductor TTS.
 
@@ -36,26 +47,3 @@ La aplicación móvil Kotlin para los lentes inteligentes **Meizu MYVU** integra
 | `create-note` | Crear Nota Local | Guarda una nueva nota de texto en la base de datos local SQLite. | `title` (String), `body` (String), `tags` (String) |
 | `create-reminder` | Programar Recordatorio | Programa una alarma/recordatorio con notificación. | `title` (String), `minutes_from_now` (Int), `body` (String) |
 | `ai-voice-recorder` | Grabadora de Voz IA | Inicia una sesión de grabación de voz procesada con IA. | `duration_seconds` (Int), `notes` (String) |
-
----
-
-## Estructura del Manifiesto `SKILL.md`
-
-Todas las habilidades contienen un archivo de definición `SKILL.md` ubicado en `assets/skills/built-in/<skill-id>/SKILL.md` con la siguiente estructura YAML Frontmatter y Markdown:
-
-```markdown
----
-name: Nombre Habilidad
-id: skill-id
-description: Descripción clara de lo que hace la habilidad.
-parameters:
-  param1:
-    type: string
-    description: Descripción del parámetro.
-    required: true
----
-
-# skill-id
-
-Instrucciones de uso para el agente Aura.
-```
