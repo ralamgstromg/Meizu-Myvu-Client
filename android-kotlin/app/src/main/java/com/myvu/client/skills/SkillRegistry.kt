@@ -15,12 +15,14 @@ import com.myvu.client.skills.handlers.NewsSearchHandler
 import com.myvu.client.skills.handlers.SendEmailHandler
 import com.myvu.client.skills.handlers.SendTelegramHandler
 import com.myvu.client.skills.handlers.SendWhatsappHandler
+import com.myvu.client.skills.handlers.HudNavigationHandler
 import com.myvu.client.skills.handlers.UnreadEmailsSummaryHandler
 import com.myvu.client.skills.handlers.UnreadNotificationsHandler
 import com.myvu.client.skills.handlers.UnreadTelegramSummaryHandler
 import com.myvu.client.skills.handlers.UnreadWhatsappSummaryHandler
 import com.myvu.client.skills.handlers.WeatherForecastHandler
 import com.myvu.client.skills.handlers.WikipediaSearchHandler
+import com.myvu.client.skills.handlers.XTwitterSearchHandler
 
 object SkillRegistry {
 
@@ -51,6 +53,8 @@ object SkillRegistry {
         registerHandler("unread-emails-summary", UnreadEmailsSummaryHandler())
         registerHandler("unread-whatsapp-summary", UnreadWhatsappSummaryHandler())
         registerHandler("unread-telegram-summary", UnreadTelegramSummaryHandler())
+        registerHandler("x-twitter-search", XTwitterSearchHandler())
+        registerHandler("hud-navigation", HudNavigationHandler())
 
         // 2. Load SKILL.md manifests from Assets
         val skills = SkillLoader.loadSkillsFromAssets(context)

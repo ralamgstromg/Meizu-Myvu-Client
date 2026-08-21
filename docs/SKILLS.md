@@ -6,17 +6,19 @@ La aplicación móvil Kotlin para los lentes inteligentes **Meizu MYVU** integra
 
 ---
 
-## Solución al Fallo del Servicio STT (Transcripción de Voz de las Gafas)
+## Interacción con el Agente en Pantalla Bloqueada (Lock Screen & Keyguard)
 
-Se identificó y corrigió el error crítico en [`OpusDecoderStream.kt`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ai/OpusDecoderStream.kt):
+Se implementó el componente de utilidad [`LockScreenHelper`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/core/LockScreenHelper.kt) y se agregaron los permisos del sistema requeridos para interactuar con el agente **Aura** cuando la pantalla del teléfono móvil se encuentra bloqueada o apagada:
 
-- **Diagnóstico en Logs**: La línea `captured 0 samples (0ms @ 48000Hz) from X Opus packets` indicaba que el búfer de muestras decodificadas llegaba vacío al servicio STT.
-- **Causa Raíz**: En `OpusDecoderStream.kt`, el método `finish()` invocaba en su cláusula `finally { stop() }`. A su vez, `stop()` ejecutaba `all.reset()`, limpiando inmediatamente el flujo de audio `ByteArrayOutputStream` antes de que `decoder.allPcm()` pudiese leer las muestras capturadas.
-- **Solución**: Se removió `all.reset()` de `stop()`. El búfer `all.reset()` únicamente se limpia de forma explícita al reiniciar la sesión de grabación en `start()` o `reset()`, garantizando la entrega del 100% de la ráfaga PCM al motor STT.
+1. **Permisos Registrados en el Manifest**:
+   - `android.permission.DISABLE_KEYGUARD`: Desbloqueo temporal seguro de la pantalla de bloqueo durante la interacción activa.
+   - `android.permission.USE_FULL_SCREEN_INTENT`: Lanzamiento de la interfaz de conversación en pantalla completa sobre la pantalla bloqueada.
+   - `android.permission.SYSTEM_ALERT_WINDOW`: Permiso de superposición para mostrar el asistente sobre otras aplicaciones o sobre el Keyguard.
+   - `android.permission.WAKE_LOCK`: Encendido inmediato de la pantalla al activarse una consulta por voz desde las gafas o mediante el asistente.
 
 ---
 
-## Catálogo Actualizado de 19 Habilidades Nativas Activas
+## Catálogo Actualizado de 21 Habilidades Nativas Activas
 
 Todas las habilidades cuentan con su respectiva carpeta y archivo de definición manifest `SKILLS.md` dentro de `skills/built-in/<skill-id>/SKILL.md` y `assets/skills/built-in/<skill-id>/SKILL.md`.
 
@@ -41,6 +43,8 @@ Todas las habilidades cuentan con su respectiva carpeta y archivo de definición
 | `unread-telegram-summary` | Resumen de Telegram | Obtiene un resumen de notificaciones y mensajes pendientes de Telegram. | - |
 | `news-search` | Consulta de Noticias | Busca noticias filtradas por tema, ubicación y fecha. | `topic` (String), `location` (String), `date` (String) |
 | `duckduckgo-search` | Búsqueda DuckDuckGo | Búsqueda directa en DuckDuckGo refinando categoría y términos. | `query` (String), `category` (String) |
+| `x-twitter-search` | Búsqueda en X / Twitter | Consulta tendencias e información en tiempo real en X (Twitter). | `query` (String), `topic` (String), `author` (String) |
+| `hud-navigation` | Navegación AR en Lentes | Inicia navegación GPS proyectada en la interfaz AR / HUD indicando dirección, barrio o ciudad. | `destination` (String), `city` (String), `neighborhood` (String), `mode` (String) |
 
 ---
 
