@@ -69,7 +69,11 @@ object CrashReporter {
                 // If exception occurs on a background worker or async coroutine, absorb safely
                 if (!isMain && appCtx != null) {
                     LogBus.warn("CrashReporter: Safely absorbed crash on background thread '${thread.name}' to preserve app stability")
-                    defaultHandler?.uncaughtException(thread, throwable)
+                    try {
+                        com.myvu.client.core.ServiceKeepAliveHelper.ensureServiceRunning(appCtx)
+                    } catch (e: Throwable) {
+                        LogBus.error("CrashReporter: Failed to re-ensure service running", e)
+                    }
                     return@setDefaultUncaughtExceptionHandler
                 }
 

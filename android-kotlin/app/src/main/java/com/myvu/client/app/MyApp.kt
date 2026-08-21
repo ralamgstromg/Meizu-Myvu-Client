@@ -9,6 +9,7 @@ class MyApp : Application() {
         super.onCreate()
         CrashReporter.install(this)
         SkillRegistry.initialize(this)
-        LogBus.log("App started — crash reporter installed & SkillRegistry initialized")
+        com.myvu.client.service.ServiceWatchdogReceiver.scheduleWatchdog(this)
+        LogBus.log("App started — crash reporter installed, SkillRegistry initialized & watchdog scheduled")
     }
 }

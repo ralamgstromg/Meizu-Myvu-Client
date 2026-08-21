@@ -58,8 +58,9 @@ class MyvuService : Service(), ConnectionManager.Listener {
         // and on API 34+ the type is mandatory and must match the manifest.
         startInForeground("Connecting...")
 
-        if (ACTION_START == action) {
-            val mac = intent.getStringExtra(EXTRA_MAC)
+        if (ACTION_START == action || action == null) {
+            val mac = intent?.getStringExtra(EXTRA_MAC)?.ifBlank { null }
+                ?: Prefs.targetMac(this).ifBlank { null }
             if (!mac.isNullOrEmpty()) {
                 connection?.start(mac)
             } else {
@@ -67,11 +68,17 @@ class MyvuService : Service(), ConnectionManager.Listener {
                 connection?.startAutoSearch()
             }
         }
-        // REDELIVER rather than STICKY: a sticky restart hands us a null intent,
-        // so we would come back as a foreground service with no MAC and no way
-        // to reconnect. Redelivering the original START keeps restarts useful,
-        // and ConnectionManager.start() ignores a duplicate.
         return START_REDELIVER_INTENT
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        LogBus.log("MyvuService: Task removed from Recents — ensuring service stays alive")
+        try {
+            com.myvu.client.core.ServiceKeepAliveHelper.ensureServiceRunning(applicationContext)
+        } catch (e: Throwable) {
+            LogBus.error("MyvuService: Failed to restart on task removed", e)
+        }
     }
 
     private fun startInForeground(status: String) {
