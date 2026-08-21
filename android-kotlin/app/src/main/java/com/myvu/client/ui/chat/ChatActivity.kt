@@ -1,13 +1,16 @@
 package com.myvu.client.ui.chat
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -22,6 +25,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.chip.Chip
 import com.myvu.client.R
 import com.myvu.client.ai.AiProvider
 import com.myvu.client.ai.PhoneActionExecutor
@@ -32,6 +36,7 @@ import com.myvu.client.core.Prefs
 import com.myvu.client.data.ChatMessage
 import com.myvu.client.data.UserProfileAnalyzer
 import com.myvu.client.database.AppDatabase
+import com.myvu.client.skills.SkillRegistry
 import com.myvu.client.ui.SettingsActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -45,8 +50,8 @@ import java.util.Locale
 import java.util.UUID
 
 /**
- * Full-Screen Chat Activity supporting history tracking, voice/text/image inputs,
- * and mobile device control actions with native Edge-to-Edge window insets.
+ * Full-Screen Chat Activity supporting history tracking, quick skill access toolbar,
+ * instant Enter sending, voice/text/image inputs, and mobile device control actions.
  */
 class ChatActivity : AppCompatActivity() {
 
@@ -143,7 +148,88 @@ class ChatActivity : AppCompatActivity() {
             }
         }
 
+        // Configure Instant Send on IME Action (Virtual Keyboard Intro)
+        edtChatMessage.setOnEditorActionListener { _, actionId, event ->
+            if (actionId == EditorInfo.IME_ACTION_SEND ||
+                (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN && !event.isShiftPressed)) {
+                val text = edtChatMessage.text.toString().trim()
+                if (text.isNotBlank() || attachedImageUri != null) {
+                    sendUserQuery(text)
+                }
+                true
+            } else {
+                false
+            }
+        }
+
+        // Configure Hardware Keyboard Enter Key
+        edtChatMessage.setOnKeyListener { _, keyCode, event ->
+            if (keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN && !event.isShiftPressed) {
+                val text = edtChatMessage.text.toString().trim()
+                if (text.isNotBlank() || attachedImageUri != null) {
+                    sendUserQuery(text)
+                }
+                true
+            } else {
+                false
+            }
+        }
+
+        setupQuickSkillsBar()
         observeChatHistory()
+    }
+
+    private fun setupQuickSkillsBar() {
+        val btnAllSkills: MaterialButton = findViewById(R.id.btnAllSkills)
+        val chipCall: Chip = findViewById(R.id.chipCall)
+        val chipWhatsapp: Chip = findViewById(R.id.chipWhatsapp)
+        val chipEmail: Chip = findViewById(R.id.chipEmail)
+        val chipTelegram: Chip = findViewById(R.id.chipTelegram)
+        val chipGoogle: Chip = findViewById(R.id.chipGoogle)
+        val chipWiki: Chip = findViewById(R.id.chipWiki)
+        val chipWeather: Chip = findViewById(R.id.chipWeather)
+        val chipCurrency: Chip = findViewById(R.id.chipCurrency)
+        val chipNote: Chip = findViewById(R.id.chipNote)
+        val chipReminder: Chip = findViewById(R.id.chipReminder)
+        val chipRecorder: Chip = findViewById(R.id.chipRecorder)
+
+        btnAllSkills.setOnClickListener { showSkillsDialog() }
+        chipCall.setOnClickListener { insertSkillTemplate("Llamar a ") }
+        chipWhatsapp.setOnClickListener { insertSkillTemplate("Enviar whatsapp a ") }
+        chipEmail.setOnClickListener { insertSkillTemplate("Enviar email a ") }
+        chipTelegram.setOnClickListener { insertSkillTemplate("Enviar telegram a ") }
+        chipGoogle.setOnClickListener { insertSkillTemplate("Buscar en Google ") }
+        chipWiki.setOnClickListener { insertSkillTemplate("Buscar en Wikipedia ") }
+        chipWeather.setOnClickListener { insertSkillTemplate("Clima en ") }
+        chipCurrency.setOnClickListener { insertSkillTemplate("Convertir 100 USD a COP") }
+        chipNote.setOnClickListener { insertSkillTemplate("Crear nota con titulo: ") }
+        chipReminder.setOnClickListener { insertSkillTemplate("Recordar en 30 minutos: ") }
+        chipRecorder.setOnClickListener { insertSkillTemplate("Iniciar grabacion de voz IA") }
+    }
+
+    private fun insertSkillTemplate(template: String) {
+        edtChatMessage.setText(template)
+        edtChatMessage.setSelection(template.length)
+        edtChatMessage.requestFocus()
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager
+        imm?.showSoftInput(edtChatMessage, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun showSkillsDialog() {
+        val skills = SkillRegistry.getAllSkills()
+        if (skills.isEmpty()) {
+            Toast.makeText(this, "No hay habilidades registradas", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val names = skills.map { "⚡ ${it.name}\n${it.description}" }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle("Habilidades Disponibles (Skills)")
+            .setItems(names) { _, which ->
+                val selectedSkill = skills[which]
+                insertSkillTemplate("Usa la habilidad ${selectedSkill.id} para ")
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun observeChatHistory() {
@@ -237,7 +323,7 @@ class ChatActivity : AppCompatActivity() {
                 val model = Prefs.aiModel(this@ChatActivity, providerId)
                 val endpoint = Prefs.aiEndpoint(this@ChatActivity, providerId)
                 val basePrompt = Prefs.systemPrompt(this@ChatActivity)
-                val prompt = basePrompt + com.myvu.client.skills.SkillRegistry.buildSystemPromptAddendum()
+                val prompt = basePrompt + SkillRegistry.buildSystemPromptAddendum()
                 val client = provider.newClient(this@ChatActivity, apiKey, model, endpoint, prompt)
 
                 if (!client.isConfigured()) {
