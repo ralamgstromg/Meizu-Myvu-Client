@@ -6,20 +6,7 @@ La aplicación móvil Kotlin para los lentes inteligentes **Meizu MYVU** integra
 
 ---
 
-## Extracción de Entidades y Refinamiento de Consultas
-
-Todas las habilidades han sido optimizadas para extraer entidades específicas (ubicación geográfica, fechas objetivo, periódos temporales, temas, remitentes y filtros adicionales) directamente de la petición del usuario para refinar los parámetros enviados a las APIs:
-
-- **Pronóstico del Clima (`weather-forecast`)**: Extrae `city` (ej. Barranquilla), `date` (ej. 2026-08-22, mañana) y `time_frame` (mañana, tarde, noche).
-- **Búsqueda en Google (`google-search`)**: Extrae `query` y `date_filter` (filtros temporales específicos).
-- **Búsqueda en DuckDuckGo (`duckduckgo-search`)**: Extrae `query` y `category` de búsqueda.
-- **Consulta de Noticias (`news-search`)**: Extrae `topic`, `location` (ciudad/país) y `date`.
-- **Eventos del Calendario (`calendar-events`)**: Extrae `date` objetivo y término de búsqueda `query`.
-- **Notificaciones Pendientes (`unread-notifications`)**: Extrae `category` (whatsapp, telegram, email, all) y `sender`.
-
----
-
-## Catálogo Actualizado de 16 Habilidades Nativas Activas
+## Catálogo Actualizado de 19 Habilidades Nativas Activas
 
 Todas las habilidades cuentan con su respectiva carpeta y archivo de definición manifest `SKILLS.md` dentro de `skills/built-in/<skill-id>/SKILL.md` y `assets/skills/built-in/<skill-id>/SKILL.md`.
 
@@ -39,6 +26,9 @@ Todas las habilidades cuentan con su respectiva carpeta y archivo de definición
 | `ai-voice-recorder` | Grabadora de Voz IA | Inicia una sesión de grabación de voz procesada con IA. | `duration_seconds` (Int), `notes` (String) |
 | `calendar-events` | Consulta de Calendario | Consulta eventos filtrando por fecha objetivo y término clave. | `date` (String), `query` (String), `limit` (Int) |
 | `unread-notifications` | Notificaciones Pendientes | Revisa notificaciones no leídas filtradas por categoría o remitente. | `category` (String), `sender` (String) |
+| `unread-emails-summary` | Resumen de Correos | Obtiene un resumen de correos electrónicos no leídos y pendientes. | - |
+| `unread-whatsapp-summary` | Resumen de WhatsApp | Obtiene un resumen de los mensajes sin leer de WhatsApp. | - |
+| `unread-telegram-summary` | Resumen de Telegram | Obtiene un resumen de notificaciones y mensajes pendientes de Telegram. | - |
 | `news-search` | Consulta de Noticias | Busca noticias filtradas por tema, ubicación y fecha. | `topic` (String), `location` (String), `date` (String) |
 | `duckduckgo-search` | Búsqueda DuckDuckGo | Búsqueda directa en DuckDuckGo refinando categoría y términos. | `query` (String), `category` (String) |
 
@@ -72,7 +62,7 @@ Se ha ajustado el proceso de inyección de contexto en `UserProfileAnalyzer`:
 ### 1. Interfaz de Chat Móvil (`ChatActivity`)
 - **Teclado Virtual & Físico**: Configurado para enviar consultas directamente al presionar la tecla **Enter / Intro** (`imeOptions="actionSend"`).
 - **Barra de Acceso Rápido (`Quick Skills Toolbar`)**: Botones tipo Chip desplegables sobre el campo de texto para autocompletar plantillas de comandos al instante.
-- **Botón `⚡ Skills`**: Despliega un cuadro de diálogo con el catálogo completo de las 16 habilidades registradas.
+- **Botón `⚡ Skills`**: Despliega un cuadro de diálogo con el catálogo completo de las 19 habilidades registradas.
 
 ### 2. Asistente por Voz desde Micrófono de las Gafas (`AiConversation`)
 - **Prompt de Sistema Unificado**: Inyecta `SkillRegistry.buildSystemPromptAddendum()` a todas las consultas generadas por voz junto con el nombre del usuario.
