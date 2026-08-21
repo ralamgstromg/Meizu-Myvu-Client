@@ -3,15 +3,19 @@ package com.myvu.client.skills
 import android.content.Context
 import com.myvu.client.core.LogBus
 import com.myvu.client.skills.handlers.AiVoiceRecorderHandler
+import com.myvu.client.skills.handlers.CalendarEventsHandler
 import com.myvu.client.skills.handlers.CallContactHandler
 import com.myvu.client.skills.handlers.CreateNoteHandler
 import com.myvu.client.skills.handlers.CreateReminderHandler
 import com.myvu.client.skills.handlers.CurrencyConvertHandler
 import com.myvu.client.skills.handlers.CurrencyRateHandler
+import com.myvu.client.skills.handlers.DuckDuckGoSearchHandler
 import com.myvu.client.skills.handlers.GoogleSearchHandler
+import com.myvu.client.skills.handlers.NewsSearchHandler
 import com.myvu.client.skills.handlers.SendEmailHandler
 import com.myvu.client.skills.handlers.SendTelegramHandler
 import com.myvu.client.skills.handlers.SendWhatsappHandler
+import com.myvu.client.skills.handlers.UnreadNotificationsHandler
 import com.myvu.client.skills.handlers.WeatherForecastHandler
 import com.myvu.client.skills.handlers.WikipediaSearchHandler
 
@@ -37,6 +41,10 @@ object SkillRegistry {
         registerHandler("create-note", CreateNoteHandler())
         registerHandler("create-reminder", CreateReminderHandler())
         registerHandler("ai-voice-recorder", AiVoiceRecorderHandler())
+        registerHandler("calendar-events", CalendarEventsHandler())
+        registerHandler("unread-notifications", UnreadNotificationsHandler())
+        registerHandler("news-search", NewsSearchHandler())
+        registerHandler("duckduckgo-search", DuckDuckGoSearchHandler())
 
         // 2. Load SKILL.md manifests from Assets
         val skills = SkillLoader.loadSkillsFromAssets(context)
