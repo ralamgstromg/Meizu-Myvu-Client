@@ -14,12 +14,19 @@ class WeatherForecastHandler : SkillHandler {
     override suspend fun execute(context: Context, args: JSONObject): SkillResult {
         return try {
             val city = args.optString("city", "").trim()
+            val date = args.optString("date", "").trim()
+            val timeFrame = args.optString("time_frame", "").trim()
+
             if (city.isEmpty()) {
                 return SkillResult(false, "Falta especificar la ciudad para el clima.")
             }
 
+            val searchQuery = StringBuilder("clima en ").append(city)
+            if (date.isNotEmpty()) searchQuery.append(" para ").append(date)
+            if (timeFrame.isNotEmpty()) searchQuery.append(" en la ").append(timeFrame)
+
             val weatherResult = withContext(Dispatchers.IO) {
-                ExternalInfoService.executeSearch("clima en $city")
+                ExternalInfoService.executeSearch(searchQuery.toString())
             }
 
             if (weatherResult.isNotBlank() && !weatherResult.startsWith("No se encontraron")) {

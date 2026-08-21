@@ -14,13 +14,21 @@ class NewsSearchHandler : SkillHandler {
     override suspend fun execute(context: Context, args: JSONObject): SkillResult {
         return try {
             val topic = args.optString("topic", "").ifBlank { args.optString("query", "noticias destacadas") }.trim()
+            val location = args.optString("location", "").trim()
+            val date = args.optString("date", "").trim()
+
+            val queryBuilder = StringBuilder(topic)
+            if (location.isNotEmpty()) queryBuilder.append(" ").append(location)
+            if (date.isNotEmpty()) queryBuilder.append(" ").append(date)
+
+            val fullTopic = queryBuilder.toString()
             val news = withContext(Dispatchers.IO) {
-                ExternalInfoService.fetchNewsSearch(topic) ?: ExternalInfoService.executeSearch("noticias $topic")
+                ExternalInfoService.fetchNewsSearch(fullTopic) ?: ExternalInfoService.executeSearch("noticias $fullTopic")
             }
             if (!news.isNullOrBlank() && !news.startsWith("No se encontraron")) {
                 SkillResult(true, news, news)
             } else {
-                SkillResult(false, "No se encontraron noticias recientes sobre '$topic'.")
+                SkillResult(false, "No se encontraron noticias recientes sobre '$fullTopic'.")
             }
         } catch (e: Exception) {
             LogBus.error("NewsSearchHandler -> Error searching news", e)

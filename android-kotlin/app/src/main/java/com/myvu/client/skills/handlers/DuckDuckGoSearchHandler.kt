@@ -14,18 +14,22 @@ class DuckDuckGoSearchHandler : SkillHandler {
     override suspend fun execute(context: Context, args: JSONObject): SkillResult {
         return try {
             val query = args.optString("query", "").ifBlank { args.optString("topic", "") }.trim()
+            val category = args.optString("category", "").trim()
+
             if (query.isEmpty()) {
                 return SkillResult(false, "Falta la consulta para la búsqueda en DuckDuckGo.")
             }
 
+            val fullQuery = if (category.isNotEmpty()) "$query $category" else query
+
             val searchResult = withContext(Dispatchers.IO) {
-                ExternalInfoService.executeSearch(query)
+                ExternalInfoService.executeSearch(fullQuery)
             }
 
             if (!searchResult.isNullOrBlank() && !searchResult.startsWith("No se encontraron")) {
                 SkillResult(true, searchResult, searchResult)
             } else {
-                SkillResult(false, "No se encontraron resultados en DuckDuckGo para '$query'.")
+                SkillResult(false, "No se encontraron resultados en DuckDuckGo para '$fullQuery'.")
             }
         } catch (e: Exception) {
             LogBus.error("DuckDuckGoSearchHandler -> Error searching DuckDuckGo", e)

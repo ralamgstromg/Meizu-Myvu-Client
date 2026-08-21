@@ -6,28 +6,41 @@ La aplicación móvil Kotlin para los lentes inteligentes **Meizu MYVU** integra
 
 ---
 
+## Extracción de Entidades y Refinamiento de Consultas
+
+Todas las habilidades han sido optimizadas para extraer entidades específicas (ubicación geográfica, fechas objetivo, periódos temporales, temas, remitentes y filtros adicionales) directamente de la petición del usuario para refinar los parámetros enviados a las APIs:
+
+- **Pronóstico del Clima (`weather-forecast`)**: Extrae `city` (ej. Barranquilla), `date` (ej. 2026-08-22, mañana) y `time_frame` (mañana, tarde, noche).
+- **Búsqueda en Google (`google-search`)**: Extrae `query` y `date_filter` (filtros temporales específicos).
+- **Búsqueda en DuckDuckGo (`duckduckgo-search`)**: Extrae `query` y `category` de búsqueda.
+- **Consulta de Noticias (`news-search`)**: Extrae `topic`, `location` (ciudad/país) y `date`.
+- **Eventos del Calendario (`calendar-events`)**: Extrae `date` objetivo y término de búsqueda `query`.
+- **Notificaciones Pendientes (`unread-notifications`)**: Extrae `category` (whatsapp, telegram, email, all) y `sender`.
+
+---
+
 ## Catálogo Actualizado de 16 Habilidades Nativas Activas
 
 Todas las habilidades cuentan con su respectiva carpeta y archivo de definición manifest `SKILLS.md` dentro de `skills/built-in/<skill-id>/SKILL.md` y `assets/skills/built-in/<skill-id>/SKILL.md`.
 
-| ID de Habilidad | Nombre | Descripción | Parámetros Principales |
+| ID de Habilidad | Nombre | Descripción | Parámetros Refinados |
 | :--- | :--- | :--- | :--- |
 | `call-contact` | Llamar a Contacto | Realiza una llamada telefónica directa a un contacto o número. | `contact_or_number` (String) |
 | `send-email` | Enviar Correo | Redacta y envía un correo electrónico. | `recipient` (String), `subject` (String), `body` (String) |
 | `send-whatsapp` | Enviar WhatsApp | Envía un mensaje por la aplicación WhatsApp. | `recipient` (String), `message` (String) |
 | `send-telegram` | Enviar Telegram | Envía un mensaje por la aplicación Telegram. | `recipient` (String), `message` (String) |
-| `google-search` | Búsqueda en Google | Realiza una búsqueda web en Google. | `query` (String) |
+| `google-search` | Búsqueda en Google | Búsqueda en Google refinando con términos clave y fechas. | `query` (String), `date_filter` (String) |
 | `wikipedia-search` | Búsqueda Wikipedia | Consulta resúmenes informativos en Wikipedia en español. | `topic` (String) |
 | `currency-rate` | Tasa de Cambio | Consulta el tipo de cambio oficial entre dos divisas. | `from` (String), `to` (String) |
 | `currency-convert` | Conversión de Divisas | Convierte un monto entre dos divisas. | `amount` (Double), `from` (String), `to` (String) |
-| `weather-forecast` | Pronóstico del Clima | Consulta el estado del tiempo y pronóstico en una ciudad. | `city` (String) |
+| `weather-forecast` | Pronóstico del Clima | Consulta el pronóstico especificando ciudad, fecha y hora. | `city` (String), `date` (String), `time_frame` (String) |
 | `create-note` | Crear Nota Local | Guarda una nueva nota de texto en la base de datos local SQLite. | `title` (String), `body` (String), `tags` (String) |
-| `create-reminder` | Programar Recordatorio | Programa una alarma/recordatorio con notificación. | `title` (String), `minutes_from_now` (Int), `body` (String) |
+| `create-reminder` | Programar Recordatorio | Programa una alarma especificando fecha, hora o minutos. | `title` (String), `minutes_from_now` (Int), `date_time` (String) |
 | `ai-voice-recorder` | Grabadora de Voz IA | Inicia una sesión de grabación de voz procesada con IA. | `duration_seconds` (Int), `notes` (String) |
-| `calendar-events` | Consulta de Calendario | Consulta eventos y reuniones próximas agendadas en el dispositivo. | `limit` (Int, opcional) |
-| `unread-notifications` | Notificaciones Pendientes | Revisa y resume notificaciones no leídas (WhatsApp, Telegram, Mails). | `category` (String, opcional) |
-| `news-search` | Consulta de Noticias | Busca noticias relevantes y titulares de actualidad en español. | `topic` (String) |
-| `duckduckgo-search` | Búsqueda DuckDuckGo | Búsqueda de información directa y privada en DuckDuckGo. | `query` (String) |
+| `calendar-events` | Consulta de Calendario | Consulta eventos filtrando por fecha objetivo y término clave. | `date` (String), `query` (String), `limit` (Int) |
+| `unread-notifications` | Notificaciones Pendientes | Revisa notificaciones no leídas filtradas por categoría o remitente. | `category` (String), `sender` (String) |
+| `news-search` | Consulta de Noticias | Busca noticias filtradas por tema, ubicación y fecha. | `topic` (String), `location` (String), `date` (String) |
+| `duckduckgo-search` | Búsqueda DuckDuckGo | Búsqueda directa en DuckDuckGo refinando categoría y términos. | `query` (String), `category` (String) |
 
 ---
 

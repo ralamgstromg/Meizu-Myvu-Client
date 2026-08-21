@@ -14,18 +14,22 @@ class GoogleSearchHandler : SkillHandler {
     override suspend fun execute(context: Context, args: JSONObject): SkillResult {
         return try {
             val query = args.optString("query", "").trim()
+            val dateFilter = args.optString("date_filter", "").trim()
+
             if (query.isEmpty()) {
                 return SkillResult(false, "Falta la consulta de búsqueda.")
             }
 
+            val fullQuery = if (dateFilter.isNotEmpty()) "$query $dateFilter" else query
+
             val searchResult = withContext(Dispatchers.IO) {
-                ExternalInfoService.executeSearch(query)
+                ExternalInfoService.executeSearch(fullQuery)
             }
 
             if (searchResult.isNotBlank() && !searchResult.startsWith("No se encontraron")) {
                 SkillResult(true, searchResult, searchResult)
             } else {
-                SkillResult(false, "No se encontraron resultados en la búsqueda.")
+                SkillResult(false, "No se encontraron resultados en la búsqueda para '$fullQuery'.")
             }
         } catch (e: Exception) {
             LogBus.error("GoogleSearchHandler -> Exception during execution", e)

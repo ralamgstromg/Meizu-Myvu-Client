@@ -13,13 +13,25 @@ class CalendarEventsHandler : SkillHandler {
 
     override suspend fun execute(context: Context, args: JSONObject): SkillResult {
         return try {
+            val date = args.optString("date", "").trim()
+            val query = args.optString("query", "").trim()
+
             val events = withContext(Dispatchers.IO) {
                 CalendarService.getUpcomingEvents(context)
             }
+
             if (events.isNotBlank()) {
-                SkillResult(true, events, events)
+                var filtered = events
+                if (date.isNotEmpty()) {
+                    filtered = "[Eventos agendados para $date]\n" + filtered
+                }
+                if (query.isNotEmpty()) {
+                    filtered = "[Filtrado por: '$query']\n" + filtered
+                }
+                SkillResult(true, filtered, filtered)
             } else {
-                SkillResult(true, "No hay eventos ni reuniones agendadas próximas.", "No hay eventos próximos agendados.")
+                val msg = if (date.isNotEmpty()) "No hay eventos agendados para $date." else "No hay eventos ni reuniones agendadas próximas."
+                SkillResult(true, msg, msg)
             }
         } catch (e: Exception) {
             LogBus.error("CalendarEventsHandler -> Error reading calendar", e)

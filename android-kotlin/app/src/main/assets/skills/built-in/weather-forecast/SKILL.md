@@ -1,16 +1,18 @@
 ---
 id: weather-forecast
-name: Weather Forecast
-description: Consulta el pronóstico del clima para una ciudad o ubicación geográfica específica mediante Open-Meteo API.
+name: Pronóstico del Clima
+description: Consulta el pronóstico del tiempo especificando la ciudad, fecha (ej. 2026-08-22, mañana) y período del día.
 parameters:
-  city: { type: string, description: "Nombre de la ciudad o ubicación", required: true }
+  city:
+    type: string
+    description: Nombre de la ciudad o municipio (ej. Barranquilla, Bogotá, Madrid).
+    required: true
+  date:
+    type: string
+    description: Fecha o indicación temporal objetivo (ej. 2026-08-22, mañana, hoy).
+    required: false
+  time_frame:
+    type: string
+    description: Período del día a consultar (ej. mañana, tarde, noche).
+    required: false
 ---
-
-# Weather Forecast Skill
-
-Utiliza esta habilidad cuando el usuario pregunte el clima, la temperatura o el pronóstico meteorológico de una ciudad.
-
-### Formato de Ejecución
-```json
-[SKILL: weather-forecast {"city": "Madrid"}]
-```
