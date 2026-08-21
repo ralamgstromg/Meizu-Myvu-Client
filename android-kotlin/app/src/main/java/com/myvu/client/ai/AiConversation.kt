@@ -417,8 +417,18 @@ class AiConversation(
             finish()
             return
         }
-        LogBus.log("AI heard: $text")
-        sendGrowingCaption(text.trim(), 0)
+
+        var cleanText = text.trim()
+        if (cleanText.contains("ACTION:", ignoreCase = true) || cleanText.startsWith("{")) {
+            cleanText = cleanText.replace(Regex("(?i)ACTION:[A-Z0-9_-]+(=|:)?(\\{.*?\\}|[^\\n]+)?"), "").trim()
+            cleanText = cleanText.replace(Regex("\\{.*?\\}"), "").trim()
+        }
+        if (cleanText.isBlank()) {
+            cleanText = text.trim()
+        }
+
+        LogBus.log("AI heard: $cleanText")
+        sendGrowingCaption(cleanText, 0)
     }
 
     private fun sendGrowingCaption(text: String, wordIndex: Int) {
@@ -515,7 +525,8 @@ class AiConversation(
         val apiKey = Prefs.aiApiKey(context, aiProviderId)
         val model = Prefs.aiModel(context, aiProviderId)
         val endpoint = Prefs.aiEndpoint(context, aiProviderId)
-        val prompt = Prefs.systemPrompt(context)
+        val basePrompt = Prefs.systemPrompt(context)
+        val prompt = basePrompt + com.myvu.client.skills.SkillRegistry.buildSystemPromptAddendum()
         val client = provider.newClient(context, apiKey, model, endpoint, prompt)
         if (!client.isConfigured()) {
             LogBus.warn("$aiProviderId is not fully configured -- check Settings")
@@ -542,18 +553,33 @@ class AiConversation(
     private fun deliver(rawAnswer: String?) {
         if (!active) return
 
-        // 1. Ejecutar siempre el validador JSON si aplica
-        val parsed = GeminiActionValidator.parse(rawAnswer)
+        if (rawAnswer.isNullOrBlank()) {
+            deliverError("No pude obtener respuesta del agente.")
+            return
+        }
+
+        // 1. Ejecutar Habilidades dinámicas del motor de Skills (Kotlin Handlers)
+        val skillProcessed = try {
+            kotlinx.coroutines.runBlocking {
+                com.myvu.client.skills.SkillExecutor.processAndExecute(context, rawAnswer)
+            }
+        } catch (e: Exception) {
+            LogBus.error("AiConversation -> Skill execution failed", e)
+            rawAnswer
+        }
+
+        // 2. Ejecutar validador JSON legacy si aplica
+        val parsed = GeminiActionValidator.parse(skillProcessed)
         if (parsed.actions.isNotEmpty()) {
             for (action in parsed.actions) {
                 actionExecutor.executeAction(action)
             }
         }
 
-        // 2. Ejecutar SIEMPRE el procesador de acciones por texto / regex
-        val processedAnswer = actionExecutor.processAndExecute(rawAnswer)
+        // 3. Procesar acciones legacy por texto/regex
+        val processedAnswer = actionExecutor.processAndExecute(skillProcessed)
 
-        val weatherAction = rawAnswer?.contains("ACTION:WEATHER_REFRESH", ignoreCase = true) == true ||
+        val weatherAction = rawAnswer.contains("ACTION:WEATHER_REFRESH", ignoreCase = true) ||
                 parsed.actions.any { it.type == "weather_query" }
 
         if (weatherAction) {
@@ -572,11 +598,11 @@ class AiConversation(
             return
         }
 
-        val searchAction = rawAnswer?.contains("ACTION:SEARCH=", ignoreCase = true) == true ||
+        val searchAction = rawAnswer.contains("ACTION:SEARCH=", ignoreCase = true) ||
                 parsed.actions.any { it.type == "web_search" }
 
         if (searchAction) {
-            val q = if (rawAnswer?.contains("ACTION:SEARCH=", ignoreCase = true) == true) {
+            val q = if (rawAnswer.contains("ACTION:SEARCH=", ignoreCase = true)) {
                 PhoneActionExecutor.extractValue(rawAnswer, "ACTION:SEARCH=")
             } else {
                 parsed.actions.firstOrNull { it.type == "web_search" }?.arguments?.get("query") ?: ""
@@ -598,13 +624,25 @@ class AiConversation(
             }
         }
 
-        val answerCandidate = if (processedAnswer.isNotBlank()) processedAnswer else parsed.answer
-        val finalAnswer = if (answerCandidate.isNotBlank()) {
-            answerCandidate
-        } else if (rawAnswer.isNullOrBlank()) {
-            "No pude obtener una respuesta del agente en este momento."
+        var candidate = if (processedAnswer.isNotBlank()) processedAnswer else parsed.answer
+        if (candidate.isBlank()) {
+            candidate = rawAnswer
+        }
+
+        // 4. Limpieza de respuestas JSON puras para presentación en gafas (HUD) y voz (TTS)
+        if (candidate.trim().startsWith("{") && candidate.trim().endsWith("}")) {
+            try {
+                val json = org.json.JSONObject(candidate.trim())
+                candidate = json.optString("answer", json.optString("message", json.optString("response", "")))
+            } catch (_: Exception) {}
+        }
+
+        candidate = candidate.replace(Regex("\\[SKILL:\\s*[^\\]]+\\]"), "").trim()
+
+        val finalAnswer = if (candidate.isNotBlank()) {
+            candidate
         } else {
-            "Acción ejecutada en el teléfono."
+            "Acción ejecutada con éxito."
         }
 
         deliverFinal(finalAnswer, AiResponse.Source.AI)
