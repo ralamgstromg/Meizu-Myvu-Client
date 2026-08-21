@@ -26,6 +26,7 @@ class OpusDecoderStream {
     @Throws(Exception::class)
     fun start() {
         stop()
+        all.reset()
         val format = MediaFormat.createAudioFormat(
             MediaFormat.MIMETYPE_AUDIO_OPUS, OpusStream.SAMPLE_RATE, OpusStream.CHANNELS
         )
@@ -40,7 +41,6 @@ class OpusDecoderStream {
         presentationUs = 0
         outputSampleRate = OpusStream.SAMPLE_RATE
         outputChannels = OpusStream.CHANNELS
-        all.reset()
     }
 
     @Synchronized
@@ -220,7 +220,6 @@ class OpusDecoderStream {
 
     @Synchronized
     fun stop() {
-        all.reset()
         val c = codec ?: return
         codec = null
         try {
