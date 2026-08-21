@@ -1,6 +1,6 @@
 # Documentación del Sistema de Skills (Habilidades) - Meizu Myvu Client
 
-El **Sistema de Skills** de `Meizu-Myvu-Client` permite al Agente LLM ejecutar acciones nativas en Android y realizar consultas de información externa en tiempo real mediante manifiestos estructurados en archivos `SKILL.md`.
+El **Sistema de Skills** de `Meizu-Myvu-Client` permite al Agente LLM ejecutar acciones nativas en Android, gestionar notas, recordatorios y grabadora de voz IA, así como consultar información externa en tiempo real mediante manifiestos estructurados en archivos `SKILL.md`.
 
 ---
 
@@ -27,7 +27,13 @@ skills/
     │   └── SKILL.md
     ├── currency-convert/
     │   └── SKILL.md
-    └── weather-forecast/
+    ├── weather-forecast/
+    │   └── SKILL.md
+    ├── create-note/
+    │   └── SKILL.md
+    ├── create-reminder/
+    │   └── SKILL.md
+    └── ai-voice-recorder/
         └── SKILL.md
 ```
 
@@ -41,14 +47,15 @@ Cada habilidad se define utilizando metadatos **YAML Frontmatter** combinados co
 
 ```markdown
 ---
-id: google-search
-name: Google Search
-description: Realiza una búsqueda web en tiempo real en Google para obtener noticias, hechos o información actualizada.
+id: create-note
+name: Create Note
+description: Guarda una nueva nota con título y contenido en la base de datos de notas del usuario.
 parameters:
-  query: { type: string, description: "Consulta o términos de búsqueda en Google", required: true }
+  title: { type: string, description: "Título descriptivo de la nota", required: true }
+  body: { type: string, description: "Contenido principal de la nota", required: true }
 ---
 
-# Google Search Skill
+# Create Note Skill
 Instrucciones detalladas de uso...
 ```
 
@@ -63,7 +70,7 @@ Instrucciones detalladas de uso...
 
 ---
 
-## Habilidades Nativas Disponibles (9 Built-in Skills)
+## Habilidades Nativas Disponibles (12 Built-in Skills)
 
 | Skill ID | Nombre | Descripción | Handler Kotlin |
 | :--- | :--- | :--- | :--- |
@@ -76,3 +83,6 @@ Instrucciones detalladas de uso...
 | `currency-rate` | Currency Rate Query | Consulta tasa de cambio en vivo entre divisas. | `CurrencyRateHandler` |
 | `currency-convert` | Currency Convert | Calcula conversión de un monto específico entre divisas. | `CurrencyConvertHandler` |
 | `weather-forecast` | Weather Forecast | Consulta el pronóstico del tiempo vía Open-Meteo API. | `WeatherForecastHandler` |
+| `create-note` | Create Note | Inserta y guarda una nueva nota en la base de datos local `notes`. | `CreateNoteHandler` |
+| `create-reminder` | Create Reminder | Crea y programa un recordatorio y su alarma en `ReminderScheduler`. | `CreateReminderHandler` |
+| `ai-voice-recorder` | AI Voice Recorder | Abre e inicia la pantalla de la grabadora de voz IA con transcripción Whisper. | `AiVoiceRecorderHandler` |

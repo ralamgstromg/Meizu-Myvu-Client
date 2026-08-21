@@ -2,7 +2,10 @@ package com.myvu.client.skills
 
 import android.content.Context
 import com.myvu.client.core.LogBus
+import com.myvu.client.skills.handlers.AiVoiceRecorderHandler
 import com.myvu.client.skills.handlers.CallContactHandler
+import com.myvu.client.skills.handlers.CreateNoteHandler
+import com.myvu.client.skills.handlers.CreateReminderHandler
 import com.myvu.client.skills.handlers.CurrencyConvertHandler
 import com.myvu.client.skills.handlers.CurrencyRateHandler
 import com.myvu.client.skills.handlers.GoogleSearchHandler
@@ -31,6 +34,9 @@ object SkillRegistry {
         registerHandler("currency-rate", CurrencyRateHandler())
         registerHandler("currency-convert", CurrencyConvertHandler())
         registerHandler("weather-forecast", WeatherForecastHandler())
+        registerHandler("create-note", CreateNoteHandler())
+        registerHandler("create-reminder", CreateReminderHandler())
+        registerHandler("ai-voice-recorder", AiVoiceRecorderHandler())
 
         // 2. Load SKILL.md manifests from Assets
         val skills = SkillLoader.loadSkillsFromAssets(context)
