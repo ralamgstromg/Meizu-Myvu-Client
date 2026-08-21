@@ -1,12 +1,12 @@
 # Documentación del Sistema de Skills (Habilidades) - Meizu Myvu Client
 
-El **Sistema de Skills** de `Meizu-Myvu-Client` permite al Agente LLM ejecutar acciones nativas en Android (Llamadas, Correo, WhatsApp, Telegram) mediante especificaciones dinámicas basadas en archivos `SKILL.md`.
+El **Sistema de Skills** de `Meizu-Myvu-Client` permite al Agente LLM ejecutar acciones nativas en Android y realizar consultas de información externa en tiempo real mediante manifiestos estructurados en archivos `SKILL.md`.
 
 ---
 
 ## Estructura de Directorio de Skills
 
-Las habilidades se organizan dentro de carpetas independientes que contienen su manifiesto `SKILL.md`:
+Las habilidades se organizan dentro de carpetas independientes con su manifiesto `SKILL.md`:
 
 ```
 skills/
@@ -17,7 +17,17 @@ skills/
     │   └── SKILL.md
     ├── send-whatsapp/
     │   └── SKILL.md
-    └── send-telegram/
+    ├── send-telegram/
+    │   └── SKILL.md
+    ├── google-search/
+    │   └── SKILL.md
+    ├── wikipedia-search/
+    │   └── SKILL.md
+    ├── currency-rate/
+    │   └── SKILL.md
+    ├── currency-convert/
+    │   └── SKILL.md
+    └── weather-forecast/
         └── SKILL.md
 ```
 
@@ -31,15 +41,14 @@ Cada habilidad se define utilizando metadatos **YAML Frontmatter** combinados co
 
 ```markdown
 ---
-id: send-whatsapp
-name: Send WhatsApp
-description: Permite enviar un mensaje por WhatsApp a un contacto o número telefónico.
+id: google-search
+name: Google Search
+description: Realiza una búsqueda web en tiempo real en Google para obtener noticias, hechos o información actualizada.
 parameters:
-  contact_or_phone: { type: string, description: "Nombre de contacto o número telefónico", required: true }
-  message: { type: string, description: "Contenido del mensaje a enviar", required: true }
+  query: { type: string, description: "Consulta o términos de búsqueda en Google", required: true }
 ---
 
-# Send WhatsApp Skill
+# Google Search Skill
 Instrucciones detalladas de uso...
 ```
 
@@ -54,7 +63,7 @@ Instrucciones detalladas de uso...
 
 ---
 
-## Habilidades Nativas Disponibles
+## Habilidades Nativas Disponibles (9 Built-in Skills)
 
 | Skill ID | Nombre | Descripción | Handler Kotlin |
 | :--- | :--- | :--- | :--- |
@@ -62,3 +71,8 @@ Instrucciones detalladas de uso...
 | `send-email` | Send Email | Redacta y abre cliente de correo mediante Intent `mailto:`. | `SendEmailHandler` |
 | `send-whatsapp` | Send WhatsApp | Envia mensaje por WhatsApp a través de `com.whatsapp` o URI `api.whatsapp.com`. | `SendWhatsappHandler` |
 | `send-telegram` | Send Telegram | Envia mensaje por Telegram usando `org.telegram.messenger` o `t.me`. | `SendTelegramHandler` |
+| `google-search` | Google Search | Búsqueda web en vivo mediante raspado y fallback a DuckDuckGo/Google News. | `GoogleSearchHandler` |
+| `wikipedia-search` | Wikipedia Search | Consulta resúmenes enciclopédicos directamente de Wikipedia API. | `WikipediaSearchHandler` |
+| `currency-rate` | Currency Rate Query | Consulta tasa de cambio en vivo entre divisas. | `CurrencyRateHandler` |
+| `currency-convert` | Currency Convert | Calcula conversión de un monto específico entre divisas. | `CurrencyConvertHandler` |
+| `weather-forecast` | Weather Forecast | Consulta el pronóstico del tiempo vía Open-Meteo API. | `WeatherForecastHandler` |

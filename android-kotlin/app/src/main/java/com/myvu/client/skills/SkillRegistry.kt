@@ -3,9 +3,14 @@ package com.myvu.client.skills
 import android.content.Context
 import com.myvu.client.core.LogBus
 import com.myvu.client.skills.handlers.CallContactHandler
+import com.myvu.client.skills.handlers.CurrencyConvertHandler
+import com.myvu.client.skills.handlers.CurrencyRateHandler
+import com.myvu.client.skills.handlers.GoogleSearchHandler
 import com.myvu.client.skills.handlers.SendEmailHandler
 import com.myvu.client.skills.handlers.SendTelegramHandler
 import com.myvu.client.skills.handlers.SendWhatsappHandler
+import com.myvu.client.skills.handlers.WeatherForecastHandler
+import com.myvu.client.skills.handlers.WikipediaSearchHandler
 
 object SkillRegistry {
 
@@ -21,6 +26,11 @@ object SkillRegistry {
         registerHandler("send-email", SendEmailHandler())
         registerHandler("send-whatsapp", SendWhatsappHandler())
         registerHandler("send-telegram", SendTelegramHandler())
+        registerHandler("google-search", GoogleSearchHandler())
+        registerHandler("wikipedia-search", WikipediaSearchHandler())
+        registerHandler("currency-rate", CurrencyRateHandler())
+        registerHandler("currency-convert", CurrencyConvertHandler())
+        registerHandler("weather-forecast", WeatherForecastHandler())
 
         // 2. Load SKILL.md manifests from Assets
         val skills = SkillLoader.loadSkillsFromAssets(context)
