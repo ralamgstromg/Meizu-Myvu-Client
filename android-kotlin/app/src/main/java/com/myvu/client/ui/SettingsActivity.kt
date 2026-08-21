@@ -122,6 +122,7 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.myvu.client.core.LockScreenHelper.setupShowWhenLocked(this)
         setContentView(R.layout.activity_settings)
         bindViews()
         configureProviderSelectors()
@@ -130,6 +131,7 @@ class SettingsActivity : AppCompatActivity() {
         configurePersistence()
         configureButtons()
         setupBackupRestoreUi()
+        setupLockScreenSettings()
     }
 
 
@@ -1004,6 +1006,37 @@ class SettingsActivity : AppCompatActivity() {
                 com.myvu.client.data.UserProfileAnalyzer.getInstance(this@SettingsActivity).saveProfile(name, interests, custom)
                 Toast.makeText(this@SettingsActivity, "Perfil de usuario actualizado correctamente", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    private fun setupLockScreenSettings() {
+        val btnId = resources.getIdentifier("btnLockScreenPermissions", "id", packageName)
+        val txtId = resources.getIdentifier("txtLockScreenStatus", "id", packageName)
+        val btnLockScreenPermissions: MaterialButton? = if (btnId != 0) findViewById(btnId) else null
+        val txtLockScreenStatus: TextView? = if (txtId != 0) findViewById(txtId) else null
+
+        fun updateStatus() {
+            val hasOverlay = com.myvu.client.core.LockScreenHelper.canDrawOverlays(this)
+            val isBatteryIgnored = com.myvu.client.core.ServiceKeepAliveHelper.isBatteryOptimizationIgnored(this)
+
+            val statusText = StringBuilder()
+            statusText.append("• Mostrar sobre otras apps: ").append(if (hasOverlay) "Concedido ✅" else "Pendiente ❌").append("\n")
+            statusText.append("• Exención batería: ").append(if (isBatteryIgnored) "Activa ✅" else "Pendiente ❌")
+
+            txtLockScreenStatus?.text = statusText.toString()
+        }
+
+        updateStatus()
+
+        btnLockScreenPermissions?.setOnClickListener {
+            if (!com.myvu.client.core.LockScreenHelper.canDrawOverlays(this)) {
+                com.myvu.client.core.LockScreenHelper.requestOverlayPermission(this)
+            } else if (!com.myvu.client.core.ServiceKeepAliveHelper.isBatteryOptimizationIgnored(this)) {
+                com.myvu.client.core.ServiceKeepAliveHelper.requestIgnoreBatteryOptimization(this)
+            } else {
+                Toast.makeText(this, "Todos los permisos para pantalla bloqueada están concedidos ✅", Toast.LENGTH_SHORT).show()
+            }
+            updateStatus()
         }
     }
 }

@@ -102,6 +102,7 @@ class ChatActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.myvu.client.core.LockScreenHelper.setupShowWhenLocked(this)
         setContentView(R.layout.activity_chat)
 
         topBar = findViewById(R.id.topBar)

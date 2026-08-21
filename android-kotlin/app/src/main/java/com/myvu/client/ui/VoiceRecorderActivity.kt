@@ -51,6 +51,7 @@ class VoiceRecorderActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.myvu.client.core.LockScreenHelper.setupShowWhenLocked(this)
         try {
             setContentView(R.layout.activity_voice_recorder)
 

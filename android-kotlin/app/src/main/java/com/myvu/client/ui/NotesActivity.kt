@@ -71,6 +71,7 @@ class NotesActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.myvu.client.core.LockScreenHelper.setupShowWhenLocked(this)
         setContentView(R.layout.activity_notes)
 
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbarNotes)

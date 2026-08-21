@@ -6,6 +6,21 @@ La aplicación móvil Kotlin para los lentes inteligentes **Meizu MYVU** integra
 
 ---
 
+## Interacción con el Agente en Pantalla Bloqueada (Lock Screen & Keyguard)
+
+Se implementó el componente de utilidad [`LockScreenHelper`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/core/LockScreenHelper.kt) y se agregaron los permisos del sistema requeridos para interactuar con el agente **Aura** cuando la pantalla del teléfono móvil se encuentra bloqueada o apagada:
+
+1. **Permisos Registrados en el Manifest**:
+   - `android.permission.DISABLE_KEYGUARD`: Desbloqueo temporal seguro de la pantalla de bloqueo durante la interacción activa.
+   - `android.permission.USE_FULL_SCREEN_INTENT`: Lanzamiento de la interfaz de conversación en pantalla completa sobre la pantalla bloqueada.
+   - `android.permission.SYSTEM_ALERT_WINDOW`: Permiso de superposición para mostrar el asistente sobre otras aplicaciones o sobre el Keyguard.
+   - `android.permission.WAKE_LOCK`: Encendido inmediato de la pantalla al activarse una consulta por voz desde las gafas o mediante el asistente.
+
+2. **Atributos de Actividad**:
+   - Las actividades principales (`ConnectActivity`, `ChatActivity`, `NotesActivity`, `VoiceRecorderActivity`) integran `android:showWhenLocked="true"` y `android:turnScreenOn="true"` en `AndroidManifest.xml` y la llamada `LockScreenHelper.setupShowWhenLocked(this)` en su ciclo de vida `onCreate`.
+
+---
+
 ## Catálogo Actualizado de 19 Habilidades Nativas Activas
 
 Todas las habilidades cuentan con su respectiva carpeta y archivo de definición manifest `SKILLS.md` dentro de `skills/built-in/<skill-id>/SKILL.md` y `assets/skills/built-in/<skill-id>/SKILL.md`.

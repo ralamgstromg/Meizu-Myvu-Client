@@ -133,6 +133,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.myvu.client.core.LockScreenHelper.setupShowWhenLocked(this)
         setContentView(R.layout.activity_connect)
 
         txtMac = findViewById(R.id.txtMac)
