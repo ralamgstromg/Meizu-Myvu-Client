@@ -6,21 +6,20 @@ La aplicación móvil Kotlin para los lentes inteligentes **Meizu MYVU** integra
 
 ---
 
-## Interacción con el Agente en Pantalla Bloqueada (Lock Screen & Keyguard)
+## Formato Exclusivo Markdown en Notas, Recordatorios y Grabadora de Voz IA
 
-Se implementó el componente de utilidad [`LockScreenHelper`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/core/LockScreenHelper.kt) y se agregaron los permisos del sistema requeridos para interactuar con el agente **Aura** cuando la pantalla del teléfono móvil se encuentra bloqueada o apagada:
+Se ajustó la lógica de procesamiento de Inteligencia Artificial para los módulos de **Notas y Recordatorios** ([`NoteAiProcessor.kt`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ai/NoteAiProcessor.kt)) y **Grabadora de Voz IA** ([`MeetingAiProcessor.kt`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ai/MeetingAiProcessor.kt)):
 
-1. **Permisos Registrados en el Manifest**:
-   - `android.permission.DISABLE_KEYGUARD`: Desbloqueo temporal seguro de la pantalla de bloqueo durante la interacción activa.
-   - `android.permission.USE_FULL_SCREEN_INTENT`: Lanzamiento de la interfaz de conversación en pantalla completa sobre la pantalla bloqueada.
-   - `android.permission.SYSTEM_ALERT_WINDOW`: Permiso de superposición para mostrar el asistente sobre otras aplicaciones o sobre el Keyguard.
-   - `android.permission.WAKE_LOCK`: Encendido inmediato de la pantalla al activarse una consulta por voz desde las gafas o mediante el asistente.
+1. **Garantía de Markdown Puro sin JSON Crudo**:
+   - Se implementó la clase [`MarkdownUtils.kt`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/core/MarkdownUtils.kt), encargada de filtrar y desempaquetar cualquier respuesta estructurada en JSON o delimitada con bloques ` ```json ` para extraer exclusivamente Markdown estructurado (encabezados `###`, viñetas, negritas).
+2. **Prompts de IA Rigurosos**:
+   - Los prompts de sistema para resumir notas, recordatorios y reuniones especifican explícitamente que la propiedad `summary` debe retornar **única y exclusivamente texto en formato Markdown**.
+3. **Renderizado en Pantallas de Detalle**:
+   - [`NoteDetailActivity.kt`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ui/NoteDetailActivity.kt) y [`RecordingDetailActivity.kt`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/app/src/main/java/com/myvu/client/ui/RecordingDetailActivity.kt) sanean dinámicamente cualquier resumen almacenado con `MarkdownUtils.sanitizeToMarkdown(...)` antes de renderizar con `TextView.setMarkdown(...)`.
 
 ---
 
 ## Catálogo Actualizado de 21 Habilidades Nativas Activas
-
-Todas las habilidades cuentan con su respectiva carpeta y archivo de definición manifest `SKILLS.md` dentro de `skills/built-in/<skill-id>/SKILL.md` y `assets/skills/built-in/<skill-id>/SKILL.md`.
 
 | ID de Habilidad | Nombre | Descripción | Parámetros Refinados |
 | :--- | :--- | :--- | :--- |
@@ -45,15 +44,3 @@ Todas las habilidades cuentan con su respectiva carpeta y archivo de definición
 | `duckduckgo-search` | Búsqueda DuckDuckGo | Búsqueda directa en DuckDuckGo refinando categoría y términos. | `query` (String), `category` (String) |
 | `x-twitter-search` | Búsqueda en X / Twitter | Consulta tendencias e información en tiempo real en X (Twitter). | `query` (String), `topic` (String), `author` (String) |
 | `hud-navigation` | Navegación AR en Lentes | Inicia navegación GPS proyectada en la interfaz AR / HUD indicando dirección, barrio o ciudad. | `destination` (String), `city` (String), `neighborhood` (String), `mode` (String) |
-
----
-
-## Servicio de Transcripción de Audio (STT Simplificado)
-
-El cliente HTTP de transcripción (`OpenAiTranscriptionClient`) cumple estrictamente con las siguientes especificaciones:
-
-1. **Envío del Archivo de Audio e Idioma Español (`es`)**:
-   - Se envía la parte `file` del archivo de audio, el parámetro de modelo `model` y la especificación del idioma `language = "es"`.
-   - Se excluyen prompts guiados o parámetros innecesarios que distorsionen el resultado de la transcripción.
-2. **Respuesta Exclusiva de Transcripción**:
-   - El analizador de respuesta `extractText` retorna única y exclusivamente el texto transcrito directo en español, descartando envoltorios JSON o caracteres innecesarios.

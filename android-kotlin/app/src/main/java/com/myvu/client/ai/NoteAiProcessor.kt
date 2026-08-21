@@ -95,7 +95,7 @@ class NoteAiProcessor(private val context: Context) {
 
                 try {
                     val json = JSONObject(cleanJson)
-                    summary = json.optString("summary", "").trim()
+                    summary = com.myvu.client.core.MarkdownUtils.sanitizeToMarkdown(json.optString("summary", ""))
                     actionItems = json.optJSONArray("action_items")?.toString() ?: "[]"
                     mindmap = json.optString("mindmap", "").trim()
                     val tagsArr = json.optJSONArray("tags")
@@ -110,7 +110,7 @@ class NoteAiProcessor(private val context: Context) {
                     }
                 } catch (e: Exception) {
                     LogBus.warn("NoteAiProcessor -> Failed to parse pure JSON response, using text fallback")
-                    summary = response
+                    summary = com.myvu.client.core.MarkdownUtils.sanitizeToMarkdown(response)
                 }
 
                 // Guardar en base de datos
@@ -159,7 +159,9 @@ class NoteAiProcessor(private val context: Context) {
                       ],
                       "mindmap": "mindmap\n  root((Recordatorio))\n    Paso 1\n    Paso 2"
                     }
-                    Responde ÚNICAMENTE con el objeto JSON válido.
+                    Reglas estrictas:
+                    - Responde ÚNICAMENTE con el objeto JSON válido.
+                    - En 'summary' escribe el contenido ÚNICAMENTE en formato Markdown estructurado (con listas y negritas). NO utilices JSON en el campo summary.
                 """.trimIndent()
 
                 val aiClient = getAiClient(aiPrompt)
@@ -172,11 +174,11 @@ class NoteAiProcessor(private val context: Context) {
 
                 try {
                     val json = JSONObject(cleanJson)
-                    summary = json.optString("summary", "").trim()
+                    summary = com.myvu.client.core.MarkdownUtils.sanitizeToMarkdown(json.optString("summary", ""))
                     actionItems = json.optJSONArray("action_items")?.toString() ?: "[]"
                     mindmap = json.optString("mindmap", "").trim()
                 } catch (e: Exception) {
-                    summary = response
+                    summary = com.myvu.client.core.MarkdownUtils.sanitizeToMarkdown(response)
                 }
 
                 reminder.summary = if (summary.isNotBlank()) summary else reminder.body

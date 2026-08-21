@@ -215,7 +215,7 @@ class NoteDetailActivity : AppCompatActivity() {
             tvNoteTags.text = if (note.tags.isNotBlank()) "🏷️ ${note.tags}" else "🏷️ Sin tags"
 
             tvNoteBodyContent.setMarkdown(note.body.ifBlank { "*Sin contenido.*" })
-            tvNoteSummaryContent.setMarkdown(note.summary.ifBlank { "*Resumen no generado. Toca ✨ para analizar con IA.*" })
+            tvNoteSummaryContent.setMarkdown(com.myvu.client.core.MarkdownUtils.sanitizeToMarkdown(note.summary.ifBlank { "*Resumen no generado. Toca ✨ para analizar con IA.*" }))
             taskController.populateTasks(note.actionItems)
             mindMapController.loadMindMap(title, note.mindmapData)
             attachmentController.renderAttachments(note.getAttachments())
@@ -234,7 +234,7 @@ class NoteDetailActivity : AppCompatActivity() {
             tvNoteTags.text = if (reminder.tags.isNotBlank()) "🏷️ ${reminder.tags}" else "🏷️ Sin tags"
 
             tvNoteBodyContent.setMarkdown(reminder.body.ifBlank { "*Sin detalle.*" })
-            tvNoteSummaryContent.setMarkdown(reminder.summary.ifBlank { "*Resumen no generado. Toca ✨ para analizar con IA.*" })
+            tvNoteSummaryContent.setMarkdown(com.myvu.client.core.MarkdownUtils.sanitizeToMarkdown(reminder.summary.ifBlank { "*Resumen no generado. Toca ✨ para analizar con IA.*" }))
             taskController.populateTasks(reminder.actionItems)
             mindMapController.loadMindMap(title, reminder.mindmapData)
             attachmentController.renderAttachments(reminder.getAttachments())

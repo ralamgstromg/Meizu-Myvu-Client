@@ -223,7 +223,7 @@ class RecordingDetailActivity : AppCompatActivity(), AudioPlayerManager.Listener
 
             // Populate Summary with Markdown
             val summaryText = if (rec.summary.isNotBlank()) {
-                rec.summary
+                com.myvu.client.core.MarkdownUtils.sanitizeToMarkdown(rec.summary)
             } else {
                 "*Aún no se ha generado un resumen.*\n\nToca el botón ✨ arriba a la derecha para procesar la grabación con IA."
             }

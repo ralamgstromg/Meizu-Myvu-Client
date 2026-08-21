@@ -207,7 +207,7 @@ class MeetingAiProcessor(private val context: Context) {
 
                 val diarizedArray = json.optJSONArray("diarized")
                 val diarizedString = diarizedArray?.toString() ?: ""
-                val summaryString = json.optString("summary", rawTranscript)
+                val summaryString = com.myvu.client.core.MarkdownUtils.sanitizeToMarkdown(json.optString("summary", rawTranscript))
                 val actionItemsArray = json.optJSONArray("action_items")
                 val actionItemsString = actionItemsArray?.toString() ?: "[]"
                 val mindmapString = json.optString("mindmap_mermaid", generateSimpleMindmap(recording.title, rawTranscript))
@@ -368,7 +368,7 @@ class MeetingAiProcessor(private val context: Context) {
             diarized.put(partObj)
         }
         json.put("diarized", diarized)
-        json.put("summary", aiResponse)
+        json.put("summary", com.myvu.client.core.MarkdownUtils.sanitizeToMarkdown(aiResponse))
         json.put("action_items", JSONArray())
         json.put("mindmap_mermaid", generateSimpleMindmap("Reunión", rawTranscript))
         json.put("tags", JSONArray().put("reunion").put("audio"))
