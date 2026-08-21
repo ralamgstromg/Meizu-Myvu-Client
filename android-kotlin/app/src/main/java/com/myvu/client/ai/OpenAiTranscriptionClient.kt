@@ -12,7 +12,10 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.nio.charset.StandardCharsets
 
-/** Uploads a WAV or audio file to an OpenAI-compatible audio-transcription endpoint. */
+/**
+ * Uploads an audio file directly to an OpenAI-compatible audio-transcription endpoint.
+ * Sends the audio file, model, and language = "es", returning ONLY the raw verbatim transcription string.
+ */
 class OpenAiTranscriptionClient @JvmOverloads constructor(
     endpoint: String?,
     model: String?,
@@ -86,18 +89,14 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
             conn.readTimeout = if (isLocal) LOCAL_READ_TIMEOUT_MS else READ_TIMEOUT_MS
             conn.doOutput = true
 
-            val lang = customLanguage?.ifBlank { "es" } ?: java.util.Locale.getDefault().language.ifBlank { "es" }
-            val whisperPrompt = "Comandos de voz en español: llamar a, marca a, enviar whatsapp a, mensaje para, toma nota, agrega a la lista, clima, recordatorio."
-
             DataOutputStream(conn.outputStream).use { out ->
+                // Send audio file part, model, and language = "es"
                 writeAudioPart(out)
                 if (model.isNotEmpty()) {
                     writeTextPart(out, "model", model)
                 }
+                val lang = customLanguage?.ifBlank { "es" } ?: "es"
                 writeTextPart(out, "language", lang)
-                writeTextPart(out, "prompt", whisperPrompt)
-                writeTextPart(out, "temperature", "0.0")
-                writeTextPart(out, "response_format", "json")
                 out.writeBytes("--$BOUNDARY--\r\n")
                 out.flush()
             }
@@ -128,18 +127,16 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
         private fun extractText(body: String): String {
             val trimmed = body.trim()
             if (trimmed.isEmpty()) return ""
-            try {
+            return try {
                 val json = JSONObject(trimmed)
-                val text = json.optString("text", "")
-                if (text.isNotEmpty()) return text.trim()
-                val transcription = json.optString("transcription", "")
-                if (transcription.isNotEmpty()) return transcription.trim()
-                return text.trim()
+                val text = json.optString("text", json.optString("transcription", json.optString("result", "")))
+                text.trim()
             } catch (e: JSONException) {
                 if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
-                    return trimmed
+                    trimmed
+                } else {
+                    ""
                 }
-                throw IOException("unparseable transcription response: ${e.message}", e)
             }
         }
 

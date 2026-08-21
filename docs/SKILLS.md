@@ -6,6 +6,18 @@ La aplicación móvil Kotlin para los lentes inteligentes **Meizu MYVU** integra
 
 ---
 
+## Servicio de Transcripción de Audio (STT Simplificado)
+
+El cliente HTTP de transcripción (`OpenAiTranscriptionClient`) ha sido ajustado para cumplir estrictamente con las siguientes especificaciones:
+
+1. **Envío del Archivo de Audio e Idioma Español (`es`)**:
+   - Se envía la parte `file` del archivo de audio, el parámetro de modelo `model` y la especificación del idioma `language = "es"`.
+   - Se excluyen prompts guidados o parámetros innecesarios que distorsionen el resultado de la transcripción.
+2. **Respuesta Exclusiva de Transcripción**:
+   - El analizador de respuesta `extractText` retorna única y exclusivamente el texto transcrito directo en español, descartando envoltorios JSON o caracteres innecesarios.
+
+---
+
 ## Proceso del Agente de IA y Personalización Ligera
 
 Se ha ajustado el proceso de inyección de contexto en `UserProfileAnalyzer`:
