@@ -23,6 +23,13 @@ import com.myvu.client.skills.handlers.UnreadWhatsappSummaryHandler
 import com.myvu.client.skills.handlers.WeatherForecastHandler
 import com.myvu.client.skills.handlers.WikipediaSearchHandler
 import com.myvu.client.skills.handlers.XTwitterSearchHandler
+import com.myvu.client.skills.handlers.SmartOcrScannerHandler
+import com.myvu.client.skills.handlers.WebPageSummarizerHandler
+import com.myvu.client.skills.handlers.CodeCalculatorMathHandler
+import com.myvu.client.skills.handlers.SmartAgendaPlannerHandler
+import com.myvu.client.skills.handlers.SmartTranslateHudHandler
+import com.myvu.client.skills.handlers.RagHistorySearchHandler
+import com.myvu.client.skills.handlers.QuickAlarmTimerHandler
 
 object SkillRegistry {
 
@@ -55,6 +62,15 @@ object SkillRegistry {
         registerHandler("unread-telegram-summary", UnreadTelegramSummaryHandler())
         registerHandler("x-twitter-search", XTwitterSearchHandler())
         registerHandler("hud-navigation", HudNavigationHandler())
+
+        // Productivity Skills
+        registerHandler("smart-ocr-scanner", SmartOcrScannerHandler())
+        registerHandler("web-page-summarizer", WebPageSummarizerHandler())
+        registerHandler("code-calculator-math", CodeCalculatorMathHandler())
+        registerHandler("smart-agenda-planner", SmartAgendaPlannerHandler())
+        registerHandler("smart-translate-hud", SmartTranslateHudHandler())
+        registerHandler("rag-history-search", RagHistorySearchHandler())
+        registerHandler("quick-alarm-timer", QuickAlarmTimerHandler())
 
         // 2. Load SKILL.md manifests from Assets
         val skills = SkillLoader.loadSkillsFromAssets(context)
