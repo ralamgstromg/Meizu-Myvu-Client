@@ -308,18 +308,14 @@ object Prefs {
 
     @JvmStatic
     fun systemPrompt(c: Context): String {
-        val template = com.myvu.client.ai.AiClient.DEFAULT_SYSTEM_PROMPT
-        val locale = Locale.getDefault()
-        val langTag = locale.toLanguageTag() // e.g. "es-CO"
-        val langName = locale.getDisplayName(locale).ifBlank { locale.displayLanguage }
-        val country = locale.getDisplayCountry(locale).ifBlank { locale.country.ifBlank { "Global" } }
-        val currency = try {
-            Currency.getInstance(locale)
-        } catch (_: Exception) {
-            try { Currency.getInstance("USD") } catch (_: Exception) { null }
-        }
-        val currencyCode = currency?.currencyCode ?: "COP"
-        val currencySymbol = currency?.getSymbol(locale) ?: "$"
+        val stored = prefs(c).getString("custom_system_prompt", null) ?: prefs(c).getString(KEY_SYSTEM_PROMPT, null)
+        val template = stored?.ifBlank { null } ?: com.myvu.client.ai.AiClient.DEFAULT_SYSTEM_PROMPT
+        val locale = Locale("es", "CO")
+        val langTag = "es-CO"
+        val langName = "Español (Colombia)"
+        val country = "Colombia"
+        val currencyCode = "COP"
+        val currencySymbol = "$"
         val tz = TimeZone.getDefault()
         val tzName = tz.id
 

@@ -63,10 +63,11 @@ object SkillRegistry {
         if (loadedSkills.isEmpty()) return ""
 
         val sb = StringBuilder()
-        sb.append("\n\n### Habilidades Disponibles (Skills)\n")
-        sb.append("Tienes acceso a habilidades nativas en el dispositivo. Si el usuario te pide ejecutar una de estas acciones, debes responder INCLUYENDO una llamada a la habilidad con el siguiente formato exacto:\n")
+        sb.append("\n\n### Identidad y Habilidades Disponibles (Skills)\n")
+        sb.append("Te llamas Aura. Responde siempre en Español con configuración regional de Colombia (es-CO, COP $).\n")
+        sb.append("Tienes acceso a habilidades nativas en el dispositivo. Si el usuario te pide ejecutar una de estas acciones (o si es necesario para responder), debes responder INCLUYENDO una llamada a la habilidad con el siguiente formato exacto:\n")
         sb.append("[SKILL: id_habilidad {\"param1\": \"valor1\", ...}]\n\n")
-        sb.append("Lista de habilidades:\n")
+        sb.append("Lista de habilidades activas:\n")
 
         for (skill in loadedSkills.values) {
             sb.append("- **${skill.id}**: ${skill.description}\n")

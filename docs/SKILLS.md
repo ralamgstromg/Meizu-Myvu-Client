@@ -1,6 +1,16 @@
-# Documentación del Sistema de Skills (Habilidades) - Meizu Myvu Client
+# Documentación del Sistema de Skills y Agente Aura - Meizu Myvu Client
 
-El **Sistema de Skills** de `Meizu-Myvu-Client` permite al Agente LLM ejecutar acciones nativas en Android, gestionar notas, recordatorios y grabadora de voz IA, así como consultar información externa en tiempo real mediante manifiestos estructurados en archivos `SKILL.md`.
+El **Sistema de Skills** de `Meizu-Myvu-Client` dota al Agente IA (llamado **Aura**) de la capacidad de ejecutar acciones nativas en Android, gestionar notas, recordatorios, grabadora de voz IA y consultar información web/divisas/clima en tiempo real.
+
+---
+
+## Identidad del Agente Aura
+
+- **Nombre:** Aura.
+- **Idioma y Región:** Español con configuración regional de **Colombia (`es-CO`)**, utilizando pesos colombianos (`COP $`) y contexto geográfico de Colombia.
+- **Canales de Interacción:**
+  1. **Pantalla HUD / Gafas AR:** Respuestas breves conversacionales en texto plano (1-2 oraciones).
+  2. **Aplicación Móvil / Modo Chat (`ChatActivity` / `ChatSidebar`):** Conversación fluida en formato chat con soporte para respuestas extendidas, imágenes y ejecución de habilidades nativas.
 
 ---
 
@@ -41,31 +51,11 @@ Y en Android Assets: `android-kotlin/app/src/main/assets/skills/built-in/...`
 
 ---
 
-## Formato del Manifiesto `SKILL.md`
-
-Cada habilidad se define utilizando metadatos **YAML Frontmatter** combinados con instrucciones en Markdown:
-
-```markdown
----
-id: create-note
-name: Create Note
-description: Guarda una nueva nota con título y contenido en la base de datos de notas del usuario.
-parameters:
-  title: { type: string, description: "Título descriptivo de la nota", required: true }
-  body: { type: string, description: "Contenido principal de la nota", required: true }
----
-
-# Create Note Skill
-Instrucciones detalladas de uso...
-```
-
----
-
 ## Motor de Ejecución en Android Kotlin
 
 1. **`SkillParser`**: Parsea el frontmatter YAML y extrae parámetros e instrucciones del archivo `SKILL.md`.
 2. **`SkillLoader`**: Carga recursivamente todos los archivos `SKILL.md` desde `assets/skills/built-in` en runtime.
-3. **`SkillRegistry`**: Almacena las definiciones registradas y genera el bloque `buildSystemPromptAddendum()` que inyecta el catálogo en el System Prompt del LLM.
+3. **`SkillRegistry`**: Almacena las definiciones registradas y genera el bloque `buildSystemPromptAddendum()` que inyecta la identidad de **Aura** y el catálogo de habilidades en el System Prompt del LLM.
 4. **`SkillExecutor`**: Detecta etiquetas `[SKILL: id_habilidad {...}]` en la respuesta del LLM y ejecuta el `SkillHandler` Kotlin correspondiente.
 
 ---
