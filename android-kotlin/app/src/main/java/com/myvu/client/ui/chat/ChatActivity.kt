@@ -148,10 +148,15 @@ class ChatActivity : AppCompatActivity() {
             }
         }
 
-        // Configure Instant Send on IME Action (Virtual Keyboard Intro)
+        // Configure Instant Send on IME Action & Keyboard Enter
         edtChatMessage.setOnEditorActionListener { _, actionId, event ->
-            if (actionId == EditorInfo.IME_ACTION_SEND ||
-                (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN && !event.isShiftPressed)) {
+            val isSendAction = actionId == EditorInfo.IME_ACTION_SEND ||
+                    actionId == EditorInfo.IME_ACTION_DONE ||
+                    actionId == EditorInfo.IME_ACTION_GO ||
+                    actionId == EditorInfo.IME_NULL
+            val isEnterKey = event != null && event.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN
+
+            if (isSendAction || isEnterKey) {
                 val text = edtChatMessage.text.toString().trim()
                 if (text.isNotBlank() || attachedImageUri != null) {
                     sendUserQuery(text)
@@ -164,7 +169,7 @@ class ChatActivity : AppCompatActivity() {
 
         // Configure Hardware Keyboard Enter Key
         edtChatMessage.setOnKeyListener { _, keyCode, event ->
-            if (keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN && !event.isShiftPressed) {
+            if (keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN) {
                 val text = edtChatMessage.text.toString().trim()
                 if (text.isNotBlank() || attachedImageUri != null) {
                     sendUserQuery(text)
@@ -174,6 +179,21 @@ class ChatActivity : AppCompatActivity() {
                 false
             }
         }
+
+        // TextWatcher safety fallback: detect '\n' typed on any Android soft keyboard
+        edtChatMessage.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if (s != null && s.contains("\n")) {
+                    val cleanText = s.toString().replace("\n", "").trim()
+                    edtChatMessage.setText("")
+                    if (cleanText.isNotBlank() || attachedImageUri != null) {
+                        sendUserQuery(cleanText)
+                    }
+                }
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
 
         setupQuickSkillsBar()
         observeChatHistory()

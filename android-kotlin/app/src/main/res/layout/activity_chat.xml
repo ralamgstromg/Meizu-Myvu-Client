@@ -289,7 +289,7 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="4dp"
             android:hint="Pregunta a Aura o usa un skill..."
-            android:inputType="textCapSentences|textMultiLine"
+            android:inputType="textCapSentences"
             android:imeOptions="actionSend"
             android:maxLines="4" />
 

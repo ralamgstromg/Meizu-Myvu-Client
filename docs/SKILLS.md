@@ -17,25 +17,24 @@ La aplicación Android para los lentes Meizu MYVU integra un motor de habilidade
 
 Se ha rediseñado la interfaz del Chat para maximizar la productividad y permitir un acceso rápido a todas las habilidades:
 
-### Características Clave:
-1. **Envío Directo con Tecla Enter / Intro**:
-   - En teclados virtuales y físicos, al presionar la tecla **Intro / Enter** se envía la consulta directamente.
-   - Presionar `Shift + Enter` permite insertar saltos de línea sin enviar.
-2. **Barra de Acceso Rápido a Skills (Quick Skills Toolbar)**:
-   - **`⚡ Skills`**: Despliega un menú emergente con la lista completa de todas las habilidades registradas en el motor.
-   - **Chips de Acceso Directo**:
-     - 📞 **Llamar**: `Llamar a [contacto]`
-     - 💬 **WhatsApp**: `Enviar whatsapp a [contacto]`
-     - ✉️ **Email**: `Enviar email a [destinatario]`
-     - ✈️ **Telegram**: `Enviar telegram a [contacto]`
-     - 🔍 **Google**: `Buscar en Google [tema]`
-     - 📖 **Wiki**: `Buscar en Wikipedia [tema]`
-     - ☀️ **Clima**: `Clima en [ciudad]`
-     - 💵 **Divisas**: `Convertir 100 USD a COP`
-     - 📝 **Nota**: `Crear nota con titulo: [titulo]`
-     - ⏰ **Recordatorio**: `Recordar en 30 minutos: [asunto]`
-     - 🎙️ **Grabar IA**: `Iniciar grabacion de voz IA`
-3. **Formulario Optimizado**:
-   - Soporte multilínea hasta 4 líneas.
-   - Previsualización y eliminación rápida de imágenes adjuntas.
-   - Reconocimiento de voz continuo (STT).
+### Envío Instantáneo por Tecla Enter / Intro (Sin botón de envío):
+1. **Ajuste de `inputType`**: Removido `textMultiLine` en favor de `android:inputType="textCapSentences"` con `android:imeOptions="actionSend"`. Esto transforma la tecla de retorno del teclado virtual Android en el botón **Enviar**.
+2. **Combinación Triple de Intercepción**:
+   - **`OnEditorActionListener`**: Captura las acciones `IME_ACTION_SEND`, `IME_ACTION_DONE`, `IME_ACTION_GO`, `IME_NULL` y la tecla Enter del teclado virtual.
+   - **`OnKeyListener`**: Captura la tecla Enter de teclados físicos (Bluetooth/USB).
+   - **`TextWatcher` Interceptor**: Detecta la inserción de cualquier carácter de salto de línea `\n` en cualquier teclado secundario, limpia el texto e invoca `sendUserQuery(...)` inmediatamente.
+
+### Barra de Acceso Rápido a Skills (Quick Skills Toolbar):
+- **`⚡ Skills`**: Despliega un menú emergente con la lista completa de todas las habilidades registradas en el motor.
+- **Chips de Acceso Directo**:
+  - 📞 **Llamar**: `Llamar a [contacto]`
+  - 💬 **WhatsApp**: `Enviar whatsapp a [contacto]`
+  - ✉️ **Email**: `Enviar email a [destinatario]`
+  - ✈️ **Telegram**: `Enviar telegram a [contacto]`
+  - 🔍 **Google**: `Buscar en Google [tema]`
+  - 📖 **Wiki**: `Buscar en Wikipedia [tema]`
+  - ☀️ **Clima**: `Clima en [ciudad]`
+  - 💵 **Divisas**: `Convertir 100 USD a COP`
+  - 📝 **Nota**: `Crear nota con titulo: [titulo]`
+  - ⏰ **Recordatorio**: `Recordar en 30 minutos: [asunto]`
+  - 🎙️ **Grabar IA**: `Iniciar grabacion de voz IA`
