@@ -20,6 +20,7 @@ object Prefs {
     private const val KEY_SYSTEM_PROMPT = "ai_system_prompt"
     private const val KEY_WEATHER_ENABLED = "weather_enabled"
     private const val KEY_WEATHER_PLACE = "weather_place"
+    private const val KEY_AUTO_RECONNECT = "auto_reconnect_enabled"
 
 
     const val DEFAULT_MAC = "2C:6F:4E:00:DC:47"
@@ -566,5 +567,15 @@ object Prefs {
     @JvmStatic
     fun setTouchpadLongPressAction(c: Context, action: String) {
         prefs(c).edit().putString("touchpad_long_press_action", action).apply()
+    }
+
+    @JvmStatic
+    fun autoReconnectEnabled(c: Context): Boolean {
+        return prefs(c).getBoolean(KEY_AUTO_RECONNECT, true)
+    }
+
+    @JvmStatic
+    fun setAutoReconnectEnabled(c: Context, enabled: Boolean) {
+        prefs(c).edit().putBoolean(KEY_AUTO_RECONNECT, enabled).apply()
     }
 }

@@ -43,6 +43,7 @@ class MyvuService : Service(), ConnectionManager.Listener {
         val action = intent?.action
 
         if (ACTION_STOP == action) {
+            Prefs.setAutoReconnectEnabled(this, false)
             connection?.stop()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 stopForeground(STOP_FOREGROUND_REMOVE)
@@ -59,6 +60,7 @@ class MyvuService : Service(), ConnectionManager.Listener {
         startInForeground("Connecting...")
 
         if (ACTION_START == action || action == null) {
+            Prefs.setAutoReconnectEnabled(this, true)
             val mac = intent?.getStringExtra(EXTRA_MAC)?.ifBlank { null }
                 ?: Prefs.targetMac(this).ifBlank { null }
             if (!mac.isNullOrEmpty()) {
@@ -73,6 +75,10 @@ class MyvuService : Service(), ConnectionManager.Listener {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
+        if (!Prefs.autoReconnectEnabled(this)) {
+            LogBus.log("MyvuService: Task removed but auto-reconnect disabled by user — not restarting service")
+            return
+        }
         LogBus.log("MyvuService: Task removed from Recents — ensuring service stays alive")
         try {
             com.myvu.client.core.ServiceKeepAliveHelper.ensureServiceRunning(applicationContext)
@@ -80,6 +86,7 @@ class MyvuService : Service(), ConnectionManager.Listener {
             LogBus.error("MyvuService: Failed to restart on task removed", e)
         }
     }
+
 
     private fun startInForeground(status: String) {
         val n = buildNotification(status)

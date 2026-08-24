@@ -21,7 +21,8 @@ Each folder has its own README with build/run details:
 
 ## What works
 
-- **Connection & Reactive State Engine** — BLE bring-up + ECDH bond, then the classic-Bluetooth app relay with reactive Kotlin `StateFlow` synchronization and auto-reconnect. Optional **auto-search** discovers the glasses over a BLE scan without needing the MAC address.
+- **Connection & Reactive State Engine** — BLE bring-up + ECDH bond, then the classic-Bluetooth app relay with reactive Kotlin `StateFlow` synchronization and auto-reconnect. Optional **auto-search** discovers the glasses over a BLE scan without needing the MAC address. Clicking **Disconnect** completely disables automatic connection/reconnection attempts and closes Bluetooth profile proxies to optimize battery life when not connected, while clicking **Connect** re-enables auto-reconnect.
+
 - **"Phone connected" state** — connects standard HFP/A2DP profiles so the glasses light their own connected indicator, not just the app relay.
 - **Notifications** — send your own, or mirror real phone notifications to the lens with per-app filters and custom vibration alerts.
 - **Teleprompter**, **system settings** (volume, brightness, Wi-Fi, wear detection, zen mode, screen-off, standby position…), **clock sync**, and status **queries**.

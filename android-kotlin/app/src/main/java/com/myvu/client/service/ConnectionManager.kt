@@ -353,6 +353,7 @@ class ConnectionManager(
                 return@post
             }
             userStopped = false
+            Prefs.setAutoReconnectEnabled(context, true)
             cancelReconnect()
             targetMac = mac
             beginConnect()
@@ -373,6 +374,7 @@ class ConnectionManager(
                 return@post
             }
             userStopped = false
+            Prefs.setAutoReconnectEnabled(context, true)
             cancelReconnect()
             beginAutoSearch()
         }
@@ -442,8 +444,11 @@ class ConnectionManager(
     fun stop() {
         conn.post {
             userStopped = true
+            Prefs.setAutoReconnectEnabled(context, false)
             cancelReconnect()
             teardown()
+            audioProfiles?.close()
+            audioProfiles = null
             state = ConnectionState.IDLE
         }
     }
@@ -482,7 +487,13 @@ class ConnectionManager(
         bondIv = null
         lastSentBtStatus = LinkCommands.BTSTATUS_DEFAULT
         audioProfilesAttempted = false
+
+        if (userStopped || !Prefs.autoReconnectEnabled(context)) {
+            audioProfiles?.close()
+            audioProfiles = null
+        }
     }
+
 
     private fun closeRelay() {
         rfcomm?.close()
@@ -657,16 +668,19 @@ class ConnectionManager(
 
     // ---------------------------------------------------------- reconnect
 
-    private var userStopped = false
+    private var userStopped = !Prefs.autoReconnectEnabled(context)
     private var reconnectAttempt = 0
     private val reconnectRunnable = Runnable {
-        if (userStopped || state == ConnectionState.READY) return@Runnable
+        if (userStopped || !Prefs.autoReconnectEnabled(context) || state == ConnectionState.READY) return@Runnable
         LogBus.log("reconnecting to the glasses (attempt $reconnectAttempt)")
         beginConnect()
     }
 
     private fun scheduleReconnect(why: String) {
-        if (userStopped) return
+        if (userStopped || !Prefs.autoReconnectEnabled(context)) {
+            LogBus.log("$why -- auto-reconnect disabled by user; skipping reconnect")
+            return
+        }
         conn.removeCallbacks(reconnectRunnable)
         reconnectAttempt++
         val delay = Math.min(
@@ -681,6 +695,7 @@ class ConnectionManager(
         conn.removeCallbacks(reconnectRunnable)
         reconnectAttempt = 0
     }
+
 
     // ------------------------------------------------------- BLE session
 

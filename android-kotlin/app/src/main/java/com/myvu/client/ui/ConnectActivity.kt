@@ -488,6 +488,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
     }
 
     private fun startConnection() {
+        Prefs.setAutoReconnectEnabled(this, true)
         val mac = text(txtMac).uppercase()
         val auto = mac.isEmpty()
         if (!auto && !mac.matches(Regex("([0-9A-F]{2}:){5}[0-9A-F]{2}"))) {
@@ -648,9 +649,11 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
     }
 
     private fun stopConnection() {
+        Prefs.setAutoReconnectEnabled(this, false)
         startService(Intent(this, MyvuService::class.java).setAction(MyvuService.ACTION_STOP))
         render(ConnectionState.IDLE)
     }
+
 
     private fun render(state: ConnectionState) {
         val busy = state == ConnectionState.BONDING || state == ConnectionState.CONNECTING

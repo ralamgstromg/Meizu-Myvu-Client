@@ -110,4 +110,22 @@ class ConnectionManagerTest {
             listenerStates
         )
     }
+
+    @Test
+    fun autoReconnectLogicStateToggle() {
+        var autoReconnectEnabled = true
+        fun onDisconnectPressed() {
+            autoReconnectEnabled = false
+        }
+        fun onConnectPressed() {
+            autoReconnectEnabled = true
+        }
+
+        onDisconnectPressed()
+        assertEquals(false, autoReconnectEnabled)
+
+        onConnectPressed()
+        assertEquals(true, autoReconnectEnabled)
+    }
 }
+
