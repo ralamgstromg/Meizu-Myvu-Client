@@ -33,6 +33,7 @@ class MirrorNotificationListener : NotificationListenerService() {
 
     private val notificationFilter = NotificationFilter()
     private val dismissHandler = Handler(Looper.getMainLooper())
+    private val pendingDismisses = java.util.concurrent.ConcurrentHashMap<String, Runnable>()
 
     override fun onListenerConnected() {
         super.onListenerConnected()
@@ -113,13 +114,17 @@ class MirrorNotificationListener : NotificationListenerService() {
 
             val durationSec = GlassesConfig.getNotificationDuration(this)
             if (durationSec > 0) {
-                dismissHandler.postDelayed({
+                pendingDismisses.remove(notifId)?.let { dismissHandler.removeCallbacks(it) }
+                val runnable = Runnable {
+                    pendingDismisses.remove(notifId)
                     try {
                         val active = MyvuService.activeConnection()
                         active?.sendAction(Notifications.buildDismiss(notifId))
                     } catch (ignored: Exception) {
                     }
-                }, durationSec * 1000L)
+                }
+                pendingDismisses[notifId] = runnable
+                dismissHandler.postDelayed(runnable, durationSec * 1000L)
             }
         } catch (e: Exception) {
             LogBus.error("could not mirror a notification", e)
@@ -130,14 +135,12 @@ class MirrorNotificationListener : NotificationListenerService() {
         if (sbn == null || !Prefs.mirrorEnabled(this)) return
         // Same gate as the show path -- never dismiss what we never mirrored.
         if (!Prefs.isPackageAllowed(this, sbn.packageName)) return
+        val notifId = Notifications.notificationId(sbn.packageName, sbn.id)
+        pendingDismisses.remove(notifId)?.let { dismissHandler.removeCallbacks(it) }
         val connection = MyvuService.activeConnection() ?: return
         try {
             // Must match the id used when showing it, or the dismiss is a no-op.
-            connection.sendAction(
-                Notifications.buildDismiss(
-                    Notifications.notificationId(sbn.packageName, sbn.id)
-                )
-            )
+            connection.sendAction(Notifications.buildDismiss(notifId))
         } catch (e: Exception) {
             LogBus.error("could not dismiss a mirrored notification", e)
         }

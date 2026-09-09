@@ -456,21 +456,59 @@ class NoteDetailActivity : AppCompatActivity() {
     }
 
     private fun sendToGlasses() {
-        val title = if (itemType == TYPE_NOTE) currentNote?.title.orEmpty() else currentReminder?.title.orEmpty()
+        val title = (if (itemType == TYPE_NOTE) currentNote?.title.orEmpty() else currentReminder?.title.orEmpty()).ifBlank { "Nota Myvu" }
         val body = if (itemType == TYPE_NOTE) currentNote?.body.orEmpty() else currentReminder?.body.orEmpty()
-        val textToSend = "$title\n\n$body".trim()
+        val summary = if (itemType == TYPE_NOTE) currentNote?.summary.orEmpty() else currentReminder?.summary.orEmpty()
+        val actionItems = if (itemType == TYPE_NOTE) currentNote?.actionItems.orEmpty() else currentReminder?.actionItems.orEmpty()
 
-        if (textToSend.isBlank()) {
+        val fullPrompterText = buildString {
+            if (summary.isNotBlank()) {
+                appendLine("=== RESUMEN IA ===")
+                appendLine(summary)
+                appendLine()
+            }
+            if (actionItems.isNotBlank() && actionItems != "[]") {
+                appendLine("=== TAREAS Y ACCIONES ===")
+                try {
+                    val arr = org.json.JSONArray(actionItems)
+                    for (i in 0 until arr.length()) {
+                        val obj = arr.getJSONObject(i)
+                        val task = obj.optString("task")
+                        val owner = obj.optString("owner")
+                        val deadline = obj.optString("deadline")
+                        append("• $task")
+                        if (owner.isNotBlank()) append(" ($owner)")
+                        if (deadline.isNotBlank()) append(" [$deadline]")
+                        appendLine()
+                    }
+                } catch (_: Exception) {
+                    appendLine(actionItems)
+                }
+                appendLine()
+            }
+            if (body.isNotBlank()) {
+                appendLine("=== CONTENIDO ===")
+                appendLine(body)
+            }
+        }.trim()
+
+        if (fullPrompterText.isBlank()) {
             Toast.makeText(this, "No hay contenido para enviar", Toast.LENGTH_SHORT).show()
             return
         }
 
         try {
-            com.myvu.client.app.AppLayer.sendNotification(
-                title = if (itemType == TYPE_NOTE) "Nota: $title" else "Recordatorio: $title",
-                body = body
-            )
-            Toast.makeText(this, "Enviado a las gafas Myvu", Toast.LENGTH_SHORT).show()
+            val conn = com.myvu.client.service.MyvuService.activeConnection()
+            if (conn != null) {
+                conn.openTeleprompter(fullPrompterText, title)
+                Toast.makeText(this, "👓 Proyectando en pantalla de las gafas (Teleprompter)", Toast.LENGTH_SHORT).show()
+            } else {
+                com.myvu.client.app.AppLayer.sendNotification(
+                    title = if (itemType == TYPE_NOTE) "Nota: $title" else "Recordatorio: $title",
+                    body = if (summary.isNotBlank()) summary else body
+                )
+                Toast.makeText(this, "Notificación enviada a las gafas Myvu", Toast.LENGTH_SHORT).show()
+            }
         } catch (e: Exception) {
             LogBus.error("NoteDetailActivity: Failed to send to glasses", e)
             Toast.makeText(this, "Error enviando a las gafas: ${e.message}", Toast.LENGTH_SHORT).show()

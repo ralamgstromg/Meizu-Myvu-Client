@@ -148,7 +148,7 @@ class MeetingAiProcessor(private val context: Context) {
 
                 val aiPrompt = """
                     Eres un asistente ejecutivo experto en análisis de reuniones, entrevistas e ideas.
-                    Analiza la siguiente transcripción de audio y genera un JSON ESTRICTO con la siguiente estructura exacta:
+                    Analiza la siguiente transcripción de audio y los documentos e imágenes adjuntos (fotos de pizarras, diapositivas, capturas de pantalla) y genera un JSON ESTRICTO con la siguiente estructura exacta:
                     {
                       "diarized": [
                         {"speaker": "Hablante 1", "text": "Fragmento del diálogo..."},
@@ -162,6 +162,7 @@ class MeetingAiProcessor(private val context: Context) {
                       "tags": ["reunion", "proyecto", "tema_clave"]
                     }
                     Reglas estrictas:
+                    - Si hay imágenes adjuntas, correlaciónalas visualmente con la discusión del audio (ej. diagramas de pizarra, diapositivas proyectadas) y sintetiza la información en el resumen y tareas.
                     - Responde ÚNICAMENTE el bloque JSON válido, sin delimitadores ```json adicionales ni texto antes o después.
                     - Si sólo habla una persona (nota de voz o monólogo de idea), usa 'Hablante 1' para todo.
                     - En 'mindmap_mermaid' genera sintaxis válida de Mermaid mindmap o graph TD.
@@ -185,6 +186,19 @@ class MeetingAiProcessor(private val context: Context) {
                     sb.toString()
                 } else ""
 
+                val imagesList = mutableListOf<Pair<String, String>>()
+                for (att in attachments) {
+                    if (att.fileType == com.myvu.client.database.AttachmentType.IMAGE) {
+                        val imgFile = java.io.File(att.filePath)
+                        val encoded = com.myvu.client.core.DocumentExtractor.loadAndEncodeImageBase64(imgFile)
+                        if (encoded != null) imagesList.add(encoded)
+                    }
+                }
+                val hasImages = imagesList.isNotEmpty()
+                if (hasImages) {
+                    postProgress(onProgress, "📷 Analizando audio y ${imagesList.size} imagen(es) multimodal con IA...")
+                }
+
                 val fullRaw = "TRANSCRIPCIÓN DE LA REUNIÓN / GRABACIÓN:\n\n$rawTranscript$attachmentsText"
                 val fullContent = if (fullRaw.length > MAX_TRANSCRIPT_CHARS) {
                     val half = MAX_TRANSCRIPT_CHARS / 2
@@ -193,11 +207,17 @@ class MeetingAiProcessor(private val context: Context) {
                     "$startPart\n\n... [CONTENIDO INTERMEDIO TRUNCADO POR LONGITUD PARA EVITAR TIMEOUT] ...\n\n$endPart"
                 } else fullRaw
 
+                val userMessage = if (hasImages) {
+                    ChatMessage.userWithImages(fullContent, imagesList)
+                } else {
+                    ChatMessage.user(fullContent)
+                }
+
                 val aiResponse = if (aiClient.supportsToolCalling()) {
                     val chatRes = aiClient.chat(
                         messages = listOf(
                             ChatMessage.system(aiPrompt),
-                            ChatMessage.user(fullContent)
+                            userMessage
                         ),
                         jsonMode = true
                     )
@@ -285,6 +305,15 @@ class MeetingAiProcessor(private val context: Context) {
                     sb.toString()
                 } else ""
 
+                val imagesList = mutableListOf<Pair<String, String>>()
+                for (att in attachments) {
+                    if (att.fileType == com.myvu.client.database.AttachmentType.IMAGE) {
+                        val imgFile = java.io.File(att.filePath)
+                        val encoded = com.myvu.client.core.DocumentExtractor.loadAndEncodeImageBase64(imgFile)
+                        if (encoded != null) imagesList.add(encoded)
+                    }
+                }
+
                 val prompt = """
                     Eres un asistente inteligente que responde preguntas sobre una grabación de audio y sus documentos adjuntos.
                     Responde de forma clara, directa y estructurada en Markdown.
@@ -302,7 +331,18 @@ class MeetingAiProcessor(private val context: Context) {
                 """.trimIndent()
 
                 val client = provider.newClient(context, aiApiKey, aiModel, aiEndpoint, prompt)
-                val answer = client.ask(question)
+                val answer = if (client.supportsToolCalling()) {
+                    val fullUserPrompt = "Pregunta del usuario: $question"
+                    val userMsg = if (imagesList.isNotEmpty()) {
+                        ChatMessage.userWithImages(fullUserPrompt, imagesList)
+                    } else {
+                        ChatMessage.user(fullUserPrompt)
+                    }
+                    val chatRes = client.chat(listOf(ChatMessage.system(prompt), userMsg))
+                    chatRes.content ?: ""
+                } else {
+                    client.ask(question)
+                }
 
                 mainHandler.post {
                     callback.onResult(Result.success(answer))

@@ -151,4 +151,37 @@ class ToolCallingIntegrationTest {
         assertEquals("call_contact", call.functionName)
         assertEquals("{\"contact_or_number\":\"Carlos\"}", call.argumentsJson)
     }
+
+    @Test
+    fun testSkillParserBothInlineAndBlockYaml() {
+        val markdownBlockYaml = """
+            ---
+            id: quick-alarm-timer
+            name: Alarmas y Temporizadores
+            description: Configura alarmas o temporizadores
+            parameters:
+              action:
+                type: string
+                description: Acción a ejecutar (set_alarm, set_timer)
+                required: true
+              time_or_duration:
+                type: string
+                description: Duración u hora
+                required: true
+            ---
+            # Instrucciones
+        """.trimIndent()
+
+        val skill = com.myvu.client.skills.SkillParser.parse(markdownBlockYaml)
+        assertNotNull(skill)
+        assertEquals("quick-alarm-timer", skill!!.id)
+        assertEquals(2, skill.parameters.size)
+
+
+        assertTrue(skill.parameters.containsKey("action"))
+        assertEquals("Acción a ejecutar (set_alarm, set_timer)", skill.parameters["action"]?.description)
+        assertTrue(skill.parameters["action"]?.required == true)
+        assertTrue(skill.parameters.containsKey("time_or_duration"))
+    }
 }
+

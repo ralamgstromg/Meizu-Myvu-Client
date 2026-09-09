@@ -403,6 +403,44 @@ object DocumentExtractor {
         }
     }
 
+    /**
+     * Loads an image file, downscales it to maxDim (default 1024px) for low latency,
+     * and encodes it as Base64 JPEG string. Returns Pair(mimeType, base64) or null.
+     */
+    fun loadAndEncodeImageBase64(file: File, maxDim: Int = 1024): Pair<String, String>? {
+        if (!file.exists() || !file.canRead() || file.length() == 0L) return null
+        return try {
+            val boundsOptions = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(file.absolutePath, boundsOptions)
+            val origW = boundsOptions.outWidth
+            val origH = boundsOptions.outHeight
+            if (origW <= 0 || origH <= 0) return null
+
+            var sampleSize = 1
+            while (origW / sampleSize > maxDim || origH / sampleSize > maxDim) {
+                sampleSize *= 2
+            }
+
+            val decodeOpts = BitmapFactory.Options().apply {
+                inSampleSize = sampleSize
+                inPreferredConfig = Bitmap.Config.RGB_565
+            }
+            val bitmap = BitmapFactory.decodeFile(file.absolutePath, decodeOpts) ?: return null
+
+            val baos = java.io.ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos)
+            val bytes = baos.toByteArray()
+            bitmap.recycle()
+
+            val b64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+            Pair("image/jpeg", b64)
+        } catch (e: Exception) {
+            LogBus.warn("DocumentExtractor -> Failed to encode image to base64: ${e.message}")
+            null
+        }
+    }
+
+
     private fun getFileNameFromUri(context: Context, uri: Uri): String? {
         if (uri.scheme == "content") {
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->

@@ -23,7 +23,26 @@ object SkillParser {
         var description = ""
         val parameters = mutableMapOf<String, SkillParameter>()
         var inParametersBlock = false
+
         var currentParamName = ""
+        var currentParamType = "string"
+        var currentParamDesc = ""
+        var currentParamReq = false
+
+        fun flushCurrentParam() {
+            if (currentParamName.isNotEmpty()) {
+                parameters[currentParamName] = SkillParameter(
+                    name = currentParamName,
+                    type = currentParamType,
+                    description = currentParamDesc,
+                    required = currentParamReq
+                )
+                currentParamName = ""
+                currentParamType = "string"
+                currentParamDesc = ""
+                currentParamReq = false
+            }
+        }
 
         val instructionsBuilder = StringBuilder()
         var frontmatterEnded = false
@@ -33,31 +52,64 @@ object SkillParser {
 
             if (!frontmatterEnded) {
                 if (line.trim() == "---") {
+                    flushCurrentParam()
                     frontmatterEnded = true
                     continue
                 }
 
+                val isIndented = line.startsWith(" ") || line.startsWith("\t")
                 val trimmed = line.trim()
-                if (trimmed.startsWith("id:")) {
-                    id = trimmed.substringAfter("id:").trim()
+
+                if (!isIndented) {
+                    // Top-level frontmatter keys
+                    flushCurrentParam()
                     inParametersBlock = false
-                } else if (trimmed.startsWith("name:")) {
-                    name = trimmed.substringAfter("name:").trim()
-                    inParametersBlock = false
-                } else if (trimmed.startsWith("description:")) {
-                    description = trimmed.substringAfter("description:").trim()
-                    inParametersBlock = false
-                } else if (trimmed.startsWith("parameters:")) {
-                    inParametersBlock = true
-                } else if (inParametersBlock && line.startsWith("  ")) {
-                    // Parameter line, e.g.  to: { type: string, description: "...", required: true }
-                    val paramLine = line.trim()
-                    if (paramLine.contains(":")) {
-                        val paramName = paramLine.substringBefore(":").trim()
-                        val paramBody = paramLine.substringAfter(":").trim()
-                        val param = parseParameterBody(paramName, paramBody)
-                        if (param != null) {
-                            parameters[paramName] = param
+
+                    if (trimmed.startsWith("id:")) {
+                        id = trimmed.substringAfter("id:").trim()
+                    } else if (trimmed.startsWith("name:")) {
+                        name = trimmed.substringAfter("name:").trim()
+                    } else if (trimmed.startsWith("description:")) {
+                        description = trimmed.substringAfter("description:").trim()
+                    } else if (trimmed.startsWith("parameters:")) {
+                        inParametersBlock = true
+                    }
+                } else if (inParametersBlock) {
+                    // Indented lines inside parameters block
+                    if (line.startsWith("    ") || line.startsWith("\t\t")) {
+                        // Multi-line parameter attribute (4 spaces indent)
+                        val attrLine = line.trim()
+                        if (attrLine.contains(":")) {
+                            val key = attrLine.substringBefore(":").trim().lowercase()
+                            var value = attrLine.substringAfter(":").trim()
+                            if (value.startsWith("\"") && value.endsWith("\"") && value.length >= 2) {
+                                value = value.substring(1, value.length - 1)
+                            }
+                            when (key) {
+                                "type" -> currentParamType = value
+                                "description" -> currentParamDesc = value
+                                "required" -> currentParamReq = value.lowercase() == "true"
+                            }
+                        }
+                    } else {
+                        // Parameter definition line (2 spaces indent)
+                        flushCurrentParam()
+                        val paramLine = line.trim()
+                        if (paramLine.contains(":")) {
+                            val paramName = paramLine.substringBefore(":").trim()
+                            val paramBody = paramLine.substringAfter(":").trim()
+                            if (paramBody.startsWith("{") && paramBody.endsWith("}")) {
+                                val param = parseParameterBody(paramName, paramBody)
+                                if (param != null) {
+                                    parameters[paramName] = param
+                                }
+                            } else {
+                                // Multi-line parameter block follows
+                                currentParamName = paramName
+                                currentParamType = "string"
+                                currentParamDesc = ""
+                                currentParamReq = false
+                            }
                         }
                     }
                 }
@@ -65,6 +117,8 @@ object SkillParser {
                 instructionsBuilder.append(line).append("\n")
             }
         }
+
+        flushCurrentParam()
 
         if (id.isEmpty()) return null
 
@@ -78,7 +132,6 @@ object SkillParser {
     }
 
     private fun parseParameterBody(name: String, body: String): SkillParameter? {
-        // Example body: { type: string, description: "...", required: true }
         var type = "string"
         var description = ""
         var required = false

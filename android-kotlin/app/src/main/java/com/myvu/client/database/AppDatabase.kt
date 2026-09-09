@@ -35,7 +35,7 @@ abstract class AppDatabase : RoomDatabase() {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "myvu_chat.db"
-            ).fallbackToDestructiveMigration()
+            ).fallbackToDestructiveMigration(dropAllTables = true)
                 .build()
         }
     }

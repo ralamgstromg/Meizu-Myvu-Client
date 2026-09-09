@@ -55,13 +55,15 @@ abstract class AiHttpClient @JvmOverloads constructor(
     }
 
     @Throws(IOException::class)
-    protected fun askOnce(body: String): String {
-        return askOnceInternal(body, ignoreSsl)
+    protected fun postRaw(body: String): String {
+        return postRawInternal(body, ignoreSsl)
     }
 
     @Throws(IOException::class)
-    private fun askOnceInternal(body: String, bypassSsl: Boolean): String {
-        val url = HttpEndpoint.parse(endpoint(), "${provider.displayName} endpoint")
+    private fun postRawInternal(body: String, bypassSsl: Boolean): String {
+        val targetUrl = endpoint()
+        LogBus.log("${provider.displayName}: POST $targetUrl (payload: ${body.length} chars)")
+        val url = HttpEndpoint.parse(targetUrl, "${provider.displayName} endpoint")
         val conn = url.openConnection() as HttpURLConnection
         if (bypassSsl) {
             SslUtils.applySslBypass(conn)
@@ -70,7 +72,7 @@ abstract class AiHttpClient @JvmOverloads constructor(
             conn.requestMethod = "POST"
             conn.setRequestProperty("content-type", "application/json")
             authorize(conn)
-            val isLocal = provider == AiProvider.LOCAL || endpoint().contains("10.0.0.") || endpoint().contains("localhost") || endpoint().contains("127.0.0.1") || endpoint().contains("192.168.")
+            val isLocal = provider == AiProvider.LOCAL || targetUrl.contains("10.0.0.") || targetUrl.contains("localhost") || targetUrl.contains("127.0.0.1") || targetUrl.contains("192.168.")
             conn.connectTimeout = if (isLocal) LOCAL_CONNECT_TIMEOUT_MS else CONNECT_TIMEOUT_MS
             conn.readTimeout = if (isLocal) LOCAL_READ_TIMEOUT_MS else READ_TIMEOUT_MS
             conn.doOutput = true
@@ -82,26 +84,18 @@ abstract class AiHttpClient @JvmOverloads constructor(
             val status = conn.responseCode
             val stream = if (status >= 400) conn.errorStream else conn.inputStream
             val response = readAll(stream)
+            LogBus.log("${provider.displayName}: HTTP $status (${response.length} chars received)")
             if (status >= 400) {
                 throw HttpRetry.statusError(
                     status,
                     "${provider.displayName} API returned $status: ${extractError(response)}"
                 )
             }
-
-            val text = try {
-                extractText(response).trim()
-            } catch (e: JSONException) {
-                throw IOException("unparseable ${provider.displayName} response: ${e.message}", e)
-            }
-            if (text.isEmpty()) {
-                throw IOException("${provider.displayName} returned an empty answer")
-            }
-            return text
+            return response
         } catch (e: SSLException) {
             if (!bypassSsl) {
                 LogBus.warn("${provider.displayName} SSL failed, retrying with SSL bypass...")
-                return askOnceInternal(body, true)
+                return postRawInternal(body, true)
             }
             throw e
         } finally {
@@ -109,11 +103,25 @@ abstract class AiHttpClient @JvmOverloads constructor(
         }
     }
 
+    @Throws(IOException::class)
+    protected fun askOnce(body: String): String {
+        val response = postRaw(body)
+        val text = try {
+            extractText(response).trim()
+        } catch (e: JSONException) {
+            throw IOException("unparseable ${provider.displayName} response: ${e.message}", e)
+        }
+        if (text.isEmpty()) {
+            throw IOException("${provider.displayName} returned an empty answer")
+        }
+        return text
+    }
+
     companion object {
         private const val CONNECT_TIMEOUT_MS = 15000
-        private const val READ_TIMEOUT_MS = 90000
+        private const val READ_TIMEOUT_MS = 60000
         private const val LOCAL_CONNECT_TIMEOUT_MS = 15000
-        private const val LOCAL_READ_TIMEOUT_MS = 240000
+        private const val LOCAL_READ_TIMEOUT_MS = 45000
 
         private fun extractError(response: String): String {
             try {

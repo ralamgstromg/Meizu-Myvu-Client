@@ -39,7 +39,9 @@ class NotificationFilter @JvmOverloads constructor(
     @Synchronized
     fun isDuplicateContent(pkg: String?, title: String?, text: String?): Boolean {
         val now = clock.currentTimeMillis()
-        val contentKey = "${pkg ?: ""}|${title ?: ""}|${text ?: ""}"
+        // Strip group message counters like "(2 mensajes)", "(3 messages)" to prevent HUD spam on every message count increment
+        val cleanTitle = title?.replace(Regex("(?i)\\s*\\(\\d+\\s*(mensajes?|messages?|chats?|unread)\\)"), "")?.trim() ?: ""
+        val contentKey = "${pkg ?: ""}|$cleanTitle|${text ?: ""}"
 
         // Cleanup expired entries
         val iterator = recentContentHashes.entries.iterator()

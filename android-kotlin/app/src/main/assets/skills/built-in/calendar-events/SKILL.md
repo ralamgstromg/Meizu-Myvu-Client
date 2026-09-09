@@ -1,18 +1,14 @@
 ---
 id: calendar-events
-name: Consulta del Calendario
-description: Consulta eventos y reuniones próximas en el calendario filtrando por fecha, día objetivo o término del evento.
+name: Calendar Events
+description: Consulta eventos y reuniones del calendario o agenda nuevos compromisos en el dispositivo.
 parameters:
-  date:
-    type: string
-    description: Fecha o día objetivo a consultar (ej. 2026-08-22, hoy, mañana, lunes).
-    required: false
-  query:
-    type: string
-    description: Nombre, palabra clave o asistente del evento a buscar.
-    required: false
-  limit:
-    type: integer
-    description: Límite de eventos a retornar.
-    required: false
+  action: { type: string, description: "Acción a realizar: 'query' para consultar o 'create' para agendar", required: false }
+  date: { type: string, description: "Fecha a consultar (ej. 'hoy', 'mañana', 'próxima semana')", required: false }
+  query: { type: string, description: "Filtro de búsqueda por título del evento", required: false }
+  title: { type: string, description: "Título del nuevo evento a crear si action es 'create'", required: false }
 ---
+
+# Calendar Events Skill
+
+Permite inspeccionar eventos y agendar reuniones directamente en Google Calendar / calendario local de Android.

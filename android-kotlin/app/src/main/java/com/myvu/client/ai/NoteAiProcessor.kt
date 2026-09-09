@@ -64,13 +64,25 @@ class NoteAiProcessor(private val context: Context) {
                     return@launch
                 }
 
-                // 1. Análisis Multimodal Unificado con IA en una sola llamada
-                onProgress("🧠 Analizando nota, adjuntos, tareas y mapa mental con IA...")
+                // 1. Análisis Multimodal Unificado con IA en una sola llamada (Texto + Imágenes reales)
+                val imagesList = mutableListOf<Pair<String, String>>()
+                for (att in note.getAttachments()) {
+                    if (att.fileType == com.myvu.client.database.AttachmentType.IMAGE) {
+                        val imgFile = java.io.File(att.filePath)
+                        val encoded = com.myvu.client.core.DocumentExtractor.loadAndEncodeImageBase64(imgFile)
+                        if (encoded != null) imagesList.add(encoded)
+                    }
+                }
+
+                val hasImages = imagesList.isNotEmpty()
+                onProgress(if (hasImages) "📷 Analizando nota, imágenes adjuntas (${imagesList.size}) y mapa mental con IA..." else "🧠 Analizando nota, adjuntos, tareas y mapa mental con IA...")
+
                 val aiPrompt = """
-                    Eres un asistente ejecutivo inteligente para usuarios de gafas inteligentes AR.
-                    Analiza la siguiente nota y sus documentos/imágenes adjuntos y genera un JSON ESTRICTO con la siguiente estructura exacta:
+                    Eres un asistente ejecutivo inteligente de alta precisión para usuarios de gafas inteligentes AR.
+                    Analiza la siguiente nota y cualquier documento o imagen adjunta (fotos de pizarras, recibos, diagramas, textos manuscritos o diapositivas).
+                    Genera un JSON ESTRICTO con la siguiente estructura exacta:
                     {
-                      "summary": "### 🎯 Resumen\n...\n\n### 💬 Puntos Clave\n...",
+                      "summary": "### 🎯 Resumen Ejecutivo\n...\n\n### 💡 Puntos Clave e Ideas\n...\n\n### 🤝 Decisiones / Conclusiones\n...",
                       "action_items": [
                         {"task": "Descripción de tarea", "owner": "Responsable o vacío", "deadline": "Plazo o vacío", "completed": false}
                       ],
@@ -78,7 +90,8 @@ class NoteAiProcessor(private val context: Context) {
                       "tags": ["etiqueta1", "etiqueta2"]
                     }
                     Reglas estrictas:
-                    - Responde ÚNICAMENTE el bloque JSON válido, sin delimitadores adicionales ni texto antes o después.
+                    - Si hay imágenes adjuntas, analiza visualmente su contenido, extrae los datos clave y combínalos en el resumen.
+                    - Responde ÚNICAMENTE el bloque JSON válido, sin delimitadores ```json adicionales ni texto antes o después.
                     - En 'summary' usa sintaxis Markdown clara con viñetas y negritas.
                     - Si no hay tareas pendientes responde [] en 'action_items'.
                     - En 'tags' sugiere de 2 a 4 etiquetas útiles en español.
@@ -86,11 +99,17 @@ class NoteAiProcessor(private val context: Context) {
 
                 val aiClient = getAiClient(aiPrompt)
                 val userPayload = "CONTENIDO DE LA NOTA Y ADJUNTOS:\n\n$content"
+                val userMessage = if (hasImages) {
+                    ChatMessage.userWithImages(userPayload, imagesList)
+                } else {
+                    ChatMessage.user(userPayload)
+                }
+
                 val response = if (aiClient.supportsToolCalling()) {
                     val chatRes = aiClient.chat(
                         messages = listOf(
                             ChatMessage.system(aiPrompt),
-                            ChatMessage.user(userPayload)
+                            userMessage
                         ),
                         jsonMode = true
                     )
@@ -98,6 +117,7 @@ class NoteAiProcessor(private val context: Context) {
                 } else {
                     aiClient.ask(userPayload)
                 }
+
                 val cleanJson = sanitizeJsonObject(response)
 
                 var summary = ""
@@ -160,10 +180,19 @@ class NoteAiProcessor(private val context: Context) {
                 val attachmentsText = formatAttachmentsForPrompt(reminder.getAttachments())
                 val content = (baseContent + attachmentsText).trim()
 
-                // Análisis unificado con IA
-                onProgress("🧠 Analizando contexto del recordatorio y adjuntos con IA...")
+                val imagesList = mutableListOf<Pair<String, String>>()
+                for (att in reminder.getAttachments()) {
+                    if (att.fileType == com.myvu.client.database.AttachmentType.IMAGE) {
+                        val imgFile = java.io.File(att.filePath)
+                        val encoded = com.myvu.client.core.DocumentExtractor.loadAndEncodeImageBase64(imgFile)
+                        if (encoded != null) imagesList.add(encoded)
+                    }
+                }
+                val hasImages = imagesList.isNotEmpty()
+                onProgress(if (hasImages) "📷 Analizando recordatorio con imágenes adjuntas (${imagesList.size}) con IA..." else "🧠 Analizando contexto del recordatorio y adjuntos con IA...")
+
                 val aiPrompt = """
-                    Eres un asistente ejecutivo experto. Analiza el recordatorio y sus adjuntos y genera un JSON ESTRICTO:
+                    Eres un asistente ejecutivo experto. Analiza el recordatorio, sus adjuntos y cualquier imagen adjunta (recibos, documentos, capturas) y genera un JSON ESTRICTO:
                     {
                       "summary": "### ⏰ Contexto y Detalles\n...",
                       "action_items": [
@@ -172,17 +201,24 @@ class NoteAiProcessor(private val context: Context) {
                       "mindmap": "mindmap\n  root((Recordatorio))\n    Paso 1\n    Paso 2"
                     }
                     Reglas estrictas:
+                    - Si hay imágenes adjuntas, extrae sus datos visuales clave y agrégalos al contexto.
                     - Responde ÚNICAMENTE con el objeto JSON válido.
                     - En 'summary' escribe el contenido ÚNICAMENTE en formato Markdown estructurado (con listas y negritas). NO utilices JSON en el campo summary.
                 """.trimIndent()
 
                 val aiClient = getAiClient(aiPrompt)
                 val userPayload = "Fecha programada: ${reminder.formattedTriggerDate()}\nDetalle:\n$content"
+                val userMessage = if (hasImages) {
+                    ChatMessage.userWithImages(userPayload, imagesList)
+                } else {
+                    ChatMessage.user(userPayload)
+                }
+
                 val response = if (aiClient.supportsToolCalling()) {
                     val chatRes = aiClient.chat(
                         messages = listOf(
                             ChatMessage.system(aiPrompt),
-                            ChatMessage.user(userPayload)
+                            userMessage
                         ),
                         jsonMode = true
                     )
@@ -227,7 +263,8 @@ class NoteAiProcessor(private val context: Context) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val attachmentsText = formatAttachmentsForPrompt(note.getAttachments())
-                val client = getAiClient("Eres un asistente inteligente para el usuario de las gafas inteligentes MEIZU MYVU. Tienes acceso al contenido de la nota y a los archivos/documentos adjuntos (PDF, Word, Excel, fotos, texto). Responde la pregunta con precisión usando formato Markdown elegante.")
+                val systemPrompt = "Eres un asistente inteligente para el usuario de las gafas inteligentes MEIZU MYVU. Tienes acceso al contenido de la nota y a los archivos/documentos adjuntos (PDF, Word, Excel, fotos, texto). Responde la pregunta con precisión usando formato Markdown elegante."
+                val client = getAiClient(systemPrompt)
                 val prompt = """
                     === NOTA ===
                     Título: ${note.title}
@@ -240,7 +277,27 @@ class NoteAiProcessor(private val context: Context) {
                     Pregunta del usuario: $question
                 """.trimIndent()
 
-                val answer = client.ask(prompt)
+                val imagesList = mutableListOf<Pair<String, String>>()
+                for (att in note.getAttachments()) {
+                    if (att.fileType == com.myvu.client.database.AttachmentType.IMAGE) {
+                        val imgFile = java.io.File(att.filePath)
+                        val encoded = com.myvu.client.core.DocumentExtractor.loadAndEncodeImageBase64(imgFile)
+                        if (encoded != null) imagesList.add(encoded)
+                    }
+                }
+
+                val answer = if (client.supportsToolCalling()) {
+                    val userMsg = if (imagesList.isNotEmpty()) {
+                        ChatMessage.userWithImages(prompt, imagesList)
+                    } else {
+                        ChatMessage.user(prompt)
+                    }
+                    val chatRes = client.chat(listOf(ChatMessage.system(systemPrompt), userMsg))
+                    chatRes.content ?: ""
+                } else {
+                    client.ask(prompt)
+                }
+
                 callback(Result.success(answer.trim()))
             } catch (e: Exception) {
                 LogBus.error("NoteAiProcessor -> askQuestionAboutNote failed", e)
@@ -257,7 +314,8 @@ class NoteAiProcessor(private val context: Context) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val attachmentsText = formatAttachmentsForPrompt(reminder.getAttachments())
-                val client = getAiClient("Eres un asistente inteligente para el usuario de las gafas inteligentes MEIZU MYVU. Tienes acceso al recordatorio y a los documentos adjuntos. Responde la pregunta en formato Markdown.")
+                val systemPrompt = "Eres un asistente inteligente para el usuario de las gafas inteligentes MEIZU MYVU. Tienes acceso al recordatorio y a los documentos adjuntos. Responde la pregunta en formato Markdown."
+                val client = getAiClient(systemPrompt)
                 val prompt = """
                     === RECORDATORIO ===
                     Título: ${reminder.title}
@@ -271,7 +329,27 @@ class NoteAiProcessor(private val context: Context) {
                     Pregunta del usuario: $question
                 """.trimIndent()
 
-                val answer = client.ask(prompt)
+                val imagesList = mutableListOf<Pair<String, String>>()
+                for (att in reminder.getAttachments()) {
+                    if (att.fileType == com.myvu.client.database.AttachmentType.IMAGE) {
+                        val imgFile = java.io.File(att.filePath)
+                        val encoded = com.myvu.client.core.DocumentExtractor.loadAndEncodeImageBase64(imgFile)
+                        if (encoded != null) imagesList.add(encoded)
+                    }
+                }
+
+                val answer = if (client.supportsToolCalling()) {
+                    val userMsg = if (imagesList.isNotEmpty()) {
+                        ChatMessage.userWithImages(prompt, imagesList)
+                    } else {
+                        ChatMessage.user(prompt)
+                    }
+                    val chatRes = client.chat(listOf(ChatMessage.system(systemPrompt), userMsg))
+                    chatRes.content ?: ""
+                } else {
+                    client.ask(prompt)
+                }
+
                 callback(Result.success(answer.trim()))
             } catch (e: Exception) {
                 LogBus.error("NoteAiProcessor -> askQuestionAboutReminder failed", e)

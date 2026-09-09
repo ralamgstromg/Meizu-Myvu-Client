@@ -51,7 +51,7 @@ class LocalAiClient @JvmOverloads constructor(
             throw java.io.IOException("Could not build chat request: ${e.message}", e)
         }
         val rawResponse = HttpRetry.execute(provider.displayName) {
-            askOnce(body)
+            postRaw(body)
         }
         return parseChatCompletion(rawResponse)
     }

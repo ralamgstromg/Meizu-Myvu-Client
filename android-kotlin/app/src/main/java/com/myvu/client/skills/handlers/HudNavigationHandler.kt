@@ -11,6 +11,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
+/**
+ * Enhanced AR Navigation Handler:
+ * Coordinates turn-by-turn navigation projected onto Meizu Myvu AR Smart Glasses,
+ * with seamless mobile fallback to Google Maps or Waze.
+ */
 class HudNavigationHandler : SkillHandler {
 
     override suspend fun execute(context: Context, args: JSONObject): SkillResult {
@@ -18,10 +23,11 @@ class HudNavigationHandler : SkillHandler {
             val destination = args.optString("destination", "").trim()
             val neighborhood = args.optString("neighborhood", "").trim()
             val city = args.optString("city", "").trim()
-            val mode = args.optString("mode", "driving").trim()
+            val mode = args.optString("mode", "driving").lowercase().trim()
+            val navApp = args.optString("app", "maps").lowercase().trim()
 
             if (destination.isEmpty()) {
-                return SkillResult(false, "Indica la dirección, sitio o barrio de destino.")
+                return SkillResult(false, "Indica la dirección, sitio de interés o barrio de destino.")
             }
 
             val addressBuilder = StringBuilder(destination)
@@ -29,33 +35,47 @@ class HudNavigationHandler : SkillHandler {
             if (city.isNotEmpty()) addressBuilder.append(", ").append(city)
 
             val fullAddress = addressBuilder.toString()
+            val pm = context.packageManager
 
             val connection = MyvuService.activeConnection()
             if (connection != null && connection.isRelayConnected()) {
                 withContext(Dispatchers.Main) {
                     connection.nav().start(fullAddress)
                 }
-                val msg = "🧭 Navegación AR proyectada en HUD iniciada hacia: '$fullAddress'."
-                SkillResult(true, msg, msg)
-            } else {
-                val gmmIntentUri = Uri.parse("google.navigation:q=" + Uri.encode(fullAddress) + "&mode=" + if (mode.contains("walk")) "w" else "d")
-                val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
-                    setPackage("com.google.android.apps.maps")
+                val msg = "🧭 **Navegación HUD activada**: Proyectando indicaciones paso a paso hacia **$fullAddress** en las gafas."
+                return SkillResult(true, msg, msg)
+            }
+
+            // Mobile fallback: Waze or Google Maps
+            if (navApp.contains("waze")) {
+                val wazeUri = Uri.parse("waze://?q=" + Uri.encode(fullAddress) + "&navigate=yes")
+                val wazeIntent = Intent(Intent.ACTION_VIEW, wazeUri).apply {
+                    setPackage("com.waze")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                if (wazeIntent.resolveActivity(pm) != null) {
+                    context.startActivity(wazeIntent)
+                    return SkillResult(true, "🚗 **Navegación iniciada en Waze** hacia **$fullAddress**.")
+                }
+            }
+
+            // Google Maps navigation
+            val gmmIntentUri = Uri.parse("google.navigation:q=" + Uri.encode(fullAddress) + "&mode=" + if (mode.contains("walk") || mode.contains("pie")) "w" else "d")
+            val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
+                setPackage("com.google.android.apps.maps")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            try {
+                context.startActivity(mapIntent)
+                SkillResult(true, "📍 **Navegación iniciada en Google Maps** hacia **$fullAddress**.")
+            } catch (e: Exception) {
+                val geoUri = Uri.parse("geo:0,0?q=" + Uri.encode(fullAddress))
+                val genericIntent = Intent(Intent.ACTION_VIEW, geoUri).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                try {
-                    context.startActivity(mapIntent)
-                    val msg = "Gafas desconectadas. Navegación iniciada en teléfono hacia '$fullAddress'."
-                    SkillResult(true, msg, msg)
-                } catch (e: Exception) {
-                    val geoUri = Uri.parse("geo:0,0?q=" + Uri.encode(fullAddress))
-                    val genericIntent = Intent(Intent.ACTION_VIEW, geoUri).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    context.startActivity(genericIntent)
-                    val msg = "Navegación solicitada hacia '$fullAddress'."
-                    SkillResult(true, msg, msg)
-                }
+                context.startActivity(genericIntent)
+                SkillResult(true, "🗺️ **Ubicación abierta** para **$fullAddress**.")
             }
         } catch (e: Exception) {
             LogBus.error("HudNavigationHandler -> Error starting navigation", e)

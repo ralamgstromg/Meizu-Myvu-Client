@@ -1,19 +1,20 @@
 [versions]
-agp = "8.8.0"
-kotlin = "2.1.10"
-ksp = "2.1.10-1.0.31"
-coroutines = "1.10.1"
-coreKtx = "1.15.0"
-appcompat = "1.7.0"
-material = "1.12.0"
-playServicesLocation = "21.3.0"
+agp = "8.13.2"
+kotlin = "2.3.20"
+ksp = "2.3.11"
+coroutines = "1.11.0"
+coreKtx = "1.16.0"
+appcompat = "1.8.0"
+material = "1.14.0"
+playServicesLocation = "21.4.0"
 playServicesAuth = "21.3.0"
 junit = "4.13.2"
-robolectric = "4.14.1"
-json = "20260522"
-lifecycleRuntimeKtx = "2.8.7"
-mediapipeGenai = "0.10.20"
-room = "2.6.1"
+robolectric = "4.16.1"
+json = "20260814"
+lifecycleRuntimeKtx = "2.11.0"
+mediapipeGenai = "0.10.35"
+room = "2.8.4"
+
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }

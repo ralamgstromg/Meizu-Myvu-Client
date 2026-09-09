@@ -1,5 +1,6 @@
 package com.myvu.client.ai
 
+import org.json.JSONArray
 import org.json.JSONObject
 
 /**
@@ -33,23 +34,37 @@ data class ToolCall(
 
 /**
  * Chat message representing a turn in the conversation (system, user, assistant, tool).
+ * Supports multimodal inputs (text + images) compliant with OpenAI and LiteLLM/Gemini schema.
  */
 data class ChatMessage(
     val role: String,
     val content: String? = null,
+    val images: List<Pair<String, String>>? = null, // Pair(mimeType, base64)
     val toolCalls: List<ToolCall>? = null,
     val toolCallId: String? = null
 ) {
     fun toJsonObject(): JSONObject {
         val obj = JSONObject().put("role", role)
-        if (content != null) {
+
+        if (!images.isNullOrEmpty()) {
+            val contentArr = JSONArray()
+            if (!content.isNullOrBlank()) {
+                contentArr.put(JSONObject().put("type", "text").put("text", content))
+            }
+            for ((mime, b64) in images) {
+                val cleanMime = if (mime.isNotBlank()) mime else "image/jpeg"
+                val imgUrlObj = JSONObject().put("url", "data:$cleanMime;base64,$b64")
+                contentArr.put(JSONObject().put("type", "image_url").put("image_url", imgUrlObj))
+            }
+            obj.put("content", contentArr)
+        } else if (content != null) {
             obj.put("content", content)
         } else if (toolCalls == null) {
             obj.put("content", "")
         }
 
         if (!toolCalls.isNullOrEmpty()) {
-            val arr = org.json.JSONArray()
+            val arr = JSONArray()
             for (tc in toolCalls) {
                 val fn = JSONObject()
                     .put("name", tc.functionName)
@@ -73,6 +88,8 @@ data class ChatMessage(
     companion object {
         fun system(content: String): ChatMessage = ChatMessage(role = "system", content = content)
         fun user(content: String): ChatMessage = ChatMessage(role = "user", content = content)
+        fun userWithImages(content: String, images: List<Pair<String, String>>): ChatMessage =
+            ChatMessage(role = "user", content = content, images = images)
         fun assistant(content: String?, toolCalls: List<ToolCall>? = null): ChatMessage =
             ChatMessage(role = "assistant", content = content, toolCalls = toolCalls)
         fun tool(toolCallId: String, content: String): ChatMessage =

@@ -1,18 +1,22 @@
 ---
 id: quick-alarm-timer
-name: Alarmas y Temporizadores Rápidos
-description: Configura alarmas o temporizadores de cuenta regresiva directamente en el dispositivo.
+name: Alarmas y Temporizadores
+description: Configura y consulta alarmas o temporizadores de cuenta regresiva en el dispositivo.
 parameters:
   action:
     type: string
-    description: Acción a ejecutar (set_alarm, set_timer).
+    description: Acción (set_alarm, set_timer, show_alarms, show_timers, dismiss_alarm).
     required: true
   time_or_duration:
     type: string
-    description: Hora para la alarma (ej. "07:30") o duración para el temporizador (ej. "15m", "45s").
-    required: true
+    description: Hora de alarma (ej. "07:30", "7:30 am") o duración (ej. "15m", "10 minutos", "1 hora y media", "45s").
+    required: false
   label:
     type: string
-    description: Etiqueta o título del recordatorio de la alarma/temporizador.
+    description: Etiqueta o título de la alarma o temporizador.
     required: false
 ---
+
+# Quick Alarm and Timer Skill
+
+Configura y gestiona alarmas y temporizadores del sistema Android.

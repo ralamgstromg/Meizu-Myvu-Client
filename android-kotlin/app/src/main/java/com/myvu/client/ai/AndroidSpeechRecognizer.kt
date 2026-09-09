@@ -52,11 +52,18 @@ class AndroidSpeechRecognizer(context: Context) : AndroidSpeechEngine {
         }
         val requested = languageTag ?: Locale.getDefault().toLanguageTag()
         startCallbacks = Callbacks(onPartial, onResult, onError)
-        candidateLanguages = AndroidSpeechLanguagePolicy.candidates(requested)
+        val rawCandidates = AndroidSpeechLanguagePolicy.candidates(requested)
+        val workingLang = cachedWorkingLanguage
+        candidateLanguages = if (workingLang != null && rawCandidates.contains(workingLang)) {
+            listOf(workingLang) + rawCandidates.filter { it != workingLang }
+        } else {
+            rawCandidates
+        }
         fallbackIndex = 0
         activeLanguage = candidateLanguages.firstOrNull()
+        val initialOffline = if (workingLang != null) cachedPreferOffline else true
         pendingStart = true
-        main.post { startAttempt(preferOffline = true) }
+        main.post { startAttempt(preferOffline = initialOffline) }
         return true
     }
 
@@ -95,6 +102,8 @@ class AndroidSpeechRecognizer(context: Context) : AndroidSpeechEngine {
         if (fallbackIndex + 1 >= candidateLanguages.size) return false
         fallbackIndex++
         activeLanguage = candidateLanguages[fallbackIndex]
+        cachedPreferOffline = false
+        cachedWorkingLanguage = activeLanguage
         releaseRecognizer()
         LogBus.warn("STT_ANDROID_RETRY language=$activeLanguage preferOffline=false")
         main.postDelayed({ startAttempt(preferOffline = false) }, 150)
@@ -166,6 +175,7 @@ class AndroidSpeechRecognizer(context: Context) : AndroidSpeechEngine {
         main.post {
             if (attemptId != activeAttempt || terminal || destroyed) return@post
             terminal = true
+            cachedWorkingLanguage = activeLanguage
             LogBus.log("STT_ANDROID_RESULT attempt=$attemptId textLength=${text.length}")
             callback(text)
             releaseRecognizer()
@@ -232,5 +242,12 @@ class AndroidSpeechRecognizer(context: Context) : AndroidSpeechEngine {
             startCallbacks = null
             releaseRecognizer()
         }
+    }
+
+    companion object {
+        @Volatile
+        private var cachedWorkingLanguage: String? = null
+        @Volatile
+        private var cachedPreferOffline: Boolean = true
     }
 }

@@ -9,6 +9,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Handler
+import android.os.Looper
 import androidx.core.content.ContextCompat
 import com.myvu.client.core.LogBus
 import com.myvu.client.protocol.link.LinkCommands
@@ -50,6 +52,7 @@ class AudioProfiles(
     }
 
     private val context: Context = context.applicationContext
+    private val mainHandler = Handler(Looper.getMainLooper())
     private var headset: BluetoothHeadset? = null
     private var a2dp: BluetoothA2dp? = null
     private var pendingDevice: BluetoothDevice? = null
@@ -60,9 +63,23 @@ class AudioProfiles(
         registerReceiver()
     }
 
-    private fun bindProxies() {
-        adapter.getProfileProxy(context, proxyListener, BluetoothProfile.HEADSET)
-        adapter.getProfileProxy(context, proxyListener, BluetoothProfile.A2DP)
+    fun bindProxies() {
+        mainHandler.post {
+            try {
+                val hfpOk = if (headset == null) adapter.getProfileProxy(context, proxyListener, BluetoothProfile.HEADSET) else true
+                val a2dpOk = if (a2dp == null) adapter.getProfileProxy(context, proxyListener, BluetoothProfile.A2DP) else true
+                LogBus.log("AudioProfiles: getProfileProxy -> HFP=$hfpOk, A2DP=$a2dpOk")
+                if (!hfpOk || !a2dpOk) {
+                    mainHandler.postDelayed({
+                        val hRetry = if (headset == null) adapter.getProfileProxy(context, proxyListener, BluetoothProfile.HEADSET) else true
+                        val aRetry = if (a2dp == null) adapter.getProfileProxy(context, proxyListener, BluetoothProfile.A2DP) else true
+                        LogBus.log("AudioProfiles: getProfileProxy retry -> HFP=$hRetry, A2DP=$aRetry")
+                    }, 2500L)
+                }
+            } catch (e: Exception) {
+                LogBus.warn("AudioProfiles: Exception requesting profile proxies: ${e.message}")
+            }
+        }
     }
 
     private val proxyListener = object : BluetoothProfile.ServiceListener {
@@ -135,6 +152,7 @@ class AudioProfiles(
     private fun tryConnect(tag: String, proxy: BluetoothProfile?, device: BluetoothDevice) {
         if (proxy == null) {
             LogBus.log("AudioProfiles: $tag proxy binding in progress -- queued for auto-connect")
+            bindProxies()
             return
         }
         if (getState(proxy, device) == BluetoothProfile.STATE_CONNECTED) {

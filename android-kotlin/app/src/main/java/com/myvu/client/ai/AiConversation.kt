@@ -519,12 +519,12 @@ class AiConversation(
             return
         }
 
-        LogBus.log("AI_REQUEST_STARTED sessionId=$sessionId provider=${Prefs.aiProvider(context)} questionLength=${question.length}")
         val aiProviderId = Prefs.aiProvider(context)
         val provider = AiProvider.fromId(aiProviderId)
         val apiKey = Prefs.aiApiKey(context, aiProviderId)
         val model = Prefs.aiModel(context, aiProviderId)
         val endpoint = Prefs.aiEndpoint(context, aiProviderId)
+        LogBus.log("AI_REQUEST_STARTED sessionId=$sessionId provider=$aiProviderId model='$model' endpoint='$endpoint' questionLength=${question.length}")
         val basePrompt = Prefs.systemPrompt(context)
         val prompt = basePrompt + com.myvu.client.skills.SkillRegistry.buildSystemPromptAddendum()
         val client = provider.newClient(context, apiKey, model, endpoint, prompt)

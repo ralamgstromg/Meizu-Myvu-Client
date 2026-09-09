@@ -228,8 +228,23 @@ object ExternalInfoService {
     }
 
     @JvmStatic
-    fun formatWeatherResult(reading: Weather.Reading, cityName: String? = null): String {
+    @JvmOverloads
+    fun formatWeatherResult(reading: Weather.Reading, cityName: String? = null, targetDate: String? = null): String {
         val city = reading.areaName ?: cityName ?: "tu zona"
+        val isTomorrow = targetDate != null && (targetDate.contains("mañana", ignoreCase = true) || targetDate.contains("manana", ignoreCase = true))
+
+        if (isTomorrow && reading.futureDay.size > 1) {
+            val tomorrow = reading.futureDay[1]
+            val cond = tomorrow.condition?.trim() ?: "despejado"
+            val sb = StringBuilder("Para mañana en $city se espera $cond")
+            if (tomorrow.tempMax != 0 || tomorrow.tempMin != 0) {
+                sb.append(" con máxima de ${tomorrow.tempMax}°C y mínima de ${tomorrow.tempMin}°C.")
+            } else {
+                sb.append(".")
+            }
+            return cleanForGlasses(sb.toString())
+        }
+
         val cond = reading.condition?.trim() ?: "despejado"
         val temp = "${reading.temp}°C"
 
@@ -332,11 +347,12 @@ object ExternalInfoService {
     }
 
     @JvmStatic
-    fun fetchWeather(cityName: String, timeoutMs: Int = DEFAULT_TIMEOUT_MS): String? {
+    @JvmOverloads
+    fun fetchWeather(cityName: String, timeoutMs: Int = DEFAULT_TIMEOUT_MS, queryContext: String? = null): String? {
         return try {
             val reading = OpenMeteo.fetchByCity(cityName, timeoutMs)
             if (reading != null) {
-                formatWeatherResult(reading, cityName)
+                formatWeatherResult(reading, cityName, queryContext)
             } else {
                 null
             }
@@ -524,7 +540,7 @@ object ExternalInfoService {
         if (isWeatherQuery(trimmed)) {
             val city = extractCityFromWeatherQuery(trimmed)
             if (city != null) {
-                val weatherResult = fetchWeather(city, timeoutMs)
+                val weatherResult = fetchWeather(city, timeoutMs, trimmed)
                 if (weatherResult != null) return weatherResult
             }
         }

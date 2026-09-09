@@ -942,8 +942,22 @@ class ConnectionManager(
         if (transport != null) {
             relayEstablished()
         }
+        // Drain into a local snapshot to prevent re-entrant infinite loops
+        val toFlush = ArrayList<PendingAction>()
         while (!pendingNotifications.isEmpty()) {
             val p = pendingNotifications.pollFirst() ?: break
+            toFlush.add(p)
+        }
+
+        for (p in toFlush) {
+            val isNotification = p.actionJson.contains("SHOW_NOTIFICATION")
+            if (isNotification && transport == null && (relayEstablishing || canConnectRelay())) {
+                // Keep notification queued until RFCOMM relay is ready without tight loop re-entry
+                if (pendingNotifications.size < 5) {
+                    pendingNotifications.add(p)
+                }
+                continue
+            }
             LogBus.log("flushing queued action/notification: ${truncate(p.actionJson, 80)}")
             sendActionNow(p.actionJson, p.targetPkg, p.sourcePkg)
         }

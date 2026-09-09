@@ -101,5 +101,165 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
 - **Verificación**:
   - Compilación limpia con `./gradlew assembleDebug` (39 tareas ejecutadas/actualizadas, 0 advertencias).
 
+### [2026-09-09] — Corrección de Respuestas y Tool Calling con LiteLLM / OpenAI Compatible
+- **Problema**: Las consultas de voz ("en Barranquilla el día de mañana") al endpoint OpenAI compatible (`https://soft-ia.co/litellm/v1/chat/completions`) no retornaban resultado en las gafas ni en los logs.
+- **Causas Raíz Identificadas**:
+  1. `LocalAiClient.chat()` llamaba a `askOnce(body)` en `AiHttpClient.kt`, el cual procesaba la respuesta HTTP con `extractText()`. Cuando el modelo emitía llamadas a herramientas (`tool_calls`), `choices[0].message.content` es `null`, haciendo que `extractText()` retornara vacío `""` y lanzara `IOException("Local API returned an empty answer")`. Incluso en respuestas textuales, `parseChatCompletion()` fallaba al recibir texto plano en lugar del JSON raíz.
+  2. El servidor LiteLLM solo expone el modelo `gafas` (verificado vía `/v1/models`). Cualquier otro nombre retornaba `HTTP 400 Bad Request: Invalid model name`.
+  3. `LOCAL_READ_TIMEOUT_MS` estaba configurado en 240 segundos (4 minutos), provocando bloqueos prolongados sin feedback cuando el socket tardaba.
+  4. Falta de trazas: el endpoint, modelo y status HTTP no se registraban en `LogBus`.
+- **Solución Implementada**:
+  1. `AiHttpClient.kt`: Creado `postRaw(body)` que registra en log la URL de destino (`POST <endpoint>`) y el código de estado (`HTTP <status>`), retornando el cuerpo JSON en bruto sin pasar por `extractText()`.
+  2. `AiHttpClient.kt`: Reducido `LOCAL_READ_TIMEOUT_MS` de 240s a 45s y `READ_TIMEOUT_MS` a 60s.
+  3. `LocalAiClient.kt`: Actualizado `chat()` para invocar `postRaw(body)`, garantizando que `parseChatCompletion()` reciba la estructura JSON completa con soporte nativo de `tool_calls`.
+  4. `AiConversation.kt`: Registra en `AI_REQUEST_STARTED` el proveedor, modelo y endpoint configurados.
+- **Verificación**:
+  - Petición cURL probada contra el servidor con `model: "gafas"` y herramienta `weather_forecast`, confirmando respuesta exitosa con `tool_calls` para Barranquilla.
+  - Compilación limpia del APK con `./gradlew assembleDebug`.
+
+### [2026-09-09] — Eliminación de Bucle Infinito en Vaciado de Notificaciones (`onSessionReady`)
+- **Problema**: La aplicación entraba en un bucle síncrono infinito inundando la pantalla y log con miles de líneas por segundo:
+  `!! app relay not ready -- queued notification for RFCOMM delivery`
+  `flushing queued action/notification: {"action":"notification"...`
+- **Causa Raíz**:
+  En `ConnectionManager.kt`, `onSessionReady(transport)` procesaba `pendingNotifications` con un bucle `while (!pendingNotifications.isEmpty())`. Cuando el transporte es nulo (`transport == null`, enlace BLE listo pero relé RFCOMM pendiente), `sendActionNow` detectaba `isNotification && transport == null` y reinsertaba la notificación a `pendingNotifications`. El bucle `while` extraía de inmediato el mismo elemento recién insertado, bloqueando el hilo de eventos en una recursión infinita.
+- **Solución Implementada**:
+  - En `ConnectionManager.kt` (`onSessionReady`), se vacía primero la cola a una lista local inmutable para la iteración (`val toFlush = ArrayList<PendingAction>()`).
+  - Durante la iteración, si `isNotification && transport == null && canConnectRelay()`, se mantiene encolada para la entrega por RFCOMM sin invocar recursivamente a `sendActionNow`, eliminando cualquier posibilidad de bucle infinito.
+- **Verificación**:
+  - Compilación limpia con `./gradlew assembleDebug` (39 tareas ejecutadas/actualizadas).
+
+### [2026-09-09] — Análisis Profundo del Log Operativo y Plan Integral de Mejoras
+- **Hallazgos Clave del Log**:
+  1. Conexión BLE + RFCOMM 100% estable. Bucle infinito erradicado por completo.
+  2. Consulta de voz ejecutada de punta a punta en 1.8 segundos con síntesis TTS y visualización en HUD.
+  3. `VoiceActionRouter` intercepta consultas con modificadores temporales ("mañana") devolviendo el clima de hoy.
+  4. STT pierde ~880ms por turno al intentar `es-CO` offline no soportado antes de pasar a `es` online.
+  5. Ráfagas de notificaciones y `DISMISS_NOTIFICATION` repetitivas de WhatsApp por conteo de mensajes de grupo.
+  6. Proxies de `AudioProfiles` quedan en cola de binding sin confirmar `onServiceConnected`.
+- **Plan de Mejoras Registrado**:
+  - `docs/superpowers/plans/2026-09-09-log-analysis-and-improvements.md` estructurado en 4 pistas: AudioProfiles, STT Latency Cache, Weather Temporal Precision, y WhatsApp Mirroring Debounce.
+
+### [2026-09-09] — Aplicación de las 4 Mejoras de Rendimiento y Experiencia
+1. **Pista 1: AudioProfiles Diagnóstico, MainLooper y Reintento**:
+   - `AudioProfiles.kt`: `bindProxies()` ahora se ejecuta sobre `mainHandler` (Looper principal), registra el resultado booleano de `getProfileProxy` (`HFP=true/false, A2DP=true/false`) y reintenta a los 2.5s si algún proxy no se vinculó.
+   - Si `tryConnect()` se llama con `proxy == null`, re-dispara `bindProxies()`.
+2. **Pista 2: Caché de STT con Cero Latencia (-900ms por turno)**:
+   - `AndroidSpeechRecognizer.kt`: Creados `cachedWorkingLanguage` y `cachedPreferOffline`.
+   - Cuando un dialecto offline no soportado (`es-CO` con `code 12`) activa el fallback a `es` online, se almacena en caché. Las siguientes pulsaciones inician directamente en el idioma y modo que funcionan, eliminando el segundo de espera fallido.
+3. **Pista 3: Precisión Temporal en Clima ("mañana" / "forecast")**:
+   - `ExternalInfoService.kt`: `formatWeatherResult` y `fetchWeather` ahora reciben `queryContext`/`targetDate`.
+   - Si la consulta contiene *"mañana"*, lee `reading.futureDay[1]` de OpenMeteo y formatea el pronóstico exacto de mañana con temperaturas máxima y mínima en lugar del clima actual.
+   - `WeatherForecastHandler.kt`: Actualizado para aprovechar el pronóstico temporal por fecha.
+4. **Pista 4: Filtro Antirráfaga para Notificaciones de WhatsApp**:
+   - `NotificationFilter.kt`: En `isDuplicateContent()`, se normalizan los títulos eliminando contadores de mensajes repetitivos (`(2 mensajes)`, `(3 mensajes)`). Mensajes idénticos dentro de la ventana de 8 segundos son descartados.
+   - `MirrorNotificationListener.kt`: Se añadió `pendingDismisses` para cancelar programaciones previas al recibir una actualización del mismo ID o al removerse la notificación, erradicando ráfagas de `DISMISS_NOTIFICATION` en cascada.
+- **Verificación**:
+   - Compilación limpia con `./gradlew assembleDebug` (39 tareas ejecutadas/actualizadas, 0 errores).
+
+
+### [2026-09-09] — Mejora Integral de Skills, Tools e Integraciones con Android y Terceros
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-skills-and-tools-enhancement-plan.md`.
+- **Nuevos Componentes**:
+  1. `ContactHelper.kt` en `com.myvu.client.core`:
+     - Normalización fonética y remoción de tildes (NFD).
+     - Distancia Levenshtein y puntuación difusa sobre `ContactsContract.CommonDataKinds.Phone`.
+     - Resolución de correos en `ContactsContract.CommonDataKinds.Email`.
+     - Formateo inteligente de prefijos celulares colombianos (+57 para números de 10 dígitos iniciando en 3 o 6).
+- **Handlers Mejorados**:
+  1. `CallContactHandler.kt`:
+     - Búsqueda difusa de contactos por nombre.
+     - Llamada directa 100% manos libres mediante `TelecomManager.placeCall` o `Intent.ACTION_CALL` cuando `CALL_PHONE` está concedido. Fallback a `ACTION_DIAL`.
+  2. `SendWhatsappHandler.kt`:
+     - Resolución de nombres de contactos a números celulares reales.
+     - Prefijo de país (+57) para Colombia.
+     - Activación automática de `AutoSendAccessibilityService.triggerWhatsAppAutoSend()` para envío manos libres desde las gafas.
+  3. `SendTelegramHandler.kt`:
+     - Soporte para nombres de contacto, números de teléfono y alias `@usuario`.
+     - Envío directo mediante `tg://msg?text=` y activación de `AutoSendAccessibilityService.triggerTelegramAutoSend()`.
+  4. `SendEmailHandler.kt`:
+     - Resolución de nombres de contacto a direcciones de correo registradas en la agenda.
+  5. `OpenAppHandler.kt`:
+     - Matriz enriquecida de alias para más de 30 aplicaciones (Cámara, Galería, Ajustes, Reloj, Calculadora, Spotify, OpenTune, YouTube, Netflix, Waze, Google Maps, Uber, Rappi, etc.).
+     - Acceso directo a `MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA` y `Settings.ACTION_SETTINGS`.
+  6. `QuickAlarmTimerHandler.kt`:
+     - Acciones: `set_alarm`, `set_timer`, `show_alarms`, `show_timers`, `dismiss_alarm`.
+     - Parser en lenguaje natural ("1 hora y media", "10 minutos", "45 segundos", "7:30 am", "18:00").
+  7. `CalendarService.kt` y `CalendarEventsHandler.kt`:
+     - Filtro por fecha natural ("hoy", "mañana", ventana de 24 horas).
+     - Creación de nuevos eventos de calendario con `Intent.ACTION_INSERT`.
+  8. `CreateReminderHandler.kt`:
+     - Conexión con `ReminderTimeParser` para admitir horas específicas ("5:30 pm") o duraciones ("en 20 minutos").
+  9. `SmartTranslateHudHandler.kt`:
+     - Motor de traducción en tiempo real (en, fr, de, it, pt, zh, ja, es).
+     - Proyección directa en pantalla HUD de las gafas Meizu Myvu mediante `openTeleprompter()`.
+  10. `HudNavigationHandler.kt`:
+      - Proyección en visor AR cuando las gafas están enlazadas y fallback automático a Google Maps o Waze en el móvil.
+  11. `CodeCalculatorMathHandler.kt`:
+      - Parser Shunting-Yard con precedencia de operadores (`*`, `/` sobre `+`, `-`), paréntesis y porcentajes.
+      - Liquidación tributaria colombiana (IVA 19%, Retención en la fuente 3.5%), proyección de créditos bancarios y conversión de unidades físicas/temperatura.
+  12. `RagHistorySearchHandler.kt`:
+      - Búsqueda contextual integrada en notas, grabaciones de voz, recordatorios y tareas (todos).
+  13. `SkillParser.kt`:
+      - Corregido bug crítico en la lectura de manifiestos YAML: detección de atributos indentados para evitar que parámetros secundarios fueran interpretados como metadatos globales de la skill.
+      - Soporte unificado de formato inline `{ type: ..., required: ... }` y formato multi-línea estándar.
+  14. Manifiestos `SKILL.md`:
+      - Actualizados manifiestos con descripciones claras y ejemplos en español para Function Calling nativo en Gemini y LiteLLM.
+- **Verificación**:
+  - `ToolCallingIntegrationTest` ampliado con prueba de parseo YAML inline y block (5/5 tests aprobados).
+  - Compilación exitosa del APK debug con `./gradlew assembleDebug` en 659ms.
+
+### [2026-09-09] — Optimización Multimodal y Proyección AR HUD en Notas, Recordatorios y Grabadora de Voz IA
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-multimodal-notes-and-voice-recorder-enhancement.md`.
+- **Arquitectura Multimodal Unificada**:
+  1. `ToolCallModels.kt`:
+     - Expandido `ChatMessage` con campo `images: List<Pair<String, String>>?` (mimeType, base64).
+     - Implementada serialización a formato compatible OpenAI/LiteLLM vision: array de objetos `[{"type": "text", "text": ...}, {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}}]`.
+     - Creado helper `ChatMessage.userWithImages(content, images)`.
+  2. `DocumentExtractor.kt`:
+     - Implementado `loadAndEncodeImageBase64(file, maxDim = 1024)`: reescala eficientemente imágenes a máximo 1024px, comprime a JPEG 80% y codifica en Base64, reduciendo tamaño de ~4MB a ~120KB para envíos ultrarrápidos sin desbordar memoria.
+  3. `NoteAiProcessor.kt`:
+     - Enriquecidas `processNote()`, `processReminder()`, `askQuestionAboutNote()` y `askQuestionAboutReminder()`.
+     - Detección automática y extracción de imágenes adjuntas (recibos, diagramas, textos manuscritos, capturas).
+     - Procesamiento multimodal en un solo paso: envía el texto junto a las imágenes en Base64 al endpoint LiteLLM / Gemini.
+     - Prompt enriquecido para exigir extracción de datos visuales, resumen ejecutivo, matriz de compromisos y diagrama mental Mermaid.
+  4. `MeetingAiProcessor.kt`:
+     - Enriquecidas `processFullMeeting()` y `askQuestionAboutRecording()`.
+     - Cruce multimodal: asocia la transcripción de audio (STT Whisper) con fotos adjuntas de pizarras, diapositivas y esquemas tomados durante la reunión.
+     - Instrucciones de prompt para correlacionar visualmente los diagramas con la discusión verbal de los participantes.
+  5. Proyección en AR HUD de Gafas Meizu Myvu (`NoteDetailActivity.kt` y `RecordingDetailActivity.kt`):
+     - Sustituido el envío simple de notificación (que truncaba a pocos caracteres) por `MyvuService.activeConnection()?.openTeleprompter(fullText, title)`.
+     - Proyecta en el visor microLED de las gafas el Resumen Ejecutivo completo, las Tareas/Compromisos y el contenido detallado, permitiendo al usuario navegarlo mediante el touchpad de la patilla de las gafas.
+     - Mantiene fallback elegante a notificación si las gafas no tienen sesión activa.
+- **Verificación**:
+  - `ToolCallingIntegrationTest` ejecutado con éxito (5/5 pruebas unitarias pasando).
+  - Compilación limpia con `./gradlew assembleDebug` en 765ms.
+
+### [2026-09-09] — Actualización Integral de Paquetes y Dependencias a Última Versión
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-update-all-dependencies-to-latest.md`.
+- **Actualizaciones en `gradle/libs.versions.toml`**:
+  1. `agp` (Android Gradle Plugin): `8.8.0` -> `8.13.2` (máxima versión estable AGP 8 compatible con toolchain).
+  2. `kotlin`: `2.1.10` -> `2.3.20` (resuelve incompatibilidad de metadatos 2.3.0 en bibliotecas Google).
+  3. `ksp` (Kotlin Symbol Processing): `2.1.10-1.0.31` -> `2.3.11` (perfectamente alineado con Kotlin 2.3.20).
+  4. `coroutines` (`kotlinx-coroutines-*`): `1.10.1` -> `1.11.0`.
+  5. `coreKtx` (`androidx.core:core-ktx`): `1.15.0` -> `1.16.0` (última versión compatible con `compileSdk 35` / Android 15).
+  6. `appcompat` (`androidx.appcompat:appcompat`): `1.7.0` -> `1.8.0`.
+  7. `material` (`com.google.android.material:material`): `1.12.0` -> `1.14.0`.
+  8. `playServicesLocation`: `21.3.0` -> `21.4.0`.
+  9. `playServicesAuth`: `21.3.0` (fijado en 21.3.0 para preservar compatibilidad con `GoogleSignIn`, removido en 22.0.0 a favor de Credential Manager).
+  10. `robolectric`: `4.14.1` -> `4.16.1`.
+  11. `json` (`org.json:json`): `20260522` -> `20260814`.
+  12. `lifecycleRuntimeKtx`: `2.8.7` -> `2.11.0`.
+  13. `mediapipeGenai`: `0.10.20` -> `0.10.35`.
+  14. `room` (`androidx.room:*`): `2.6.1` -> `2.8.4` (Room 2.8 estable con soporte KMP y KSP optimizado).
+- **Ajustes de Código y Build DSL**:
+  1. `app/build.gradle.kts`:
+     - Eliminado bloque deprecado `kotlinOptions { jvmTarget = "21" }`.
+     - Configurado `tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach { compilerOptions.jvmTarget.set(JvmTarget.JVM_21) }` para garantizar coherencia entre tareas Java y Kotlin bajo OpenJDK 25.
+  2. `AppDatabase.kt`:
+     - Actualizado método deprecado `fallbackToDestructiveMigration()` a `fallbackToDestructiveMigration(dropAllTables = true)`.
+- **Verificación**:
+  - Suite de pruebas unitarias `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (34 tareas ejecutadas/al día, 0 fallos).
+  - Ensamblado de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL** en 924ms (41 tareas ejecutadas/al día, APK generado limpiamente).
 
 

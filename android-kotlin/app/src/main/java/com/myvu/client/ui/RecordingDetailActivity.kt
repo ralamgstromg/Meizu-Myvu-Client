@@ -406,12 +406,61 @@ class RecordingDetailActivity : AppCompatActivity(), AudioPlayerManager.Listener
             return
         }
 
+        val title = rec.title.ifBlank { "Reunión Myvu" }
+        val fullPrompterText = buildString {
+            if (rec.summary.isNotBlank()) {
+                appendLine("=== RESUMEN REUNIÓN ===")
+                appendLine(rec.summary)
+                appendLine()
+            }
+            if (rec.actionItems.isNotBlank() && rec.actionItems != "[]") {
+                appendLine("=== COMPROMISOS / TAREAS ===")
+                try {
+                    val arr = org.json.JSONArray(rec.actionItems)
+                    for (i in 0 until arr.length()) {
+                        val obj = arr.getJSONObject(i)
+                        val task = obj.optString("task")
+                        val owner = obj.optString("owner")
+                        val deadline = obj.optString("deadline")
+                        append("• $task")
+                        if (owner.isNotBlank()) append(" ($owner)")
+                        if (deadline.isNotBlank()) append(" [$deadline]")
+                        appendLine()
+                    }
+                } catch (_: Exception) {
+                    appendLine(rec.actionItems)
+                }
+                appendLine()
+            }
+            if (rec.diarizedTranscript.isNotBlank()) {
+                appendLine("=== DIÁLOGOS ===")
+                try {
+                    val arr = org.json.JSONArray(rec.diarizedTranscript)
+                    for (i in 0 until arr.length()) {
+                        val obj = arr.getJSONObject(i)
+                        appendLine("${obj.optString("speaker")}: ${obj.optString("text")}")
+                    }
+                } catch (_: Exception) {
+                    appendLine(rec.rawTranscript)
+                }
+            } else if (rec.rawTranscript.isNotBlank()) {
+                appendLine("=== TRANSCRIPCIÓN ===")
+                appendLine(rec.rawTranscript)
+            }
+        }.trim()
+
         try {
-            com.myvu.client.app.AppLayer.sendNotification(
-                title = "Grabación: ${rec.title.ifBlank { "Reunión" }}",
-                body = summary
-            )
-            Toast.makeText(this, "Enviado a las gafas Myvu", Toast.LENGTH_SHORT).show()
+            val conn = com.myvu.client.service.MyvuService.activeConnection()
+            if (conn != null) {
+                conn.openTeleprompter(fullPrompterText, title)
+                Toast.makeText(this, "👓 Proyectando resumen en Teleprompter de las gafas", Toast.LENGTH_SHORT).show()
+            } else {
+                com.myvu.client.app.AppLayer.sendNotification(
+                    title = "Grabación: $title",
+                    body = summary
+                )
+                Toast.makeText(this, "Notificación enviada a las gafas Myvu", Toast.LENGTH_SHORT).show()
+            }
         } catch (e: Exception) {
             LogBus.error("RecordingDetailActivity: Failed to send to glasses", e)
             Toast.makeText(this, "Error enviando a las gafas: ${e.message}", Toast.LENGTH_SHORT).show()
