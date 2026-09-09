@@ -1,6 +1,8 @@
 package com.myvu.client.ai
 
 import android.content.Context
+import android.media.AudioManager
+import android.view.KeyEvent
 import com.myvu.client.core.LogBus
 import com.myvu.client.database.NoteRepository
 import com.myvu.client.database.ReminderRepository
@@ -39,7 +41,11 @@ class VoiceActionRouter(
         val normalized = normalize(trimmed)
 
         // 1. Agenda / Calendario (Reuniones próximas)
-        if (normalized.contains("reunione") || normalized.contains("agenda") || normalized.contains("calendario") || normalized.contains("eventos hoy")) {
+        if (normalized.contains("reunion") || normalized.contains("reunione") || normalized.contains("agenda") ||
+            normalized.contains("calendario") || normalized.contains("evento") || normalized.contains("cita") ||
+            normalized.contains("compromiso") ||
+            normalized.matches(Regex(".*(que tengo|tengo algo|tengo alguna|hay algo|tengo citas?|tengo planes)\\s+(para\\s+|el\\s+|en\\s+)?(hoy|manana|la tarde|la manana|esta semana).*"))
+        ) {
             LogBus.log("VoiceActionRouter -> Fast-Path calendar events")
             val response = CalendarService.getUpcomingEvents(context)
             return RouteResult(handled = true, responseText = response)
@@ -66,7 +72,172 @@ class VoiceActionRouter(
             return RouteResult(handled = true, responseText = response)
         }
 
-        // 5. Llamadas telefónicas (incluyendo variaciones fonéticas: llamar, marca, llamo, llamó, llama, marcale, etc.)
+        // 4a. Salud y Bienestar (Pasos, Estrés, Ritmo Cardíaco, Resumen)
+        if (normalized.contains("pasos") || normalized.contains("podometro") || normalized.contains("cuanto he caminado") || normalized.contains("cuantos pasos")) {
+            LogBus.log("VoiceActionRouter -> Fast-Path health steps query")
+            val resp = com.myvu.client.health.HealthService.getInstance(context).getStepsSummary()
+            return RouteResult(handled = true, responseText = resp)
+        }
+        if (normalized.contains("estres") || normalized.contains("estresado") || normalized.contains("nivel de tension")) {
+            LogBus.log("VoiceActionRouter -> Fast-Path health stress query")
+            val resp = com.myvu.client.health.HealthService.getInstance(context).getStressSummary()
+            return RouteResult(handled = true, responseText = resp)
+        }
+        if (normalized.contains("ritmo cardiaco") || normalized.contains("frecuencia cardiaca") || normalized.contains("pulsaciones") || normalized.contains("mi pulso")) {
+            LogBus.log("VoiceActionRouter -> Fast-Path health heart rate query")
+            val resp = com.myvu.client.health.HealthService.getInstance(context).getHeartRateSummary()
+            return RouteResult(handled = true, responseText = resp)
+        }
+        if (normalized.contains("resumen de salud") || normalized.contains("resumen de actividad") ||
+            normalized.contains("como esta mi salud") || normalized.contains("mi salud hoy") ||
+            normalized.contains("resumen fitness") || normalized.contains("actividad fisica")
+        ) {
+            LogBus.log("VoiceActionRouter -> Fast-Path health full summary")
+            val resp = com.myvu.client.health.HealthService.getInstance(context).getFullHealthSummary()
+            return RouteResult(handled = true, responseText = resp)
+        }
+
+        // 4b. Control de Linterna (Torch)
+        if (normalized == "enciende la linterna" || normalized == "prende la linterna" || normalized == "activa la linterna" ||
+            normalized == "linterna encendida" || normalized == "prender linterna" || normalized == "encender linterna" ||
+            normalized == "activa linterna" || normalized == "linterna on" || normalized == "enciende linterna") {
+            LogBus.log("VoiceActionRouter -> Fast-Path flashlight ON")
+            val resp = actionExecutor.setFlashlight(true)
+            return RouteResult(handled = true, responseText = resp)
+        }
+        if (normalized == "apaga la linterna" || normalized == "desactiva la linterna" || normalized == "quita la linterna" ||
+            normalized == "apagar linterna" || normalized == "desactivar linterna" || normalized == "linterna off" ||
+            normalized == "apaga linterna") {
+            LogBus.log("VoiceActionRouter -> Fast-Path flashlight OFF")
+            val resp = actionExecutor.setFlashlight(false)
+            return RouteResult(handled = true, responseText = resp)
+        }
+
+        // 4c. Control Multimedia y Música
+        if (normalized == "pausa la musica" || normalized == "pausar musica" || normalized == "pausa" ||
+            normalized == "para la musica" || normalized == "deten la musica" || normalized == "silencia la musica" ||
+            normalized == "stop musica" || normalized == "pausar") {
+            LogBus.log("VoiceActionRouter -> Fast-Path media pause")
+            actionExecutor.sendMediaKey(KeyEvent.KEYCODE_MEDIA_PAUSE)
+            return RouteResult(handled = true, responseText = "Música pausada.")
+        }
+        if (normalized == "reproduce musica" || normalized == "reproducir musica" || normalized == "play musica" ||
+            normalized == "reanuda la musica" || normalized == "reanudar musica" || normalized == "continua la musica" ||
+            normalized == "seguir reproduciendo" || normalized == "play" || normalized == "reanudar") {
+            LogBus.log("VoiceActionRouter -> Fast-Path media play")
+            actionExecutor.sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY)
+            return RouteResult(handled = true, responseText = "Reproduciendo música.")
+        }
+        if (normalized == "siguiente cancion" || normalized == "pasa la cancion" || normalized == "pasar cancion" ||
+            normalized == "cambia de cancion" || normalized == "cambiar cancion" || normalized == "siguiente pista" ||
+            normalized == "proxima cancion" || normalized == "siguiente") {
+            LogBus.log("VoiceActionRouter -> Fast-Path media next")
+            actionExecutor.sendMediaKey(KeyEvent.KEYCODE_MEDIA_NEXT)
+            return RouteResult(handled = true, responseText = "Siguiente canción.")
+        }
+        if (normalized == "cancion anterior" || normalized == "anterior cancion" || normalized == "pista anterior" ||
+            normalized == "retrocede la cancion" || normalized == "repite la cancion" || normalized == "anterior") {
+            LogBus.log("VoiceActionRouter -> Fast-Path media previous")
+            actionExecutor.sendMediaKey(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+            return RouteResult(handled = true, responseText = "Canción anterior.")
+        }
+
+        // 4d. Control de Volumen y Modos de Sonido
+        if (normalized == "sube el volumen" || normalized == "aumenta el volumen" || normalized == "subir volumen" ||
+            normalized == "mas volumen" || normalized == "subele") {
+            LogBus.log("VoiceActionRouter -> Fast-Path volume UP")
+            val resp = actionExecutor.adjustVolume(increase = true)
+            return RouteResult(handled = true, responseText = resp)
+        }
+        if (normalized == "baja el volumen" || normalized == "disminuye el volumen" || normalized == "bajar volumen" ||
+            normalized == "menos volumen" || normalized == "bajale") {
+            LogBus.log("VoiceActionRouter -> Fast-Path volume DOWN")
+            val resp = actionExecutor.adjustVolume(increase = false)
+            return RouteResult(handled = true, responseText = resp)
+        }
+        if (normalized == "silencia el telefono" || normalized == "silencia el movil" || normalized == "modo silencio" ||
+            normalized == "pon el telefono en silencio" || normalized == "silenciar celular" || normalized == "silencio") {
+            LogBus.log("VoiceActionRouter -> Fast-Path ringer silent")
+            val resp = actionExecutor.setRingerMode(AudioManager.RINGER_MODE_SILENT)
+            return RouteResult(handled = true, responseText = resp)
+        }
+        if (normalized == "pon en vibracion" || normalized == "modo vibracion" || normalized == "pon el movil en vibracion" ||
+            normalized == "solo vibrar" || normalized == "vibracion") {
+            LogBus.log("VoiceActionRouter -> Fast-Path ringer vibrate")
+            val resp = actionExecutor.setRingerMode(AudioManager.RINGER_MODE_VIBRATE)
+            return RouteResult(handled = true, responseText = resp)
+        }
+        if (normalized == "activa el sonido" || normalized == "modo normal" || normalized == "activa el timbre" ||
+            normalized == "con sonido" || normalized == "quitar silencio") {
+            LogBus.log("VoiceActionRouter -> Fast-Path ringer normal")
+            val resp = actionExecutor.setRingerMode(AudioManager.RINGER_MODE_NORMAL)
+            return RouteResult(handled = true, responseText = resp)
+        }
+
+        // 5a. Llamadas VoIP por WhatsApp
+        val hasCallIntent = normalized.contains("llama") || normalized.contains("llamar") ||
+                normalized.contains("videollama") || normalized.contains("marca") ||
+                normalized.startsWith("anomar") || normalized.contains(" anomar") ||
+                normalized.startsWith("asomar") || normalized.contains(" asomar") ||
+                normalized.startsWith("jamar") || normalized.contains(" jamar") ||
+                normalized.startsWith("yamar") || normalized.contains(" yamar")
+
+        if ((normalized.contains("whatsapp") || normalized.contains("wasap")) &&
+            hasCallIntent &&
+            !normalized.contains("mensaje") && !normalized.contains("escribe") && !normalized.contains("texto")
+        ) {
+            val rawTarget = trimmed
+                .replace(Regex("(?i)^(llamar?|llama|llamo|llamó|marcar?|marca|anomar?|asomar?|jamar?|yamar?|videollamar?|videollama|haz\\s+(una\\s+)?llamada|iniciar?\\s+llamada)\\s+"), "")
+                .replace(Regex("(?i)\\s+(por|en|de)\\s*(whatsapp|wasap)$"), "")
+                .replace(Regex("(?i)^(por|en|de)\\s*(whatsapp|wasap)\\s*"), "")
+                .replace(Regex("(?i)^(a|al|a\\s+mi|con|para)\\s+"), "")
+                .trim()
+            val target = cleanTarget(rawTarget)
+            if (target.isNotBlank()) {
+                LogBus.log("VoiceActionRouter -> Fast-Path WhatsApp VoIP Call: '$target'")
+                actionExecutor.makeWhatsAppCall(target)
+                return RouteResult(handled = true, responseText = "Llamando a $target por WhatsApp...")
+            }
+        }
+
+        // 5b. Llamadas VoIP por Microsoft Teams
+        if (normalized.contains("teams") &&
+            (normalized.contains("llama") || normalized.contains("llamar") || normalized.contains("videollama") || normalized.contains("marca")) &&
+            !normalized.contains("mensaje") && !normalized.contains("escribe")
+        ) {
+            val rawTarget = trimmed
+                .replace(Regex("(?i)^(llamar?|llama|llamo|llamó|marcar?|marca|haz\\s+(una\\s+)?llamada|iniciar?\\s+llamada)\\s+"), "")
+                .replace(Regex("(?i)\\s+(por|en|de)\\s*teams$"), "")
+                .replace(Regex("(?i)^(por|en|de)\\s*teams\\s*"), "")
+                .replace(Regex("(?i)^(a|al|a\\s+mi|con|para)\\s+"), "")
+                .trim()
+            val target = cleanTarget(rawTarget)
+            if (target.isNotBlank()) {
+                LogBus.log("VoiceActionRouter -> Fast-Path Teams Call: '$target'")
+                actionExecutor.makeTeamsCall(target)
+                return RouteResult(handled = true, responseText = "Iniciando llamada por Teams a $target...")
+            }
+        }
+
+        // 5c. Llamadas VoIP por Google Chat / Google Meet
+        if ((normalized.contains("google chat") || normalized.contains("chat de google") || normalized.contains("google meet") || (normalized.contains("meet") && (normalized.contains("llama") || normalized.contains("llamada")))) &&
+            !normalized.contains("mensaje") && !normalized.contains("escribe")
+        ) {
+            val rawTarget = trimmed
+                .replace(Regex("(?i)^(llamar?|llama|llamo|llamó|marcar?|marca|haz\\s+(una\\s+)?llamada|iniciar?\\s+llamada)\\s+"), "")
+                .replace(Regex("(?i)\\s+(por|en|de)\\s*(google\\s+chat|chat\\s+de\\s+google|google\\s+meet|meet)$"), "")
+                .replace(Regex("(?i)^(por|en|de)\\s*(google\\s+chat|chat\\s+de\\s+google|google\\s+meet|meet)\\s*"), "")
+                .replace(Regex("(?i)^(a|al|a\\s+mi|con|para)\\s+"), "")
+                .trim()
+            val target = cleanTarget(rawTarget)
+            if (target.isNotBlank()) {
+                LogBus.log("VoiceActionRouter -> Fast-Path Google Chat/Meet Call: '$target'")
+                actionExecutor.makeGoogleChatCall(target)
+                return RouteResult(handled = true, responseText = "Iniciando llamada por Google Chat a $target...")
+            }
+        }
+
+        // 5d. Llamadas telefónicas estándar (celular)
         val callMatch = Regex("^(llamar?|marcar?|marca|llama|llamo|llamó|llamas|llamame|marcale|marcarle|call|jamar?|yamar?)\\s+(a|al|a\\s+mi)?\\s*(.+)$", RegexOption.IGNORE_CASE).find(normalized)
         if (callMatch != null) {
             val rawTarget = trimmed.substring(callMatch.groups[1]!!.range.last + 1)
@@ -78,31 +249,54 @@ class VoiceActionRouter(
             }
         }
 
-        // 6. WhatsApp y Mensajes
+        // 6. SMS y Mensajes de Texto
+        val smsMatch = Regex("^(enviar?|envio|envió|envia|envía|envias|envías|manda|mandar?|mando|mandó|mandale|enviarle|mandarle|escribe|escribir?|escribirle)\\s+(un\\s+)?(sms|mensaje\\s+de\\s+texto|texto)\\s*(a|al|a\\s+mi|para)?\\s*(.+)$", RegexOption.IGNORE_CASE).find(normalized)
+        if (smsMatch != null) {
+            val payload = trimmed
+                .replace(Regex("(?i)^(enviar?|envio|envió|envia|envía|envias|envías|manda|mandar?|mando|mandó|mandale|enviarle|mandarle|escribe|escribir?|escribirle)\\s+(un\\s+)?(sms|mensaje\\s+de\\s+texto|texto)\\s*(a|al|a\\s+mi|para)?\\s*"), "")
+                .trim()
+            if (payload.isNotBlank()) {
+                LogBus.log("VoiceActionRouter -> Fast-Path SMS: '$payload'")
+                actionExecutor.sendSms(payload)
+                return RouteResult(handled = true, responseText = "Enviando mensaje de texto...")
+            }
+        }
+
+        // 7. WhatsApp y Mensajes
         val waMatch = Regex("^(enviar?|envio|envió|envia|envía|envias|envías|manda|mandar?|mando|mandó|mandale|enviarle|mandarle|escribe|escribir?|escribirle|mensaje\\s+para|para)\\s+(un\\s+)?(mensaje\\s+de\\s+whatsapp|mensaje\\s+por\\s+whatsapp|whatsapp|mensaje)?\\s*(a|al|a\\s+mi|para)?\\s*(.+)$", RegexOption.IGNORE_CASE).find(normalized)
-        if (waMatch != null && !normalized.startsWith("para las ") && !normalized.startsWith("para el ")) {
+        if (waMatch != null && !normalized.startsWith("para las ") && !normalized.startsWith("para el ") && !normalized.contains("sms") && !normalized.contains("de texto")) {
             val payload = trimmed
                 .replace(Regex("(?i)^(enviar?|envio|envió|envia|envía|envias|envías|manda|mandar?|mando|mandó|mandale|enviarle|mandarle|escribe|escribir?|escribirle)\\s+(un\\s+)?(mensaje\\s+de\\s+whatsapp|mensaje\\s+por\\s+whatsapp|whatsapp|mensaje)?\\s*(a|al|a\\s+mi|para)?\\s*"), "")
                 .replace(Regex("(?i)^(un\\s+)?(mensaje\\s+de\\s+whatsapp|mensaje\\s+por\\s+whatsapp|whatsapp|mensaje)\\s*(a|al|a\\s+mi|para)?\\s*"), "")
                 .trim()
             if (payload.isNotBlank()) {
                 LogBus.log("VoiceActionRouter -> Fast-Path WhatsApp: '$payload'")
-                com.myvu.client.service.AutoSendAccessibilityService.triggerWhatsAppAutoSend()
                 actionExecutor.openWhatsApp(payload)
-                return RouteResult(handled = true, responseText = "Enviando mensaje de WhatsApp...")
+                val isAutoSendEnabled = com.myvu.client.service.AutoSendAccessibilityService.isAccessibilityServiceEnabled(context)
+                val response = if (isAutoSendEnabled) {
+                    "Enviando mensaje de WhatsApp..."
+                } else {
+                    "Abriendo WhatsApp. Para envío automático sin tocar la pantalla, activa el Asistente MYVU en Accesibilidad."
+                }
+                return RouteResult(handled = true, responseText = response)
             }
         }
 
-        if (normalized.contains("whatsapp")) {
+        if (normalized.contains("whatsapp") && !hasCallIntent) {
             val waPayload = trimmed
                 .replace(Regex("(?i)^(enviar?|envio|envió|envia|envía|manda|mandar?|mandó|escribe|escribir?)\\s+(un\\s+)?(mensaje\\s+de\\s+whatsapp|mensaje\\s+por\\s+whatsapp|whatsapp|mensaje)?\\s*(a|al|a\\s+mi|para)?\\s*"), "")
                 .replace(Regex("(?i)^(un\\s+)?(mensaje\\s+de\\s+whatsapp|mensaje\\s+por\\s+whatsapp|whatsapp|mensaje)\\s*(a|al|a\\s+mi|para)?\\s*"), "")
                 .trim()
             if (waPayload.isNotBlank() && waPayload.length > 3) {
                 LogBus.log("VoiceActionRouter -> Fast-Path WhatsApp fallback: '$waPayload'")
-                com.myvu.client.service.AutoSendAccessibilityService.triggerWhatsAppAutoSend()
                 actionExecutor.openWhatsApp(waPayload)
-                return RouteResult(handled = true, responseText = "Enviando mensaje de WhatsApp...")
+                val isAutoSendEnabled = com.myvu.client.service.AutoSendAccessibilityService.isAccessibilityServiceEnabled(context)
+                val response = if (isAutoSendEnabled) {
+                    "Enviando mensaje de WhatsApp..."
+                } else {
+                    "Abriendo WhatsApp. Para envío automático sin tocar la pantalla, activa el Asistente MYVU en Accesibilidad."
+                }
+                return RouteResult(handled = true, responseText = response)
             }
         }
 
@@ -121,10 +315,25 @@ class VoiceActionRouter(
         }
 
         // 4. Resumen de Notificaciones
-        if (normalized.matches(Regex(".*(resume|resumen|leer?|lee|revisa|revisar?|cuales|que)\\s+(mis\\s+|las\\s+)?(notificaciones|mensajes|chats|correos|emails).*")) ||
-            normalized.contains("notificaciones pendientes") ||
-            normalized.contains("mensajes pendientes")
-        ) {
+        val isNotificationQuery = (normalized.contains("notificacion") || normalized.contains("notificaciones")) &&
+                (normalized.contains("tengo") || normalized.contains("pendientes") ||
+                 normalized.contains("leer") || normalized.contains("lee") ||
+                 normalized.contains("revisa") || normalized.contains("revisar") ||
+                 normalized.contains("resumen") || normalized.contains("resume") ||
+                 normalized.contains("cuales") || normalized.contains("que") ||
+                 normalized.contains("hay") || normalized.contains("nuevas") ||
+                 normalized.contains("recientes") || normalized.contains("por leer"))
+        val isOtherUnreadQuery = normalized.matches(Regex(".*(resume|resumen|leer?|lee|revisa|revisar?|cuales|que)\\s+(mis\\s+|las\\s+)?(notificaciones|mensajes|chats|correos|emails).*")) ||
+                normalized.contains("notificaciones pendientes") ||
+                normalized.contains("mensajes pendientes") ||
+                normalized.contains("mensajes por leer") ||
+                normalized.contains("correos pendientes") ||
+                normalized.contains("correos por leer") ||
+                normalized.contains("tengo mensajes") ||
+                normalized.contains("tengo notificaciones") ||
+                normalized.contains("tengo correos")
+
+        if (isNotificationQuery || isOtherUnreadQuery) {
             LogBus.log("VoiceActionRouter -> Fast-Path unread notification summary")
             val type = when {
                 normalized.contains("whatsapp") -> "whatsapp"
@@ -157,7 +366,7 @@ class VoiceActionRouter(
             }
         }
 
-        // 5b. Divisas y Tasas de Cambio
+        // 5b. Divisas y Tasas de Cambio (TRM)
         if (ExternalInfoService.isCurrencyQuery(trimmed)) {
             LogBus.log("VoiceActionRouter -> Fast-Path currency query: '$trimmed'")
             return RouteResult(
@@ -167,7 +376,27 @@ class VoiceActionRouter(
             )
         }
 
-        // 5c. Búsqueda Web / Información General
+        // 5c. Acciones, Bolsa y Criptomonedas
+        if (ExternalInfoService.isStockOrMarketQuery(trimmed)) {
+            LogBus.log("VoiceActionRouter -> Fast-Path stock/market query: '$trimmed'")
+            return RouteResult(
+                handled = true,
+                isAsyncExternalSearch = true,
+                searchQuery = trimmed
+            )
+        }
+
+        // 5d. Noticias en Vivo y Titulares de Actualidad
+        if (ExternalInfoService.isNewsQuery(trimmed)) {
+            LogBus.log("VoiceActionRouter -> Fast-Path news query: '$trimmed'")
+            return RouteResult(
+                handled = true,
+                isAsyncExternalSearch = true,
+                searchQuery = trimmed
+            )
+        }
+
+        // 5e. Búsqueda Web / Información General
         if (ExternalInfoService.isGeneralSearchQuery(trimmed)) {
             LogBus.log("VoiceActionRouter -> Fast-Path web search query: '$trimmed'")
             return RouteResult(
@@ -295,11 +524,11 @@ class VoiceActionRouter(
         }
 
         // 10. Abrir Apps: ej: "abre la calculadora", "abrir instagram"
-        val openAppMatch = Regex("^(abre|abrir?|lanzar?|lanza)\\s+(la\\s+app\\s+de\\s+|la\\s+aplicacion\\s+de\\s+|el\\s+|la\\s+)?([a-zA-Z0-9_ ]+)$", RegexOption.IGNORE_CASE).find(normalized)
-        if (openAppMatch != null && !normalized.contains("nota") && !normalized.contains("lista") && !normalized.contains("teleprompter")) {
+        val openAppMatch = Regex("^(abre|abrir?|lanzar?|lanza|iniciar?|inicia|ejecutar?|ejecuta)\\s+(la\\s+app\\s+de\\s+|la\\s+aplicacion\\s+de\\s+|el\\s+|la\\s+)?([a-zA-Z0-9_ ]+)$", RegexOption.IGNORE_CASE).find(trimmed)
+        if (openAppMatch != null && !normalized.contains("nota") && !normalized.contains("lista") && !normalized.contains("teleprompter") && !normalized.contains("linterna") && !normalized.contains("musica")) {
             val appName = cleanTarget(openAppMatch.groupValues[3])
-            actionExecutor.openAppByName(appName)
-            return RouteResult(handled = true, responseText = "Abriendo $appName...")
+            val resp = actionExecutor.openAppByName(appName)
+            return RouteResult(handled = true, responseText = resp)
         }
 
         // 11. Control de Navegación HUD en Gafas
@@ -331,13 +560,16 @@ class VoiceActionRouter(
 
     private fun cleanTarget(raw: String): String {
         var clean = raw.trim()
+        // Remover puntuación común producida por Whisper STT (. , ? ! : ;)
+        clean = clean.replace(Regex("^[\\s.,?!:;\"'¿¡]+|[\\s.,?!:;\"'¿¡]+$"), "").trim()
         clean = clean.replace(Regex("(?i)^(a|al|a\\s+mi|el|la|las|los)\\s+"), "").trim()
+        clean = clean.replace(Regex("^[\\s.,?!:;\"'¿¡]+|[\\s.,?!:;\"'¿¡]+$"), "").trim()
         // Manejar errores de STT donde la preposición 'a' se une al nombre (ej: "amatías" -> "matías")
         val lowerNoAccents = Normalizer.normalize(clean, Normalizer.Form.NFD)
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "").lowercase()
         if (lowerNoAccents.matches(Regex("^a[a-z]{3,}.*")) && !lowerNoAccents.startsWith("ana") && !lowerNoAccents.startsWith("antonio") && !lowerNoAccents.startsWith("andres") && !lowerNoAccents.startsWith("alejandro") && !lowerNoAccents.startsWith("alvaro") && !lowerNoAccents.startsWith("arturo") && !lowerNoAccents.startsWith("alberto")) {
             clean = clean.substring(1).trim()
         }
-        return clean
+        return clean.replace(Regex("^[\\s.,?!:;\"'¿¡]+|[\\s.,?!:;\"'¿¡]+$"), "").trim()
     }
 }

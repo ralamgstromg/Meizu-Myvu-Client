@@ -55,12 +55,13 @@ abstract class AiHttpClient @JvmOverloads constructor(
     }
 
     @Throws(IOException::class)
-    protected fun postRaw(body: String): String {
-        return postRawInternal(body, ignoreSsl)
+    @JvmOverloads
+    protected fun postRaw(body: String, customReadTimeoutMs: Int? = null): String {
+        return postRawInternal(body, ignoreSsl, customReadTimeoutMs)
     }
 
     @Throws(IOException::class)
-    private fun postRawInternal(body: String, bypassSsl: Boolean): String {
+    private fun postRawInternal(body: String, bypassSsl: Boolean, customReadTimeoutMs: Int? = null): String {
         val targetUrl = endpoint()
         LogBus.log("${provider.displayName}: POST $targetUrl (payload: ${body.length} chars)")
         val url = HttpEndpoint.parse(targetUrl, "${provider.displayName} endpoint")
@@ -72,9 +73,20 @@ abstract class AiHttpClient @JvmOverloads constructor(
             conn.requestMethod = "POST"
             conn.setRequestProperty("content-type", "application/json")
             authorize(conn)
-            val isLocal = provider == AiProvider.LOCAL || targetUrl.contains("10.0.0.") || targetUrl.contains("localhost") || targetUrl.contains("127.0.0.1") || targetUrl.contains("192.168.")
+            val isPrivateHost = targetUrl.contains("://10.") ||
+                    targetUrl.contains("://192.168.") ||
+                    targetUrl.contains("://172.16.") ||
+                    targetUrl.contains("://172.17.") ||
+                    targetUrl.contains("://172.18.") ||
+                    targetUrl.contains("://172.19.") ||
+                    targetUrl.contains("://172.2") ||
+                    targetUrl.contains("://172.30.") ||
+                    targetUrl.contains("://172.31.") ||
+                    targetUrl.contains("localhost") ||
+                    targetUrl.contains("127.0.0.1")
+            val isLocal = isPrivateHost
             conn.connectTimeout = if (isLocal) LOCAL_CONNECT_TIMEOUT_MS else CONNECT_TIMEOUT_MS
-            conn.readTimeout = if (isLocal) LOCAL_READ_TIMEOUT_MS else READ_TIMEOUT_MS
+            conn.readTimeout = customReadTimeoutMs ?: if (isLocal) LOCAL_READ_TIMEOUT_MS else READ_TIMEOUT_MS
             conn.doOutput = true
 
             conn.outputStream.use { out ->
@@ -95,7 +107,7 @@ abstract class AiHttpClient @JvmOverloads constructor(
         } catch (e: SSLException) {
             if (!bypassSsl) {
                 LogBus.warn("${provider.displayName} SSL failed, retrying with SSL bypass...")
-                return postRawInternal(body, true)
+                return postRawInternal(body, true, customReadTimeoutMs)
             }
             throw e
         } finally {
@@ -121,7 +133,7 @@ abstract class AiHttpClient @JvmOverloads constructor(
         private const val CONNECT_TIMEOUT_MS = 15000
         private const val READ_TIMEOUT_MS = 60000
         private const val LOCAL_CONNECT_TIMEOUT_MS = 15000
-        private const val LOCAL_READ_TIMEOUT_MS = 45000
+        private const val LOCAL_READ_TIMEOUT_MS = 30000
 
         private fun extractError(response: String): String {
             try {

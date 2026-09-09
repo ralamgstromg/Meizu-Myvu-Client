@@ -74,4 +74,12 @@
         <item name="trackColorInactive">@color/obsidian_container_highest</item>
         <item name="haloColor">#3300F0FF</item>
     </style>
+
+    <style name="Theme.Myvu.Translucent" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:colorBackgroundCacheHint">@null</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Translucent</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
 </resources>

@@ -30,6 +30,25 @@ class NoteAiProcessor(private val context: Context) {
         return provider.newClient(context, aiApiKey, aiModel, aiEndpoint, systemPrompt)
     }
 
+    private fun getFallbackAiClient(systemPrompt: String, excludeProviderId: String): AiClient? {
+        val candidates = listOf("groq", "openai", "claude", "nvidia")
+        for (providerId in candidates) {
+            if (providerId.equals(excludeProviderId, ignoreCase = true)) continue
+            val key = Prefs.aiApiKey(context, providerId)
+            if (key.isNotBlank()) {
+                val provider = AiProvider.fromId(providerId)
+                val model = Prefs.aiModel(context, providerId).ifBlank { provider.defaultModel }
+                val endpoint = Prefs.aiEndpoint(context, providerId)
+                val client = provider.newClient(context, key, model, endpoint, systemPrompt)
+                if (client.isConfigured()) {
+                    LogBus.log("NoteAiProcessor: Selected fallback provider '$providerId'")
+                    return client
+                }
+            }
+        }
+        return null
+    }
+
     private fun formatAttachmentsForPrompt(attachments: List<Attachment>): String {
         if (attachments.isEmpty()) return ""
         val sb = StringBuilder("\n\n=== ARCHIVOS Y DOCUMENTOS ADJUNTOS ===\n")
@@ -105,17 +124,18 @@ class NoteAiProcessor(private val context: Context) {
                     ChatMessage.user(userPayload)
                 }
 
-                val response = if (aiClient.supportsToolCalling()) {
-                    val chatRes = aiClient.chat(
-                        messages = listOf(
-                            ChatMessage.system(aiPrompt),
-                            userMessage
-                        ),
-                        jsonMode = true
-                    )
-                    chatRes.content ?: ""
-                } else {
-                    aiClient.ask(userPayload)
+                val response = try {
+                    executeAiCallWithClient(aiClient, aiPrompt, userMessage, userPayload)
+                } catch (primaryErr: Exception) {
+                    val aiProviderId = Prefs.aiProvider(context)
+                    LogBus.warn("NoteAiProcessor: Primary provider ($aiProviderId) failed: ${primaryErr.message}. Trying fallback...")
+                    val fallbackClient = getFallbackAiClient(aiPrompt, excludeProviderId = aiProviderId)
+                    if (fallbackClient != null) {
+                        onProgress("🔄 Reintentando con proveedor de respaldo...")
+                        executeAiCallWithClient(fallbackClient, aiPrompt, userMessage, userPayload)
+                    } else {
+                        throw primaryErr
+                    }
                 }
 
                 val cleanJson = sanitizeJsonObject(response)
@@ -214,17 +234,18 @@ class NoteAiProcessor(private val context: Context) {
                     ChatMessage.user(userPayload)
                 }
 
-                val response = if (aiClient.supportsToolCalling()) {
-                    val chatRes = aiClient.chat(
-                        messages = listOf(
-                            ChatMessage.system(aiPrompt),
-                            userMessage
-                        ),
-                        jsonMode = true
-                    )
-                    chatRes.content ?: ""
-                } else {
-                    aiClient.ask(userPayload)
+                val response = try {
+                    executeAiCallWithClient(aiClient, aiPrompt, userMessage, userPayload)
+                } catch (primaryErr: Exception) {
+                    val aiProviderId = Prefs.aiProvider(context)
+                    LogBus.warn("NoteAiProcessor: Primary provider ($aiProviderId) failed for reminder: ${primaryErr.message}. Trying fallback...")
+                    val fallbackClient = getFallbackAiClient(aiPrompt, excludeProviderId = aiProviderId)
+                    if (fallbackClient != null) {
+                        onProgress("🔄 Reintentando con proveedor de respaldo...")
+                        executeAiCallWithClient(fallbackClient, aiPrompt, userMessage, userPayload)
+                    } else {
+                        throw primaryErr
+                    }
                 }
                 val cleanJson = sanitizeJsonObject(response)
 
@@ -394,13 +415,28 @@ class NoteAiProcessor(private val context: Context) {
         }
     }
 
-    private fun sanitizeJsonArray(raw: String): String {
-        val start = raw.indexOf('[')
-        val end = raw.lastIndexOf(']')
-        return if (start != -1 && end != -1 && end > start) {
-            raw.substring(start, end + 1).trim()
+    private fun executeAiCallWithClient(
+        client: AiClient,
+        prompt: String,
+        userMessage: ChatMessage,
+        userPayload: String
+    ): String {
+        return if (client.supportsToolCalling()) {
+            val chatRes = client.chat(
+                messages = listOf(
+                    ChatMessage.system(prompt),
+                    userMessage
+                ),
+                jsonMode = true,
+                customReadTimeoutMs = BATCH_READ_TIMEOUT_MS
+            )
+            chatRes.content ?: ""
         } else {
-            "[]"
+            client.ask(userPayload)
         }
+    }
+
+    companion object {
+        private const val BATCH_READ_TIMEOUT_MS = 180000 // 3 minutes
     }
 }

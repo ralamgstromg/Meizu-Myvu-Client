@@ -23,12 +23,31 @@ class ExternalInfoServiceTest {
         assertTrue(ExternalInfoService.isCurrencyQuery("a cómo está el dólar"))
         assertTrue(ExternalInfoService.isCurrencyQuery("convertir 100 dólares a euros"))
         assertTrue(ExternalInfoService.isCurrencyQuery("tasa de cambio usd a cop"))
+        assertTrue(ExternalInfoService.isCurrencyQuery("a cómo está la TRM hoy"))
+        assertTrue(ExternalInfoService.isCurrencyQuery("precio del dólar hoy en colombia"))
+
+        assertTrue(ExternalInfoService.isNewsQuery("noticias el día de hoy en colombia"))
+        assertTrue(ExternalInfoService.isNewsQuery("solicite informacion de noticias el dia de hoy en colombia"))
+        assertTrue(ExternalInfoService.isNewsQuery("dame las últimas noticias"))
+        assertTrue(ExternalInfoService.isNewsQuery("qué pasa en Medellín hoy"))
+        assertTrue(ExternalInfoService.isNewsQuery("titulares de hoy"))
+
+        assertTrue(ExternalInfoService.isStockOrMarketQuery("cómo están las acciones de Apple"))
+        assertTrue(ExternalInfoService.isStockOrMarketQuery("precio de las acciones de Tesla"))
+        assertTrue(ExternalInfoService.isStockOrMarketQuery("precio de Bitcoin hoy"))
+        assertTrue(ExternalInfoService.isStockOrMarketQuery("a cómo están las acciones de Ecopetrol"))
+        assertTrue(ExternalInfoService.isStockOrMarketQuery("cómo va la bolsa hoy"))
 
         assertTrue(ExternalInfoService.isGeneralSearchQuery("busca en google quién descubrió América"))
         assertTrue(ExternalInfoService.isGeneralSearchQuery("buscar la capital de Australia"))
         assertTrue(ExternalInfoService.isGeneralSearchQuery("google quién es Elon Musk"))
         assertTrue(ExternalInfoService.isGeneralSearchQuery("quién fue Albert Einstein"))
         assertTrue(ExternalInfoService.isGeneralSearchQuery("qué es la computación cuántica"))
+        assertTrue(ExternalInfoService.isGeneralSearchQuery("En google cuál es la manera más rápida de buscar un ítem en una array de python."))
+        assertTrue(ExternalInfoService.isGeneralSearchQuery("en google cómo se busca un valor en una lista"))
+        assertTrue(ExternalInfoService.isGeneralSearchQuery("cuál es la manera más rápida de ordenar una lista"))
+        assertTrue(ExternalInfoService.isGeneralSearchQuery("cómo buscar un archivo en linux"))
+        assertTrue(ExternalInfoService.isGeneralSearchQuery("cómo programar una api en kotlin"))
     }
 
     @Test
@@ -70,6 +89,11 @@ class ExternalInfoServiceTest {
         assertEquals(100.0, req3!!.amount, 0.001)
         assertEquals("USD", req3.from)
         assertEquals("EUR", req3.to)
+
+        val reqTrm = ExternalInfoService.extractCurrencyRequest("a cómo está la TRM hoy")
+        assertNotNull(reqTrm)
+        assertEquals("USD", reqTrm!!.from)
+        assertEquals("COP", reqTrm.to)
     }
 
     @Test
@@ -106,5 +130,42 @@ class ExternalInfoServiceTest {
         // Test that blank or invalid query returns null safely
         val blankResult = com.myvu.client.weather.OpenMeteo.geocode("   ")
         org.junit.Assert.assertNull(blankResult)
+    }
+
+    @Test
+    fun testNewsSearchExtraction() {
+        val result = ExternalInfoService.fetchNewsSearch("Noticias relevantes hay en Barranquilla el día de hoy.")
+        if (result != null) {
+            assertTrue("Debería incluir Barranquilla en la etiqueta de noticias", result.contains("Barranquilla"))
+            assertFalse("No debería incluir palabras de relleno en la etiqueta", result.contains("relevantes hay"))
+        }
+
+        val resultWithAccent = ExternalInfoService.fetchNewsSearch("¿Qué noticias relevantes hay hoy en Barranquilla?")
+        if (resultWithAccent != null) {
+            assertTrue("Debería incluir Barranquilla en la etiqueta", resultWithAccent.contains("Barranquilla"))
+            assertFalse("No debería incluir el prefijo interrogativo", resultWithAccent.contains("¿Qué noticias"))
+            assertFalse("No debería incluir palabras de relleno", resultWithAccent.contains("relevantes hay"))
+        }
+    }
+
+    @Test
+    fun testCurrencyQueryExcludesDefinitionsAndSubstrings() {
+        // Must NOT match "eur" inside "neuronales"
+        assertFalse(
+            ExternalInfoService.isCurrencyQuery("¿Cuál es el significado de la palabra retropropagación en redes neuronales?")
+        )
+        assertFalse(ExternalInfoService.isCurrencyQuery("estudios de neurociencia en Europa"))
+        assertFalse(ExternalInfoService.isCurrencyQuery("campo de girasoles"))
+        assertFalse(ExternalInfoService.isCurrencyQuery("microprocesador acoplado"))
+
+        // Must be recognized as general/definition search instead
+        assertTrue(
+            ExternalInfoService.isGeneralSearchQuery("¿Cuál es el significado de la palabra retropropagación en redes neuronales?")
+        )
+
+        // Real currency queries must still match
+        assertTrue(ExternalInfoService.isCurrencyQuery("a cómo está el euro"))
+        assertTrue(ExternalInfoService.isCurrencyQuery("¿Cuál es el TRM de hoy?"))
+        assertTrue(ExternalInfoService.isCurrencyQuery("precio del dólar hoy"))
     }
 }

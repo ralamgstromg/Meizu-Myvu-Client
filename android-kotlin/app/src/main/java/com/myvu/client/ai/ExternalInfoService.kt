@@ -52,14 +52,33 @@ object ExternalInfoService {
     @JvmStatic
     fun isCurrencyQuery(query: String): Boolean {
         val norm = normalize(query)
+        if (norm.contains("significado") || norm.contains("definicion") || norm.contains("concepto") ||
+            norm.startsWith("que es ") || norm.startsWith("quien es ") || norm.startsWith("como funciona ")
+        ) {
+            return false
+        }
         val currencyKeywords = listOf(
             "dolar", "dolares", "euro", "euros", "peso", "pesos", "cop", "usd", "eur",
-            "divisa", "divisas", "moneda", "tasa de cambio", "tipo de cambio", "cotizacion",
+            "divisa", "divisas", "moneda", "monedas", "tasa de cambio", "tipo de cambio", "cotizacion",
             "precio del dolar", "precio del euro", "cuanto esta el dolar", "a como esta el dolar",
-            "soles", "reales", "libras", "yen", "yenes"
+            "dolar hoy", "trm", "tasa representativa", "soles", "reales", "libras", "yen", "yenes"
         )
-        return currencyKeywords.any { norm.contains(it) } ||
+        val keywordPattern = Regex("\\b(${currencyKeywords.joinToString("|") { Regex.escape(it) }})\\b")
+        return keywordPattern.containsMatchIn(norm) ||
                 norm.matches(Regex(".*\\b(convertir|cambio de|tasa|precio|cotizacion)\\b.*\\b(a|en)\\b.*"))
+    }
+
+    @JvmStatic
+    fun isStockOrMarketQuery(query: String): Boolean {
+        val norm = normalize(query)
+        val stockKeywords = listOf(
+            "accion", "acciones", "bolsa", "nasdaq", "dow jones", "s&p", "sp500",
+            "wall street", "cotizacion de", "precio de la accion", "precio de las acciones",
+            "acciones de", "accion de", "bolsa de valores", "valor de la accion",
+            "bitcoin", "btc", "cripto", "crypto", "criptomoneda", "ethereum", "eth", "solana"
+        )
+        return stockKeywords.any { norm.contains(it) } ||
+                norm.matches(Regex(".*\\b(precio|cotizacion|valor|cuanto vale|cuanto cuesta)\\s+(de\\s+)?(las\\s+)?(apple|tesla|microsoft|nvidia|google|amazon|meta|ecopetrol|bitcoin|ethereum|solana).*"))
     }
 
     @JvmStatic
@@ -69,7 +88,12 @@ object ExternalInfoService {
                 norm.startsWith("buscar ") ||
                 norm.startsWith("busca en google") ||
                 norm.startsWith("buscar en google") ||
+                norm.startsWith("en google ") ||
                 norm.startsWith("google ") ||
+                norm.startsWith("googlea ") ||
+                norm.startsWith("googlear ") ||
+                norm.startsWith("investiga ") ||
+                norm.startsWith("averigua ") ||
                 norm.startsWith("quien es ") ||
                 norm.startsWith("quien fue ") ||
                 norm.startsWith("que es ") ||
@@ -78,8 +102,25 @@ object ExternalInfoService {
                 norm.startsWith("donde queda ") ||
                 norm.startsWith("donde esta ") ||
                 norm.startsWith("cual es la capital ") ||
+                norm.startsWith("cual es la manera ") ||
+                norm.startsWith("cual es la forma ") ||
+                norm.startsWith("cual es el mejor ") ||
+                norm.startsWith("cual es la mejor ") ||
+                norm.startsWith("cual es el significado ") ||
+                norm.startsWith("cual es la definicion ") ||
+                norm.contains("significado de ") ||
+                norm.contains("definicion de ") ||
+                norm.contains("que significa ") ||
+                norm.startsWith("como se busca ") ||
+                norm.startsWith("como buscar ") ||
+                norm.startsWith("como se hace ") ||
+                norm.startsWith("como hacer ") ||
+                norm.startsWith("como programar ") ||
+                norm.contains("en google") ||
                 norm.contains("noticias") ||
-                norm.contains("buscar en la web")
+                norm.contains("buscar en la web") ||
+                norm.contains("busca en internet") ||
+                norm.contains("buscar en internet")
     }
 
     // ==========================================
@@ -143,6 +184,7 @@ object ExternalInfoService {
 
         // Currency aliases map to ISO 4217
         val currencyAliases = listOf(
+            Pair(Regex("\\b(trm|tasa representativa)\\b"), "USD"),
             Pair(Regex("\\b(dolar|dolares|usd|dollar|dollars)\\b"), "USD"),
             Pair(Regex("\\b(euro|euros|eur)\\b"), "EUR"),
             Pair(Regex("\\b(peso colombiano|pesos colombianos|cop|colombianos)\\b"), "COP"),
@@ -220,7 +262,7 @@ object ExternalInfoService {
 
     @JvmStatic
     fun formatCurrencyResult(amount: Double, from: String, converted: Double, to: String): String {
-        val df = DecimalFormat("#,##0.##", DecimalFormatSymbols(Locale.US))
+        val df = DecimalFormat("0.##", DecimalFormatSymbols(Locale.US))
         val amtStr = if (amount % 1.0 == 0.0) amount.toLong().toString() else df.format(amount)
         val convStr = if (converted % 1.0 == 0.0) converted.toLong().toString() else df.format(converted)
 
@@ -259,43 +301,7 @@ object ExternalInfoService {
     fun cleanForGlasses(text: String): String {
         if (text.isBlank()) return ""
 
-        var s = text
-        // Strip HTML tags
-        s = s.replace(Regex("<[^>]*>"), " ")
-
-        // Decode HTML entities
-        s = s.replace("&nbsp;", " ")
-            .replace("&quot;", "\"")
-            .replace("&amp;", "&")
-            .replace("&#39;", "'")
-            .replace("&apos;", "'")
-            .replace("&lt;", "<")
-            .replace("&gt;", ">")
-            .replace("&#x27;", "'")
-            .replace("&aacute;", "á")
-            .replace("&eacute;", "é")
-            .replace("&iacute;", "í")
-            .replace("&oacute;", "ó")
-            .replace("&uacute;", "ú")
-            .replace("&ntilde;", "ñ")
-            .replace("&Aacute;", "Á")
-            .replace("&Eacute;", "É")
-            .replace("&Iacute;", "Í")
-            .replace("&Oacute;", "Ó")
-            .replace("&Uacute;", "Ú")
-            .replace("&Ntilde;", "Ñ")
-
-        // Strip Markdown
-        s = s.replace(Regex("[*#_~`>]"), "")
-        s = s.replace(Regex("(?m)^\\s*[-•*]\\s+"), "")
-
-        // Strip Emojis while preserving essential math/currency/temp symbols: °, $, €, £, ¥, %, +, -, etc.
-        s = s.replace(Regex("[\\uD83C-\\uDBFF\\uDC00-\\uDFFF\\u2600-\\u27BF\\uFE00-\\uFE0F]"), "")
-
-        // Clean whitespace around punctuation
-        s = s.replace(Regex("\\s+([.,;:!?])"), "$1")
-        s = s.replace(Regex("([.,;:!?])([a-zA-ZáéíóúÁÉÍÓÚñÑ])"), "$1 $2")
-        s = s.replace(Regex("\\s+"), " ").trim()
+        var s = com.myvu.client.core.MarkdownUtils.formatCleanPlainTextForGlasses(text)
 
         // Keep 1-2 concise sentences (max ~200 characters)
         if (s.length > 200) {
@@ -315,6 +321,38 @@ object ExternalInfoService {
 
     @JvmStatic
     fun fetchCurrencyRate(from: String, to: String, timeoutMs: Int = DEFAULT_TIMEOUT_MS): Double? {
+        // 0. Official Colombian TRM (Superintendencia Financiera de Colombia) for USD/COP
+        if (from.equals("USD", ignoreCase = true) && to.equals("COP", ignoreCase = true)) {
+            try {
+                val trmUrl = "https://www.datos.gov.co/resource/ceyp-9c7c.json?\$limit=1&\$order=vigenciadesde%20DESC"
+                val jsonStr = httpGet(trmUrl, USER_AGENT_APP, timeoutMs)
+                val array = org.json.JSONArray(jsonStr)
+                if (array.length() > 0) {
+                    val rate = array.getJSONObject(0).optDouble("valor", -1.0)
+                    if (rate > 0.0) {
+                        LogBus.log("ExternalInfoService -> Superfinanciera official TRM: 1 USD = $rate COP")
+                        return rate
+                    }
+                }
+            } catch (e: Exception) {
+                LogBus.warn("ExternalInfoService -> Superfinanciera TRM query failed: ${e.message}")
+            }
+        } else if (from.equals("COP", ignoreCase = true) && to.equals("USD", ignoreCase = true)) {
+            try {
+                val trmUrl = "https://www.datos.gov.co/resource/ceyp-9c7c.json?\$limit=1&\$order=vigenciadesde%20DESC"
+                val jsonStr = httpGet(trmUrl, USER_AGENT_APP, timeoutMs)
+                val array = org.json.JSONArray(jsonStr)
+                if (array.length() > 0) {
+                    val rate = array.getJSONObject(0).optDouble("valor", -1.0)
+                    if (rate > 0.0) {
+                        return 1.0 / rate
+                    }
+                }
+            } catch (e: Exception) {
+                LogBus.warn("ExternalInfoService -> Superfinanciera inverted TRM query failed: ${e.message}")
+            }
+        }
+
         // 1. Primary: open.er-api.com (free, high coverage including COP, MXN, ARS, EUR, USD)
         try {
             val url = "https://open.er-api.com/v6/latest/$from"
@@ -365,7 +403,8 @@ object ExternalInfoService {
     @JvmStatic
     fun fetchGoogleOrWebSearch(rawQuery: String, timeoutMs: Int = DEFAULT_TIMEOUT_MS): String? {
         val cleanQuery = rawQuery
-            .replace(Regex("(?i)^(busca en google|buscar en google|google|busca|buscar)\\s+"), "")
+            .replace(Regex("(?i)^[¿¡?\\s]*(en\\s+google|busca\\s+en\\s+google|buscar\\s+en\\s+google|google|googlea|googlear|busca|buscar|investiga|averigua)\\s+"), "")
+            .replace(Regex("[?.,!;:]+$"), "")
             .trim()
 
         if (cleanQuery.isBlank()) return null
@@ -480,36 +519,163 @@ object ExternalInfoService {
         val norm = normalize(query)
         return norm.contains("noticia") || norm.contains("noticias") ||
                 norm.contains("novedades") || norm.contains("titulares") ||
-                norm.startsWith("que pasa en ") || norm.startsWith("que paso en ")
+                norm.contains("titular") || norm.contains("de ultima hora") ||
+                norm.contains("ultimas noticias") ||
+                norm.startsWith("que pasa en ") || norm.startsWith("que paso en ") ||
+                norm.startsWith("que esta pasando")
     }
 
     @JvmStatic
     fun fetchNewsSearch(rawQuery: String, timeoutMs: Int = DEFAULT_TIMEOUT_MS): String? {
-        val topic = rawQuery
-            .replace(Regex("(?i)^(dame|busca|buscar|ver|cuales son|noticias sobre|noticias de|noticias|titulares de|titulares)\\s+"), "")
+        var clean = rawQuery
+            .replace(Regex("^[¿¡?\\s]+"), "")
+            .replace(Regex("[?.,!;:]+$"), "")
             .trim()
-        if (topic.isBlank()) return null
+
+        val prefixRegex = Regex(
+            "(?iu)^[¿¡?\\s]*(solicito|solicite|dame|quiero|busca|buscar|ver|cu[aá]les\\s+son|cu[aá]les|qu[eé]|consulta|consultar|informaci[oó]n\\s+(de|sobre)?|noticias?\\s+(sobre|de|del|en)?|titulares?\\s+(de)?|novedades\\s+(de)?|qu[eé]\\s+pasa\\s+en|qu[eé]\\s+pas[oó]\\s+en|[uú]ltimas\\s+noticias?\\s+(de|en)?)\\s+"
+        )
+        while (prefixRegex.containsMatchIn(clean)) {
+            clean = clean.replace(prefixRegex, "").trim()
+        }
+
+        // Purgar adjetivos conversacionales, conectores y frases temporales
+        clean = clean
+            .replace(Regex("(?iu)\\b(relevantes|importantes|destacadas|principales|actuales|actualizada|actualizadas|recientes|de [uú]ltima hora|[uú]ltima hora|el d[ií]a de hoy|hoy en d[ií]a|de hoy|hoy|en este momento|el d[ií]a|del d[ií]a)\\b"), "")
+            .replace(Regex("(?iu)\\b(que hay en|que hay|hay en|hay|que suceden en|que suceden|pasan en)\\b"), "")
+            .replace(Regex("(?iu)^[¿¡?\\s]*(en|de|sobre|para|a nivel de|a nivel|las)\\s+"), "")
+            .replace(Regex("[?.,!;:]+$"), "")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+
+        // Purgar preposiciones residuales al inicio
+        clean = clean.replace(Regex("(?iu)^[¿¡?\\s]*(en|de|sobre|para|del|de la|de los|de las)\\s+"), "").trim()
+
+        val isGeneralOrColombia = clean.isBlank() ||
+                clean.equals("colombia", ignoreCase = true) ||
+                clean.equals("el pais", ignoreCase = true) ||
+                clean.equals("nacionales", ignoreCase = true) ||
+                clean.equals("del pais", ignoreCase = true)
+
+        val newsUrl = if (isGeneralOrColombia) {
+            "https://news.google.com/rss?hl=es-419&gl=CO&ceid=CO:es-419"
+        } else {
+            val encoded = URLEncoder.encode(clean, "UTF-8")
+            "https://news.google.com/rss/search?q=$encoded&hl=es-419&gl=CO&ceid=CO:es-419"
+        }
+
         try {
-            val encoded = URLEncoder.encode(topic, "UTF-8")
-            val newsUrl = "https://news.google.com/rss/search?q=$encoded&hl=es-419&gl=CO&ceid=CO:es-419"
             val xmlStr = httpGet(newsUrl, USER_AGENT_APP, timeoutMs)
             val titles = mutableListOf<String>()
-            val itemMatcher = Regex("<item>.*?<title>(.*?)</title>", RegexOption.DOT_MATCHES_ALL)
+            val itemMatcher = Regex("<item>.*?<title>(.*?)</title>(?:.*?<source[^>]*>(.*?)</source>)?", RegexOption.DOT_MATCHES_ALL)
             val matches = itemMatcher.findAll(xmlStr)
             for (m in matches) {
-                val rawTitle = m.groupValues[1].replace(Regex("(?i)\\s*-\\s*[^-]+$"), "").replace(Regex("<[^>]*>"), "")
+                val rawTitle = m.groupValues[1]
+                    .replace(Regex("(?i)\\s*-\\s*[^-]+$"), "")
+                    .replace(Regex("<[^>]*>"), "")
+                val source = m.groupValues[2].replace(Regex("<[^>]*>"), "").trim()
                 val t = cleanForGlasses(rawTitle)
                 if (t.isNotBlank() && !t.contains("Google News") && titles.size < 3) {
-                    titles.add(t)
+                    val entry = if (source.isNotBlank()) "$t ($source)" else t
+                    titles.add(entry)
                 }
             }
             if (titles.isNotEmpty()) {
-                return "Noticias de $topic: " + titles.joinToString(". ") + "."
+                val label = if (isGeneralOrColombia) "Colombia" else clean
+                return "Noticias de hoy ($label): " + titles.mapIndexed { i, it -> "${i + 1}) $it" }.joinToString(". ") + "."
             }
         } catch (e: Exception) {
-            LogBus.warn("ExternalInfoService -> Google News RSS failed for '$topic': ${e.message}")
+            LogBus.warn("ExternalInfoService -> Google News RSS failed for '$clean': ${e.message}")
         }
         return null
+    }
+
+    @JvmStatic
+    fun fetchStockOrMarket(rawQuery: String, timeoutMs: Int = DEFAULT_TIMEOUT_MS): String? {
+        val clean = rawQuery
+            .replace(Regex("(?iu)^[¿¡?\\s]*(a\\s+c[oó]mo\\s+est[aá]n?|cu[aá]nto\\s+vale|cu[aá]nto\\s+cuesta|precio\\s+de\\s+(la|las)?|cotizaci[oó]n\\s+de\\s+(la|las)?|valor\\s+de\\s+(la|las)?|acciones\\s+de|acci[oó]n\\s+de|c[oó]mo\\s+va|c[oó]mo\\s+est[aá])\\s+"), "")
+            .replace(Regex("(?iu)\\b(acciones|acci[oó]n|en la bolsa|bolsa|de valores|hoy|en este momento|actualmente)\\b"), "")
+            .replace(Regex("[?.,!;:]+$"), "")
+            .trim()
+
+        if (clean.isBlank()) return null
+        val assetNorm = normalize(clean)
+
+        val symbol = when {
+            assetNorm.contains("apple") -> "AAPL"
+            assetNorm.contains("tesla") -> "TSLA"
+            assetNorm.contains("microsoft") -> "MSFT"
+            assetNorm.contains("nvidia") -> "NVDA"
+            assetNorm.contains("google") || assetNorm.contains("alphabet") -> "GOOGL"
+            assetNorm.contains("amazon") -> "AMZN"
+            assetNorm.contains("meta") || assetNorm.contains("facebook") -> "META"
+            assetNorm.contains("netflix") -> "NFLX"
+            assetNorm.contains("ecopetrol") -> "EC"
+            assetNorm.contains("bitcoin") || assetNorm.contains("btc") -> "BTC-USD"
+            assetNorm.contains("ethereum") || assetNorm.contains("eth") -> "ETH-USD"
+            assetNorm.contains("solana") || assetNorm.contains("sol") -> "SOL-USD"
+            assetNorm.contains("nasdaq") -> "^IXIC"
+            assetNorm.contains("sp500") || assetNorm.contains("s&p") -> "^GSPC"
+            assetNorm.contains("dow jones") -> "^DJI"
+            else -> {
+                try {
+                    val enc = URLEncoder.encode(clean, "UTF-8")
+                    val searchUrl = "https://query2.finance.yahoo.com/v1/finance/search?q=$enc&quotesCount=1"
+                    val jsonStr = httpGet(searchUrl, USER_AGENT_APP, timeoutMs)
+                    val quotes = JSONObject(jsonStr).optJSONArray("quotes")
+                    if (quotes != null && quotes.length() > 0) {
+                        quotes.getJSONObject(0).optString("symbol")
+                    } else null
+                } catch (e: Exception) {
+                    null
+                }
+            }
+        } ?: return null
+
+        try {
+            val chartUrl = "https://query1.finance.yahoo.com/v8/finance/chart/$symbol?interval=1d"
+            val jsonStr = httpGet(chartUrl, USER_AGENT_APP, timeoutMs)
+            val meta = JSONObject(jsonStr)
+                .getJSONObject("chart")
+                .getJSONArray("result")
+                .getJSONObject(0)
+                .getJSONObject("meta")
+
+            val price = meta.optDouble("regularMarketPrice", -1.0)
+            if (price <= 0.0) return null
+            val currency = meta.optString("currency", "USD")
+            val prevClose = meta.optDouble("chartPreviousClose", price)
+            val diff = price - prevClose
+            val pct = if (prevClose > 0.0) (diff / prevClose) * 100 else 0.0
+
+            val sign = if (diff >= 0) "+" else ""
+            val df = DecimalFormat("#,##0.00", DecimalFormatSymbols(Locale.US))
+            val formattedPrice = df.format(price)
+            val pctStr = String.format(Locale.US, "%s%.2f%%", sign, pct)
+
+            val displayName = when (symbol) {
+                "AAPL" -> "Apple (AAPL)"
+                "TSLA" -> "Tesla (TSLA)"
+                "MSFT" -> "Microsoft (MSFT)"
+                "NVDA" -> "Nvidia (NVDA)"
+                "GOOGL" -> "Google (GOOGL)"
+                "AMZN" -> "Amazon (AMZN)"
+                "META" -> "Meta (META)"
+                "EC" -> "Ecopetrol (EC)"
+                "BTC-USD" -> "Bitcoin (BTC)"
+                "ETH-USD" -> "Ethereum (ETH)"
+                "SOL-USD" -> "Solana (SOL)"
+                "^GSPC" -> "S&P 500"
+                "^IXIC" -> "Nasdaq"
+                "^DJI" -> "Dow Jones"
+                else -> symbol
+            }
+
+            return "$displayName: $$formattedPrice $currency ($pctStr hoy)."
+        } catch (e: Exception) {
+            LogBus.warn("ExternalInfoService -> Stock fetch failed for $symbol: ${e.message}")
+            return null
+        }
     }
 
     private fun isDefinitionQuery(query: String): Boolean {
@@ -518,11 +684,18 @@ object ExternalInfoService {
                 norm.startsWith("quien fue ") ||
                 norm.startsWith("que es ") ||
                 norm.startsWith("que fue ") ||
-                norm.startsWith("capital de ")
+                norm.startsWith("capital de ") ||
+                norm.startsWith("cual es el significado") ||
+                norm.startsWith("cual es la definicion") ||
+                norm.contains("significado de") ||
+                norm.contains("definicion de")
     }
 
     private fun extractTopicFromDefinition(query: String): String {
-        return query.replace(Regex("(?i)^(quien fue|quien es|que fue|que es|capital de)\\s+"), "").trim()
+        return query
+            .replace(Regex("(?iu)^[¿¡?\\s]*(cu[aá]l\\s+es\\s+el\\s+significado\\s+de\\s+la\\s+palabra|cu[aá]l\\s+es\\s+el\\s+significado\\s+de|cu[aá]l\\s+es\\s+la\\s+definici[oó]n\\s+de|significado\\s+de\\s+la\\s+palabra|significado\\s+de|definici[oó]n\\s+de|concepto\\s+de|quien\\s+fue|quien\\s+es|que\\s+fue|que\\s+es|capital\\s+de)\\s+"), "")
+            .replace(Regex("[?.,!;:]+$"), "")
+            .trim()
     }
 
     // ==========================================
@@ -557,7 +730,15 @@ object ExternalInfoService {
             }
         }
 
-        // 3. News Query
+        // 3. Stocks, Market and Crypto Query
+        if (isStockOrMarketQuery(trimmed)) {
+            val stockResult = fetchStockOrMarket(trimmed, timeoutMs)
+            if (stockResult != null && stockResult.isNotBlank()) {
+                return stockResult
+            }
+        }
+
+        // 4. News Query
         if (isNewsQuery(trimmed)) {
             val newsResult = fetchNewsSearch(trimmed, timeoutMs)
             if (newsResult != null && newsResult.isNotBlank()) {
@@ -565,7 +746,7 @@ object ExternalInfoService {
             }
         }
 
-        // 4. Google / Web Search
+        // 5. Google / Web Search
         val webResult = fetchGoogleOrWebSearch(trimmed, timeoutMs)
         if (webResult != null && webResult.isNotBlank()) {
             return webResult

@@ -1,5 +1,6 @@
 package com.myvu.client.ai
 
+import com.myvu.client.core.LogBus
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -40,7 +41,8 @@ class LocalAiClient @JvmOverloads constructor(
     override fun chat(
         messages: List<ChatMessage>,
         tools: List<ToolDefinition>?,
-        jsonMode: Boolean
+        jsonMode: Boolean,
+        customReadTimeoutMs: Int?
     ): ChatCompletionResult {
         if (!isConfigured()) {
             throw java.io.IOException("${provider.displayName} is not fully configured")
@@ -50,8 +52,25 @@ class LocalAiClient @JvmOverloads constructor(
         } catch (e: JSONException) {
             throw java.io.IOException("Could not build chat request: ${e.message}", e)
         }
-        val rawResponse = HttpRetry.execute(provider.displayName) {
-            postRaw(body)
+        val rawResponse = try {
+            HttpRetry.execute(provider.displayName) {
+                postRaw(body, customReadTimeoutMs)
+            }
+        } catch (e: java.io.IOException) {
+            // Fallback: Si jsonMode falló o dió timeout, reintentar sin response_format
+            if (jsonMode) {
+                LogBus.warn("${provider.displayName} chat with jsonMode failed (${e.message}), retrying without jsonMode...")
+                val fallbackBody = try {
+                    buildChatBody(messages, tools, jsonMode = false)
+                } catch (je: JSONException) {
+                    throw e
+                }
+                HttpRetry.execute(provider.displayName) {
+                    postRaw(fallbackBody, customReadTimeoutMs)
+                }
+            } else {
+                throw e
+            }
         }
         return parseChatCompletion(rawResponse)
     }

@@ -139,4 +139,155 @@ class VoiceActionRouterTest {
         assertEquals("Matías Castro", parts[0].trim())
         assertEquals("hola cómo vas.", parts[1].trim())
     }
+
+    @Test
+    fun testCalendarFastPathVariations() {
+        val q1 = router.tryRoute("¿Tengo alguna reunión hoy por la tarde?")
+        assertTrue("Debería capturar reunión en singular", q1.handled)
+
+        val q2 = router.tryRoute("Tengo alguna reunión el día de hoy.")
+        assertTrue("Debería capturar reunión sin signo de interrogación", q2.handled)
+
+        val q3 = router.tryRoute("¿Qué citas tengo hoy?")
+        assertTrue("Debería capturar citas", q3.handled)
+
+        val q4 = router.tryRoute("¿Tengo compromisos pendientes?")
+        assertTrue("Debería capturar compromisos", q4.handled)
+
+        val q5 = router.tryRoute("¿Qué tengo para hoy?")
+        assertTrue("Debería capturar qué tengo para hoy", q5.handled)
+    }
+
+    @Test
+    fun testFastPathSmsRouting() {
+        val res1 = router.tryRoute("Enviar un SMS a Matías que ya voy llegando")
+        assertTrue(res1.handled)
+        assertTrue(res1.responseText.contains("mensaje de texto"))
+
+        val res2 = router.tryRoute("Manda mensaje de texto a Carlos: llego tarde")
+        assertTrue(res2.handled)
+        assertTrue(res2.responseText.contains("mensaje de texto"))
+
+        val res3 = router.tryRoute("Escribe un texto a Matias Castro")
+        assertTrue(res3.handled)
+        assertTrue(res3.responseText.contains("mensaje de texto"))
+    }
+
+    @Test
+    fun testFastPathNotificationRouting() {
+        val res1 = router.tryRoute("Notificaciones tengo pendientes por leer.")
+        assertTrue(res1.handled)
+
+        val res2 = router.tryRoute("¿Qué notificaciones tengo?")
+        assertTrue(res2.handled)
+
+        val res3 = router.tryRoute("Tengo notificaciones pendientes")
+        assertTrue(res3.handled)
+
+        val res4 = router.tryRoute("Revisa mis notificaciones de whatsapp")
+        assertTrue(res4.handled)
+    }
+
+    @Test
+    fun testFastPathMediaControls() {
+        val pause = router.tryRoute("pausa la música")
+        assertTrue(pause.handled)
+        assertEquals("Música pausada.", pause.responseText)
+
+        val play = router.tryRoute("reproduce música")
+        assertTrue(play.handled)
+        assertEquals("Reproduciendo música.", play.responseText)
+
+        val next = router.tryRoute("siguiente canción")
+        assertTrue(next.handled)
+        assertEquals("Siguiente canción.", next.responseText)
+
+        val prev = router.tryRoute("canción anterior")
+        assertTrue(prev.handled)
+        assertEquals("Canción anterior.", prev.responseText)
+    }
+
+    @Test
+    fun testFastPathFlashlightAndVolumeControls() {
+        val torchOn = router.tryRoute("enciende la linterna")
+        assertTrue(torchOn.handled)
+
+        val torchOff = router.tryRoute("apaga la linterna")
+        assertTrue(torchOff.handled)
+
+        val volUp = router.tryRoute("sube el volumen")
+        assertTrue(volUp.handled)
+
+        val volDown = router.tryRoute("baja el volumen")
+        assertTrue(volDown.handled)
+
+        val silent = router.tryRoute("silencia el teléfono")
+        assertTrue(silent.handled)
+
+        val vibrate = router.tryRoute("pon en vibración")
+        assertTrue(vibrate.handled)
+
+        val normal = router.tryRoute("activa el sonido")
+        assertTrue(normal.handled)
+    }
+
+    @Test
+    fun testFastPathOpenApp() {
+        val openSpotify = router.tryRoute("abre Spotify")
+        assertTrue(openSpotify.handled)
+        assertTrue(openSpotify.responseText.contains("Spotify", ignoreCase = true))
+
+        val openMaps = router.tryRoute("abre Maps")
+        assertTrue(openMaps.handled)
+        assertTrue(openMaps.responseText.contains("Maps", ignoreCase = true))
+    }
+
+    @Test
+    fun testFastPathVoipCalls() {
+        val waCall = router.tryRoute("Llama a Matías Castro por WhatsApp")
+        assertTrue(waCall.handled)
+        assertTrue(waCall.responseText.contains("WhatsApp", ignoreCase = true))
+        assertTrue(waCall.responseText.contains("Matías Castro", ignoreCase = true))
+
+        // Con punto final de Whisper STT
+        val waCallWithDot = router.tryRoute("Llama por WhatsApp a Matías Castro.")
+        assertTrue(waCallWithDot.handled)
+        assertTrue(waCallWithDot.responseText.contains("WhatsApp", ignoreCase = true))
+        // El punto no debe quedar en el nombre del destinatario
+        assertEquals("Llamando a Matías Castro por WhatsApp...", waCallWithDot.responseText)
+
+        // Variación fonética de Whisper STT ("Anomar")
+        val waCallAnomar = router.tryRoute("Anomar por WhatsApp a Matías Castro.")
+        assertTrue(waCallAnomar.handled)
+        assertEquals("Llamando a Matías Castro por WhatsApp...", waCallAnomar.responseText)
+
+        val teamsCall = router.tryRoute("Inicia llamada de Teams con Carlos Gómez")
+        assertTrue(teamsCall.handled)
+        assertTrue(teamsCall.responseText.contains("Teams", ignoreCase = true))
+        assertTrue(teamsCall.responseText.contains("Carlos Gómez", ignoreCase = true))
+
+        val gchatCall = router.tryRoute("Llama a Pedro por Google Chat")
+        assertTrue(gchatCall.handled)
+        assertTrue(gchatCall.responseText.contains("Google Chat", ignoreCase = true))
+        assertTrue(gchatCall.responseText.contains("Pedro", ignoreCase = true))
+    }
+
+    @Test
+    fun testFastPathHealthQueries() {
+        val steps = router.tryRoute("¿Cuántos pasos llevo hoy?")
+        assertTrue(steps.handled)
+        assertTrue(steps.responseText.contains("pasos", ignoreCase = true))
+
+        val stress = router.tryRoute("¿Cuál es mi nivel de estrés?")
+        assertTrue(stress.handled)
+        assertTrue(stress.responseText.contains("estrés", ignoreCase = true))
+
+        val hr = router.tryRoute("ritmo cardíaco")
+        assertTrue(hr.handled)
+        assertTrue(hr.responseText.contains("cardíaca", ignoreCase = true) || hr.responseText.contains("bpm", ignoreCase = true))
+
+        val full = router.tryRoute("resumen de salud")
+        assertTrue(full.handled)
+        assertTrue(full.responseText.contains("Salud", ignoreCase = true))
+    }
 }

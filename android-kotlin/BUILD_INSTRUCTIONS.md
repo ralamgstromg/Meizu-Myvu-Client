@@ -102,3 +102,17 @@ Para verificar que todos los codecs TLV/Protobuf, la capa de transporte Coroutin
 ```
 android-kotlin/app/build/reports/tests/testDebugUnitTest/index.html
 ```
+
+---
+
+## 6. Instalación en Dispositivo y Permisos
+
+Para instalar el APK compilado directamente en un terminal Android conectado:
+
+```bash
+# Instalar APK de debug otorgando permisos estándar de tiempo de ejecución
+adb install -r -g app/build/outputs/apk/debug/app-debug.apk
+```
+
+Para la configuración de permisos especiales indispensables (Acceso a notificaciones para HUD, Servicio de accesibilidad para Auto-Send de WhatsApp, Desbloqueo extendido Smart Lock, Asistente de voz del sistema y batería sin restricciones), consulta la guía detallada:
+👉 **[Guía de Instalación y Configuración de Permisos en Android](docs/ANDROID_SETUP_GUIDE.md)**.

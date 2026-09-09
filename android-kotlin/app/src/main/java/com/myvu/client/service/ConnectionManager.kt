@@ -782,7 +782,7 @@ class ConnectionManager(
             LogBus.log("app relay connected -- running its own session handshake")
             sendAbility(rfSession, transport)
             conn.postDelayed({
-                if (rfSession?.ready != true && rfcomm === transport) {
+                if (rfSession?.authConfirmed != true && rfcomm === transport) {
                     LogBus.log("-> ability handshake retry (session=$sessionId)")
                     sendAbility(rfSession, transport)
                 }
@@ -980,7 +980,7 @@ class ConnectionManager(
             }
             conn.postDelayed({
                 supervisor?.wake()
-            }, 800)
+            }, 2500)
         }
     }
 
@@ -1389,7 +1389,7 @@ class ConnectionManager(
     companion object {
         private const val DEVICE_NAME = "MyvuAndroid"
         private const val CATEGORY_ID = "9999"
-        private const val RELAY_ESTABLISH_TIMEOUT_MS = 6000L
+        private const val RELAY_ESTABLISH_TIMEOUT_MS = 10000L
         private const val RECONNECT_BASE_MS = 2000L
         private const val RECONNECT_MAX_MS = 60000L
 

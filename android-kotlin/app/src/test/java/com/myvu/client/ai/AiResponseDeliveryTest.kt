@@ -99,6 +99,31 @@ class AiResponseDeliveryTest {
     }
 
     @Test
+    fun deliversCleanPlainTextWithoutMarkdownOrThousandsSeparators() {
+        val sent = mutableListOf<String>()
+        val speaker = RecordingSpeaker()
+        val delivery = AiResponseDelivery(
+            sender = { sent += it },
+            tts = speaker,
+            isSessionActive = { true },
+            onFinished = {},
+            mode = AiResponseMode.VOICE_AND_VISUAL
+        )
+
+        val raw = "### 📌 Resultado\n• **Total:** $ 1,250.50 COP\n• **Pasos:** 10,000 pasos"
+        delivery.deliver(AiResponse("s1", raw, true))
+
+        val deliveredText = speaker.lastText ?: ""
+        org.junit.Assert.assertFalse("No markdown headers", deliveredText.contains("#"))
+        org.junit.Assert.assertFalse("No markdown asterisks", deliveredText.contains("*"))
+        org.junit.Assert.assertFalse("No dollar sign", deliveredText.contains("$"))
+        org.junit.Assert.assertFalse("No thousands comma in currency", deliveredText.contains("1,250"))
+        org.junit.Assert.assertFalse("No thousands comma in steps", deliveredText.contains("10,000"))
+        assertTrue("Contains clean decimal number", deliveredText.contains("1250.50 COP"))
+        assertTrue("Contains clean step count", deliveredText.contains("10000 pasos"))
+    }
+
+    @Test
     fun ttsCallbackCanBeDelayedUntilPlaybackCompletes() {
         val sent = mutableListOf<String>()
         var finished = false

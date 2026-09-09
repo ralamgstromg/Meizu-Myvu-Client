@@ -2,10 +2,14 @@ package com.myvu.client.ai
 
 import android.content.Context
 import android.content.Intent
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.media.AudioManager
 import android.net.Uri
 import android.os.SystemClock
 import android.view.KeyEvent
+import com.myvu.client.core.ContactHelper
+import com.myvu.client.core.LockScreenHelper
 import com.myvu.client.core.LogBus
 import com.myvu.client.database.NoteRepository
 import com.myvu.client.database.ReminderRepository
@@ -15,6 +19,8 @@ import com.myvu.client.reminder.ReminderScheduler
 import com.myvu.client.reminder.ReminderTimeParser
 import com.myvu.client.service.MirrorNotificationListener
 import com.myvu.client.service.MyvuService
+import com.myvu.client.service.AutoSendAccessibilityService
+import com.myvu.client.ui.SendTrampolineActivity
 import com.myvu.client.app.feature.Weather
 import java.net.URLEncoder
 
@@ -42,9 +48,25 @@ class PhoneActionExecutor(context: Context) {
                     val text = action.arguments["text"] ?: action.arguments["message"]
                     openTelegram(text)
                 }
+                "send_sms" -> {
+                    val text = action.arguments["text"] ?: action.arguments["message"] ?: action.arguments["payload"]
+                    sendSms(text)
+                }
                 "make_call" -> {
                     val target = action.arguments["target"] ?: action.arguments["number"]
                     makeCall(target)
+                }
+                "call_whatsapp" -> {
+                    val target = action.arguments["target"] ?: action.arguments["contact"] ?: action.arguments["number"]
+                    makeWhatsAppCall(target)
+                }
+                "call_teams" -> {
+                    val target = action.arguments["target"] ?: action.arguments["contact"]
+                    makeTeamsCall(target)
+                }
+                "call_google_chat", "call_meet" -> {
+                    val target = action.arguments["target"] ?: action.arguments["contact"]
+                    makeGoogleChatCall(target)
                 }
                 "web_search" -> {
                     val query = action.arguments["query"]
@@ -141,8 +163,21 @@ class PhoneActionExecutor(context: Context) {
             openTelegram(text)
         }
 
-        // 5. Calls / Dialing
-        if (lower.contains("action:call=") || lower.contains("action:call:") || lower.contains("action:call ")) {
+        // 5. Calls / Dialing (Cellular, WhatsApp, Teams, Google Chat)
+        if (lower.contains("action:call_whatsapp=")) {
+            val target = extractValue(aiText, "ACTION:CALL_WHATSAPP=")
+            makeWhatsAppCall(target)
+        } else if (lower.contains("action:call_teams=")) {
+            val target = extractValue(aiText, "ACTION:CALL_TEAMS=")
+            makeTeamsCall(target)
+        } else if (lower.contains("action:call_google=") || lower.contains("action:call_meet=") || lower.contains("action:call_chat=")) {
+            val target = extractValue(aiText, "ACTION:CALL_GOOGLE=").ifBlank {
+                extractValue(aiText, "ACTION:CALL_MEET=").ifBlank {
+                    extractValue(aiText, "ACTION:CALL_CHAT=")
+                }
+            }
+            makeGoogleChatCall(target)
+        } else if (lower.contains("action:call=") || lower.contains("action:call:") || lower.contains("action:call ")) {
             val target = extractValue(aiText, "ACTION:CALL=").ifBlank {
                 extractValue(aiText, "ACTION:CALL:").ifBlank {
                     extractValue(aiText, "ACTION:CALL ")
@@ -291,6 +326,22 @@ class PhoneActionExecutor(context: Context) {
             return stripActionTags(aiText) + "\n\n" + events
         }
 
+        // 17. Health & Wellness Metrics (Steps, Stress, Activity Summary)
+        if (lower.contains("action:health_steps") || lower.contains("action:steps")) {
+            val stepsInfo = com.myvu.client.health.HealthService.getInstance(context).getStepsSummary()
+            return stripActionTags(aiText) + "\n\n" + stepsInfo
+        }
+
+        if (lower.contains("action:health_stress") || lower.contains("action:stress")) {
+            val stressInfo = com.myvu.client.health.HealthService.getInstance(context).getStressSummary()
+            return stripActionTags(aiText) + "\n\n" + stressInfo
+        }
+
+        if (lower.contains("action:health_summary") || lower.contains("action:health")) {
+            val healthInfo = com.myvu.client.health.HealthService.getInstance(context).getFullHealthSummary()
+            return stripActionTags(aiText) + "\n\n" + healthInfo
+        }
+
         return stripActionTags(aiText)
     }
 
@@ -300,6 +351,68 @@ class PhoneActionExecutor(context: Context) {
         val target = Math.max(0, Math.min(level, max))
         am.setStreamVolume(AudioManager.STREAM_MUSIC, target, AudioManager.FLAG_SHOW_UI)
         LogBus.log("voice action -> phone volume set to $target/$max")
+    }
+
+    fun adjustVolume(increase: Boolean): String {
+        val am = audioManager ?: return "No se pudo acceder al control de audio."
+        val dir = if (increase) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER
+        am.adjustStreamVolume(AudioManager.STREAM_MUSIC, dir, AudioManager.FLAG_SHOW_UI)
+        val cur = am.getStreamVolume(AudioManager.STREAM_MUSIC)
+        val max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        val pct = if (max > 0) (cur * 100) / max else 0
+        LogBus.log("voice action -> volume adjusted (${if (increase) "+1" else "-1"}): $cur/$max ($pct%)")
+        return "Volumen ${if (increase) "subido" else "bajado"} al $pct%."
+    }
+
+    fun setRingerMode(mode: Int): String {
+        val am = audioManager ?: return "No se pudo acceder al control de sonido."
+        return try {
+            am.ringerMode = mode
+            when (mode) {
+                AudioManager.RINGER_MODE_SILENT -> {
+                    LogBus.log("voice action -> ringer mode SILENT")
+                    "Teléfono en modo silencio."
+                }
+                AudioManager.RINGER_MODE_VIBRATE -> {
+                    LogBus.log("voice action -> ringer mode VIBRATE")
+                    "Teléfono en vibración."
+                }
+                else -> {
+                    LogBus.log("voice action -> ringer mode NORMAL")
+                    "Sonido del teléfono activado."
+                }
+            }
+        } catch (e: Exception) {
+            LogBus.warn("Could not set ringer mode: ${e.message}")
+            "No se pudo cambiar el modo de sonido."
+        }
+    }
+
+    fun setFlashlight(enabled: Boolean): String {
+        return try {
+            val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as? CameraManager
+            if (cameraManager == null) {
+                "El dispositivo no cuenta con servicio de cámara para linterna."
+            } else {
+                val cameraId = cameraManager.cameraIdList.firstOrNull { id ->
+                    val chars = cameraManager.getCameraCharacteristics(id)
+                    val hasFlash = chars.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+                    val facing = chars.get(CameraCharacteristics.LENS_FACING)
+                    hasFlash && facing == CameraCharacteristics.LENS_FACING_BACK
+                } ?: cameraManager.cameraIdList.firstOrNull()
+
+                if (cameraId != null) {
+                    cameraManager.setTorchMode(cameraId, enabled)
+                    LogBus.log("voice action -> flashlight turned ${if (enabled) "ON" else "OFF"}")
+                    if (enabled) "Linterna encendida." else "Linterna apagada."
+                } else {
+                    "No se encontró flash en la cámara del dispositivo."
+                }
+            }
+        } catch (e: Exception) {
+            LogBus.error("Could not toggle flashlight", e)
+            "No se pudo controlar la linterna."
+        }
     }
 
     fun sendMediaKey(keyCode: Int) {
@@ -312,9 +425,9 @@ class PhoneActionExecutor(context: Context) {
         LogBus.log("voice action -> sent media key $keyCode")
     }
 
-    fun openAppByName(rawName: String?) {
+    fun openAppByName(rawName: String?): String {
         try {
-            if (rawName.isNullOrBlank()) return
+            if (rawName.isNullOrBlank()) return "Nombre de aplicación no especificado."
             val cleanName = normalize(rawName.trim().replace(Regex("(?i)^(abrir?\\s+(la\\s+app\\s+de\\s+|la\\s+aplicacion\\s+de\\s+|el\\s+|la\\s+)?|lanzar?\\s+)"), ""))
             val pm = context.packageManager
             val packages = pm.getInstalledPackages(0)
@@ -351,14 +464,22 @@ class PhoneActionExecutor(context: Context) {
                 val intent = pm.getLaunchIntentForPackage(bestPkg)
                 if (intent != null) {
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    context.startActivity(intent)
-                    LogBus.log("voice action -> launched app '$rawName' (pkg: $bestPkg)")
-                    return
+                    val isLocked = LockScreenHelper.isDeviceLocked(context)
+                    if (isLocked) {
+                        LockScreenHelper.wakeUpScreen(context, "MYVU:OpenApp")
+                        SendTrampolineActivity.launchWithKeyguardDismiss(context, intent)
+                    } else {
+                        context.startActivity(intent)
+                    }
+                    LogBus.log("voice action -> launched app '$rawName' (pkg: $bestPkg, locked=$isLocked)")
+                    return "Abriendo $rawName..."
                 }
             }
             LogBus.warn("voice action -> app '$rawName' not found on device")
+            return "No encontré la aplicación $rawName en el dispositivo."
         } catch (e: Exception) {
             LogBus.error("could not open app '$rawName'", e)
+            return "No se pudo abrir la aplicación $rawName."
         }
     }
 
@@ -484,94 +605,49 @@ class PhoneActionExecutor(context: Context) {
         }
     }
 
+    private fun dispatchMessagingIntent(intent: Intent, targetPackage: String? = null) {
+        val isLocked = LockScreenHelper.isDeviceLocked(context)
+        if (AutoSendAccessibilityService.isAccessibilityServiceEnabled(context)) {
+            AutoSendAccessibilityService.triggerAutoSend(targetPackage, isDeviceLocked = isLocked)
+        } else {
+            LogBus.warn("AutoSendAccessibilityService is NOT enabled in Android Settings. Message will be pre-filled, but automated send requires enabling accessibility service.")
+        }
+
+        if (isLocked) {
+            LogBus.log("PhoneActionExecutor: Device is locked, dispatching via SendTrampolineActivity ($targetPackage)")
+            try {
+                SendTrampolineActivity.launchWithKeyguardDismiss(context, intent)
+            } catch (e: Exception) {
+                LogBus.warn("Failed to launch SendTrampolineActivity, falling back to direct startActivity: ${e.message}")
+                context.startActivity(intent)
+            }
+        } else {
+            context.startActivity(intent)
+        }
+    }
+
     fun openWhatsApp(text: String?) {
         try {
             if (text.isNullOrBlank()) return
-            com.myvu.client.service.AutoSendAccessibilityService.triggerWhatsAppAutoSend()
-            val cleanRaw = text.trim()
-                .replace(Regex("(?i)^[¿¡?\\s]*(qué|que|oye|eh|ah|hola|por\\s+favor)\\s*[,.]?\\s*"), "")
-                .replace(Regex("(?i)^(enviar?|envio|envió|envia|envía|manda|mandar?|mando|mandó|mandale|escribe|escribir?|escribirle)\\s+(un\\s+)?(mensaje|whatsapp)(\\s+de\\s+whatsapp)?(\\s+a|\\s+al)?\\s*|(?i)^(a\\s+mi|a|al)\\s+"), "")
-                .trim()
+            // Wake up screen so WhatsApp activity and AccessibilityService can interact
+            LockScreenHelper.wakeUpScreen(context, "MYVU:WhatsApp")
 
-            var recipient: String? = null
-            var message = ""
+            val parsed = ContactHelper.extractRecipientAndMessage(context, text)
+            var recipient = parsed.resolvedName ?: parsed.recipientQuery
+            val message = parsed.message
+            var number = parsed.resolvedPhone
 
-            // 1. Delimitadores explícitos: ':', '|', ','
-            if (cleanRaw.contains(":") || cleanRaw.contains("|")) {
-                val parts = cleanRaw.split(Regex("[:|]"), 2)
-                recipient = parts[0].trim()
-                message = parts[1].trim()
-            } else if (cleanRaw.contains(",")) {
-                val parts = cleanRaw.split(Regex(","), 2)
-                recipient = parts[0].trim()
-                message = parts[1].trim()
-            } else {
-                // 2. Delimitadores gramaticales en español: "que diga", "diciendo", "y dile", "dile que", "con el texto"
-                val gramMatch = Regex("(?i)^(.+?)\\s+(que\\s+diga|diciendo|y\\s+dile(\\s+que)?|dile\\s+que|con\\s+el\\s+texto|con\\s+el\\s+mensaje)\\s+(.+)$").find(cleanRaw)
-                if (gramMatch != null) {
-                    recipient = gramMatch.groupValues[1].trim()
-                    message = gramMatch.groupValues[4].trim()
-                } else {
-                    // 3. Extracción heurística iterativa buscando coincidencias de contactos palabra por palabra
-                    val tokens = cleanRaw.split(Regex("\\s+"))
-                    var foundRecipient: String? = null
-                    var foundMessage = cleanRaw
-                    var bestCandidateScore = 0
-
-                    for (i in 1..Math.min(4, tokens.size)) {
-                        val candidate = tokens.take(i).joinToString(" ")
-                        val matchInfo = lookupContactNumberWithScore(candidate)
-                        if (!matchInfo.number.isNullOrEmpty()) {
-                            if (matchInfo.isExact || matchInfo.score > bestCandidateScore) {
-                                bestCandidateScore = matchInfo.score
-                                foundRecipient = candidate
-                                foundMessage = tokens.drop(i).joinToString(" ")
-                                if (matchInfo.isExact) break
-                            }
-                        }
-                    }
-
-                    if (foundRecipient != null) {
-                        recipient = foundRecipient
-                        message = foundMessage
-                    } else {
-                        // Fallback: usar el primer token como destinatario si hay más de 1 palabra
-                        if (tokens.size >= 2) {
-                            recipient = tokens[0]
-                            message = tokens.drop(1).joinToString(" ")
-                        } else {
-                            recipient = cleanRaw
-                            message = ""
-                        }
-                    }
-                }
-            }
-
-            recipient = recipient?.replace(Regex("(?i)^(a|al|a\\s+mi)\\s+"), "")?.trim()
-
-            var number: String? = null
-            if (!recipient.isNullOrEmpty()) {
+            if (number.isNullOrEmpty() && recipient.isNotBlank()) {
                 if (recipient.matches(Regex("^[0-9+#* -]+$"))) {
                     number = recipient
                 } else {
-                    number = lookupContactNumber(recipient)
-                    if (number.isNullOrEmpty()) {
-                        val parts = recipient.split(Regex("\\s+"))
-                        for (part in parts) {
-                            if (part.length >= 3) {
-                                number = lookupContactNumber(part)
-                                if (!number.isNullOrEmpty()) break
-                            }
-                        }
-                    }
+                    val resolved = ContactHelper.resolveContactPhone(context, recipient)
+                    number = resolved?.first
+                    if (resolved != null) recipient = resolved.second
                 }
             }
 
-            var cleanNum = number?.replace(Regex("[^0-9]"), "") ?: ""
-            // Si es un celular colombiano de 10 dígitos (ej: 3011161686), anteponer el código de país 57
-            if (cleanNum.length == 10 && (cleanNum.startsWith("3") || cleanNum.startsWith("6"))) {
-                cleanNum = "57$cleanNum"
-            }
+            val cleanNum = ContactHelper.formatColombianPhone(number ?: "")
 
             val url = StringBuilder("https://api.whatsapp.com/send?")
             if (cleanNum.isNotEmpty()) {
@@ -581,17 +657,19 @@ class PhoneActionExecutor(context: Context) {
                 url.append("text=").append(URLEncoder.encode(message, "UTF-8"))
             }
 
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url.toString()))
-            intent.setPackage("com.whatsapp")
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url.toString())).apply {
+                setPackage("com.whatsapp")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
 
             try {
-                context.startActivity(intent)
-                LogBus.log("voice action -> opened WhatsApp (recipient=$recipient, phone=$cleanNum) with text: $message")
+                dispatchMessagingIntent(intent, "com.whatsapp")
+                LogBus.log("voice action -> opened WhatsApp for $recipient ($cleanNum) with text: $message")
             } catch (e: Exception) {
-                val genericIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url.toString()))
-                genericIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(genericIntent)
+                val genericIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url.toString())).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                dispatchMessagingIntent(genericIntent, null)
                 LogBus.log("voice action -> opened generic WhatsApp browser/app fallback for: $message")
             }
         } catch (e: Exception) {
@@ -599,15 +677,80 @@ class PhoneActionExecutor(context: Context) {
         }
     }
 
+    fun sendSms(text: String?) {
+        try {
+            if (text.isNullOrBlank()) return
+            val parsed = ContactHelper.extractRecipientAndMessage(context, text)
+            var recipient = parsed.resolvedName ?: parsed.recipientQuery
+            val message = parsed.message
+            var number = parsed.resolvedPhone
+
+            if (number.isNullOrEmpty() && recipient.isNotBlank()) {
+                if (recipient.matches(Regex("^[0-9+#* -]+$"))) {
+                    number = recipient
+                } else {
+                    val resolved = ContactHelper.resolveContactPhone(context, recipient)
+                    number = resolved?.first
+                    if (resolved != null) recipient = resolved.second
+                }
+            }
+
+            val cleanNum = ContactHelper.formatColombianPhone(number ?: "")
+            if (cleanNum.isEmpty()) {
+                LogBus.warn("sendSms -> No phone number found for recipient: $recipient")
+                return
+            }
+
+            val hasSmsPerm = context.checkSelfPermission(android.Manifest.permission.SEND_SMS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (hasSmsPerm) {
+                try {
+                    val smsManager = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                        context.getSystemService(android.telephony.SmsManager::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        android.telephony.SmsManager.getDefault()
+                    }
+                    val parts = smsManager.divideMessage(message)
+                    if (parts.size > 1) {
+                        smsManager.sendMultipartTextMessage(cleanNum, null, parts, null, null)
+                    } else {
+                        smsManager.sendTextMessage(cleanNum, null, message, null, null)
+                    }
+                    LogBus.log("voice action -> sent direct SMS to $recipient ($cleanNum): '$message'")
+                    return
+                } catch (e: Exception) {
+                    LogBus.warn("sendSms -> Direct SmsManager send failed: ${e.message}, falling back to intent")
+                }
+            }
+
+            // Fallback: abrir app de SMS con trampolín y auto-envío
+            LockScreenHelper.wakeUpScreen(context, "MYVU:SMS")
+            val smsUri = Uri.parse("smsto:$cleanNum")
+            val intent = Intent(Intent.ACTION_SENDTO, smsUri).apply {
+                if (message.isNotEmpty()) {
+                    putExtra("sms_body", message)
+                }
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            dispatchMessagingIntent(intent, "com.google.android.apps.messaging")
+            LogBus.log("voice action -> opened SMS app for $recipient ($cleanNum) with text: '$message'")
+        } catch (e: Exception) {
+            LogBus.error("could not send SMS", e)
+        }
+    }
+
     fun openTelegram(text: String?) {
         try {
             if (text.isNullOrBlank()) return
-            val message = text.trim()
+            LockScreenHelper.wakeUpScreen(context, "MYVU:Telegram")
+            val parsed = ContactHelper.extractRecipientAndMessage(context, text)
+            val message = if (parsed.message.isNotBlank()) parsed.message else text.trim()
 
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.data = Uri.parse("tg://msg?text=" + URLEncoder.encode(message, "UTF-8"))
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                data = Uri.parse("tg://msg?text=" + URLEncoder.encode(message, "UTF-8"))
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            dispatchMessagingIntent(intent, "org.telegram.messenger")
             LogBus.log("voice action -> opened Telegram with text: $message")
         } catch (e: Exception) {
             LogBus.error("could not open Telegram", e)
@@ -620,8 +763,7 @@ class PhoneActionExecutor(context: Context) {
     }
 
     private fun normalize(text: String): String {
-        val nfd = java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD)
-        return nfd.replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "").lowercase().trim()
+        return ContactHelper.cleanText(text)
     }
 
     fun makeCall(target: String?) {
@@ -631,19 +773,15 @@ class PhoneActionExecutor(context: Context) {
                 .replace(Regex("(?i)^(llamar?\\s+(a|al)?\\s*|marcar?\\s+(a|al)?\\s*|a\\s+mi\\s+|a\\s+|al\\s+)"), "")
                 .trim()
             var number: String? = null
+            var displayName: String = cleanTarget
 
             if (cleanTarget.matches(Regex("^[0-9+#* -]+$"))) {
                 number = cleanTarget
             } else {
-                number = lookupContactNumber(cleanTarget)
-                if (number.isNullOrEmpty()) {
-                    val parts = cleanTarget.split(Regex("\\s+"))
-                    for (part in parts) {
-                        if (part.length >= 3) {
-                            number = lookupContactNumber(part)
-                            if (!number.isNullOrEmpty()) break
-                        }
-                    }
+                val resolved = ContactHelper.resolveContactPhone(context, cleanTarget)
+                if (resolved != null) {
+                    number = resolved.first
+                    displayName = resolved.second
                 }
             }
 
@@ -658,7 +796,7 @@ class PhoneActionExecutor(context: Context) {
                             extras.putBoolean(android.telecom.TelecomManager.EXTRA_START_CALL_WITH_SPEAKERPHONE, false)
                             @android.annotation.SuppressLint("MissingPermission")
                             placeCall(tm, number, extras)
-                            LogBus.log("voice action -> TelecomManager placed direct call to $target ($number)")
+                            LogBus.log("voice action -> TelecomManager placed direct call to $displayName ($number)")
                             return
                         }
                     } catch (e: Exception) {
@@ -668,7 +806,7 @@ class PhoneActionExecutor(context: Context) {
                 intent = Intent(if (hasCallPerm) Intent.ACTION_CALL else Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(number)))
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
-                LogBus.log("voice action -> placing " + (if (hasCallPerm) "direct call" else "dialer call") + " to $target ($number)")
+                LogBus.log("voice action -> placing " + (if (hasCallPerm) "direct call" else "dialer call") + " to $displayName ($number)")
             } else {
                 intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:"))
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -680,21 +818,160 @@ class PhoneActionExecutor(context: Context) {
         }
     }
 
-    private fun levenshteinDistance(s1: String, s2: String): Int {
-        val dp = Array(s1.length + 1) { IntArray(s2.length + 1) }
-        for (i in 0..s1.length) dp[i][0] = i
-        for (j in 0..s2.length) dp[0][j] = j
-        for (i in 1..s1.length) {
-            for (j in 1..s2.length) {
-                val cost = if (s1[i - 1] == s2[j - 1]) 0 else 1
-                dp[i][j] = minOf(
-                    dp[i - 1][j] + 1,
-                    dp[i][j - 1] + 1,
-                    dp[i - 1][j - 1] + cost
-                )
+    fun makeWhatsAppCall(target: String?) {
+        try {
+            if (target.isNullOrBlank()) return
+            val cleanTarget = target.trim()
+                .replace(Regex("(?i)^(llamar?\\s+(a|al)?\\s*|marcar?\\s+(a|al)?\\s*|a\\s+mi\\s+|a\\s+|al\\s+)"), "")
+                .replace(Regex("(?i)\\s+(por|en|de)?\\s*whatsapp$"), "")
+                .trim()
+
+            LockScreenHelper.wakeUpScreen(context, "MYVU:WhatsAppCall")
+            com.myvu.client.service.AutoSendAccessibilityService.isAutoSendActive = false
+
+            var phoneNumber: String? = null
+            var displayName: String = cleanTarget
+
+            if (cleanTarget.matches(Regex("^[0-9+#* -]+$"))) {
+                phoneNumber = cleanTarget
+            } else {
+                val resolved = ContactHelper.resolveContactPhone(context, cleanTarget)
+                if (resolved != null) {
+                    phoneNumber = resolved.first
+                    displayName = resolved.second
+                }
             }
+
+            // 1. Try resolving WhatsApp VoIP dataId in ContactsContract
+            val dataId = ContactHelper.resolveWhatsAppVoipDataId(context, cleanTarget)
+                ?: (if (!phoneNumber.isNullOrEmpty()) ContactHelper.resolveWhatsAppVoipDataId(context, phoneNumber) else null)
+
+            val isLocked = LockScreenHelper.isDeviceLocked(context)
+
+            if (dataId != null && dataId > 0) {
+                val voipIntent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(
+                        android.content.ContentUris.withAppendedId(android.provider.ContactsContract.Data.CONTENT_URI, dataId),
+                        "vnd.android.cursor.item/vnd.com.whatsapp.voip.call"
+                    )
+                    `package` = "com.whatsapp"
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                if (isLocked) {
+                    SendTrampolineActivity.launchWithKeyguardDismiss(context, voipIntent)
+                } else {
+                    context.startActivity(voipIntent)
+                }
+                LogBus.log("PhoneActionExecutor -> WhatsApp direct VoIP call launched for $displayName ($phoneNumber, dataId=$dataId)")
+                return
+            }
+
+            // 2. Fallback: Open WhatsApp chat and trigger Auto-Call click
+            val formatted = if (!phoneNumber.isNullOrBlank()) ContactHelper.formatColombianPhone(phoneNumber) else ""
+            val chatUri = if (formatted.isNotBlank()) {
+                Uri.parse("https://api.whatsapp.com/send?phone=$formatted")
+            } else {
+                Uri.parse("whatsapp://send")
+            }
+
+            AutoSendAccessibilityService.triggerAutoCall("com.whatsapp", isDeviceLocked = isLocked)
+
+            val chatIntent = Intent(Intent.ACTION_VIEW, chatUri).apply {
+                `package` = "com.whatsapp"
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            if (isLocked) {
+                SendTrampolineActivity.launchWithKeyguardDismiss(context, chatIntent)
+            } else {
+                context.startActivity(chatIntent)
+            }
+            LogBus.log("PhoneActionExecutor -> WhatsApp chat call fallback dispatched for $displayName ($formatted)")
+        } catch (e: Exception) {
+            LogBus.error("could not make WhatsApp call for $target", e)
         }
-        return dp[s1.length][s2.length]
+    }
+
+    fun makeTeamsCall(target: String?) {
+        try {
+            if (target.isNullOrBlank()) return
+            val cleanTarget = target.trim()
+                .replace(Regex("(?i)^(llamar?\\s+(a|al)?\\s*|marcar?\\s+(a|al)?\\s*|a\\s+mi\\s+|a\\s+|al\\s+)"), "")
+                .replace(Regex("(?i)\\s+(por|en|de)?\\s*teams$"), "")
+                .trim()
+
+            LockScreenHelper.wakeUpScreen(context, "MYVU:TeamsCall")
+            com.myvu.client.service.AutoSendAccessibilityService.isAutoSendActive = false
+
+            // Try resolving email first, then phone
+            val emailResolved = ContactHelper.resolveContactEmail(context, cleanTarget)
+            val phoneResolved = if (emailResolved == null) ContactHelper.resolveContactPhone(context, cleanTarget) else null
+
+            val userIdentifier = emailResolved?.first ?: phoneResolved?.first ?: cleanTarget
+            val displayName = emailResolved?.second ?: phoneResolved?.second ?: cleanTarget
+
+            val teamsUri = Uri.parse("https://teams.microsoft.com/l/call/0/0?users=" + Uri.encode(userIdentifier))
+            val intent = Intent(Intent.ACTION_VIEW, teamsUri).apply {
+                `package` = "com.microsoft.teams"
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            val isLocked = LockScreenHelper.isDeviceLocked(context)
+            if (isLocked) {
+                SendTrampolineActivity.launchWithKeyguardDismiss(context, intent)
+            } else {
+                try {
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    openAppByName("teams")
+                }
+            }
+            LogBus.log("PhoneActionExecutor -> Teams call dispatched to $displayName ($userIdentifier)")
+        } catch (e: Exception) {
+            LogBus.error("could not make Teams call for $target", e)
+        }
+    }
+
+    fun makeGoogleChatCall(target: String?) {
+        try {
+            if (target.isNullOrBlank()) return
+            val cleanTarget = target.trim()
+                .replace(Regex("(?i)^(llamar?\\s+(a|al)?\\s*|marcar?\\s+(a|al)?\\s*|a\\s+mi\\s+|a\\s+|al\\s+)"), "")
+                .replace(Regex("(?i)\\s+(por|en|de)?\\s*(google chat|google meet|meet|chat)$"), "")
+                .trim()
+
+            LockScreenHelper.wakeUpScreen(context, "MYVU:GoogleCall")
+            com.myvu.client.service.AutoSendAccessibilityService.isAutoSendActive = false
+
+            val emailResolved = ContactHelper.resolveContactEmail(context, cleanTarget)
+            val phoneResolved = if (emailResolved == null) ContactHelper.resolveContactPhone(context, cleanTarget) else null
+
+            val userIdentifier = emailResolved?.first ?: phoneResolved?.first ?: cleanTarget
+            val displayName = emailResolved?.second ?: phoneResolved?.second ?: cleanTarget
+
+            // Try Meet / Duo call deep link
+            val meetUri = Uri.parse("https://meet.google.com/call/" + Uri.encode(userIdentifier))
+            val intent = Intent(Intent.ACTION_VIEW, meetUri).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            val isLocked = LockScreenHelper.isDeviceLocked(context)
+            if (isLocked) {
+                SendTrampolineActivity.launchWithKeyguardDismiss(context, intent)
+            } else {
+                try {
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    openAppByName("meet")
+                }
+            }
+            LogBus.log("PhoneActionExecutor -> Google Chat/Meet call dispatched to $displayName ($userIdentifier)")
+        } catch (e: Exception) {
+            LogBus.error("could not make Google Chat call for $target", e)
+        }
+    }
+
+    private fun levenshteinDistance(s1: String, s2: String): Int {
+        return ContactHelper.levenshteinDistance(s1, s2)
     }
 
     data class ContactMatchInfo(
@@ -705,84 +982,16 @@ class PhoneActionExecutor(context: Context) {
 
     fun lookupContactNumberWithScore(name: String?): ContactMatchInfo {
         if (name.isNullOrBlank()) return ContactMatchInfo(null, 0, false)
-        if (context.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            LogBus.warn("READ_CONTACTS permission not granted -- cannot lookup $name")
-            return ContactMatchInfo(null, 0, false)
+        val match = ContactHelper.findBestContactMatch(context, name)
+        return if (match != null) {
+            ContactMatchInfo(match.number, match.score, match.isExact)
+        } else {
+            ContactMatchInfo(null, 0, false)
         }
-        try {
-            val normalizedSearch = normalize(name)
-            val searchTokens = normalizedSearch.split(Regex("\\s+")).filter { it.length >= 2 }
-
-            var bestNumber: String? = null
-            var bestScore = Int.MIN_VALUE
-            var bestIsExact = false
-
-            context.contentResolver.query(
-                android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                arrayOf(
-                    android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER,
-                    android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME
-                ),
-                null,
-                null,
-                null
-            )?.use { cursor ->
-                val numIdx = cursor.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
-                val nameIdx = cursor.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
-                if (numIdx >= 0 && nameIdx >= 0) {
-                    while (cursor.moveToNext()) {
-                        val contactName = cursor.getString(nameIdx) ?: continue
-                        val contactNumber = cursor.getString(numIdx) ?: continue
-                        val normalizedContact = normalize(contactName)
-                        val contactTokens = normalizedContact.split(Regex("\\s+")).filter { it.length >= 2 }
-
-                        // 1. Coincidencia Exacta
-                        if (normalizedContact == normalizedSearch) {
-                            LogBus.log("contact exact match -> '$name' matched number ($contactNumber)")
-                            return ContactMatchInfo(contactNumber, 200, true)
-                        }
-
-                        // 2. Cálculo de puntuación por proximidad y tokens compartidos (FTS)
-                        var currentScore = 0
-                        if (normalizedContact.contains(normalizedSearch)) {
-                            currentScore += 100
-                        }
-
-                        for (sToken in searchTokens) {
-                            for (cToken in contactTokens) {
-                                if (sToken == cToken) {
-                                    currentScore += 50
-                                } else if (cToken.contains(sToken) || sToken.contains(cToken)) {
-                                    currentScore += 25
-                                } else {
-                                    val dist = levenshteinDistance(sToken, cToken)
-                                    val maxLen = maxOf(sToken.length, cToken.length)
-                                    if (maxLen > 3 && dist <= 2) {
-                                        currentScore += (20 - (dist * 5))
-                                    }
-                                }
-                            }
-                        }
-
-                        if (currentScore > bestScore && currentScore >= 15) {
-                            bestScore = currentScore
-                            bestNumber = contactNumber
-                        }
-                    }
-                }
-            }
-            if (bestNumber != null) {
-                LogBus.log("contact fuzzy match -> '$name' matched number ($bestScore pts)")
-                return ContactMatchInfo(bestNumber, bestScore, false)
-            }
-        } catch (e: Exception) {
-            LogBus.warn("could not lookup contact: ${e.message}")
-        }
-        return ContactMatchInfo(null, 0, false)
     }
 
     private fun lookupContactNumber(name: String?): String? {
-        return lookupContactNumberWithScore(name).number
+        return ContactHelper.findBestContactMatch(context, name ?: "")?.number
     }
 
     fun queryExternal(query: String?, callback: (String, Boolean) -> Unit) {

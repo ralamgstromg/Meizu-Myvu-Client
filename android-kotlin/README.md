@@ -87,7 +87,9 @@ Ubicadas en `app/src/main/assets/skills/built-in/`:
 | `smart-ocr-scanner` | Escaneo y reconocimiento de texto óptico. |
 | `create-note` / `create-reminder` | Creación rápida de notas y recordatorios sincronizados. |
 | `call-contact` | Marcación rápida de contactos del teléfono mediante comandos de voz. |
+| `voip-call` | Llamadas VoIP por WhatsApp, Microsoft Teams o Google Chat/Meet. |
 | `send-whatsapp` / `send-telegram` | Redacción y envío asistido de mensajes instantáneos. |
+| `health-summary` | Resumen de pasos diarios, nivel de estrés, ritmo cardíaco y actividad física. |
 | `unread-notifications` | Resumen de notificaciones pendientes leídas en el HUD. |
 | `weather-forecast` | Consulta meteorológica en tiempo real proyectada en el display. |
 | `google-search` / `duckduckgo-search` | Respuestas rápidas de motores de búsqueda. |
@@ -120,8 +122,36 @@ Para generar versiones firmadas para producción, consultar la [Guía de Constru
 
 ---
 
+## 📲 Instalación y Configuración en Android
+
+Para instrucciones completas paso a paso, consulta la [Guía de Instalación y Configuración de Permisos](docs/ANDROID_SETUP_GUIDE.md).
+
+### Instalación Rápida
+```bash
+# Instalar APK en el dispositivo y otorgar permisos estándar
+adb install -r -g app/build/outputs/apk/debug/app-debug.apk
+```
+
+### ⚙️ Permisos y Ajustes del Sistema Indispensables
+1. **Permisos de la Aplicación** (`Ajustes -> Aplicaciones -> MyVU Client -> Permisos`):
+   - **Dispositivos cercanos** (`BLUETOOTH_CONNECT`, `BLUETOOTH_SCAN`)
+   - **Ubicación** (`ACCESS_FINE_LOCATION`)
+   - **Contactos** (`READ_CONTACTS`)
+   - **Teléfono y SMS** (`CALL_PHONE`, `SEND_SMS`)
+   - **Cámara** (`CAMERA` - para linterna y OCR)
+   - **Micrófono** (`RECORD_AUDIO`)
+   - **Calendario** (`READ_CALENDAR`, `WRITE_CALENDAR`)
+2. **Acceso a Notificaciones** (`Ajustes -> Notificaciones -> Acceso a notificaciones`): Activar **MyVU Client** para proyectar alertas y mensajes en el HUD.
+3. **Servicio de Accesibilidad** (`Ajustes -> Accesibilidad -> MyVU Auto Send Service`): Activar para permitir el envío automático de WhatsApp y Telegram sin pulsar la pantalla *(si aparece "Ajuste restringido", ir a información de app -> menú 3 puntos -> Permitir ajustes restringidos)*.
+4. **Desbloqueo Extendido / Smart Lock** (`Ajustes -> Seguridad -> Desbloqueo extendido -> Dispositivos de confianza`): Añadir las gafas **MYVU** para permitir el envío de WhatsApp/Telegram y control de apps con el teléfono en el bolsillo sin requerir PIN.
+5. **Asistente Digital Predeterminado** (`Ajustes -> Aplicaciones -> Aplicaciones predeterminadas -> Aplicación de asistente digital`): Seleccionar **MyVU Client**.
+6. **Batería sin Restricciones** (`Ajustes -> Aplicaciones -> MyVU Client -> Batería`): Seleccionar **Sin restricciones** para evitar que Android mate el servicio en reposo.
+
+---
+
 ## 📖 Documentación Adicional
 
+- [Guía de Instalación y Permisos en Android](docs/ANDROID_SETUP_GUIDE.md): Paso a paso detallado para configuración de permisos estándar y especiales.
 - [Arquitectura Técnica y Protocolos](docs/ARCHITECTURE.md): Explicación detallada de frames TLV, enlace Bluetooth y motor de habilidades.
 - [Registro de Memoria y Contexto](docs/PROJECT_MEMORY.md): Bitácora de decisiones, historial de ajustes y memoria persistente.
 - [Planes de Implementación](docs/superpowers/plans/): Planes arquitectónicos por feature o tarea.

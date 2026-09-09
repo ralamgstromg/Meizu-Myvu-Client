@@ -33,13 +33,13 @@ object SkillExecutor {
         val result = handler.execute(context, jsonArgs)
 
         val userFeedback = if (result.success) {
-            "⚡ [Acción Ejecutada: ${result.message}]"
+            result.message
         } else {
-            "⚠️ [Error al ejecutar acción: ${result.message}]"
+            "Error al ejecutar acción: ${result.message}"
         }
 
         // Clean tag from output or append result feedback
         val cleanText = llmResponse.replace(match.value, "").trim()
-        return if (cleanText.isEmpty()) userFeedback else "$cleanText\n\n$userFeedback"
+        return if (cleanText.isEmpty()) userFeedback else "$cleanText $userFeedback"
     }
 }

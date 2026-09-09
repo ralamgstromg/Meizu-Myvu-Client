@@ -13,6 +13,7 @@ import com.myvu.client.skills.handlers.DuckDuckGoSearchHandler
 import com.myvu.client.skills.handlers.GoogleSearchHandler
 import com.myvu.client.skills.handlers.NewsSearchHandler
 import com.myvu.client.skills.handlers.SendEmailHandler
+import com.myvu.client.skills.handlers.SendSmsHandler
 import com.myvu.client.skills.handlers.SendTelegramHandler
 import com.myvu.client.skills.handlers.SendWhatsappHandler
 import com.myvu.client.skills.handlers.HudNavigationHandler
@@ -31,6 +32,8 @@ import com.myvu.client.skills.handlers.SmartTranslateHudHandler
 import com.myvu.client.skills.handlers.RagHistorySearchHandler
 import com.myvu.client.skills.handlers.QuickAlarmTimerHandler
 import com.myvu.client.skills.handlers.OpenAppHandler
+import com.myvu.client.skills.handlers.VoipCallHandler
+import com.myvu.client.skills.handlers.HealthSummaryHandler
 
 object SkillRegistry {
 
@@ -43,7 +46,9 @@ object SkillRegistry {
 
         // 1. Register Built-in Kotlin Handlers
         registerHandler("call-contact", CallContactHandler())
+        registerHandler("voip-call", VoipCallHandler())
         registerHandler("send-email", SendEmailHandler())
+        registerHandler("send-sms", SendSmsHandler())
         registerHandler("send-whatsapp", SendWhatsappHandler())
         registerHandler("send-telegram", SendTelegramHandler())
         registerHandler("google-search", GoogleSearchHandler())
@@ -63,6 +68,7 @@ object SkillRegistry {
         registerHandler("unread-telegram-summary", UnreadTelegramSummaryHandler())
         registerHandler("x-twitter-search", XTwitterSearchHandler())
         registerHandler("hud-navigation", HudNavigationHandler())
+        registerHandler("health-summary", HealthSummaryHandler())
 
         // Productivity Skills
         registerHandler("smart-ocr-scanner", SmartOcrScannerHandler())
@@ -105,7 +111,8 @@ object SkillRegistry {
     fun buildNativeToolsSystemPrompt(): String {
         return "\n\n### Capacidades Agénticas (Native Tools)\n" +
                 "Tienes acceso a herramientas nativas en el dispositivo Android sincronizado con las gafas MEIZU MYVU. " +
-                "Úsalas de forma autónoma mediante Function Calling cuando el usuario solicite una acción o requieras información del entorno."
+                "Úsalas de forma autónoma mediante Function Calling cuando el usuario solicite una acción o requieras información del entorno. " +
+                "Responde siempre en texto plano sin markdown ni asteriscos. En números y divisas no uses separadores de miles y usa únicamente el punto '.' como separador decimal (ej: 1250.50 y 4500 COP)."
     }
 
     /**
@@ -116,7 +123,8 @@ object SkillRegistry {
 
         val sb = StringBuilder()
         sb.append("\n\n### Identidad y Habilidades Disponibles (Skills)\n")
-        sb.append("Te llamas Aura. Responde siempre en Español con configuración regional de Colombia (es-CO, COP $).\n")
+        sb.append("Te llamas Aura. Responde siempre en Español con configuración regional de Colombia (es-CO, peso COP).\n")
+        sb.append("Responde siempre en texto plano sin markdown ni asteriscos. En números y divisas no uses separadores de miles y usa únicamente el punto '.' como separador decimal (ej: 1250.50 y 4500 COP).\n")
         sb.append("Tienes acceso a habilidades nativas en el dispositivo. Si el usuario te pide ejecutar una de estas acciones (o si es necesario para responder), debes responder INCLUYENDO una llamada a la habilidad con el siguiente formato exacto:\n")
         sb.append("[SKILL: id_habilidad {\"param1\": \"valor1\", ...}]\n\n")
         sb.append("Lista de habilidades activas:\n")

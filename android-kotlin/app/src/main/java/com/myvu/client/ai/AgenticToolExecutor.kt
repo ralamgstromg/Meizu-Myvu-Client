@@ -5,6 +5,7 @@ import com.myvu.client.core.LogBus
 import com.myvu.client.core.Prefs
 import com.myvu.client.skills.SkillRegistry
 import com.myvu.client.skills.SkillToolConverter
+import java.text.Normalizer
 import org.json.JSONObject
 
 /**
@@ -41,7 +42,8 @@ class AgenticToolExecutor(
         maxTurns: Int = 4,
         onToolAction: ((ExecutedToolAction) -> Unit)? = null
     ): AgenticExecutionResult {
-        val tools = SkillRegistry.getToolDefinitions()
+        val allTools = SkillRegistry.getToolDefinitions()
+        val tools = pruneToolsForQuery(userQuery, allTools)
         val messages = mutableListOf<ChatMessage>()
 
         // 1. System Prompt as first-class message
@@ -163,5 +165,114 @@ class AgenticToolExecutor(
             executedActions = executedActions,
             totalTurns = turns
         )
+    }
+
+    companion object {
+        fun pruneToolsForQuery(query: String, allTools: List<ToolDefinition>): List<ToolDefinition> {
+            val q = Normalizer.normalize(query, Normalizer.Form.NFD)
+                .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+                .lowercase()
+                .trim()
+
+            val selectedToolNames = mutableSetOf<String>()
+
+            // Always add general knowledge, web search and calculator fallback tools
+            selectedToolNames.add("google_search")
+            selectedToolNames.add("wikipedia_search")
+            selectedToolNames.add("duckduckgo_search")
+            selectedToolNames.add("code_calculator_math")
+
+            // Communication: Calls
+            if (q.contains("llama") || q.contains("marcar") || q.contains("contacto") || q.contains("telefono")) {
+                selectedToolNames.add("call_contact")
+            }
+
+            // Communication: Messaging (WhatsApp, Telegram, Email)
+            if (q.contains("whatsapp") || q.contains("mensaje") || q.contains("escribe") || q.contains("telegram") || q.contains("correo") || q.contains("email")) {
+                selectedToolNames.add("send_whatsapp")
+                selectedToolNames.add("send_telegram")
+                selectedToolNames.add("send_email")
+                selectedToolNames.add("unread_whatsapp_summary")
+                selectedToolNames.add("unread_telegram_summary")
+                selectedToolNames.add("unread_emails_summary")
+            }
+
+            // Alarms and Timers
+            if (q.contains("alarma") || q.contains("temporizador") || q.contains("despiertame") || q.contains("cuenta regresiva")) {
+                selectedToolNames.add("quick_alarm_timer")
+            }
+
+            // Notes and Reminders
+            if (q.contains("nota") || q.contains("recordatorio") || q.contains("anota") || q.contains("recuerdame") || q.contains("apunta")) {
+                selectedToolNames.add("create_note")
+                selectedToolNames.add("create_reminder")
+            }
+
+            // Voice Recorder
+            if (q.contains("graba") || q.contains("audio") || q.contains("dictado")) {
+                selectedToolNames.add("ai_voice_recorder")
+            }
+
+            // Calendar and Agenda
+            if (q.contains("reunion") || q.contains("agenda") || q.contains("calendario") || q.contains("evento") || q.contains("cita") || q.contains("compromiso")) {
+                selectedToolNames.add("calendar_events")
+                selectedToolNames.add("smart_agenda_planner")
+            }
+
+            // Weather
+            if (q.contains("clima") || q.contains("temperatura") || q.contains("tiempo") || q.contains("pronostico") || q.contains("lluvia") || q.contains("llover")) {
+                selectedToolNames.add("weather_forecast")
+            }
+
+            // Currency & Finance
+            if (q.contains("dolar") || q.contains("euro") || q.contains("peso") || q.contains("moneda") || q.contains("tasa") || q.contains("cambio") || q.contains("cop") || q.contains("usd") || q.contains("eur")) {
+                selectedToolNames.add("currency_rate")
+                selectedToolNames.add("currency_convert")
+            }
+
+            // News / Social
+            if (q.contains("noticia") || q.contains("titular") || q.contains("twitter") || q.contains("tweet") || q.contains(" x ")) {
+                selectedToolNames.add("news_search")
+                selectedToolNames.add("x_twitter_search")
+            }
+
+            // Navigation
+            if (q.contains("navega") || q.contains("mapa") || q.contains("como llegar") || q.contains("ruta") || q.contains("direccion")) {
+                selectedToolNames.add("hud_navigation")
+            }
+
+            // App opening
+            if (q.contains("abre") || q.contains("abrir") || q.contains("lanza") || q.contains("aplicacion") || q.contains("app")) {
+                selectedToolNames.add("open_app")
+            }
+
+            // Translation
+            if (q.contains("traduce") || q.contains("traducir") || q.contains("traduccion") || q.contains("en ingles") || q.contains("en frances")) {
+                selectedToolNames.add("smart_translate_hud")
+            }
+
+            // OCR / Camera
+            if (q.contains("escanea") || q.contains("foto") || q.contains("imagen") || q.contains("texto en") || q.contains("lee la")) {
+                selectedToolNames.add("smart_ocr_scanner")
+            }
+
+            // History / Memory
+            if (q.contains("recuerdas") || q.contains("dijiste") || q.contains("historial") || q.contains("conversacion previa")) {
+                selectedToolNames.add("rag_history_search")
+            }
+
+            // Web summarizer
+            if (q.contains("pagina") || q.contains("link") || q.contains("url") || q.contains("web") || q.contains("articulo")) {
+                selectedToolNames.add("web_page_summarizer")
+            }
+
+            // Notifications
+            if (q.contains("notificacion") || q.contains("notificaciones") || q.contains("avisos")) {
+                selectedToolNames.add("unread_notifications")
+            }
+
+            val filtered = allTools.filter { tool -> selectedToolNames.contains(tool.name) }
+            return if (filtered.isNotEmpty()) filtered else allTools
+        }
     }
 }

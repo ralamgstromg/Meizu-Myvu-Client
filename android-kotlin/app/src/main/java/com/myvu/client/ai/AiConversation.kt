@@ -534,17 +534,21 @@ class AiConversation(
         val endpoint = Prefs.aiEndpoint(context, aiProviderId)
         LogBus.log("AI_REQUEST_STARTED sessionId=$sessionId provider=$aiProviderId model='$model' endpoint='$endpoint' questionLength=${question.length}")
         val basePrompt = Prefs.systemPrompt(context)
-        val prompt = basePrompt + com.myvu.client.skills.SkillRegistry.buildSystemPromptAddendum()
-        val client = provider.newClient(context, apiKey, model, endpoint, prompt)
+        var client = provider.newClient(context, apiKey, model, endpoint, basePrompt)
+        if (!client.supportsToolCalling()) {
+            val legacyPrompt = basePrompt + com.myvu.client.skills.SkillRegistry.buildSystemPromptAddendum()
+            client = provider.newClient(context, apiKey, model, endpoint, legacyPrompt)
+        }
         if (!client.isConfigured()) {
             LogBus.warn("$aiProviderId is not fully configured -- check Settings")
             deliverError("El agente no está configurado. Revisa los ajustes.")
             return
         }
+        val turnSessionId = sessionId
         worker.execute {
             val contextPayload = buildContextPayload()
             val fullPrompt = contextPayload + question
-            LogBus.log("AI prompt prepared sessionId=$sessionId contextLength=${contextPayload.length} questionLength=${question.length}")
+            LogBus.log("AI prompt prepared sessionId=$turnSessionId contextLength=${contextPayload.length} questionLength=${question.length}")
 
             if (client.supportsToolCalling()) {
                 val executor = AgenticToolExecutor(context, client)
@@ -555,8 +559,14 @@ class AiConversation(
                             systemPrompt = basePrompt
                         )
                     }
-                    LogBus.log("AI_AGENTIC_RESPONSE sessionId=$sessionId turns=${result.totalTurns} actions=${result.executedActions.size}")
-                    main.post { deliverFinal(result.finalAnswer, AiResponse.Source.AI) }
+                    LogBus.log("AI_AGENTIC_RESPONSE sessionId=$turnSessionId turns=${result.totalTurns} actions=${result.executedActions.size}")
+                    main.post {
+                        if (!active || turnSessionId != sessionId) {
+                            LogBus.log("AI: discarded agentic response from abandoned turn $turnSessionId")
+                            return@post
+                        }
+                        deliverFinal(result.finalAnswer, AiResponse.Source.AI)
+                    }
                     return@execute
                 } catch (e: Exception) {
                     LogBus.error("$aiProviderId tool-calling request failed, falling back to ask()", e)
@@ -568,16 +578,28 @@ class AiConversation(
                 answer = client.ask(fullPrompt)
             } catch (e: Exception) {
                 LogBus.error("$aiProviderId request failed", e)
-                main.post { deliverError("No pude consultar el agente en este momento.") }
+                main.post {
+                    if (!active || turnSessionId != sessionId) {
+                        LogBus.log("AI: discarded error from abandoned turn $turnSessionId")
+                        return@post
+                    }
+                    deliverError("No pude consultar el agente en este momento.")
+                }
                 return@execute
             }
-            LogBus.log("AI_RESPONSE_RECEIVED sessionId=$sessionId answerLength=${answer?.length ?: 0}")
-            main.post { deliver(answer) }
+            LogBus.log("AI_RESPONSE_RECEIVED sessionId=$turnSessionId answerLength=${answer.length}")
+            main.post {
+                if (!active || turnSessionId != sessionId) {
+                    LogBus.log("AI: discarded response from abandoned turn $turnSessionId")
+                    return@post
+                }
+                deliver(answer, turnSessionId)
+            }
         }
     }
 
-    private fun deliver(rawAnswer: String?) {
-        if (!active) return
+    private fun deliver(rawAnswer: String?, turnSessionId: String = sessionId) {
+        if (!active || turnSessionId != sessionId) return
 
         if (rawAnswer.isNullOrBlank()) {
             deliverError("No pude obtener respuesta del agente.")
@@ -776,6 +798,7 @@ class AiConversation(
     private fun abandon() {
         active = false
         cancelPendingTool()
+        try { tts.stop() } catch (_: Exception) {}
         stopRequested = false
         mic.stop()
         decoding = false

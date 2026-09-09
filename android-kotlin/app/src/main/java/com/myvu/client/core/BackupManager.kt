@@ -199,7 +199,11 @@ object BackupManager {
             try {
                 val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "MYVU").apply { mkdirs() }
                 val publicBackupFile = File(publicDir, "data.zip")
-                zipFile.copyTo(publicBackupFile, overwrite = true)
+                FileOutputStream(publicBackupFile).use { out ->
+                    zipFile.inputStream().use { input ->
+                        input.copyTo(out)
+                    }
+                }
                 LogBus.log("BackupManager -> Saved copy in Downloads/MYVU/data.zip")
             } catch (e: Exception) {
                 LogBus.log("BackupManager -> Could not copy to public Downloads: ${e.message}")

@@ -24,17 +24,10 @@ class AiResponseDelivery(
     private var cancelled = false
     private var ttsRequested = false
 
-        private fun cleanResponseText(raw: String): String {
-            var cleaned = raw
-            cleaned = SYSTEM_CONTEXT_REGEX.replace(cleaned, "").trim()
-            cleaned = GEMMA_HEADER_REGEX.replace(cleaned, "").trim()
-            cleaned = MULTI_SPACE_REGEX.replace(cleaned, " ").trim()
-            return cleaned.ifEmpty { raw }
-        }
-
-        private val SYSTEM_CONTEXT_REGEX = Regex("\\[Contexto del Sistema:[^\\]]*\\]", RegexOption.IGNORE_CASE)
-        private val GEMMA_HEADER_REGEX = Regex("^Respuesta local[^\n:]*:\\s*", RegexOption.IGNORE_CASE)
-        private val MULTI_SPACE_REGEX = Regex("\\s+")
+    private fun cleanResponseText(raw: String): String {
+        val cleaned = com.myvu.client.core.MarkdownUtils.formatCleanPlainTextForGlasses(raw)
+        return cleaned.ifEmpty { raw.trim() }
+    }
 
         fun deliver(response: AiResponse): Boolean {
         if (!isSessionActive(response.sessionId)) {

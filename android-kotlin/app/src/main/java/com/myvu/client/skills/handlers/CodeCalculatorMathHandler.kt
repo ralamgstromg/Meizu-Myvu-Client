@@ -16,8 +16,12 @@ import java.util.Stack
  */
 class CodeCalculatorMathHandler : SkillHandler {
 
-    private val copFormat = NumberFormat.getCurrencyInstance(Locale("es", "CO")).apply {
-        maximumFractionDigits = 0
+    private fun formatCop(amount: Double): String {
+        return if (amount % 1.0 == 0.0) {
+            "${amount.toLong()} COP"
+        } else {
+            String.format(Locale.US, "%.2f COP", amount)
+        }
     }
 
     override suspend fun execute(context: Context, args: JSONObject): SkillResult {
@@ -55,14 +59,7 @@ class CodeCalculatorMathHandler : SkillHandler {
         val reteFuenteVal = amount * reteFuenteRate
         val netPayable = totalWithIva - reteFuenteVal
 
-        return """
-🧮 **Liquidación Tributaria Colombia (COP)**
-• Base Gravable: ${copFormat.format(amount)}
-• IVA (19%): ${copFormat.format(ivaVal)}
-• Subtotal + IVA: ${copFormat.format(totalWithIva)}
-• ReteFuente (3.5% servicios/compras): -${copFormat.format(reteFuenteVal)}
-• **Neto a Pagar:** **${copFormat.format(netPayable)}**
-        """.trimIndent()
+        return "Liquidación Tributaria Colombia: Base Gravable: ${formatCop(amount)}. IVA (19%): ${formatCop(ivaVal)}. Subtotal + IVA: ${formatCop(totalWithIva)}. ReteFuente (3.5%): -${formatCop(reteFuenteVal)}. Neto a Pagar: ${formatCop(netPayable)}."
     }
 
     private fun computeLoanInterest(expr: String): String {
@@ -73,14 +70,7 @@ class CodeCalculatorMathHandler : SkillHandler {
         val totalPayable = amount + totalInterest
         val monthlyQuota = totalPayable / months
 
-        return """
-🏦 **Simulador de Crédito ($months Meses)**
-• Monto: ${copFormat.format(amount)}
-• Tasa Estimada: 1.8% M.V.
-• Cuota Mensual Estimada: ${copFormat.format(monthlyQuota)}
-• Total Intereses: ${copFormat.format(totalInterest)}
-• **Total Final a Pagar:** **${copFormat.format(totalPayable)}**
-        """.trimIndent()
+        return "Simulador de Crédito ($months Meses): Monto: ${formatCop(amount)}. Tasa Estimada: 1.8% M.V. Cuota Mensual: ${formatCop(monthlyQuota)}. Total Intereses: ${formatCop(totalInterest)}. Total Final a Pagar: ${formatCop(totalPayable)}."
     }
 
     private fun computeUnitConversion(expr: String): String {
@@ -90,29 +80,35 @@ class CodeCalculatorMathHandler : SkillHandler {
         return when {
             clean.contains("km") && (clean.contains("milla") || clean.contains("mi")) -> {
                 val miles = num * 0.621371
-                "🔄 **Conversión**: $num km = **${String.format(Locale.US, "%.2f", miles)} millas**."
+                val milesStr = String.format(Locale.US, "%.2f", miles)
+                "Conversión: $num km = $milesStr millas."
             }
             clean.contains("milla") && clean.contains("km") -> {
                 val km = num * 1.60934
-                "🔄 **Conversión**: $num millas = **${String.format(Locale.US, "%.2f", km)} km**."
+                val kmStr = String.format(Locale.US, "%.2f", km)
+                "Conversión: $num millas = $kmStr km."
             }
             clean.contains("c") && clean.contains("f") -> {
                 val f = (num * 9 / 5) + 32
-                "🌡️ **Temperatura**: $num °C = **${String.format(Locale.US, "%.1f", f)} °F**."
+                val fStr = String.format(Locale.US, "%.1f", f)
+                "Temperatura: $num °C = $fStr °F."
             }
             clean.contains("f") && clean.contains("c") -> {
                 val c = (num - 32) * 5 / 9
-                "🌡️ **Temperatura**: $num °F = **${String.format(Locale.US, "%.1f", c)} °C**."
+                val cStr = String.format(Locale.US, "%.1f", c)
+                "Temperatura: $num °F = $cStr °C."
             }
             clean.contains("kg") && (clean.contains("libra") || clean.contains("lb")) -> {
                 val lbs = num * 2.20462
-                "⚖️ **Peso**: $num kg = **${String.format(Locale.US, "%.2f", lbs)} libras**."
+                val lbsStr = String.format(Locale.US, "%.2f", lbs)
+                "Peso: $num kg = $lbsStr libras."
             }
             clean.contains("lb") && clean.contains("kg") -> {
                 val kg = num / 2.20462
-                "⚖️ **Peso**: $num libras = **${String.format(Locale.US, "%.2f", kg)} kg**."
+                val kgStr = String.format(Locale.US, "%.2f", kg)
+                "Peso: $num libras = $kgStr kg."
             }
-            else -> "🔄 **Conversión**: Expresión evaluada para '$expr'."
+            else -> "Conversión: Expresión evaluada para '$expr'."
         }
     }
 
@@ -130,9 +126,9 @@ class CodeCalculatorMathHandler : SkillHandler {
             } else {
                 String.format(Locale.US, "%.4f", result).trimEnd('0').trimEnd('.')
             }
-            "🧮 **Resultado**: `$expr` = **$formattedResult**"
+            "Resultado: $expr = $formattedResult"
         } catch (e: Exception) {
-            "🧮 **Resultado**: `$expr` procesado."
+            "Resultado: $expr procesado."
         }
     }
 

@@ -192,6 +192,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
     override fun onResume() {
         super.onResume()
         updateDashboardData()
+        com.myvu.client.health.HealthService.getInstance(this).registerHardwareSensor()
     }
 
     override fun onStop() {
@@ -864,6 +865,9 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             addIfMissing(needed, Manifest.permission.POST_NOTIFICATIONS)
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            addIfMissing(needed, Manifest.permission.ACTIVITY_RECOGNITION)
+        }
         addIfMissing(needed, Manifest.permission.ACCESS_FINE_LOCATION)
         addIfMissing(needed, Manifest.permission.RECORD_AUDIO)
         addIfMissing(needed, Manifest.permission.READ_CONTACTS)
@@ -871,6 +875,13 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         addIfMissing(needed, Manifest.permission.CALL_PHONE)
         if (needed.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, needed.toTypedArray(), REQ_PERMISSIONS)
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_PERMISSIONS) {
+            com.myvu.client.health.HealthService.getInstance(this).registerHardwareSensor()
         }
     }
 

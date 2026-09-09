@@ -213,17 +213,18 @@ class MeetingAiProcessor(private val context: Context) {
                     ChatMessage.user(fullContent)
                 }
 
-                val aiResponse = if (aiClient.supportsToolCalling()) {
-                    val chatRes = aiClient.chat(
-                        messages = listOf(
-                            ChatMessage.system(aiPrompt),
-                            userMessage
-                        ),
-                        jsonMode = true
-                    )
-                    chatRes.content ?: ""
-                } else {
-                    aiClient.ask(fullContent)
+                val aiResponse = try {
+                    executeAiAnalysisWithClient(aiClient, aiPrompt, userMessage, fullContent)
+                } catch (primaryErr: Exception) {
+                    LogBus.warn("MeetingAiProcessor: Primary provider ($aiProviderId) failed: ${primaryErr.message}. Checking fallback provider...")
+                    val fallbackClient = getFallbackAiClient(aiPrompt, excludeProviderId = aiProviderId)
+                    if (fallbackClient != null) {
+                        LogBus.log("MeetingAiProcessor: Retrying analysis with fallback provider...")
+                        postProgress(onProgress, "🔄 Reintentando análisis con proveedor de respaldo...")
+                        executeAiAnalysisWithClient(fallbackClient, aiPrompt, userMessage, fullContent)
+                    } else {
+                        throw primaryErr
+                    }
                 }
                 LogBus.log("MeetingAiProcessor: Received AI analysis (${aiResponse.length} chars)")
 
@@ -438,7 +439,48 @@ class MeetingAiProcessor(private val context: Context) {
         """.trimIndent()
     }
 
+    private fun executeAiAnalysisWithClient(
+        client: AiClient,
+        prompt: String,
+        userMessage: ChatMessage,
+        fullContent: String
+    ): String {
+        return if (client.supportsToolCalling()) {
+            val chatRes = client.chat(
+                messages = listOf(
+                    ChatMessage.system(prompt),
+                    userMessage
+                ),
+                jsonMode = true,
+                customReadTimeoutMs = BATCH_READ_TIMEOUT_MS
+            )
+            chatRes.content ?: ""
+        } else {
+            client.ask(fullContent)
+        }
+    }
+
+    private fun getFallbackAiClient(systemPrompt: String, excludeProviderId: String): AiClient? {
+        val candidates = listOf("groq", "openai", "claude", "nvidia")
+        for (providerId in candidates) {
+            if (providerId.equals(excludeProviderId, ignoreCase = true)) continue
+            val key = Prefs.aiApiKey(context, providerId)
+            if (key.isNotBlank()) {
+                val provider = AiProvider.fromId(providerId)
+                val model = Prefs.aiModel(context, providerId).ifBlank { provider.defaultModel }
+                val endpoint = Prefs.aiEndpoint(context, providerId)
+                val client = provider.newClient(context, key, model, endpoint, systemPrompt)
+                if (client.isConfigured()) {
+                    LogBus.log("MeetingAiProcessor: Selected fallback provider '$providerId'")
+                    return client
+                }
+            }
+        }
+        return null
+    }
+
     companion object {
         private const val MAX_TRANSCRIPT_CHARS = 24000
+        private const val BATCH_READ_TIMEOUT_MS = 180000 // 3 minutes for deep LLM batch reasoning
     }
 }

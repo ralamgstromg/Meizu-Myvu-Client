@@ -300,5 +300,297 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
   - Tests unitarios `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (34 tareas OK, incluyendo nueva prueba unitaria de caché en `ExternalInfoServiceTest.kt`).
   - Ensamblado de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL** en 846ms.
 
+### [2026-09-09] — Eliminación de Reintento Falso en Handshake de Relay, Tolerancia RFCOMM y Context Prompt en Whisper
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-eliminate-false-relay-retry-and-whisper-prompt.md`.
+- **Análisis de Logs Post-Ajustes**:
+  - Confirmada extinción total del mensaje en inglés *"Just a moment, please"* (consulta de clima resuelta en 2.77s gracias a la caché de geolocalización).
+  - Consulta de calendario por voz ejecutada con éxito en 280 milisegundos.
+  - Sincronización horaria `SyncOffSetTime` desduplicada eficazmente.
+- **Mejoras Implementadas**:
+  1. `ConnectionManager.kt`:
+     - Corregida la condición en `relayListener.onConnected`: sustituido `rfSession?.ready != true` por `rfSession?.authConfirmed != true`. Evita el disparo falso del timer de reintento de 2000ms mientras la ráfaga de 29 mensajes del relay está en tránsito.
+     - Ampliado `RELAY_ESTABLISH_TIMEOUT_MS` de 6000L a 10000L (10s) para brindar holgura suficiente a la resolución SDP de Android sin abortar prematuramente la conexión con `read ret: -1`.
+     - Ajustado el retardo post-BLE-burst a 2500ms para permitir que el servicio SPP de las gafas Meizu Myvu termine de iniciar antes de intentar la conexión por socket.
+  2. `OpenAiTranscriptionClient.kt`:
+     - Incorporado parámetro multipart `prompt` (`"Preguntas, comandos y consultas en español para asistente de voz en gafas inteligentes AR."`) al endpoint de transcripción Whisper, evitando el recorte de palabras interrogativas iniciales ("¿Cuál...", "Cómo...").
+- **Verificación**:
+  - Tests unitarios `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (34 tareas ejecutadas, 0 fallos).
+  - Ensamblado de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL** en 893ms.
+
+### [2026-09-09] — Expansión de Fast-Path de Calendario (Singular/Plural) y Optimización de Carga Útil en IA Agéntica
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-expand-calendar-fastpath-and-optimize-ai-payload.md`.
+- **Análisis de Logs Post-Ajustes**:
+  - Confirmada conexión de RFCOMM al primer intento en 459ms (sin timeout de 6s ni `read ret: -1`).
+  - Confirmada ráfaga de relay completada limpiamente sin reintentos erróneos de handshake.
+  - Confirmada captura de palabras iniciales en Whisper STT ("¿Cuál es...", "¿Tengo alguna...").
+  - Identificada falla en consultas de reunión en singular (*"¿Tengo alguna reunión hoy por la tarde?"* y *"Tengo alguna reunión el día de hoy."*), que cayeron al LLM remoto y generaron `SocketTimeoutException` por payload excesivo de 15.378 caracteres.
+- **Mejoras Implementadas**:
+  1. `VoiceActionRouter.kt`:
+     - Expandida la condición de Fast-Path para calendario a singular y plural: `"reunion"`, `"agenda"`, `"calendario"`, `"evento"`, `"cita"`, `"compromiso"` y patrones naturales como `"que tengo hoy"`, `"tengo algo para hoy"`, etc.
+     - Estas consultas ahora se resuelven de forma 100% local en **~200ms**, sin depender del LLM ni incurrir en timeouts.
+  2. `AiConversation.kt`:
+     - Omitido el addendum textual de 30 skills (`buildSystemPromptAddendum()`) en el system prompt cuando el cliente de IA soporta Function Calling nativo (`client.supportsToolCalling()`).
+     - Reduce la carga útil del request agéntico en más de 5.000 caracteres (ahorrando más de 1.200 tokens por turno).
+  3. `AiHttpClient.kt`:
+     - Reducido `LOCAL_READ_TIMEOUT_MS` de 45.000ms a 20.000ms para fallar rápidamente si el endpoint remoto/local no responde, evitando bloqueos prolongados en la interfaz de las gafas.
+- **Verificación**:
+  - Pruebas unitarias en `VoiceActionRouterTest.kt` ampliadas con `testCalendarFastPathVariations` (100% pasando).
+  - Suite `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (34 tareas OK).
+  - Ensamblado de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL** en 900ms.
+
+### [2026-09-09] — Fast-Path Web 'En Google', Discriminación de Timeout y Poda Dinámica de Tools
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-web-search-fastpath-and-ai-timeout-optimization.md`.
+- **Análisis de Logs Post-Ajustes**:
+  - Confirmada conexión RFCOMM ultrarrápida en **267ms** y confirmación de ability en **74ms** (cero timeouts de socket).
+  - Confirmada ráfaga de 29 mensajes completada de forma limpia sin reintentos erróneos de handshake.
+  - Confirmado Fast-Path de clima en **2.2s** y Fast-Path de calendario en **13ms** (100% en español, cero avisos en inglés).
+  - Diagnosticada falla en consulta de programación (*"En google cuál es la manera más rápida de buscar un ítem en una array de python."*): el prefijo `"En google "` omitió el Fast-Path web, cayó al LLM con 29 herramientas completas (15.419 caracteres), y se le aplicó timeout de 20s en vez de 60s al asumir erróneamente que era una red local privada, provocando `SocketTimeoutException`.
+- **Mejoras Implementadas**:
+  1. `ExternalInfoService.kt`:
+     - Expandido `isGeneralSearchQuery` para interceptar `"en google "`, `"googlea "`, `"googlear "`, `"busca en internet"`, `"buscar en internet"`, y fórmulas técnicas comunes (`"cual es la manera"`, `"cual es la forma"`, `"como se busca"`, `"como buscar"`, `"como programar"`, `"como hacer"`).
+     - Actualizado el regex de `fetchGoogleOrWebSearch` para limpiar exhaustivamente prefijos como `"En google"`, `"busca en google"` y puntuaciones finales, resolviendo consultas informativas y de código directamente en Google / DuckDuckGo / Wikipedia en **1.2 a 2.0 segundos** sin colapsar el LLM.
+  2. `AiHttpClient.kt`:
+     - Refinada la discriminación de `isLocal`: solo clasifica como red local si el host es verdaderamente una IP privada (`10.*`, `192.168.*`, `172.16-31.*`, `127.0.0.1`, `localhost`).
+     - Endpoints públicos en internet configurados bajo `AiProvider.LOCAL` (ej. `https://soft-ia.co/...`) ahora reciben el timeout completo de 60s (`READ_TIMEOUT_MS`).
+     - Incrementado `LOCAL_READ_TIMEOUT_MS` de 20.000ms a 30.000ms para mayor holgura en inferencia local con GPUs lentas.
+  3. `AgenticToolExecutor.kt`:
+     - Implementada poda dinámica de herramientas (`pruneToolsForQuery`): cuando la consulta es una duda conceptual, de programación o búsqueda general, solo se envían las herramientas de búsqueda y cálculo (`google_search`, `wikipedia_search`, `duckduckgo_search`, `code_calculator_math`).
+     - Las herramientas de hardware (llamadas, whatsapp, telegram, alarmas, linterna, bluetooth, teleprompter, cámara) solo se adjuntan cuando la frase contiene verbos/intenciones afines.
+     - Reduce la carga del payload de 15.419 caracteres a menos de 2.500 caracteres (>80% de ahorro de tokens y drástica reducción de latencia).
+- **Verificación**:
+  - Pruebas unitarias ampliadas en `ExternalInfoServiceTest.kt` y `AgenticModuleIntegrationTest.kt` (100% pasando).
+  - Suite `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (34 tareas OK).
+  - Ensamblado de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL** en 1s.
+
+### [2026-09-09] — Actualización en Vivo de Noticias (RSS), Acciones/Cripto (Yahoo Finance) y TRM
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-live-web-search-news-stocks-currency.md`.
+- **Problema Reportado**: Consultas como *"noticias el día de hoy en Colombia"* retornaban resultados que parecían fijos o desactualizados, y no existía soporte en vivo para cotizaciones de acciones bursátiles ni divisas locales (TRM).
+- **Causas Raíz Identificadas**:
+  1. `fetchNewsSearch` contenía un regex de limpieza incompleto. Frases como *"noticias el día de hoy en Colombia"* o *"solicite información de noticias..."* enviaban a Google News RSS cadenas con ruido temporal que forzaban la búsqueda literal de artículos antiguos que contuvieran la palabra "hoy".
+  2. No existía soporte para acciones (stocks) ni criptomonedas (Bitcoin, Ethereum, Apple, Tesla, Nvidia, Ecopetrol).
+  3. No se reconocía la sigla "TRM" (Tasa Representativa del Mercado) para el dólar en Colombia.
+  4. En `VoiceActionRouter.kt`, las noticias no tenían rama directa Fast-Path.
+- **Mejoras Implementadas**:
+  1. `ExternalInfoService.kt`:
+     - Reescrito `fetchNewsSearch`: limpia rellenos conversacionales y términos temporales; si la consulta es general o sobre Colombia, consulta el feed en vivo de última hora `news.google.com/rss?hl=es-419&gl=CO&ceid=CO:es-419` y extrae titular, medio emisor y viñetas concisas con datos de las últimas horas.
+     - Creado `fetchStockOrMarket` e `isStockOrMarketQuery`: integración directa con Yahoo Finance API en tiempo real (gratuita, sin API key) para cotizaciones de Apple (`AAPL`), Tesla (`TSLA`), Microsoft (`MSFT`), Nvidia (`NVDA`), Google (`GOOGL`), Amazon (`AMZN`), Meta (`META`), Ecopetrol (`EC`), Bitcoin (`BTC-USD`), Ethereum (`ETH-USD`), S&P 500 (`^GSPC`), Nasdaq (`^IXIC`) y búsqueda dinámica por ticker, calculando precio actual y porcentaje de variación del día.
+     - Añadido soporte para "TRM" y "tasa representativa" en `isCurrencyQuery` y `extractCurrencyRequest` mapeando a `USD -> COP`.
+  2. `VoiceActionRouter.kt`:
+     - Añadidas sub-rutas Fast-Path explícitas 5c (Acciones/Cripto) y 5d (Noticias en vivo) dirigidas a `isAsyncExternalSearch`, resolviendo todo en **1.0 a 2.0s** sin depender del LLM.
+- **Verificación**:
+  - Suite unitaria `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (34 tareas OK, 0 fallos).
+  - Ensamblado de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL** en 968ms.
+
+### [2026-09-09] — Búsqueda Inteligente de Contactos por Similitud/Subconjunto en Llamadas, WhatsApp y SMS
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-fuzzy-contact-matching-and-messaging-enhancement.md`.
+- **Problema Reportado**: Cuando el usuario pedía llamar o enviar mensajes a nombres parciales o compuestos (ej. contacto guardado como `"Matias Castro hijo"` y el usuario dicta *"matias"* o *"matias castro"*), el sistema no encontraba el contacto o fallaba el envío por falta de coincidencia exacta o divergencia en los motores de búsqueda.
+- **Causas Raíz Identificadas**:
+  1. `ContactHelper.kt` no calculaba cobertura de subconjunto (Token Subset Containment): premiaba subcadena con solo 100 puntos y no otorgaba bonificación determinante si el 100% de los tokens dichos por el usuario estaban presentes en el contacto de la agenda.
+  2. `normalize` no limpiaba signos de puntuación, paréntesis ni emojis (ej. `"Matias Castro (Hijo) 📱"` dejaba tokens corruptos como `"(hijo)"`).
+  3. `PhoneActionExecutor.kt` duplicaba la búsqueda de contactos con código desfasado, y en `openWhatsApp` descartaba los datos del contacto encontrado forzando una segunda búsqueda SQL que volvía a fallar.
+  4. Faltaba soporte para SMS (mensajes de texto) tanto en `PhoneActionExecutor` como en `VoiceActionRouter` y las habilidades de IA.
+- **Mejoras Implementadas**:
+  1. `ContactHelper.kt`:
+     - Función `cleanText`: limpia tildes (NFD), signos de puntuación, emojis, símbolos y estandariza espacios.
+     - Función `calculateScore`: sistema de puntuación multi-criterio que otorga 2000 puntos a coincidencia exacta absoluta, +500 si es prefijo continuo, +350 si el 100% de los tokens pedidos están contenidos en el contacto (Subset Containment), +60 por cada token idéntico, +80 por preservación de orden y tolerancia fonética Levenshtein.
+     - Estructura `ContactMatch(number, displayName, score, isExact)` y método `findBestContactMatch`.
+  2. `PhoneActionExecutor.kt`:
+     - Unificada toda la resolución de contactos hacia `ContactHelper`.
+     - Mejorada la extracción gramatical en `openWhatsApp`: reconoce conectores coloquiales (*"que"*, *"que diga"*, *"diciendo"*, *"dile que"*) y limpia partículas residuales del mensaje antes de disparar.
+     - Implementado `sendSms(text)`: envía SMS 100% manos libres si cuenta con permiso `SEND_SMS` vía `SmsManager`, con fallback automático al intent `ACTION_SENDTO` (`smsto:...`).
+     - Actualizado `makeCall`: resuelve contactos parciales y compuestos con `ContactHelper` y marca con `TelecomManager`.
+  3. `VoiceActionRouter.kt`:
+     - Agregada ruta Fast-Path (6) para SMS (*"envía un sms a..."*, *"manda mensaje de texto a..."*, *"escríbele un texto a..."*) antes de WhatsApp para evitar interferencias.
+  4. Habilidades y Handlers:
+     - Creado `SendSmsHandler.kt` y registrado como habilidad `"send-sms"` en `SkillRegistry.kt` para Native Tool Calling con Gemini/LiteLLM.
+- **Verificación**:
+  - Creada suite `ContactHelperTest.kt` validando casos de subconjunto, prefijo, desempate y limpieza de emojis.
+  - Actualizado `VoiceActionRouterTest.kt` con pruebas para Fast-Path SMS.
+  - Verificación unitaria `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (200 tests pasando, 0 fallos).
+  - Ensamblado de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL** en 2s.
+
+### [2026-09-09] — Corrección de Hallazgos en Logs: Colisión de Turnos, Notificaciones, Tópicos de Noticias y TRM
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-log-analysis-and-findings-resolution-plan.md`.
+- **Problemas Detectados en Logs**:
+  1. En `AiConversation.kt`, cuando un turno remoto (`soft-ia.co`) tardó >60s y el usuario inició un nuevo turno pulsando el botón (13:51:29), el timeout de la petición huérfana (13:51:37) adoptó el `sessionId` del nuevo turno, disparó TTS con error y canceló la respuesta válida de divisas del nuevo turno.
+  2. En `VoiceActionRouter.kt`, la consulta *"Notificaciones tengo pendientes por leer."* no coincidió con el regex rígido, cayó al LLM remoto y colapsó en timeout.
+  3. En `ExternalInfoService.kt`, *"Noticias relevantes hay en Barranquilla el día de hoy"* buscó literalmente `"relevantes hay en Barranquilla el día"` en Google News RSS.
+  4. La consulta de TRM / USD a COP dependía exclusivamente de `open.er-api.com`.
+- **Mejoras Implementadas**:
+  1. `AiConversation.kt`:
+     - Blindaje de turnos: congelado `turnSessionId` inmutable en cada ejecución asíncrona. Si al completarse o fallar `turnSessionId != sessionId` o `!active`, la respuesta o error se descarta en silencio absoluto, protegiendo al turno nuevo de cualquier interferencia.
+     - En `abandon()`: llamada inmediata a `tts.stop()` para cortar en seco el audio del turno anterior.
+  2. `VoiceActionRouter.kt`:
+     - Detección flexible e integral de consultas de notificaciones pendientes (`notificaciones`, `tengo`, `pendientes`, `leer`, `revisar`, `mensajes`, `correos`) retornando en **<15ms** el resumen de `MirrorNotificationListener`.
+  3. `ExternalInfoService.kt`:
+     - `fetchNewsSearch`: Purgado semántico de adjetivos, partículas de relleno y conectores (`relevantes`, `importantes`, `hay en`, `el dia`, etc.) para aislar la entidad temática o ciudad limpia (`"Barranquilla"`), retornando encabezados limpios en el HUD.
+     - `fetchCurrencyRate`: Integrada consulta en tiempo real al dataset oficial de la Superintendencia Financiera de Colombia (`datos.gov.co/resource/ceyp-9c7c.json`) para cotización de TRM oficial USD/COP con fallbacks a `open.er-api.com` y Yahoo Finance.
+- **Verificación**:
+  - Pruebas unitarias en `VoiceActionRouterTest.kt` y `ExternalInfoServiceTest.kt`.
+### [2026-09-09] — Corrección de Enrutamiento de Divisas vs Definiciones, Prefijos de Noticias y Respaldo Público
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-currency-misrouting-and-news-clean-fix.md`.
+- **Problemas Detectados en Logs (14:06 - 14:10)**:
+  1. Consulta `"¿Cuál es el significado de la palabra retropropagación en redes neuronales?"` fue clasificada erróneamente como `Fast-Path currency query` debido a que `currencyKeywords` contenía `"eur"` y hacía `contains("eur")` sobre `"n-EUR-onales"`.
+  2. Consulta `"¿Qué noticias relevantes hay hoy en Barranquilla?"` entregó en HUD: `"Noticias de hoy (¿Qué noticias en Barranquilla): 1) ..."` porque el regex no soportaba acento en `¿Qué` sin flag Unicode `(?iu)` y dejaba partículas interrogativas pegadas.
+  3. `BackupManager` falló al sobreescribir el archivo de respaldo en Descargas públicas: `Tried to overwrite the destination, but failed to delete it.` debido a restricciones de Scoped Storage de Android con `File.copyTo(..., overwrite = true)`.
+- **Mejoras Implementadas**:
+  1. `ExternalInfoService.kt`:
+     - Blindada `isCurrencyQuery`: utiliza regex con límites de palabra `\b` (`Regex("\\b(${currencyKeywords.joinToString("|") { Regex.escape(it) }})\\b")`), evitando falsos positivos con subcadenas como `"eur"` en `"neuronales"`, `"cop"` en `"microprocesador"`, o `"soles"` en `"girasoles"`.
+     - Exclusión explícita de consultas de definición conceptual (`significado`, `definicion`, `concepto`, `que es`, `quien es`) de la ruta de divisas.
+     - Expandida `isGeneralSearchQuery` y `isDefinitionQuery` para capturar directamente preguntas de significado y definición, extrayendo el término limpio para resolución en Wikipedia/DuckDuckGo.
+     - En `fetchNewsSearch`: bucle de purga iterativo con soporte Unicode `(?iu)` que remueve sucesivamente prefijos interrogativos (`¿qué noticias`, `cuáles son las noticias`), stopwords conversacionales (`relevantes`, `hoy`, `hay en`) y preposiciones iniciales (`en`, `de`), produciendo etiquetas limpias como `"Barranquilla"`.
+     - Añadido flag `(?iu)` y soporte de tildes en `fetchGoogleOrWebSearch` y `fetchStockOrMarket`.
+  2. `BackupManager.kt`:
+     - Sustituido `zipFile.copyTo(publicBackupFile, overwrite = true)` por flujo directo `FileOutputStream(publicBackupFile).use { out -> zipFile.inputStream().use { input -> input.copyTo(out) } }`, truncando y sobreescribiendo los bytes in-situ sin intentar invocar `delete()` bloqueado por Scoped Storage.
+  3. `ExternalInfoServiceTest.kt`:
+     - Nuevas pruebas unitarias validando que consultas como `"¿Cuál es el significado de la palabra retropropagación en redes neuronales?"` no sean marcadas como divisa y sean reconocidas como búsqueda general.
+     - Pruebas validando que `"¿Qué noticias relevantes hay hoy en Barranquilla?"` genere etiqueta limpia `"Barranquilla"` sin prefijos interrogativos.
+- **Verificación**:
+  - Ejecución de pruebas unitarias `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (34 tareas ejecutadas/al día, 100% pasando).
+### [2026-09-09] — Corrección de Separación Contacto/Mensaje en WhatsApp y Envío Automático Manos Libres
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-whatsapp-autosend-and-contact-delimiter-fix.md`.
+- **Problemas Detectados en Logs (14:18 - 14:21)**:
+  1. Consulta `"Envía mensaje de WhatsApp a Matías Castro. Hola hijo, ¿cómo vas? ¿Cómo te fue?"`: el parser separaba indiscriminadamente por comas (`cleanRaw.contains(",")`). Como el mensaje contenía `"Hola hijo, ¿cómo vas?"`, partió después de `"Hola hijo"`, dejando el destinatario como `"Matías Castro. Hola hijo"`. Esto provocó que perdiera la coincidencia exacta y se emparejara con `"Matías Castro Nuevo"` (score 300), perdiendo además `"Hola hijo"` en el mensaje.
+  2. El mensaje no se enviaba automáticamente: `AutoSendAccessibilityService` buscaba texto con `findAccessibilityNodeInfosByText("enviar")`, el cual falla en WhatsApp porque el botón de enviar es un `ImageButton` con texto nulo y `contentDescription="Enviar"`. Además, la bandera `shouldAutoSendWhatsApp` se desactivaba en el primer evento de ventana antes de que la vista de chat terminara de renderizarse.
+- **Mejoras Implementadas**:
+  1. `ContactHelper.kt`:
+     - Implementado método unificado `extractRecipientAndMessage(context, rawText)` que prioriza delimitadores explícitos (`:`, `|`), límite de frase por punto (`.\s+` generado por Whisper STT) validando coincidencia de contacto, conectores gramaticales (`dile que`, `que diga`), separación por coma condicional a que el prefijo sea un contacto válido, y ventana deslizante de 1 a 4 tokens.
+     - Implementada función `cleanPunctuation(text)` que purga exhaustivamente signos de puntuación iniciales y finales (`.`, `,`, `?`, `!`, `¿`, `¡`) antes de evaluar emparejamiento difuso.
+  2. `AutoSendAccessibilityService.kt`:
+     - Reemplazada la búsqueda lineal por un recorrido en amplitud (BFS) sobre el árbol de nodos de accesibilidad, inspeccionando `contentDescription` (`"enviar"`, `"send"`), View IDs (`com.whatsapp:id/send`, `conversation_send_button`, etc.) y `text`.
+     - Implementados reintentos automáticos programados (400ms, 800ms, 1200ms, 1800ms, 2600ms, 3600ms) y mantenimiento activo de la bandera de auto-envío hasta que el clic sea ejecutado con éxito o expire el tiempo límite de 7 segundos.
+     - Añadido método estático `isAccessibilityServiceEnabled(context)` para verificar si el usuario tiene habilitado el servicio en los Ajustes del sistema.
+  3. `PhoneActionExecutor.kt` y `VoiceActionRouter.kt`:
+     - Integrado `LockScreenHelper.wakeUpScreen(context)` antes de abrir WhatsApp o Telegram para asegurar que la pantalla se despierte y permita la interacción de primer plano.
+     - Centralizado el parseo de WhatsApp y SMS a través de `ContactHelper.extractRecipientAndMessage`.
+     - Respuesta de voz / HUD adaptativa: si el servicio de accesibilidad no está activo en Ajustes, informa pedagógicamente al usuario: `"Abriendo WhatsApp. Para envío automático sin tocar la pantalla, activa el Asistente MYVU en Accesibilidad."`.
+  4. `ContactHelperTest.kt`:
+     - Nuevas pruebas unitarias validando `cleanPunctuation` y la separación por punto de frase de `"Matías Castro. Hola hijo, ¿cómo vas? ¿Cómo te fue?"`.
+- **Verificación**:
+  - Ejecución de 205 pruebas unitarias con `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (0 fallos).
+  - Ensamblado de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL** en 1s.
+
+### [2026-09-09] — Implementación de Desbloqueo de Pantalla y Envío Automático Universal Manos Libres
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-lockscreen-universal-messaging-autosend.md`.
+- **Problemas Detectados en Logs (14:35 - 14:37)**:
+  1. Consulta `"Envía mensaje de whatsapp a Matías Castro. Hola socio, ¿cómo estás? ¿Cómo te fue?"`: el parser extrajo correctamente a `"Matías Castro"` y el mensaje limpio `"Hola socio, ¿cómo estás? ¿Cómo te fue?"`.
+  2. Sin embargo, el mensaje no se envió automáticamente; el usuario tuvo que sacar el teléfono, desbloquearlo y pulsar "Enviar".
+  3. Causa raíz:
+     - El teléfono estaba bloqueado en el bolsillo. Android restringe que ventanas de aplicaciones de terceros (WhatsApp) se muestren por encima del Keyguard bloqueado.
+     - La ventana de auto-envío de 7 segundos en `AutoSendAccessibilityService` expiró antes de que el usuario desbloqueara el móvil (`WhatsApp auto-send window timed out`).
+     - Al desbloquear el móvil, el servicio ya no estaba activo y no pulsó el botón.
+     - Además, el servicio de accesibilidad solo escuchaba WhatsApp y Telegram en su configuración XML, ignorando Google Messages, Samsung Messages, Signal y otras apps.
+- **Mejoras Implementadas**:
+  1. `SendTrampolineActivity.kt` y `themes.xml`:
+     - Creada actividad transparente con `showWhenLocked="true"`, `turnScreenOn="true"`, tema `Theme.Myvu.Translucent` y `excludeFromRecents="true"`.
+     - Invoca `KeyguardManager.requestDismissKeyguard`: si el móvil usa Smart Lock (p.ej. vinculado a las gafas MYVU por Bluetooth) desbloquea de forma automática sin pedir PIN; si usa huella/PIN, presenta de inmediato el lector biométrico. Al desbloquearse, lanza la app de mensajería y se finaliza limpiamente.
+  2. `AutoSendAccessibilityService.kt`:
+     - Escucha dinámica de `Intent.ACTION_USER_PRESENT`: en cuanto el usuario desbloquea el móvil, dispara de inmediato una ráfaga de intentos de clic (100ms a 3000ms).
+     - Ventana de espera adaptativa: 45 segundos si el teléfono estaba bloqueado (dando tiempo suficiente para sacar el móvil y autenticar con huella) y 15 segundos si ya estaba desbloqueado.
+     - Soporte universal de aplicaciones de mensajería: WhatsApp, Telegram, Google Messages (`com.google.android.apps.messaging`), Samsung Messages, Signal, etc.
+     - Detección BFS expandida con filtrado estricto anti-micrófono/audio (evitando pulsar notas de voz) y fallback de clic por coordenadas táctiles con `dispatchGesture` en Android 7.0+.
+  3. `accessibility_service_config.xml`:
+     - Eliminada la restricción de paquetes (`android:packageNames`) y añadido `flagRetrieveInteractiveWindows` para permitir la supervisión de cualquier app de mensajería.
+  4. `PhoneActionExecutor.kt`:
+     - Creado método centralizado `dispatchMessagingIntent` que detecta si el móvil está bloqueado (`LockScreenHelper.isDeviceLocked`), disparando el trampolín si es necesario y activando el auto-envío con la duración correspondiente.
+  5. `AutoSendAccessibilityServiceTest.kt`:
+     - Suite completa de pruebas unitarias validando la detección de paquetes de mensajería, duraciones de ventana según estado de bloqueo y seguridad de nodos.
+- **Verificación**:
+  - Pruebas unitarias `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL in 15s** (209 pruebas ejecutadas y pasando al 100%).
+  - Ensamblado de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL in 1s** (`app-debug.apk` 117MB).
+
+### [2026-09-09] — Implementación de Control Total Manos Libres Tipo Google Assistant y Desbloqueo Invisible
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-google-assistant-parity-and-lockscreen-control.md`.
+- **Problemas Detectados en Logs (14:48 - 14:50)**:
+  1. Al solicitar envío de WhatsApp, se abrió la app MYVU en pantalla y hubo una demora de 12 segundos antes de que WhatsApp se lanzara:
+     - `SendTrampolineActivity` compartía el `taskAffinity` por defecto, arrastrando a `ConnectActivity` a la pantalla.
+     - `requestDismissKeyguard` llamado en `onCreate` fue cancelado en 68ms por falta de foco en la ventana (`Keyguard dismiss cancelled by user`).
+     - Al cancelarse, la actividad esperó pasivamente 12 segundos hasta el timeout de seguridad para despachar WhatsApp.
+  2. El usuario solicita paridad con Google Assistant para controlar aplicaciones y funciones del teléfono directamente con el móvil bloqueado y sin desbloquear.
+- **Mejoras Implementadas**:
+  1. `SendTrampolineActivity.kt` y `AndroidManifest.xml`:
+     - Aislada con `android:taskAffinity=""`, `android:launchMode="singleInstance"`, `android:noHistory="true"` y tema translúcido invisible sin barra de título (`@android:style/Theme.Translucent.NoTitleBar`). **Nunca más se jala la app MYVU a la pantalla**.
+     - Solicitud de desbloqueo movida a `onWindowFocusChanged(hasFocus = true)`.
+     - Si ocurre cancelación o fallo en el desbloqueo (`onCancelledOrFailed`), despacha el intent objetivo de forma inmediata (**0ms de espera**, eliminando el timeout de 12 segundos).
+  2. Control de Linterna (Torch / Flashlight):
+     - `PhoneActionExecutor.setFlashlight(enabled: Boolean)` vía `CameraManager.setTorchMode`.
+     - Fast-Paths en `VoiceActionRouter.kt`: *"enciende la linterna"*, *"apaga la linterna"*, *"prende la linterna"*, etc. Opera 100% en segundo plano con el móvil bloqueado en el bolsillo.
+  3. Control Multimedia y Música en Segundo Plano:
+     - Fast-Paths en `VoiceActionRouter.kt`: *"pausa la música"*, *"reproduce música"*, *"siguiente canción"*, *"canción anterior"*, *"reanuda la música"*. Opera 100% con la pantalla bloqueada.
+  4. Control de Volumen y Modos de Sonido (Ringer):
+     - `PhoneActionExecutor.adjustVolume` y `setRingerMode`.
+     - Fast-Paths en `VoiceActionRouter.kt`: *"sube el volumen"*, *"baja el volumen"*, *"silencia el teléfono"*, *"pon en vibración"*, *"activa el sonido"*.
+  5. Lanzador Universal de Aplicaciones ("abre [app]"):
+     - Resuelve el paquete de la aplicación mediante difusa y lo lanza despertando la pantalla y a través del trampolín invisible.
+  6. Integración como Asistente Digital del Sistema Android (`VoiceInteractionService`):
+     - Creado `MyvuVoiceInteractionService.kt`, `MyvuVoiceInteractionSessionService`, `MyvuRecognitionService` y `voice_interaction_service.xml`.
+     - Registrado en `AndroidManifest.xml` con `BIND_VOICE_INTERACTION`. Permite seleccionar MYVU Client como el Asistente Digital Predeterminado del teléfono en Ajustes de Android.
+- **Verificación**:
+  - Pruebas unitarias `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL in 9s** (212 pruebas ejecutadas y pasando al 100%).
+  - Ensamblado de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL in 1s** (`app-debug.apk` 117MB).
+
+### [2026-09-09] — Documentación Integral de Instalación y Permisos de Android
+- **Objetivo**: Proveer instrucciones paso a paso detalladas para la instalación del APK en Android y la concesión de todos los permisos estándar y especiales indispensables para el funcionamiento manos libres de las gafas Meizu Myvu.
+- **Archivos Creados y Modificados**:
+  1. `docs/ANDROID_SETUP_GUIDE.md`:
+     - Guía exhaustiva en español con pasos para instalación vía ADB (`adb install -r -g`) e instalación manual con orígenes desconocidos.
+     - Tabla completa de permisos estándar en tiempo de ejecución (Bluetooth, Ubicación, Contactos, Teléfono, SMS, Cámara, Micrófono, Calendario, Notificaciones).
+     - Configuración detallada de 5 permisos especiales del sistema:
+       - Acceso a notificaciones (`MirrorNotificationListener`).
+       - Servicio de accesibilidad (`AutoSendAccessibilityService`) con solución al "Ajuste restringido" en Android 13/14+.
+       - Desbloqueo extendido / Smart Lock con dispositivos de confianza (Meizu Myvu) para desbloqueo automático en bolsillo sin PIN.
+       - Asistente digital predeterminado del sistema (`MyvuVoiceInteractionService`).
+       - Optimización de batería sin restricciones (Doze mode whitelist) y auto-inicio en Xiaomi/HyperOS.
+     - Script de comandos ADB en bloque para desarrolladores.
+  2. `README.md`:
+     - Nueva sección `"📲 Instalación y Configuración en Android"` con resumen de comandos y checklist de permisos indispensables.
+     - Enlace directo a `docs/ANDROID_SETUP_GUIDE.md` en la sección de Documentación Adicional.
+  3. `BUILD_INSTRUCTIONS.md`:
+     - Sección 6 añadida con comando de instalación rápida vía ADB y enlace a la guía de permisos.
+
+### [2026-09-09] — Implementación de Llamadas VoIP (WhatsApp, Teams, Google Chat) y Servicios de Salud (Pasos, Estrés, Ritmo Cardíaco)
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-voip-calls-and-health-integration.md`.
+- **Objetivo**:
+  1. Permitir llamadas VoIP mediante comandos de voz para WhatsApp, Microsoft Teams y Google Chat/Meet hacia contactos específicos o números/correos.
+  2. Integración nativa con servicios y sensores de salud de Android para consultar pasos diarios, nivel de estrés, ritmo cardíaco y resumen de bienestar físico.
+- **Componentes Creados y Modificados**:
+  1. `HealthService.kt` (`com.myvu.client.health`):
+     - Listener de hardware para podómetro nativo (`Sensor.TYPE_STEP_COUNTER` y `Sensor.TYPE_STEP_DETECTOR`).
+     - Cálculo de pasos diarios con línea base automática reseteada a medianoche, calorías activas (`kcal`) y distancia (`km`).
+     - Evaluación de niveles de estrés (0-100: Bajo/Relajado, Moderado, Elevado).
+     - Parser inteligente en `MirrorNotificationListener`: sincroniza métricas en tiempo real a partir de notificaciones de apps de wearables (Samsung Health, Google Fit, Zepp Life, Mi Fitness, Garmin, Huawei).
+     - Métodos de resumen: `getStepsSummary()`, `getStressSummary()`, `getHeartRateSummary()`, `getFullHealthSummary()`.
+  2. `ContactHelper.kt`:
+     - Consulta de `ContactsContract.Data` para extraer el `dataId` directo de llamadas VoIP de WhatsApp (`vnd.android.cursor.item/vnd.com.whatsapp.voip.call`).
+  3. `PhoneActionExecutor.kt`:
+     - `makeWhatsAppCall`: Invoca intent VoIP directo de WhatsApp si existe fila en contactos; como alternativa robusta, abre el chat de WhatsApp y activa el clic automático del botón de llamada.
+     - `makeTeamsCall`: Resuelve correo o teléfono y despacha deep link `https://teams.microsoft.com/l/call/0/0?users=...` a `com.microsoft.teams`.
+     - `makeGoogleChatCall`: Resuelve correo o teléfono y despacha deep link `https://meet.google.com/call/...` para Meet/Chat.
+     - Enrutamiento transparente a través de `SendTrampolineActivity` cuando el móvil está bloqueado.
+     - Tags soportados: `ACTION:CALL_WHATSAPP=`, `ACTION:CALL_TEAMS=`, `ACTION:CALL_GOOGLE_CHAT=`, `ACTION:HEALTH_STEPS`, `ACTION:HEALTH_STRESS`, `ACTION:HEALTH_SUMMARY`.
+  4. `AutoSendAccessibilityService.kt`:
+     - Modo `triggerAutoCall` con detección BFS y clic en botones de llamada de voz (`com.whatsapp:id/voice_call`, "Llamada de voz", "Voice call", "Llamar").
+  5. `VoiceActionRouter.kt`:
+     - Fast-paths en <5ms para:
+       - WhatsApp Call: *"llama a [contacto] por whatsapp"*, *"videollamada a [contacto] por whatsapp"*.
+       - Teams Call: *"llama a [contacto] por teams"*, *"inicia llamada de teams con [contacto]"*.
+       - Google Chat Call: *"llama a [contacto] por google chat"*, *"llama a [contacto] por meet"*.
+       - Pasos: *"cuántos pasos llevo"*, *"mis pasos de hoy"*, *"podómetro"*.
+       - Estrés: *"nivel de estrés"*, *"cómo está mi estrés"*, *"estoy estresado"*.
+       - Ritmo cardíaco: *"ritmo cardíaco"*, *"frecuencia cardíaca"*, *"pulsaciones"*.
+       - Resumen salud: *"resumen de salud"*, *"resumen de actividad"*, *"mi salud hoy"*.
+  6. Manifiestos y Handlers de Habilidades:
+     - `voip-call/SKILL.md` + `VoipCallHandler.kt`.
+     - `health-summary/SKILL.md` + `HealthSummaryHandler.kt`.
+     - Registrados en `SkillRegistry.kt`.
+  7. `AndroidManifest.xml`:
+     - Permisos `ACTIVITY_RECOGNITION` y `BODY_SENSORS`.
+     - Queries añadidas para `com.microsoft.teams`, `com.google.android.apps.tachyon`, `com.google.android.apps.meetings`, `com.google.android.apps.dynamite`, `com.google.android.apps.fitness`, `com.samsung.android.app.shealth`.
+- **Verificación**:
+  - Pruebas unitarias `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL in 13s** (218 pruebas unitarias pasando al 100%, incluyendo `VoiceActionRouterTest` y `HealthServiceTest`).
+  - Compilación de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL in 1s**.
+
+
+
 
 

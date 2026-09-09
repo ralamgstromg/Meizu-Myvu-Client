@@ -38,7 +38,11 @@ object LockScreenHelper {
     /**
      * Attempts to unlock or request dismissal of keyguard.
      */
-    fun unlockKeyguard(activity: Activity, onDismissed: (() -> Unit)? = null) {
+    fun unlockKeyguard(
+        activity: Activity,
+        onDismissed: (() -> Unit)? = null,
+        onCancelledOrFailed: (() -> Unit)? = null
+    ) {
         val keyguardManager = activity.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             keyguardManager?.requestDismissKeyguard(activity, object : KeyguardManager.KeyguardDismissCallback() {
@@ -51,11 +55,13 @@ object LockScreenHelper {
                 override fun onDismissCancelled() {
                     super.onDismissCancelled()
                     LogBus.log("LockScreenHelper: Keyguard dismiss cancelled by user")
+                    onCancelledOrFailed?.invoke()
                 }
 
                 override fun onDismissError() {
                     super.onDismissError()
                     LogBus.warn("LockScreenHelper: Keyguard dismiss error")
+                    onCancelledOrFailed?.invoke()
                 }
             })
         } else {

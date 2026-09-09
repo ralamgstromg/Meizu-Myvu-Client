@@ -97,6 +97,7 @@ class OpenAiTranscriptionClient @JvmOverloads constructor(
                 }
                 val lang = customLanguage?.ifBlank { "es" } ?: "es"
                 writeTextPart(out, "language", lang)
+                writeTextPart(out, "prompt", "Preguntas, comandos y consultas en español para asistente de voz en gafas inteligentes AR.")
                 out.writeBytes("--$BOUNDARY--\r\n")
                 out.flush()
             }

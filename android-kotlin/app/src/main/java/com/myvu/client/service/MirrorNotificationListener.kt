@@ -40,6 +40,27 @@ class MirrorNotificationListener : NotificationListenerService() {
         super.onListenerConnected()
         _instance = WeakReference(this)
         LogBus.log("MirrorNotificationListener connected")
+        scanActiveHealthNotifications()
+    }
+
+    fun scanActiveHealthNotifications() {
+        try {
+            val active = activeNotifications ?: return
+            for (sbn in active) {
+                val pkg = sbn.packageName
+                val n = sbn.notification ?: continue
+                val ext = n.extras ?: continue
+                val t = charSequence(ext, Notification.EXTRA_TITLE)
+                val txt = charSequence(ext, Notification.EXTRA_TEXT)
+                val big = charSequence(ext, Notification.EXTRA_BIG_TEXT)
+                val sub = charSequence(ext, Notification.EXTRA_SUB_TEXT)
+                val combined = "$t $txt $big $sub"
+                com.myvu.client.health.HealthService.getInstance(this)
+                    .parseNotificationForHealthMetrics(pkg, t, combined)
+            }
+        } catch (e: Exception) {
+            LogBus.warn("MirrorNotificationListener -> Error scanning active health notifications: ${e.message}")
+        }
     }
 
     override fun onListenerDisconnected() {
@@ -57,6 +78,20 @@ class MirrorNotificationListener : NotificationListenerService() {
         // so nothing is forwarded unless the user picked that app in Settings.
         // isPackageAllowed() also applies the hard block list (system noise, us).
         val pkg = sbn.packageName
+
+        // Sync health metrics from wearable notifications even if not mirrored to HUD
+        n.extras?.let { ext ->
+            val t = charSequence(ext, Notification.EXTRA_TITLE)
+            val txt = charSequence(ext, Notification.EXTRA_TEXT)
+            val big = charSequence(ext, Notification.EXTRA_BIG_TEXT)
+            val sub = charSequence(ext, Notification.EXTRA_SUB_TEXT)
+            val combined = "$t $txt $big $sub"
+            try {
+                com.myvu.client.health.HealthService.getInstance(this)
+                    .parseNotificationForHealthMetrics(pkg, t, combined)
+            } catch (ignored: Exception) {}
+        }
+
         if (!Prefs.isPackageAllowed(this, pkg)) {
             // trace(), not log(): this fires for every notification from every
             // app the user did not opt in, and would drown the on-screen log.
@@ -333,6 +368,12 @@ class MirrorNotificationListener : NotificationListenerService() {
         @JvmStatic
         fun settingsIntent(): Intent {
             return Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+        }
+
+        @JvmStatic
+        fun syncActiveHealth(context: Context) {
+            val listener = _instance?.get() ?: return
+            listener.scanActiveHealthNotifications()
         }
     }
 }
