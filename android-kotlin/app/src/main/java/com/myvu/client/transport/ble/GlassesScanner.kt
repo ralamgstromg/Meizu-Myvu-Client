@@ -71,11 +71,9 @@ class GlassesScanner(
             .build()
         active = true
         try {
-            val filters = mutableListOf<ScanFilter>()
-            filters.add(ScanFilter.Builder().setServiceUuid(ParcelUuid(ADV_SERVICE)).build())
-            filters.add(ScanFilter.Builder().setServiceUuid(ParcelUuid(GATT_SERVICE)).build())
-            leScanner.startScan(filters, settings, sc)
-            LogBus.log("scanning for glasses (mode=$mode, attempt=$attemptCount) with hardware filters...")
+            // Unfiltered scan: lets matches() catch devices either by "MYVU" name substring or by 0x0bd3/0x0bd1 UUIDs
+            leScanner.startScan(null, settings, sc)
+            LogBus.log("scanning for glasses (mode=$mode, attempt=$attemptCount)...")
         } catch (e: SecurityException) {
             active = false
             cb.onError("missing the Bluetooth scan permission")

@@ -537,6 +537,24 @@ class AiConversation(
             val contextPayload = buildContextPayload()
             val fullPrompt = contextPayload + question
             LogBus.log("AI prompt prepared sessionId=$sessionId contextLength=${contextPayload.length} questionLength=${question.length}")
+
+            if (client.supportsToolCalling()) {
+                val executor = AgenticToolExecutor(context, client)
+                try {
+                    val result = kotlinx.coroutines.runBlocking {
+                        executor.execute(
+                            userQuery = fullPrompt,
+                            systemPrompt = basePrompt
+                        )
+                    }
+                    LogBus.log("AI_AGENTIC_RESPONSE sessionId=$sessionId turns=${result.totalTurns} actions=${result.executedActions.size}")
+                    main.post { deliverFinal(result.finalAnswer, AiResponse.Source.AI) }
+                    return@execute
+                } catch (e: Exception) {
+                    LogBus.error("$aiProviderId tool-calling request failed, falling back to ask()", e)
+                }
+            }
+
             val answer: String?
             try {
                 answer = client.ask(fullPrompt)

@@ -21,11 +21,15 @@ class BootReceiver : BroadcastReceiver() {
             Intent.ACTION_TIME_CHANGED == action ||
             Intent.ACTION_TIMEZONE_CHANGED == action
         ) {
-            try {
-                ServiceKeepAliveHelper.ensureServiceRunning(context)
-                LogBus.log("BootReceiver -> Ensured MyvuService running on $action")
-            } catch (e: Exception) {
-                LogBus.error("BootReceiver -> Failed to ensure MyvuService running", e)
+            if (com.myvu.client.core.Prefs.autoReconnectEnabled(context)) {
+                try {
+                    ServiceKeepAliveHelper.ensureServiceRunning(context)
+                    LogBus.log("BootReceiver -> Ensured MyvuService running on $action")
+                } catch (e: Exception) {
+                    LogBus.error("BootReceiver -> Failed to ensure MyvuService running", e)
+                }
+            } else {
+                LogBus.log("BootReceiver -> Auto-reconnect disabled by user; skipping service start on $action")
             }
 
             if (Intent.ACTION_BOOT_COMPLETED == action ||

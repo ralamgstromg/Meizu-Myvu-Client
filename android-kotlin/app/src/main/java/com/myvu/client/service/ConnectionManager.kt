@@ -381,6 +381,12 @@ class ConnectionManager(
     }
 
     private fun beginAutoSearch() {
+        if (userStopped || !Prefs.autoReconnectEnabled(context)) {
+            LogBus.log("auto-search aborted: auto-reconnect disabled by user")
+            cancelReconnect()
+            state = ConnectionState.IDLE
+            return
+        }
         val bm = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
         val adapter = bm?.adapter
         if (adapter == null) {
@@ -506,6 +512,12 @@ class ConnectionManager(
     // ------------------------------------------------------------ connect
 
     private fun beginConnect() {
+        if (userStopped || !Prefs.autoReconnectEnabled(context)) {
+            LogBus.log("connect aborted: auto-reconnect disabled by user")
+            cancelReconnect()
+            state = ConnectionState.IDLE
+            return
+        }
         val bm = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
         val adapter = bm?.adapter
         if (adapter == null) {
@@ -564,6 +576,7 @@ class ConnectionManager(
     override fun onReady(transport: BleTransport) {
         LogBus.log("BLE link stable -- starting the ECDH bond")
         state = ConnectionState.PAIRING
+        connectAudioProfiles()
         // Report the truthful status now: the BLE ACL is up, so at least
         // CONNECTED_ACL holds; if the audio profiles happen to already be
         // connected (a warm reconnect), advertise that instead. We upgrade this
@@ -660,6 +673,13 @@ class ConnectionManager(
     }
 
     override fun onDisconnected(reason: String) {
+        if (userStopped || !Prefs.autoReconnectEnabled(context)) {
+            LogBus.log("BLE disconnected (stopped by user)")
+            cancelReconnect()
+            teardown()
+            state = ConnectionState.IDLE
+            return
+        }
         LogBus.warn("BLE $reason")
         teardown()
         state = ConnectionState.FAILED
@@ -928,14 +948,8 @@ class ConnectionManager(
             sendActionNow(p.actionJson, p.targetPkg, p.sourcePkg)
         }
 
-        val relayExpected = (transport == null) && (sppUuidVal != null)
-        if (!relayExpected) {
-            applyDefaults()
-            if (audioProfiles != null && !audioProfilesAttempted) {
-                audioProfilesAttempted = true
-                audioProfiles?.connect(device)
-            }
-        }
+        applyDefaults()
+        connectAudioProfiles()
 
         if (transport == null) {
             if (supervisor == null) {
@@ -943,6 +957,14 @@ class ConnectionManager(
                 supervisor?.start()
             }
             supervisor?.wake()
+        }
+    }
+
+    private fun connectAudioProfiles() {
+        val dev = device ?: return
+        if (audioProfiles != null) {
+            LogBus.log("ConnectionManager: Auto-connecting Bluetooth Audio profiles (HFP + A2DP)...")
+            audioProfiles?.connect(dev)
         }
     }
 
@@ -1310,6 +1332,13 @@ class ConnectionManager(
     }
 
     private fun fail(why: String) {
+        if (userStopped || !Prefs.autoReconnectEnabled(context)) {
+            LogBus.log("$why (stopped by user)")
+            cancelReconnect()
+            teardown()
+            state = ConnectionState.IDLE
+            return
+        }
         LogBus.warn(why)
         teardown()
         state = ConnectionState.FAILED

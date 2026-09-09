@@ -44,6 +44,7 @@ class MyvuService : Service(), ConnectionManager.Listener {
 
         if (ACTION_STOP == action) {
             Prefs.setAutoReconnectEnabled(this, false)
+            ServiceWatchdogReceiver.cancelWatchdog(this)
             connection?.stop()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 stopForeground(STOP_FOREGROUND_REMOVE)
@@ -61,8 +62,11 @@ class MyvuService : Service(), ConnectionManager.Listener {
 
         if (ACTION_START == action || action == null) {
             Prefs.setAutoReconnectEnabled(this, true)
-            val mac = intent?.getStringExtra(EXTRA_MAC)?.ifBlank { null }
-                ?: Prefs.targetMac(this).ifBlank { null }
+            val mac = if (intent != null && intent.hasExtra(EXTRA_MAC)) {
+                intent.getStringExtra(EXTRA_MAC)?.trim()?.ifEmpty { null }
+            } else {
+                Prefs.targetMac(this).trim().ifEmpty { null }
+            }
             if (!mac.isNullOrEmpty()) {
                 connection?.start(mac)
             } else {

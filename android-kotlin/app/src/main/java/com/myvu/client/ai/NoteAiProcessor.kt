@@ -85,7 +85,19 @@ class NoteAiProcessor(private val context: Context) {
                 """.trimIndent()
 
                 val aiClient = getAiClient(aiPrompt)
-                val response = aiClient.ask("CONTENIDO DE LA NOTA Y ADJUNTOS:\n\n$content")
+                val userPayload = "CONTENIDO DE LA NOTA Y ADJUNTOS:\n\n$content"
+                val response = if (aiClient.supportsToolCalling()) {
+                    val chatRes = aiClient.chat(
+                        messages = listOf(
+                            ChatMessage.system(aiPrompt),
+                            ChatMessage.user(userPayload)
+                        ),
+                        jsonMode = true
+                    )
+                    chatRes.content ?: ""
+                } else {
+                    aiClient.ask(userPayload)
+                }
                 val cleanJson = sanitizeJsonObject(response)
 
                 var summary = ""
@@ -165,7 +177,19 @@ class NoteAiProcessor(private val context: Context) {
                 """.trimIndent()
 
                 val aiClient = getAiClient(aiPrompt)
-                val response = aiClient.ask("Fecha programada: ${reminder.formattedTriggerDate()}\nDetalle:\n$content")
+                val userPayload = "Fecha programada: ${reminder.formattedTriggerDate()}\nDetalle:\n$content"
+                val response = if (aiClient.supportsToolCalling()) {
+                    val chatRes = aiClient.chat(
+                        messages = listOf(
+                            ChatMessage.system(aiPrompt),
+                            ChatMessage.user(userPayload)
+                        ),
+                        jsonMode = true
+                    )
+                    chatRes.content ?: ""
+                } else {
+                    aiClient.ask(userPayload)
+                }
                 val cleanJson = sanitizeJsonObject(response)
 
                 var summary = ""

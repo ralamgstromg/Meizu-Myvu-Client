@@ -5,7 +5,10 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.net.HttpURLConnection
 
-/** Answers through a user-configured OpenAI-compatible Chat Completions API. */
+/**
+ * Answers through an OpenAI-compatible Chat Completions API (such as LiteLLM proxying to Gemini).
+ * Supports native Tool Calling (Function Calling), Structured Outputs (json_object), and Multimodal queries.
+ */
 class LocalAiClient @JvmOverloads constructor(
     endpoint: String?,
     apiKey: String?,
@@ -22,6 +25,8 @@ class LocalAiClient @JvmOverloads constructor(
 
     override fun endpoint(): String = configuredEndpoint
 
+    override fun supportsToolCalling(): Boolean = true
+
     override fun authorize(conn: HttpURLConnection) {
         if (!apiKey.isNullOrBlank()) {
             val key = apiKey.trim()
@@ -29,6 +34,105 @@ class LocalAiClient @JvmOverloads constructor(
             conn.setRequestProperty("api-key", key)
             conn.setRequestProperty("x-api-key", key)
         }
+    }
+
+    @Throws(java.io.IOException::class)
+    override fun chat(
+        messages: List<ChatMessage>,
+        tools: List<ToolDefinition>?,
+        jsonMode: Boolean
+    ): ChatCompletionResult {
+        if (!isConfigured()) {
+            throw java.io.IOException("${provider.displayName} is not fully configured")
+        }
+        val body = try {
+            buildChatBody(messages, tools, jsonMode)
+        } catch (e: JSONException) {
+            throw java.io.IOException("Could not build chat request: ${e.message}", e)
+        }
+        val rawResponse = HttpRetry.execute(provider.displayName) {
+            askOnce(body)
+        }
+        return parseChatCompletion(rawResponse)
+    }
+
+    @Throws(JSONException::class)
+    fun buildChatBody(
+        messages: List<ChatMessage>,
+        tools: List<ToolDefinition>?,
+        jsonMode: Boolean = false
+    ): String {
+        val root = JSONObject()
+        root.put("model", model)
+        root.put("stream", false)
+        root.put("max_tokens", MAX_TOKENS)
+
+        val messagesArray = JSONArray()
+
+        // If no explicit system message is provided in the list and a systemPrompt exists, prepend it
+        val hasSystemMsg = messages.any { it.role.equals("system", ignoreCase = true) }
+        if (!hasSystemMsg && !systemPrompt.isNullOrBlank()) {
+            messagesArray.put(ChatMessage.system(systemPrompt).toJsonObject())
+        }
+
+        for (msg in messages) {
+            messagesArray.put(msg.toJsonObject())
+        }
+        root.put("messages", messagesArray)
+
+        if (!tools.isNullOrEmpty()) {
+            val toolsArray = JSONArray()
+            for (tool in tools) {
+                toolsArray.put(tool.toOpenAiJsonObject())
+            }
+            root.put("tools", toolsArray)
+            root.put("tool_choice", "auto")
+        }
+
+        if (jsonMode) {
+            root.put("response_format", JSONObject().put("type", "json_object"))
+        }
+
+        return root.toString()
+    }
+
+    @Throws(JSONException::class)
+    fun parseChatCompletion(response: String): ChatCompletionResult {
+        val clean = response.trim()
+        val root = JSONObject(clean)
+        val choices = root.optJSONArray("choices")
+        if (choices != null && choices.length() > 0) {
+            val firstChoice = choices.getJSONObject(0)
+            val msgObj = firstChoice.optJSONObject("message")
+            if (msgObj != null) {
+                val content = if (msgObj.isNull("content")) null else msgObj.optString("content")
+
+                val toolCallsList = mutableListOf<ToolCall>()
+                val toolCallsArray = msgObj.optJSONArray("tool_calls")
+                if (toolCallsArray != null) {
+                    for (i in 0 until toolCallsArray.length()) {
+                        val tcObj = toolCallsArray.optJSONObject(i) ?: continue
+                        val id = tcObj.optString("id", "call_$i")
+                        val fnObj = tcObj.optJSONObject("function")
+                        val fnName = fnObj?.optString("name", "") ?: ""
+                        val fnArgs = fnObj?.optString("arguments", "{}") ?: "{}"
+                        if (fnName.isNotBlank()) {
+                            toolCallsList.add(ToolCall(id = id, functionName = fnName, argumentsJson = fnArgs))
+                        }
+                    }
+                }
+
+                return ChatCompletionResult(
+                    content = content,
+                    toolCalls = toolCallsList,
+                    rawJson = clean
+                )
+            }
+        }
+
+        // Fallback to text extraction if format is non-standard
+        val fallbackText = extractText(clean)
+        return ChatCompletionResult(content = fallbackText, rawJson = clean)
     }
 
     @Throws(java.io.IOException::class)
@@ -44,9 +148,10 @@ class LocalAiClient @JvmOverloads constructor(
         } catch (e: JSONException) {
             throw java.io.IOException("could not build the multimodal request: ${e.message}", e)
         }
-        return HttpRetry.execute(provider.displayName) {
+        val raw = HttpRetry.execute(provider.displayName) {
             askOnce(body)
         }
+        return extractText(raw)
     }
 
     @Throws(JSONException::class)
@@ -95,14 +200,14 @@ class LocalAiClient @JvmOverloads constructor(
 
     @Throws(JSONException::class)
     override fun extractText(response: String): String {
-        val clean = response?.trim() ?: ""
+        val clean = response.trim()
         if (clean.startsWith("data:")) {
             val sb = StringBuilder()
             for (rawLine in clean.split("\n")) {
                 val line = rawLine.trim()
                 if (line.startsWith("data:")) {
                     val jsonStr = line.substring(5).trim()
-                    if ("[DONE]".equalsIgnoreCase(jsonStr)) continue
+                    if ("[DONE]".equals(jsonStr, ignoreCase = true)) continue
                     try {
                         val json = JSONObject(jsonStr)
                         val choices = json.optJSONArray("choices")
@@ -165,6 +270,5 @@ class LocalAiClient @JvmOverloads constructor(
 
     companion object {
         private const val MAX_TOKENS = 1024
-        private fun String.equalsIgnoreCase(other: String): Boolean = this.equals(other, ignoreCase = true)
     }
 }

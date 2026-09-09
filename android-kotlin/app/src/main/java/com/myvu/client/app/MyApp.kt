@@ -9,7 +9,11 @@ class MyApp : Application() {
         super.onCreate()
         CrashReporter.install(this)
         SkillRegistry.initialize(this)
-        com.myvu.client.service.ServiceWatchdogReceiver.scheduleWatchdog(this)
-        LogBus.log("App started — crash reporter installed, SkillRegistry initialized & watchdog scheduled")
+        if (com.myvu.client.core.Prefs.autoReconnectEnabled(this)) {
+            com.myvu.client.service.ServiceWatchdogReceiver.scheduleWatchdog(this)
+            LogBus.log("App started — crash reporter installed, SkillRegistry initialized & watchdog scheduled")
+        } else {
+            LogBus.log("App started — crash reporter installed, SkillRegistry initialized (auto-reconnect disabled)")
+        }
     }
 }

@@ -333,6 +333,7 @@ open class BleTransport(
                 19 -> "glasses closed the BLE link. They most likely only accept their currently-bonded phone -- disconnect the glasses in the MYVU app and retry"
                 22 -> "link terminated by the local host"
                 133 -> "GATT_ERROR (133) -- generic connect failure; usually means the device is not advertising or is already connected elsewhere"
+                147 -> "GATT_CONNECTION_TIMEOUT (147) -- 30s timeout; glasses are off, out of range, or not in BLE advertising mode"
                 BluetoothGatt.GATT_SUCCESS -> "disconnected"
                 else -> "disconnected (status=$status)"
             }

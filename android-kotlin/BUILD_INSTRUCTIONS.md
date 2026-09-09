@@ -6,10 +6,10 @@ Esta documentación detalla los pasos para compilar, generar y firmar los paquet
 
 ## 1. Requisitos Previos
 
-- **JDK**: Java 17 o superior (`OpenJDK 17`).
-- **Android SDK**: API Level 35 (`compileSdk 35`, `minSdk 26`).
-- **Gradle**: Gradle 8.14+ (incluido en el proyecto mediante el Gradle Wrapper `./gradlew`).
-- **Herramienta Keytool / JKS**: Para generación del keystore de firma (incluida en JDK).
+- **JDK**: OpenJDK 25 (`/usr/lib/jvm/java-25-openjdk-amd64`) configurado en `gradle.properties` (`org.gradle.java.home`).
+- **Android SDK**: API Level 35 (`compileSdk 35`, `minSdk 26`). Debe especificarse la ruta en el archivo `local.properties` mediante `sdk.dir=/home/rcastro/Android/Sdk` (o mediante la variable de entorno `ANDROID_HOME`).
+- **Gradle**: Gradle 8.14.3+ (incluido en el proyecto mediante el Gradle Wrapper `./gradlew`).
+- **Herramienta Keytool / JKS**: Para generación del keystore de firma (incluida en JDK 25).
 
 ---
 

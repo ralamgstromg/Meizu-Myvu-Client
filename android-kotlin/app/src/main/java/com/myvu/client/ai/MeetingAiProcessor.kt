@@ -193,7 +193,18 @@ class MeetingAiProcessor(private val context: Context) {
                     "$startPart\n\n... [CONTENIDO INTERMEDIO TRUNCADO POR LONGITUD PARA EVITAR TIMEOUT] ...\n\n$endPart"
                 } else fullRaw
 
-                val aiResponse = aiClient.ask(fullContent)
+                val aiResponse = if (aiClient.supportsToolCalling()) {
+                    val chatRes = aiClient.chat(
+                        messages = listOf(
+                            ChatMessage.system(aiPrompt),
+                            ChatMessage.user(fullContent)
+                        ),
+                        jsonMode = true
+                    )
+                    chatRes.content ?: ""
+                } else {
+                    aiClient.ask(fullContent)
+                }
                 LogBus.log("MeetingAiProcessor: Received AI analysis (${aiResponse.length} chars)")
 
                 // Parse AI JSON response

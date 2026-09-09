@@ -93,7 +93,23 @@ object SkillRegistry {
     fun getAllSkills(): List<Skill> = loadedSkills.values.toList()
 
     /**
-     * Builds the system prompt addendum instructing the LLM on available skills and format.
+     * Returns all registered skills formatted as OpenAI/LiteLLM native ToolDefinition objects.
+     */
+    fun getToolDefinitions(): List<com.myvu.client.ai.ToolDefinition> {
+        return SkillToolConverter.getRegisteredToolDefinitions()
+    }
+
+    /**
+     * Builds a clean system prompt for Aura when native tool calling is enabled (zero text bloat).
+     */
+    fun buildNativeToolsSystemPrompt(): String {
+        return "\n\n### Capacidades Agénticas (Native Tools)\n" +
+                "Tienes acceso a herramientas nativas en el dispositivo Android sincronizado con las gafas MEIZU MYVU. " +
+                "Úsalas de forma autónoma mediante Function Calling cuando el usuario solicite una acción o requieras información del entorno."
+    }
+
+    /**
+     * Builds the legacy system prompt addendum for providers that do NOT support function calling.
      */
     fun buildSystemPromptAddendum(): String {
         if (loadedSkills.isEmpty()) return ""

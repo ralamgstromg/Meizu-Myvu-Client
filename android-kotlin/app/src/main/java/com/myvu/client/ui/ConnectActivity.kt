@@ -498,6 +498,8 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         val start = Intent(this, MyvuService::class.java).setAction(MyvuService.ACTION_START)
         if (auto) {
             LogBus.log("no MAC entered -- auto-searching for glasses")
+            Prefs.setTargetMac(this, "")
+            start.putExtra(MyvuService.EXTRA_MAC, "")
         } else {
             Prefs.setTargetMac(this, mac)
             start.putExtra(MyvuService.EXTRA_MAC, mac)
@@ -649,7 +651,9 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
     }
 
     private fun stopConnection() {
+        LogBus.log("Disconnecting: disabling auto-reconnect and canceling background tasks...")
         Prefs.setAutoReconnectEnabled(this, false)
+        com.myvu.client.service.ServiceWatchdogReceiver.cancelWatchdog(this)
         startService(Intent(this, MyvuService::class.java).setAction(MyvuService.ACTION_STOP))
         render(ConnectionState.IDLE)
     }

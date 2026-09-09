@@ -49,6 +49,10 @@ object ServiceKeepAliveHelper {
     }
 
     fun ensureServiceRunning(context: Context, macAddress: String? = null) {
+        if (!Prefs.autoReconnectEnabled(context)) {
+            LogBus.log("ServiceKeepAliveHelper: Auto-reconnect is disabled by user — skipping service start")
+            return
+        }
         try {
             val targetMac = macAddress?.ifBlank { null } ?: Prefs.targetMac(context).ifBlank { null }
             val intent = Intent(context, MyvuService::class.java).apply {

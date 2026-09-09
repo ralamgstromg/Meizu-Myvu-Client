@@ -354,7 +354,14 @@ class ChatActivity : AppCompatActivity() {
                     try {
                         val profileContext = analyzer.buildProfilePromptContext()
                         val fullPrompt = profileContext + queryText
-                        val rawAnswer = if (!imageUriString.isNullOrBlank()) {
+                        val rawAnswer = if (client.supportsToolCalling() && imageUriString.isNullOrBlank()) {
+                            val agenticExecutor = com.myvu.client.ai.AgenticToolExecutor(this@ChatActivity, client)
+                            val agenticResult = agenticExecutor.execute(
+                                userQuery = fullPrompt,
+                                systemPrompt = basePrompt
+                            )
+                            agenticResult.finalAnswer
+                        } else if (!imageUriString.isNullOrBlank()) {
                             val imageBytes = contentResolver.openInputStream(Uri.parse(imageUriString))?.use { it.readBytes() }
                             if (imageBytes != null && imageBytes.isNotEmpty()) {
                                 client.askWithImage(fullPrompt, imageBytes)
@@ -364,9 +371,15 @@ class ChatActivity : AppCompatActivity() {
                         } else {
                             client.ask(fullPrompt)
                         }
-                        val processed = executor.processAndExecute(rawAnswer)
-                        val skillProcessed = com.myvu.client.skills.SkillExecutor.processAndExecute(this@ChatActivity, processed)
-                        responseText = if (skillProcessed.isNotBlank()) skillProcessed else (rawAnswer ?: "Respuesta vacía de la IA.")
+
+                        val processed = if (!client.supportsToolCalling()) {
+                            val legacyProcessed = executor.processAndExecute(rawAnswer)
+                            com.myvu.client.skills.SkillExecutor.processAndExecute(this@ChatActivity, legacyProcessed)
+                        } else {
+                            rawAnswer
+                        }
+
+                        responseText = if (processed.isNotBlank()) processed else (rawAnswer ?: "Respuesta vacía de la IA.")
                         sourceName = provider.displayName
                     } catch (e: Exception) {
                         LogBus.error("ChatActivity -> Error querying AI", e)

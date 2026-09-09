@@ -52,6 +52,7 @@ class AudioProfiles(
     private val context: Context = context.applicationContext
     private var headset: BluetoothHeadset? = null
     private var a2dp: BluetoothA2dp? = null
+    private var pendingDevice: BluetoothDevice? = null
     private var receiverRegistered = false
 
     init {
@@ -68,10 +69,12 @@ class AudioProfiles(
         override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
             if (profile == BluetoothProfile.HEADSET) {
                 headset = proxy as BluetoothHeadset
-                LogBus.trace("HFP proxy bound")
+                LogBus.log("AudioProfiles: HFP proxy bound")
+                pendingDevice?.let { dev -> tryConnect("HFP", headset, dev) }
             } else if (profile == BluetoothProfile.A2DP) {
                 a2dp = proxy as BluetoothA2dp
-                LogBus.trace("A2DP proxy bound")
+                LogBus.log("AudioProfiles: A2DP proxy bound")
+                pendingDevice?.let { dev -> tryConnect("A2DP", a2dp, dev) }
             }
         }
 
@@ -81,56 +84,87 @@ class AudioProfiles(
         }
     }
 
+    private fun resolveTargetDevice(device: BluetoothDevice): BluetoothDevice {
+        try {
+            if (device.bondState == BluetoothDevice.BOND_BONDED) {
+                return device
+            }
+            // Search bonded devices for a device matching targetMac or named "MYVU"
+            for (d in adapter.bondedDevices) {
+                if (d.address.equals(device.address, ignoreCase = true) || d.address.equals(targetMac, ignoreCase = true)) {
+                    return d
+                }
+                val n = d.name
+                if (n != null && n.uppercase(java.util.Locale.US).contains("MYVU")) {
+                    LogBus.log("AudioProfiles: Resolved bonded audio device '${d.name}' (${d.address}) for glasses")
+                    return d
+                }
+            }
+        } catch (e: SecurityException) {
+            LogBus.warn("AudioProfiles: Permission check failed querying bonded devices: ${e.message}")
+        }
+        return device
+    }
+
     /**
      * Best-effort: allow, then connect, the audio profiles to the glasses. Safe
      * to call more than once (a no-op once the profiles are already connected).
-     * Call it once the classic radio is definitely awake -- i.e. after the RFCOMM
-     * relay is up -- since the glasses' BR/EDR side ignores pages until BLE has
-     * woken them.
      */
     fun connect(device: BluetoothDevice?) {
         if (device == null) return
-        if (currentBtStatus() != LinkCommands.BTSTATUS_CONNECTED_ACL) {
-            LogBus.trace("classic audio profiles already connected")
-            return
+        val target = resolveTargetDevice(device)
+        pendingDevice = target
+
+        // If device is not bonded in Android settings, request bonding so Android recognizes it as a headset
+        try {
+            if (target.bondState == BluetoothDevice.BOND_NONE) {
+                LogBus.log("AudioProfiles: Device not yet bonded in Android -- initiating createBond() for audio on ${target.address}")
+                target.createBond()
+            }
+        } catch (e: SecurityException) {
+            LogBus.warn("AudioProfiles: createBond permission check: ${e.message}")
         }
+
         LogBus.log(
-            "connecting classic audio profiles (HFP + A2DP) to show the " +
-                "glasses as phone-connected"
+            "AudioProfiles: Connecting classic audio profiles (HFP + A2DP) to ${target.name ?: target.address}"
         )
-        tryConnect("HFP", headset, device)
-        tryConnect("A2DP", a2dp, device)
+        tryConnect("HFP", headset, target)
+        tryConnect("A2DP", a2dp, target)
     }
 
     private fun tryConnect(tag: String, proxy: BluetoothProfile?, device: BluetoothDevice) {
         if (proxy == null) {
-            LogBus.trace("$tag proxy not ready yet")
+            LogBus.log("AudioProfiles: $tag proxy binding in progress -- queued for auto-connect")
             return
         }
         if (getState(proxy, device) == BluetoothProfile.STATE_CONNECTED) {
-            LogBus.trace("$tag already connected")
+            LogBus.log("AudioProfiles: $tag already connected to ${device.address}")
             return
         }
         val policy = invoke2(proxy, "setConnectionPolicy", device, CONNECTION_POLICY_ALLOWED)
+        val priority = invoke2(proxy, "setPriority", device, PRIORITY_AUTO_CONNECT)
         val connect = invoke1(proxy, "connect", device)
         LogBus.log(
-            "$tag connect requested (policy=$policy, connect=$connect" +
-                (if (connect) "" else " -- likely BLUETOOTH_PRIVILEGED-gated on this build; falling back to policy + app-layer status") +
-                ")"
+            "AudioProfiles: $tag connect requested for ${device.address} (policy=$policy, priority=$priority, connect=$connect)"
         )
     }
 
     /**
      * The truthful btStatus to advertise to the glasses right now: the highest
-     * classic-audio profile that is actually connected, else ACL (some link is up
-     * whenever we call this), never a value we cannot back up.
+     * classic-audio profile that is actually connected, else ACL.
      */
     fun currentBtStatus(): Int {
-        val device = adapter.getRemoteDevice(targetMac)
-        if (a2dp != null && getState(a2dp, device) == BluetoothProfile.STATE_CONNECTED) {
+        val dev = pendingDevice ?: try {
+            if (targetMac.isNotEmpty()) adapter.getRemoteDevice(targetMac) else null
+        } catch (e: Exception) {
+            null
+        }
+        if (dev == null) return LinkCommands.BTSTATUS_CONNECTED_ACL
+        val target = resolveTargetDevice(dev)
+        if (a2dp != null && getState(a2dp, target) == BluetoothProfile.STATE_CONNECTED) {
             return LinkCommands.BTSTATUS_CONNECTED_A2DP
         }
-        if (headset != null && getState(headset, device) == BluetoothProfile.STATE_CONNECTED) {
+        if (headset != null && getState(headset, target) == BluetoothProfile.STATE_CONNECTED) {
             return LinkCommands.BTSTATUS_CONNECTED_HFP
         }
         return LinkCommands.BTSTATUS_CONNECTED_ACL
@@ -186,6 +220,8 @@ class AudioProfiles(
     companion object {
         /** Hidden BluetoothProfile.CONNECTION_POLICY_ALLOWED. */
         private const val CONNECTION_POLICY_ALLOWED = 100
+        /** Hidden BluetoothProfile.PRIORITY_AUTO_CONNECT. */
+        private const val PRIORITY_AUTO_CONNECT = 1000
 
         private fun String.equalsIgnoreCase(other: String?): Boolean =
             this.equals(other, ignoreCase = true)

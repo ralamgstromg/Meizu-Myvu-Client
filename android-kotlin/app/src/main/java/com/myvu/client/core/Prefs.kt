@@ -23,7 +23,8 @@ object Prefs {
     private const val KEY_AUTO_RECONNECT = "auto_reconnect_enabled"
 
 
-    const val DEFAULT_MAC = "2C:6F:4E:00:DC:47"
+    const val DEFAULT_MAC = ""
+    const val LEGACY_DEFAULT_MAC = "2C:6F:4E:00:DC:47"
     const val DEFAULT_LOCAL_AI_ENDPOINT = "http://127.0.0.1:8080/v1/chat/completions"
     const val DEFAULT_LOCAL_STT_ENDPOINT = "http://127.0.0.1:8181/v1/audio/transcriptions"
     const val DEFAULT_WHISPER_CPP_STT_ENDPOINT = "http://127.0.0.1:8282/v1/audio/transcriptions"
@@ -42,7 +43,13 @@ object Prefs {
 
     @JvmStatic
     fun targetMac(c: Context): String {
-        return prefs(c).getString(KEY_MAC, DEFAULT_MAC) ?: DEFAULT_MAC
+        val stored = prefs(c).getString(KEY_MAC, DEFAULT_MAC) ?: DEFAULT_MAC
+        if (stored.equals(LEGACY_DEFAULT_MAC, ignoreCase = true)) {
+            // Purge the hardcoded author MAC from previous versions
+            setTargetMac(c, "")
+            return ""
+        }
+        return stored
     }
 
     @JvmStatic
