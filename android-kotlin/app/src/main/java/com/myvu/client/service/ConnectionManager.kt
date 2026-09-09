@@ -146,6 +146,8 @@ class ConnectionManager(
     /** True from the moment we open the relay socket until its session is ready. */
     private var relayEstablishing = false
 
+    private var lastTimeSyncSentAt = 0L
+
     private var supervisor: RelaySupervisor? = null
 
     private class PendingAction(
@@ -779,6 +781,12 @@ class ConnectionManager(
         override fun onConnected(transport: Transport) {
             LogBus.log("app relay connected -- running its own session handshake")
             sendAbility(rfSession, transport)
+            conn.postDelayed({
+                if (rfSession?.ready != true && rfcomm === transport) {
+                    LogBus.log("-> ability handshake retry (session=$sessionId)")
+                    sendAbility(rfSession, transport)
+                }
+            }, 2000L)
         }
 
         override fun onPayload(transport: Transport, payload: ByteArray) {
@@ -970,7 +978,9 @@ class ConnectionManager(
                 supervisor = RelaySupervisor(conn, this)
                 supervisor?.start()
             }
-            supervisor?.wake()
+            conn.postDelayed({
+                supervisor?.wake()
+            }, 800)
         }
     }
 
@@ -1101,6 +1111,14 @@ class ConnectionManager(
     }
 
     private fun sendActionNow(actionJson: String, targetPkg: String, sourcePkg: String) {
+        if (actionJson.contains("SyncOffSetTime")) {
+            val now = System.currentTimeMillis()
+            if (now - lastTimeSyncSentAt < 4000L) {
+                return
+            }
+            lastTimeSyncSentAt = now
+        }
+
         val session = activeSession()
         val transport = activeTransport()
 
@@ -1371,7 +1389,7 @@ class ConnectionManager(
     companion object {
         private const val DEVICE_NAME = "MyvuAndroid"
         private const val CATEGORY_ID = "9999"
-        private const val RELAY_ESTABLISH_TIMEOUT_MS = 30000L
+        private const val RELAY_ESTABLISH_TIMEOUT_MS = 6000L
         private const val RECONNECT_BASE_MS = 2000L
         private const val RECONNECT_MAX_MS = 60000L
 

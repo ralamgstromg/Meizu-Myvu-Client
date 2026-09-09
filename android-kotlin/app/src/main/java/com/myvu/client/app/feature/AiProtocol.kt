@@ -75,7 +75,7 @@ object AiProtocol {
             return message(
                 CODE_START_VR_RES, JSONObject()
                     .put("hasNetwork", true)
-                    .put("message", "唤醒成功")
+                    .put("message", "Escuchando...")
                     .put("sessionId", sessionId)
                     .put("success", true)
             )

@@ -34,6 +34,7 @@ class MirrorNotificationListener : NotificationListenerService() {
     private val notificationFilter = NotificationFilter()
     private val dismissHandler = Handler(Looper.getMainLooper())
     private val pendingDismisses = java.util.concurrent.ConcurrentHashMap<String, Runnable>()
+    private val recentlyDismissed = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
     override fun onListenerConnected() {
         super.onListenerConnected()
@@ -117,11 +118,8 @@ class MirrorNotificationListener : NotificationListenerService() {
                 pendingDismisses.remove(notifId)?.let { dismissHandler.removeCallbacks(it) }
                 val runnable = Runnable {
                     pendingDismisses.remove(notifId)
-                    try {
-                        val active = MyvuService.activeConnection()
-                        active?.sendAction(Notifications.buildDismiss(notifId))
-                    } catch (ignored: Exception) {
-                    }
+                    val active = MyvuService.activeConnection()
+                    sendDismissSafely(active, notifId)
                 }
                 pendingDismisses[notifId] = runnable
                 dismissHandler.postDelayed(runnable, durationSec * 1000L)
@@ -138,8 +136,21 @@ class MirrorNotificationListener : NotificationListenerService() {
         val notifId = Notifications.notificationId(sbn.packageName, sbn.id)
         pendingDismisses.remove(notifId)?.let { dismissHandler.removeCallbacks(it) }
         val connection = MyvuService.activeConnection() ?: return
+        sendDismissSafely(connection, notifId)
+    }
+
+    private fun sendDismissSafely(connection: ConnectionManager?, notifId: String) {
+        if (connection == null) return
+        val now = System.currentTimeMillis()
+        val last = recentlyDismissed[notifId] ?: 0L
+        if (now - last < 2500L) {
+            return // Evitar ráfagas duplicadas de DISMISS para el mismo ID dentro de 2.5s
+        }
+        recentlyDismissed[notifId] = now
+        if (recentlyDismissed.size > 50) {
+            recentlyDismissed.entries.removeIf { now - it.value > 10000L }
+        }
         try {
-            // Must match the id used when showing it, or the dismiss is a no-op.
             connection.sendAction(Notifications.buildDismiss(notifId))
         } catch (e: Exception) {
             LogBus.error("could not dismiss a mirrored notification", e)
@@ -279,10 +290,25 @@ class MirrorNotificationListener : NotificationListenerService() {
                     if (count >= 6) break
                 }
 
+                val catPlural = when (cat) {
+                    "correo", "correos", "email" -> "correos"
+                    "mensaje", "mensajes" -> "mensajes"
+                    "" -> "notificaciones"
+                    else -> if (cat.endsWith("s")) cat else "${cat}s"
+                }
+                val catSingular = when (cat) {
+                    "correo", "correos", "email" -> "correo"
+                    "mensaje", "mensajes" -> "mensaje"
+                    "notificaciones", "" -> "notificación"
+                    else -> if (cat.endsWith("s")) cat.substring(0, cat.length - 1) else cat
+                }
+
                 if (count == 0) {
-                    "No tienes ${if (cat.isEmpty()) "notificaciones" else cat} pendientes por leer."
+                    "No tienes $catPlural pendientes por leer."
+                } else if (count == 1) {
+                    "Tienes 1 $catSingular pendiente:\n" + sb.toString().trim()
                 } else {
-                    "Tienes $count ${if (cat.isEmpty()) "notificaciones" else cat} pendientes:\n" + sb.toString().trim()
+                    "Tienes $count $catPlural pendientes:\n" + sb.toString().trim()
                 }
             } catch (e: Exception) {
                 LogBus.error("could not fetch active notifications", e)

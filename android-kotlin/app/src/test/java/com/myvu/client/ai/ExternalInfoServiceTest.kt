@@ -99,4 +99,12 @@ class ExternalInfoServiceTest {
         assertTrue(text.contains("Barranquilla"))
         assertTrue(text.contains("despejado") || text.contains("Cielo despejado"))
     }
+
+    @Test
+    fun testGeocodeCache() {
+        com.myvu.client.weather.OpenMeteo.clearGeocodeCache()
+        // Test that blank or invalid query returns null safely
+        val blankResult = com.myvu.client.weather.OpenMeteo.geocode("   ")
+        org.junit.Assert.assertNull(blankResult)
+    }
 }

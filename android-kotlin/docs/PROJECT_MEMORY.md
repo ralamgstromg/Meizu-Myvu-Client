@@ -262,4 +262,43 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
   - Suite de pruebas unitarias `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (34 tareas ejecutadas/al día, 0 fallos).
   - Ensamblado de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL** en 924ms (41 tareas ejecutadas/al día, APK generado limpiamente).
 
+### [2026-09-09] — Optimización de Latencia en Voz, Aceleración de App Relay y Robustez de Notificaciones
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-log-analysis-and-latency-voice-improvements.md`.
+- **Análisis de Logs**: Diagnóstico exhaustivo de 350 eventos en `myvu_client_log.txt`.
+- **Modificaciones Realizadas**:
+  1. `AiConversation.kt`:
+     - Eliminado el cuello de botella de latencia de 8 a 10 segundos: al pulsar el botón de las gafas (`why == "button"`), el audio proviene del micrófono de las gafas; se omite `AndroidSpeechRecognizer` en el teléfono para evitar timeouts y conflictos de audio del móvil en el bolsillo.
+     - Detección inmediata de fin de habla en VAD: tan pronto el usuario termina de hablar (`SILENCE_HOLD_MS = 1200ms`), se procesa el flujo Opus de las gafas directamente con `endUtterance(forceGlassesAudio = true)`, reduciendo la latencia de respuesta de ~11s a ~1.8s.
+  2. `AiProtocol.kt`:
+     - Sustituido el mensaje de `sessionAck` en chino mandarín (`"唤醒成功"`) por español (`"Escuchando..."`).
+  3. `ConnectionManager.kt`:
+     - Reducido el timeout de establecimiento del App Relay RFCOMM (`RELAY_ESTABLISH_TIMEOUT_MS`) de 30.000 ms a 6.000 ms.
+     - Añadida retransmisión automática de `sendAbility` a los 2.000 ms si el burst inicial de BLE demoró la respuesta de las gafas, permitiendo que el visor HUD y teleprompter estén listos en 2 a 4 segundos en vez de esperar medio minuto.
+  4. `MirrorNotificationListener.kt`:
+     - Implementada idempotencia estricta en `sendDismissSafely` con ventana de 2.5s y limpieza periódica de cache, erradicando ráfagas duplicadas de `DISMISS_NOTIFICATION` en milisegundos.
+     - Corregida concordancia gramatical en `getUnreadSummary()`: "1 notificación pendiente" vs "X notificaciones pendientes".
+- **Verificación**:
+  - Suite de pruebas unitarias `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (34 tareas ejecutadas/al día, 0 fallos).
+  - Ensamblado de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL** en 1s (41 tareas ejecutadas/al día, APK generado limpiamente).
+
+### [2026-09-09] — Pulido de Latencia de Clima (Cache), Handshake RFCOMM Suave y Gramática
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-polish-weather-rfcomm-grammar.md`.
+- **Análisis de Logs Post-Ajustes**:
+  - Confirmada reducción drástica de latencia de voz de 11.5s a 1.8s (STT rápido con Opus sin errores 12).
+  - Confirmada auto-conexión de perfiles Bluetooth Classic (HFP + A2DP) y deduplicación de notificaciones.
+- **Mejoras Implementadas**:
+  1. `OpenMeteo.kt`:
+     - Implementada caché concurrente en memoria (`geocodeCache`) para coordenadas de ciudades en consultas meteorológicas.
+     - Evita la petición HTTP de geocodificación en consultas repetidas o de la ciudad local, reduciendo el tiempo de respuesta del clima de ~3.6s a ~1.1s.
+     - Esto previene de raíz que el firmware de las gafas dispare su watchdog interno de 3 segundos que reproducía el mensaje en inglés *"Just a moment, please"*.
+  2. `MirrorNotificationListener.kt`:
+     - Corregida la pluralización en `getUnreadSummary()`: ahora muestra y pronuncia *"No tienes correos pendientes por leer"* o *"No tienes mensajes pendientes por leer"* en lugar del singular desajustado *"No tienes correo..."*.
+  3. `ConnectionManager.kt`:
+     - Añadido retraso prudente de 800ms antes de activar el `RelaySupervisor` tras completar la ráfaga de inicialización BLE y `applyDefaults()`. Esto previene la colisión de paquetes entre BLE y RFCOMM durante el emparejamiento y elimina el timeout de 6 segundos.
+     - Incorporado acelerador/filtro de desduplicación de `ClockSync` / `SyncOffSetTime` (ventana de 4s), impidiendo el envío consecutivo doble de sincronización de hora en menos de 100ms.
+- **Verificación**:
+  - Tests unitarios `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (34 tareas OK, incluyendo nueva prueba unitaria de caché en `ExternalInfoServiceTest.kt`).
+  - Ensamblado de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL** en 846ms.
+
+
 

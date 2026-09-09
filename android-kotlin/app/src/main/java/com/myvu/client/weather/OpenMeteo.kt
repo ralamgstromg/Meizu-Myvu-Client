@@ -28,22 +28,35 @@ object OpenMeteo {
         val admin1: String? = null
     )
 
+    private val geocodeCache = java.util.concurrent.ConcurrentHashMap<String, GeoLocation>()
+
+    @JvmStatic
+    fun clearGeocodeCache() {
+        geocodeCache.clear()
+    }
+
     @JvmStatic
     @Throws(IOException::class, JSONException::class)
     fun geocode(cityName: String, timeoutMs: Int = TIMEOUT_MS): GeoLocation? {
+        val normalizedCity = cityName.trim().lowercase(Locale.ROOT)
+        if (normalizedCity.isBlank()) return null
+        geocodeCache[normalizedCity]?.let { return it }
+
         val encoded = java.net.URLEncoder.encode(cityName.trim(), "UTF-8")
         val url = "$GEO_BASE?name=$encoded&count=1&language=es&format=json"
         val root = JSONObject(get(url, timeoutMs))
         val results = root.optJSONArray("results")
         if (results != null && results.length() > 0) {
             val first = results.getJSONObject(0)
-            return GeoLocation(
+            val loc = GeoLocation(
                 name = first.optString("name", cityName),
                 latitude = first.optDouble("latitude"),
                 longitude = first.optDouble("longitude"),
                 country = first.optString("country").takeIf { it.isNotBlank() },
                 admin1 = first.optString("admin1").takeIf { it.isNotBlank() }
             )
+            geocodeCache[normalizedCity] = loc
+            return loc
         }
         return null
     }

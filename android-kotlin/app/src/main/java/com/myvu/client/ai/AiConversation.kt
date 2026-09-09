@@ -224,7 +224,7 @@ class AiConversation(
             }
             if (speechStarted && System.currentTimeMillis() - lastSpeechAt > SILENCE_HOLD_MS) {
                 decoding = false
-                main.post { endUtterance() }
+                main.post { endUtterance(forceGlassesAudio = true) }
             }
         }
     }
@@ -257,7 +257,11 @@ class AiConversation(
         }
         mic.start()
 
-        if (usesAndroidSpeech) {
+        val isGlassesTrigger = why == "button"
+        // Si el usuario activó desde las gafas (botón físico/touch), el audio viene del micrófono
+        // de las gafas vía stream Opus. Omitir AndroidSpeechRecognizer para evitar capturar audio
+        // del teléfono en el bolsillo y retrasos de 8 segundos por errores de STT local.
+        if (usesAndroidSpeech && !isGlassesTrigger) {
             nativeSpeechSessionId = sessionId
             val started = androidSpeech.start(
                 Locale.getDefault().toLanguageTag(),
@@ -296,9 +300,13 @@ class AiConversation(
     }
 
     private fun endUtterance(forceGlassesAudio: Boolean = false) {
-        if (usesAndroidSpeech && !forceGlassesAudio) {
+        val hasGlassesAudio = mic.isCapturing() && (speechStarted || mic.packetCount() > 0)
+        if (usesAndroidSpeech && !forceGlassesAudio && !hasGlassesAudio) {
             if (active) androidSpeech.stop()
             return
+        }
+        if (usesAndroidSpeech && active) {
+            androidSpeech.stop()
         }
         if (!active || !mic.isCapturing()) return
         main.removeCallbacks(silenceTimeout)
