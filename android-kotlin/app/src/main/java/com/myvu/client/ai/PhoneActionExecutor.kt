@@ -648,13 +648,33 @@ class PhoneActionExecutor(context: Context) {
             }
 
             val cleanNum = ContactHelper.formatColombianPhone(number ?: "")
+            val encodedMsg = if (message.isNotEmpty()) URLEncoder.encode(message, "UTF-8") else ""
 
+            // Strategy 1: WhatsApp native URI scheme (whatsapp://send?phone=...)
+            // This opens the exact chat for that phone number without triggering the
+            // "send invitation" screen — WhatsApp handles the number lookup internally.
+            if (cleanNum.isNotEmpty()) {
+                val waUri = Uri.parse("whatsapp://send?phone=$cleanNum&text=$encodedMsg")
+                val waIntent = Intent(Intent.ACTION_VIEW, waUri).apply {
+                    setPackage("com.whatsapp")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                try {
+                    dispatchMessagingIntent(waIntent, "com.whatsapp")
+                    LogBus.log("voice action -> opened WhatsApp (whatsapp:// scheme) for $recipient ($cleanNum) with text: $message")
+                    return
+                } catch (e: Exception) {
+                    LogBus.warn("openWhatsApp: whatsapp:// scheme failed (${e.message}), trying API URL")
+                }
+            }
+
+            // Strategy 2: WhatsApp API deep-link (works also when WhatsApp is not set as handler)
             val url = StringBuilder("https://api.whatsapp.com/send?")
             if (cleanNum.isNotEmpty()) {
                 url.append("phone=").append(cleanNum).append("&")
             }
             if (message.isNotEmpty()) {
-                url.append("text=").append(URLEncoder.encode(message, "UTF-8"))
+                url.append("text=").append(encodedMsg)
             }
 
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url.toString())).apply {
@@ -664,13 +684,13 @@ class PhoneActionExecutor(context: Context) {
 
             try {
                 dispatchMessagingIntent(intent, "com.whatsapp")
-                LogBus.log("voice action -> opened WhatsApp for $recipient ($cleanNum) with text: $message")
+                LogBus.log("voice action -> opened WhatsApp (API URL) for $recipient ($cleanNum) with text: $message")
             } catch (e: Exception) {
                 val genericIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url.toString())).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 dispatchMessagingIntent(genericIntent, null)
-                LogBus.log("voice action -> opened generic WhatsApp browser/app fallback for: $message")
+                LogBus.log("voice action -> opened generic WhatsApp browser fallback for: $message")
             }
         } catch (e: Exception) {
             LogBus.error("could not open WhatsApp", e)

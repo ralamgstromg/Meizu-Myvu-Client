@@ -970,7 +970,17 @@ class ConnectionManager(
             sendActionNow(p.actionJson, p.targetPkg, p.sourcePkg)
         }
 
-        applyDefaults()
+        // applyDefaults sends the full settings burst (language, brightness, volume, etc.).
+        // It must run exactly once per physical connection to avoid duplicate messages.
+        // - When BLE completes first (transport==null): run defaults, unless relay is already READY.
+        // - When relay completes (transport!=null): run defaults only if BLE hasn't done it yet
+        //   (i.e., the BLE session was not ready before the relay came up, which is the normal path).
+        val bleAlreadyApplied = bleSession.ready && transport != null
+        if (!bleAlreadyApplied) {
+            applyDefaults()
+        } else {
+            LogBus.log("applyDefaults skipped on relay session — BLE already applied settings")
+        }
         connectAudioProfiles()
 
         if (transport == null) {
@@ -1039,7 +1049,7 @@ class ConnectionManager(
             } catch (ignored: Exception) {
             }
             try {
-                sendActionNow(SystemSettings.setLanguage("es", "ES"))
+                sendActionNow(SystemSettings.setLanguage("es", "CO"))
             } catch (ignored: Exception) {
             }
             try {

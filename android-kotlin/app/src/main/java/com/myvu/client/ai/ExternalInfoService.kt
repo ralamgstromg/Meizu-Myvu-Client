@@ -574,7 +574,10 @@ object ExternalInfoService {
                     .replace(Regex("(?i)\\s*-\\s*[^-]+$"), "")
                     .replace(Regex("<[^>]*>"), "")
                 val source = m.groupValues[2].replace(Regex("<[^>]*>"), "").trim()
-                val t = cleanForGlasses(rawTitle)
+                val t = cleanForGlasses(rawTitle).let {
+                    // Truncate per-title to ~80 chars so TTS stays under 15s for 3 items
+                    if (it.length > 80) it.take(77) + "..." else it
+                }
                 if (t.isNotBlank() && !t.contains("Google News") && titles.size < 3) {
                     val entry = if (source.isNotBlank()) "$t ($source)" else t
                     titles.add(entry)

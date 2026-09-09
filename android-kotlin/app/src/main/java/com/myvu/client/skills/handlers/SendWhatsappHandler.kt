@@ -5,16 +5,21 @@ import android.content.Intent
 import android.net.Uri
 import com.myvu.client.core.ContactHelper
 import com.myvu.client.core.LogBus
-import com.myvu.client.service.AutoSendAccessibilityService
 import com.myvu.client.skills.SkillHandler
 import com.myvu.client.skills.SkillResult
 import org.json.JSONObject
 import java.net.URLEncoder
 
 /**
- * Hands-Free WhatsApp Messaging Handler:
- * Resolves contact names, standardizes phone numbers (prefix +57 Colombia),
- * arms AutoSendAccessibilityService, and launches direct WhatsApp chat.
+ * Hands-Free WhatsApp Messaging Handler.
+ *
+ * Strategy (in order of preference):
+ * 1. Direct ACTION_SEND to com.whatsapp — sends without any UI interaction needed.
+ *    Works even with the screen locked on most Android versions.
+ * 2. WhatsApp API deep-link (fallback when no phone found or ACTION_SEND rejected).
+ * 3. Generic browser fallback if WhatsApp is not installed.
+ *
+ * Phone numbers are prefixed with +57 (Colombia) when no country code is present.
  */
 class SendWhatsappHandler : SkillHandler {
 
@@ -26,22 +31,35 @@ class SendWhatsappHandler : SkillHandler {
             return SkillResult(false, "Falta especificar el destinatario y el mensaje a enviar por WhatsApp.")
         }
 
-        // 1. Resolve contact name to phone number if necessary
+        // 1. Resolve contact name to phone number
         val resolved = ContactHelper.resolveContactPhone(context, contactOrPhone)
         val rawPhone = resolved?.first ?: contactOrPhone
         val displayName = resolved?.second ?: contactOrPhone
-
-        // 2. Format Colombian / International phone
         val cleanPhone = ContactHelper.formatColombianPhone(rawPhone)
 
-        // 3. Arm accessibility auto-send service for zero-touch dispatch
-        try {
-            AutoSendAccessibilityService.triggerWhatsAppAutoSend()
-            LogBus.log("SendWhatsappHandler: AutoSendAccessibilityService armed for WhatsApp")
-        } catch (e: Exception) {
-            LogBus.warn("SendWhatsappHandler: Could not arm accessibility auto-send: ${e.message}")
+        // 2. Try direct ACTION_SEND — works without unlocking the screen
+        if (cleanPhone.isNotEmpty()) {
+            val directIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra("address", cleanPhone)
+                putExtra(Intent.EXTRA_TEXT, message)
+                putExtra("chat", true)
+                setPackage("com.whatsapp")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            try {
+                context.startActivity(directIntent)
+                LogBus.log("SendWhatsappHandler: Sent via ACTION_SEND direct to $cleanPhone")
+                return SkillResult(
+                    true,
+                    "Enviando WhatsApp a $displayName ($cleanPhone): \"$message\""
+                )
+            } catch (e: Exception) {
+                LogBus.warn("SendWhatsappHandler: ACTION_SEND failed (${e.message}), falling back to API link")
+            }
         }
 
+        // 3. Fallback: deep-link via WhatsApp API URL
         val encodedMessage = URLEncoder.encode(message, "UTF-8")
         val intentUri = if (cleanPhone.isNotEmpty()) {
             Uri.parse("https://api.whatsapp.com/send?phone=$cleanPhone&text=$encodedMessage")
@@ -56,15 +74,16 @@ class SendWhatsappHandler : SkillHandler {
 
         return try {
             context.startActivity(whatsappIntent)
-            SkillResult(true, "💬 **Enviando WhatsApp** a **$displayName** (${if (cleanPhone.isNotEmpty()) cleanPhone else "chat"}): \"$message\"")
+            LogBus.log("SendWhatsappHandler: Opened WhatsApp via API link for $displayName")
+            SkillResult(true, "Abriendo WhatsApp para $displayName. Confirma el envio en pantalla.")
         } catch (e: Exception) {
-            LogBus.warn("SendWhatsappHandler: WhatsApp app not installed, falling back to browser/generic Intent")
+            LogBus.warn("SendWhatsappHandler: WhatsApp not installed, trying browser")
             val fallbackIntent = Intent(Intent.ACTION_VIEW, intentUri).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
             try {
                 context.startActivity(fallbackIntent)
-                SkillResult(true, "💬 Abriendo enlace de WhatsApp para **$displayName** en navegador.")
+                SkillResult(true, "Abriendo enlace de WhatsApp para $displayName en el navegador.")
             } catch (ex: Exception) {
                 LogBus.error("SendWhatsappHandler: Failed to launch WhatsApp intent", ex)
                 SkillResult(false, "No se pudo abrir WhatsApp para '$displayName': ${ex.message}")

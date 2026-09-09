@@ -363,18 +363,25 @@ class AutoSendAccessibilityService : AccessibilityService() {
             val desc = node.contentDescription?.toString()?.lowercase()?.trim() ?: ""
             val text = node.text?.toString()?.lowercase()?.trim() ?: ""
 
-            // Anti-voice exclusion: never click microphone / voice recording
+            // Anti-voice exclusion: never click microphone / voice recording buttons
             val isVoice = desc.contains("voz") || desc.contains("voice") ||
                     desc.contains("audio") || desc.contains("grabar") ||
                     desc.contains("record") || viewId.contains("voice") ||
                     viewId.contains("mic") || desc == "mensaje de voz" ||
                     desc == "voice message"
 
-            if (!isVoice) {
+            // Anti-invitation exclusion: never click the WhatsApp "Enviar invitación por SMS" button
+            // that appears when the recipient does not have WhatsApp.
+            val isInvitation = desc.contains("invitación") || desc.contains("invitation") ||
+                    text.contains("invitación") || text.contains("invitation") ||
+                    text == "enviar invitación por sms" || text == "send invitation via sms" ||
+                    viewId.contains("invite")
+
+            if (!isVoice && !isInvitation) {
                 val matchesId = targetIds.any { viewId.endsWith(it) || viewId == it }
-                val matchesDesc = desc in listOf("enviar", "send", "enviar sms", "enviar mms", "enviar mensaje", "send message") ||
+                val matchesDesc = desc in listOf("enviar", "send", "enviar mensaje", "send message") ||
                         desc.startsWith("enviar ") || desc.startsWith("send ")
-                val matchesText = text in listOf("enviar", "send", "enviar sms", "send sms")
+                val matchesText = text in listOf("enviar", "send", "enviar mensaje", "send message")
 
                 if (matchesId || matchesDesc || matchesText) {
                     // 1. Direct node click

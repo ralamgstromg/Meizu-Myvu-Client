@@ -189,7 +189,15 @@ object ContactHelper {
                         val contactName = cursor.getString(nameIdx) ?: continue
                         val contactNumber = cursor.getString(numIdx) ?: continue
 
-                        val score = calculateScore(cleanTarget, contactName)
+                        var score = calculateScore(cleanTarget, contactName)
+
+                        // Prefer Colombian numbers (+57) when the query doesn't specify a country.
+                        // This avoids picking international duplicates over local contacts.
+                        val cleanDigits = contactNumber.replace(Regex("[^0-9]"), "")
+                        val isColombian = cleanDigits.startsWith("57") && cleanDigits.length == 12 ||
+                                contactNumber.trimStart().startsWith("+57")
+                        if (isColombian && score >= 30) score += 50
+
                         if (score >= 2000) {
                             LogBus.log("ContactHelper -> Exact match '$contactName' ($contactNumber, score: $score)")
                             return ContactMatch(contactNumber, contactName, score, true)
@@ -454,6 +462,71 @@ object ContactHelper {
             }
         } catch (e: Exception) {
             LogBus.warn("ContactHelper: resolveWhatsAppVoipDataId error: ${e.message}")
+        }
+        return null
+    }
+
+    /**
+     * Resolves the WhatsApp chat/profile data row ID from ContactsContract.Data.
+     * Uses the "vnd.android.cursor.item/vnd.com.whatsapp.profile" MIME type, which is
+     * present for every contact that has WhatsApp installed and is linked in the Android
+     * contacts database.
+     *
+     * Returns the DATA._ID that can be used with the
+     * "content://com.whatsapp/data/<id>" content URI to open the exact chat.
+     */
+    fun resolveWhatsAppChatDataId(context: Context, nameOrPhone: String): Long? {
+        if (nameOrPhone.isBlank()) return null
+        if (context.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+            return null
+        }
+        val resolver = context.contentResolver
+        val projection = arrayOf(
+            ContactsContract.Data._ID,
+            ContactsContract.Data.DISPLAY_NAME,
+            ContactsContract.Data.DATA1
+        )
+        // WhatsApp registers both a profile and a voip.call row; use profile for messaging
+        val mimeTypes = arrayOf(
+            "vnd.android.cursor.item/vnd.com.whatsapp.profile",
+            "vnd.android.cursor.item/vnd.com.whatsapp.voip.call"
+        )
+        val placeholders = mimeTypes.joinToString(",") { "?" }
+        val selection = "${ContactsContract.Data.MIMETYPE} IN ($placeholders)"
+
+        try {
+            resolver.query(
+                ContactsContract.Data.CONTENT_URI, projection, selection, mimeTypes, null
+            )?.use { cursor ->
+                val idIdx = cursor.getColumnIndex(ContactsContract.Data._ID)
+                val nameIdx = cursor.getColumnIndex(ContactsContract.Data.DISPLAY_NAME)
+                val phoneIdx = cursor.getColumnIndex(ContactsContract.Data.DATA1)
+
+                var bestId: Long? = null
+                var bestScore = 0
+                val cleanTarget = nameOrPhone.replace(Regex("[^0-9]"), "")
+
+                while (cursor.moveToNext()) {
+                    val id = cursor.getLong(idIdx)
+                    val name = cursor.getString(nameIdx) ?: ""
+                    val phone = cursor.getString(phoneIdx) ?: ""
+
+                    // Exact phone tail match
+                    if (cleanTarget.isNotEmpty() && cleanTarget.length >= 7 &&
+                        phone.replace(Regex("[^0-9]"), "").endsWith(cleanTarget)) {
+                        return id
+                    }
+                    // Fuzzy name match
+                    val score = calculateScore(nameOrPhone, name)
+                    if (score > bestScore) {
+                        bestScore = score
+                        bestId = id
+                    }
+                }
+                if (bestScore >= 35) return bestId
+            }
+        } catch (e: Exception) {
+            LogBus.warn("ContactHelper: resolveWhatsAppChatDataId error: ${e.message}")
         }
         return null
     }

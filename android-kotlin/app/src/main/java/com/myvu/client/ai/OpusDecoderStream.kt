@@ -150,7 +150,7 @@ class OpusDecoderStream {
                     val actual = c.outputFormat
                     outputSampleRate = actual.getInteger(MediaFormat.KEY_SAMPLE_RATE)
                     outputChannels = actual.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
-                    LogBus.log(
+                    LogBus.trace(
                         "Opus decoder output: ${outputSampleRate}Hz, ${outputChannels}ch" +
                                 if (outputSampleRate != OpusStream.SAMPLE_RATE) " (NOT the declared ${OpusStream.SAMPLE_RATE}Hz)" else ""
                     )
@@ -184,7 +184,7 @@ class OpusDecoderStream {
                     val actual = c.outputFormat
                     outputSampleRate = actual.getInteger(MediaFormat.KEY_SAMPLE_RATE)
                     outputChannels = actual.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
-                    LogBus.log(
+                    LogBus.trace(
                         "Opus decoder output: ${outputSampleRate}Hz, ${outputChannels}ch" +
                                 if (outputSampleRate != OpusStream.SAMPLE_RATE) " (NOT the declared ${OpusStream.SAMPLE_RATE}Hz)" else ""
                     )
