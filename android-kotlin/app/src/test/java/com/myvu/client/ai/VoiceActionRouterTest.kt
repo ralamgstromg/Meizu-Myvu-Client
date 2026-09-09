@@ -290,4 +290,62 @@ class VoiceActionRouterTest {
         assertTrue(full.handled)
         assertTrue(full.responseText.contains("Salud", ignoreCase = true))
     }
+
+    @Test
+    fun testFastPathMediaTransportControls() {
+        val pause = router.tryRoute("pausa la música")
+        assertTrue(pause.handled)
+        assertEquals("Música pausada.", pause.responseText)
+
+        val resume = router.tryRoute("reanuda la música")
+        assertTrue(resume.handled)
+        assertEquals("Reproduciendo música.", resume.responseText)
+
+        val skip = router.tryRoute("salta la canción")
+        assertTrue(skip.handled)
+        assertEquals("Siguiente canción.", skip.responseText)
+
+        val next = router.tryRoute("siguiente pista")
+        assertTrue(next.handled)
+        assertEquals("Siguiente canción.", next.responseText)
+
+        val prev = router.tryRoute("canción anterior")
+        assertTrue(prev.handled)
+        assertEquals("Canción anterior.", prev.responseText)
+
+        val stop = router.tryRoute("detén la música")
+        assertTrue(stop.handled)
+        assertEquals("Música detenida.", stop.responseText)
+
+        val nowPlaying = router.tryRoute("¿Qué canción está sonando?")
+        assertTrue(nowPlaying.handled)
+        assertNotNull(nowPlaying.responseText)
+    }
+
+    @Test
+    fun testFastPathMediaThirdPartyPlaybackAndSearch() {
+        val playNewPipe = router.tryRoute("reproduce La Incondicional en NewPipe")
+        assertTrue(playNewPipe.handled)
+        assertTrue(playNewPipe.responseText.contains("NewPipe", ignoreCase = true))
+        assertTrue(playNewPipe.responseText.contains("La Incondicional", ignoreCase = true))
+
+        val playOpenTune = router.tryRoute("pon Bohemian Rhapsody en OpenTune")
+        assertTrue(playOpenTune.handled)
+        assertTrue(playOpenTune.responseText.contains("OpenTune", ignoreCase = true))
+        assertTrue(playOpenTune.responseText.contains("Bohemian Rhapsody", ignoreCase = true))
+
+        val searchNewPipe = router.tryRoute("busca jazz en NewPipe")
+        assertTrue(searchNewPipe.handled)
+        assertTrue(searchNewPipe.responseText.contains("NewPipe", ignoreCase = true))
+        assertTrue(searchNewPipe.responseText.contains("jazz", ignoreCase = true))
+
+        val searchOpenTune = router.tryRoute("busca canciones de Metallica en OpenTune")
+        assertTrue(searchOpenTune.handled)
+        assertTrue(searchOpenTune.responseText.contains("OpenTune", ignoreCase = true))
+        assertTrue(searchOpenTune.responseText.contains("Metallica", ignoreCase = true))
+
+        val playSpotify = router.tryRoute("reproduce rock clásico en Spotify")
+        assertTrue(playSpotify.handled)
+        assertTrue(playSpotify.responseText.contains("Spotify", ignoreCase = true))
+    }
 }

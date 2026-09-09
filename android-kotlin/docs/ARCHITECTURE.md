@@ -127,6 +127,20 @@ El subsistema en `com.myvu.client.skills` permite añadir funcionalidades al dis
 - **Comunicación**: `call-contact`, `send-whatsapp`, `send-telegram`, `unread-notifications`.
 - **Información Rápida**: `weather-forecast`, `hud-navigation`, `google-search`, `currency-convert`.
 
+### 5.1 Control de Medios y Aplicaciones Externas (`com.myvu.client.media.MediaPlaybackHelper`)
+- **Doble Capa de Control de Transporte**:
+  - **`MediaSessionManager` + `MediaController`**: Aprovecha el permiso de escucha de notificaciones de `MirrorNotificationListener` para interactuar directamente con la sesión activa de reproducción. Soporta comandos directos (`play`, `pause`, `skipToNext`, `skipToPrevious`, `stop`) y lectura de metadatos (`METADATA_KEY_TITLE`, `METADATA_KEY_ARTIST`) para responder en HUD y voz a *"¿Qué canción está sonando?"*.
+  - **`AudioManager.dispatchMediaKeyEvent`**: Fallback seguro mediante keycodes multimedia del sistema (`KEYCODE_MEDIA_PLAY`, `KEYCODE_MEDIA_PAUSE`, etc.).
+- **Soporte de Aplicaciones Libres y Comerciales**:
+  - **NewPipe y forks (Tubular, BraveNewPipe)**: Búsqueda mediante `ACTION_SEARCH` y reproducción por deep link interceptable de YouTube.
+  - **OpenTune y clientes YouTube Music (InnerTune, RiMusic, ViMusic)**: Búsqueda y reproducción mediante `INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH` y MediaSession.
+  - **Spotify, YouTube Music, YouTube, VLC, Deezer**: Integración nativa con URIs de búsqueda y paquetes declarados en `<queries>`.
+- **Ejecución con Pantalla Bloqueada en Bolsillo**:
+  - Uso de `SendTrampolineActivity` y `LockScreenHelper` para despachar intents multimedia sin ser bloqueados por las restricciones en segundo plano de Android.
+- **Fast-Paths en `VoiceActionRouter` y Skill Agéntica**:
+  - Respuestas en <5ms para órdenes de voz frecuentes (*"reproduce [canción] en NewPipe"*, *"busca [video] en OpenTune"*, *"salta la canción"*, *"qué canción suena"*).
+  - Habilidad `app-media-control` expuesta a Gemini/LiteLLM con esquemas JSON de OpenAPI para invocación agéntica autónoma.
+
 ---
 
 ## 6. Integración de Inteligencia Artificial (Gemini + LiteLLM & On-Device)

@@ -57,6 +57,26 @@
         <package android:name="com.google.android.apps.dynamite" />
         <package android:name="com.google.android.apps.fitness" />
         <package android:name="com.samsung.android.app.shealth" />
+        <package android:name="org.schabi.newpipe" />
+        <package android:name="org.schabi.newpipe.debug" />
+        <package android:name="org.polymorphicshade.tubular" />
+        <package android:name="tune.music.opentune" />
+        <package android:name="com.opentune.app" />
+        <package android:name="org.opentune.android" />
+        <package android:name="com.zionhuang.music" />
+        <package android:name="com.zionhuang.innertune" />
+        <package android:name="it.fast4x.rimusic" />
+        <package android:name="it.fast4x.vimusic" />
+        <package android:name="com.spotify.music" />
+        <package android:name="com.google.android.apps.youtube.music" />
+        <package android:name="com.google.android.youtube" />
+        <package android:name="org.videolan.vlc" />
+        <intent>
+            <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEARCH" />
+        </intent>
     </queries>
 
     <application

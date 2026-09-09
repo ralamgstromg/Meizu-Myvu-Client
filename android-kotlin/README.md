@@ -93,6 +93,7 @@ Ubicadas en `app/src/main/assets/skills/built-in/`:
 | `unread-notifications` | Resumen de notificaciones pendientes leídas en el HUD. |
 | `weather-forecast` | Consulta meteorológica en tiempo real proyectada en el display. |
 | `google-search` / `duckduckgo-search` | Respuestas rápidas de motores de búsqueda. |
+| `app-media-control` | Control de NewPipe, OpenTune, Spotify, YouTube Music, saltar canciones y qué está sonando. |
 | `code-calculator-math` | Resolución de cálculos matemáticos al instante. |
 
 ---

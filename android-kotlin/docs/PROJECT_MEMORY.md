@@ -602,8 +602,40 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
   3. Protocolo de Sincronización: `codegraph sync` obligatorio al inicio y final de cada tarea.
   4. Flujo Superpowers: Plan previo obligatorio en `docs/superpowers/plans/` antes de tocar código.
   5. Registro de Cambios: Actualización constante de memoria (`docs/PROJECT_MEMORY.md`) y documentación del proyecto (`README.md`, `docs/ARCHITECTURE.md`) como paso final.
-- **Estado de Herramientas**:
-  - `codegraph`: Indexado y actualizado (268 archivos, 6200 nodos, 12420 aristas).
-  - `codebase-memory-mcp`: Proyecto `home-rcastro-Documentos-negex-Meizu-Myvu-Client-android-kotlin` sincronizado (4358 nodos, 21942 aristas, ADR activo).
-  - Tests unitarios: 218 pasando.
-  - Compilación APK: `assembleDebug` verificado exitoso.
+### [2026-09-09] — Implementación Completa de Control de Medios (NewPipe, OpenTune y Reproductores Externos)
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-09-external-app-and-media-control-newpipe-opentune.md`.
+- **Archivos Creados**:
+  1. `app/src/main/java/com/myvu/client/media/MediaPlaybackHelper.kt`:
+     - Integración con `MediaSessionManager` + `MediaController` mediante el permiso de notificación de `MirrorNotificationListener`.
+     - Extracción en tiempo real de metadatos (`title`, `artist`, `album`, `isPlaying`) y controles de transporte (`pause`, `resume`, `skipToNext`, `skipToPrevious`, `stop`).
+     - Soporte para NewPipe (búsqueda y reproducción directa por deep link web de YouTube con paquete objetivo).
+     - Soporte para OpenTune, InnerTune, RiMusic y ViMusic (`INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH` y MediaSession).
+     - Soporte para Spotify, YouTube Music, YouTube oficial, VLC, Deezer.
+     - Ejecución segura con pantalla bloqueada en bolsillo mediante `SendTrampolineActivity` y `LockScreenHelper`.
+     - Método `queryNowPlaying()` para respuesta por voz y HUD a *"¿Qué canción está sonando?"*.
+  2. `app/src/main/assets/skills/built-in/app-media-control/SKILL.md`:
+     - Manifiesto de habilidad declarando parámetros `action`, `query` y `target_app`.
+  3. `app/src/main/java/com/myvu/client/skills/handlers/AppMediaControlHandler.kt`:
+     - Handler agéntico que procesa llamadas nativas de herramientas de Gemini/LiteLLM.
+- **Archivos Modificados**:
+  1. `app/src/main/AndroidManifest.xml`: Declarados paquetes en `<queries>` (`org.schabi.newpipe`, `tune.music.opentune`, `com.zionhuang.music`, `it.fast4x.rimusic`, `it.fast4x.vimusic`, `com.spotify.music`, `com.google.android.apps.youtube.music`, etc., y acciones de búsqueda/reproducción).
+  2. `PhoneActionExecutor.kt`:
+     - Delegación de `sendMediaKey`, `pauseMusic`, `resumeMusic`, `nextTrack`, `previousTrack`, `stopMusic`, `queryNowPlaying`, `playInThirdPartyApp` y `searchInThirdPartyApp` a `MediaPlaybackHelper`.
+     - Tags de acción procesados: `ACTION:MEDIA_PLAY=`, `ACTION:MEDIA_SEARCH=`, `ACTION:MEDIA_NOW_PLAYING`, `ACTION:MEDIA_PAUSE`, `ACTION:MEDIA_RESUME`, `ACTION:MEDIA_NEXT`, `ACTION:MEDIA_PREV`, `ACTION:MEDIA_STOP`.
+  3. `VoiceActionRouter.kt`:
+     - Fast-paths en <5ms para:
+       - *"reproduce [canción] en (newpipe|opentune|spotify|youtube...)"*
+       - *"busca [video/canción] en (newpipe|opentune...)"*
+       - *"pausa la música"* / *"silencia la música"*
+       - *"reproduce música"* / *"reanuda la música"*
+       - *"siguiente canción"* / *"salta la canción"* / *"siguiente pista"*
+       - *"canción anterior"* / *"retrocede la canción"* / *"repite la canción"*
+       - *"detén la música"* / *"stop"* / *"para la música"*
+       - *"¿qué canción está sonando?"* / *"¿qué está sonando?"* / *"info de la canción"*
+  4. `SkillRegistry.kt`: Registrada la habilidad `app-media-control`.
+  5. `VoiceActionRouterTest.kt`: Pruebas unitarias completas para controles de transporte y reproducción/búsqueda en NewPipe, OpenTune y Spotify.
+  6. `README.md` y `docs/ARCHITECTURE.md`: Documentación técnica y guía de usuario actualizadas.
+- **Verificación**:
+  - Pruebas unitarias `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL in 12s** (228 pruebas unitarias ejecutadas y pasando al 100%).
+  - Compilación de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL in 1s** (`app-debug.apk` 117MB).
+

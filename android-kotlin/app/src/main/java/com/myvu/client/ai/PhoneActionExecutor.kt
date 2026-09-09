@@ -85,14 +85,25 @@ class PhoneActionExecutor(context: Context) {
                     levelStr?.toIntOrNull()?.let { setVolume(it) }
                 }
                 "media_control" -> {
-                    val command = action.arguments["command"]
+                    val command = action.arguments["command"] ?: action.arguments["action"]
                     when (command?.lowercase()) {
-                        "pause" -> sendMediaKey(KeyEvent.KEYCODE_MEDIA_PAUSE)
-                        "resume", "play" -> sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY)
-                        "next" -> sendMediaKey(KeyEvent.KEYCODE_MEDIA_NEXT)
-                        "prev", "previous" -> sendMediaKey(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+                        "pause" -> pauseMusic()
+                        "resume", "play" -> resumeMusic()
+                        "next" -> nextTrack()
+                        "prev", "previous" -> previousTrack()
+                        "stop" -> stopMusic()
                         else -> sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
                     }
+                }
+                "media_play", "play_music" -> {
+                    val query = action.arguments["query"] ?: action.arguments["song"] ?: ""
+                    val app = action.arguments["app"] ?: action.arguments["target_app"] ?: ""
+                    playInThirdPartyApp(if (app.isNotBlank()) "$app: $query" else query)
+                }
+                "media_search" -> {
+                    val query = action.arguments["query"] ?: ""
+                    val app = action.arguments["app"] ?: action.arguments["target_app"] ?: ""
+                    searchInThirdPartyApp(if (app.isNotBlank()) "$app: $query" else query)
                 }
             }
         } catch (t: Throwable) {
@@ -124,31 +135,38 @@ class PhoneActionExecutor(context: Context) {
             val appName = extractValue(aiText, "ACTION:APP_OPEN=")
             openAppByName(appName)
         }
-        if (lower.contains("action:opentune_play=")) {
-            val query = extractValue(aiText, "ACTION:OPENTUNE_PLAY=")
-            playFromSearchInOpenTune(query)
+        if (lower.contains("action:media_play=")) {
+            val payload = extractValue(aiText, "ACTION:MEDIA_PLAY=")
+            playInThirdPartyApp(payload)
+        } else if (lower.contains("action:opentune_play=") || lower.contains("action:opentune_search=")) {
+            val query = extractValue(aiText, "ACTION:OPENTUNE_PLAY=").ifBlank { extractValue(aiText, "ACTION:OPENTUNE_SEARCH=") }
+            playInThirdPartyApp("opentune: $query")
         }
-        if (lower.contains("action:opentune_search=")) {
-            val query = extractValue(aiText, "ACTION:OPENTUNE_SEARCH=")
-            playFromSearchInOpenTune(query)
+
+        if (lower.contains("action:media_search=")) {
+            val payload = extractValue(aiText, "ACTION:MEDIA_SEARCH=")
+            searchInThirdPartyApp(payload)
         }
-        if (lower.contains("action:opentune_pause")) {
-            sendMediaKey(KeyEvent.KEYCODE_MEDIA_PAUSE)
+
+        if (lower.contains("action:media_now_playing") || lower.contains("action:media_info") || lower.contains("action:now_playing")) {
+            val nowPlaying = queryNowPlaying()
+            return stripActionTags(aiText) + "\n\n" + nowPlaying
         }
-        if (lower.contains("action:opentune_resume")) {
-            sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY)
+
+        if (lower.contains("action:opentune_pause") || lower.contains("action:media_pause")) {
+            pauseMusic()
+        }
+        if (lower.contains("action:opentune_resume") || lower.contains("action:media_resume")) {
+            resumeMusic()
         }
         if (lower.contains("action:opentune_next") || lower.contains("action:media_next")) {
-            sendMediaKey(KeyEvent.KEYCODE_MEDIA_NEXT)
+            nextTrack()
         }
         if (lower.contains("action:opentune_prev") || lower.contains("action:media_prev")) {
-            sendMediaKey(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+            previousTrack()
         }
-        if (lower.contains("action:opentune_repeat")) {
-            sendMediaKey(KeyEvent.KEYCODE_MEDIA_RECORD)
-        }
-        if (lower.contains("action:media_play")) {
-            sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+        if (lower.contains("action:media_stop")) {
+            stopMusic()
         }
 
         // 3. WhatsApp
@@ -416,13 +434,7 @@ class PhoneActionExecutor(context: Context) {
     }
 
     fun sendMediaKey(keyCode: Int) {
-        val am = audioManager ?: return
-        val now = SystemClock.uptimeMillis()
-        val down = KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0)
-        val up = KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0)
-        am.dispatchMediaKeyEvent(down)
-        am.dispatchMediaKeyEvent(up)
-        LogBus.log("voice action -> sent media key $keyCode")
+        com.myvu.client.media.MediaPlaybackHelper.sendMediaKeyEvent(context, keyCode)
     }
 
     fun openAppByName(rawName: String?): String {
@@ -483,106 +495,40 @@ class PhoneActionExecutor(context: Context) {
         }
     }
 
-    fun playInThirdPartyApp(appAndQuery: String?) {
-        try {
-            if (appAndQuery.isNullOrBlank()) return
-            var appName = "music"
-            var query = appAndQuery.trim()
-
-            if (appAndQuery.contains(":") || appAndQuery.contains("|")) {
-                val parts = appAndQuery.split(Regex("[:|]"), 2)
-                appName = parts[0].trim().lowercase()
-                query = parts[1].trim()
-            }
-
-            val targetPkgs = when {
-                appName.contains("youtube music") || appName.contains("yt music") ->
-                    listOf("com.google.android.apps.youtube.music")
-                appName.contains("spotify") ->
-                    listOf("com.spotify.music", "com.spotify.lite")
-                appName.contains("youtube") ->
-                    listOf("com.google.android.youtube")
-                appName.contains("deezer") ->
-                    listOf("deezer.android.app")
-                appName.contains("amazon") ->
-                    listOf("com.amazon.mp3")
-                appName.contains("soundcloud") ->
-                    listOf("com.soundcloud.android")
-                appName.contains("apple") ->
-                    listOf("com.apple.android.music")
-                appName.contains("opentune") ->
-                    listOf("com.opentune.app", "org.opentune.android", "com.opentune.music")
-                else -> emptyList()
-            }
-
-            val pm = context.packageManager
-            var resolvedPkg: String? = targetPkgs.firstOrNull { pkg ->
-                try {
-                    pm.getPackageInfo(pkg, 0)
-                    true
-                } catch (ignored: Exception) {
-                    false
-                }
-            }
-
-            if (resolvedPkg == null && targetPkgs.isEmpty()) {
-                // Búsqueda difusa en caso de que sea otra app de música instalada
-                val packages = pm.getInstalledPackages(0)
-                for (p in packages) {
-                    val label = normalize(pm.getApplicationLabel(p.applicationInfo ?: continue).toString())
-                    if (label.contains(appName)) {
-                        resolvedPkg = p.packageName
-                        break
-                    }
-                }
-            }
-
-            // Intent estándar de reproducción multimedia
-            val mediaIntent = Intent(android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
-                putExtra(android.app.SearchManager.QUERY, query)
-                putExtra(android.provider.MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-
-            if (resolvedPkg != null) {
-                mediaIntent.setPackage(resolvedPkg)
-                try {
-                    context.startActivity(mediaIntent)
-                    LogBus.log("voice action -> launched MediaPlay in $resolvedPkg for: $query")
-                } catch (e: Exception) {
-                    // Fallback a deep link según la app
-                    if (resolvedPkg.contains("youtube")) {
-                        val ytIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://music.youtube.com/search?q=" + URLEncoder.encode(query, "UTF-8"))).apply {
-                            setPackage(resolvedPkg)
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        context.startActivity(ytIntent)
-                    } else if (resolvedPkg.contains("spotify")) {
-                        val spotIntent = Intent(Intent.ACTION_VIEW, Uri.parse("spotify:search:" + URLEncoder.encode(query, "UTF-8"))).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        context.startActivity(spotIntent)
-                    }
-                }
-            } else {
-                // Lanzador genérico
-                context.startActivity(mediaIntent)
-                LogBus.log("voice action -> launched generic media play from search for: $query")
-            }
-
-            // Disparo de Play diferido para asegurar que comience a reproducir
-            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY)
-            }, 1000L)
-
-        } catch (e: Exception) {
-            LogBus.error("could not execute playInThirdPartyApp for '$appAndQuery'", e)
+    fun playInThirdPartyApp(appAndQuery: String?): String {
+        if (appAndQuery.isNullOrBlank()) return "Consulta de canción vacía."
+        var appName = ""
+        var query = appAndQuery.trim()
+        if (appAndQuery.contains(":") || appAndQuery.contains("|")) {
+            val parts = appAndQuery.split(Regex("[:|]"), 2)
+            appName = parts[0].trim()
+            query = parts[1].trim()
         }
+        return com.myvu.client.media.MediaPlaybackHelper.playFromSearch(context, appName, query)
     }
 
-    fun playFromSearchInOpenTune(query: String?) {
-        playInThirdPartyApp("opentune: ${query ?: ""}")
+    fun searchInThirdPartyApp(appAndQuery: String?): String {
+        if (appAndQuery.isNullOrBlank()) return "Término de búsqueda vacío."
+        var appName = ""
+        var query = appAndQuery.trim()
+        if (appAndQuery.contains(":") || appAndQuery.contains("|")) {
+            val parts = appAndQuery.split(Regex("[:|]"), 2)
+            appName = parts[0].trim()
+            query = parts[1].trim()
+        }
+        return com.myvu.client.media.MediaPlaybackHelper.searchInApp(context, appName, query)
     }
+
+    fun playFromSearchInOpenTune(query: String?): String {
+        return playInThirdPartyApp("opentune: ${query ?: ""}")
+    }
+
+    fun pauseMusic(): Boolean = com.myvu.client.media.MediaPlaybackHelper.pause(context)
+    fun resumeMusic(): Boolean = com.myvu.client.media.MediaPlaybackHelper.resume(context)
+    fun nextTrack(): Boolean = com.myvu.client.media.MediaPlaybackHelper.skipToNext(context)
+    fun previousTrack(): Boolean = com.myvu.client.media.MediaPlaybackHelper.skipToPrevious(context)
+    fun stopMusic(): Boolean = com.myvu.client.media.MediaPlaybackHelper.stop(context)
+    fun queryNowPlaying(): String = com.myvu.client.media.MediaPlaybackHelper.queryNowPlaying(context)
 
     fun queryBatteryStatus(): String {
         return try {

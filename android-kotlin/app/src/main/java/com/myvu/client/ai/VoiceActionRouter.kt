@@ -114,32 +114,71 @@ class VoiceActionRouter(
         }
 
         // 4c. Control Multimedia y Música
+        // 4c. Control Multimedia y Música
         if (normalized == "pausa la musica" || normalized == "pausar musica" || normalized == "pausa" ||
-            normalized == "para la musica" || normalized == "deten la musica" || normalized == "silencia la musica" ||
-            normalized == "stop musica" || normalized == "pausar") {
+            normalized == "silencia la musica" || normalized == "pausar") {
             LogBus.log("VoiceActionRouter -> Fast-Path media pause")
-            actionExecutor.sendMediaKey(KeyEvent.KEYCODE_MEDIA_PAUSE)
+            actionExecutor.pauseMusic()
             return RouteResult(handled = true, responseText = "Música pausada.")
         }
         if (normalized == "reproduce musica" || normalized == "reproducir musica" || normalized == "play musica" ||
             normalized == "reanuda la musica" || normalized == "reanudar musica" || normalized == "continua la musica" ||
-            normalized == "seguir reproduciendo" || normalized == "play" || normalized == "reanudar") {
+            normalized == "seguir reproduciendo" || normalized == "play" || normalized == "reanudar" ||
+            normalized == "sigue reproduciendo" || normalized == "continua") {
             LogBus.log("VoiceActionRouter -> Fast-Path media play")
-            actionExecutor.sendMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY)
+            actionExecutor.resumeMusic()
             return RouteResult(handled = true, responseText = "Reproduciendo música.")
         }
         if (normalized == "siguiente cancion" || normalized == "pasa la cancion" || normalized == "pasar cancion" ||
             normalized == "cambia de cancion" || normalized == "cambiar cancion" || normalized == "siguiente pista" ||
-            normalized == "proxima cancion" || normalized == "siguiente") {
+            normalized == "proxima cancion" || normalized == "siguiente" || normalized == "salta la cancion" ||
+            normalized == "saltar cancion" || normalized == "salta cancion" || normalized == "pasa cancion" ||
+            normalized == "pon la siguiente" || normalized == "avanza cancion") {
             LogBus.log("VoiceActionRouter -> Fast-Path media next")
-            actionExecutor.sendMediaKey(KeyEvent.KEYCODE_MEDIA_NEXT)
+            actionExecutor.nextTrack()
             return RouteResult(handled = true, responseText = "Siguiente canción.")
         }
         if (normalized == "cancion anterior" || normalized == "anterior cancion" || normalized == "pista anterior" ||
-            normalized == "retrocede la cancion" || normalized == "repite la cancion" || normalized == "anterior") {
+            normalized == "retrocede la cancion" || normalized == "repite la cancion" || normalized == "anterior" ||
+            normalized == "vuelve a la cancion anterior" || normalized == "cancion previa" || normalized == "pista previa") {
             LogBus.log("VoiceActionRouter -> Fast-Path media previous")
-            actionExecutor.sendMediaKey(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+            actionExecutor.previousTrack()
             return RouteResult(handled = true, responseText = "Canción anterior.")
+        }
+        if (normalized == "deten la musica" || normalized == "detener la musica" || normalized == "para la musica" ||
+            normalized == "parar musica" || normalized == "stop musica" || normalized == "para musica" ||
+            normalized == "stop" || normalized == "para" || normalized == "deten") {
+            LogBus.log("VoiceActionRouter -> Fast-Path media stop")
+            actionExecutor.stopMusic()
+            return RouteResult(handled = true, responseText = "Música detenida.")
+        }
+        val cleanNorm = normalized.replace(Regex("[¿¡?!.,;:\"']"), "").trim()
+        if (cleanNorm == "que cancion esta sonando" || cleanNorm == "que cancion suena" ||
+            cleanNorm == "que esta sonando" || cleanNorm == "que cancion es esta" ||
+            cleanNorm == "que musica suena" || cleanNorm == "que musica esta sonando" ||
+            cleanNorm == "nombre de la cancion" || cleanNorm == "info de la cancion" ||
+            cleanNorm == "informacion de la cancion" || cleanNorm == "que suena") {
+            LogBus.log("VoiceActionRouter -> Fast-Path media now playing")
+            val nowPlayingText = actionExecutor.queryNowPlaying()
+            return RouteResult(handled = true, responseText = nowPlayingText)
+        }
+
+        // 4c.1 Búsqueda en Apps de Terceros (NewPipe, OpenTune, Spotify, YouTube, etc.)
+        val searchAppMatch = Regex("^(busca|buscar?|buscame|búscame|encuentra|encontrar?)\\s+(.+?)\\s+(en|por)\\s+(newpipe|opentune|innertune|rimusic|vimusic|youtube\\s+music|yt\\s+music|spotify|youtube|deezer|apple\\s+music|vlc).*$", RegexOption.IGNORE_CASE).find(normalized)
+        if (searchAppMatch != null) {
+            val query = searchAppMatch.groupValues[2].replace(Regex("(?i)^(canciones\\s+de|musica\\s+de|videos?\\s+de|el\\s+video\\s+de|la\\s+cancion\\s+de|el\\s+tema\\s+de)\\s+"), "").trim()
+            val app = searchAppMatch.groupValues[4].trim()
+            val resp = actionExecutor.searchInThirdPartyApp("$app: $query")
+            return RouteResult(handled = true, responseText = resp)
+        }
+
+        // 4c.2 Reproducción en Apps de Terceros (NewPipe, OpenTune, Spotify, YouTube, etc.)
+        val playMatch = Regex("^(reproduce|reproducir?|pon|poner?|toca|tocar?|escuchar?)\\s+(.+?)\\s+(en|por)\\s+(newpipe|opentune|innertune|rimusic|vimusic|youtube\\s+music|yt\\s+music|spotify|youtube|deezer|apple\\s+music|vlc).*$", RegexOption.IGNORE_CASE).find(normalized)
+        if (playMatch != null) {
+            val song = playMatch.groupValues[2].replace(Regex("(?i)^(la\\s+cancion\\s+de|la\\s+cancion|el\\s+tema\\s+de|el\\s+tema|canciones\\s+de|musica\\s+de)\\s+"), "").trim()
+            val app = playMatch.groupValues[4].trim()
+            val resp = actionExecutor.playInThirdPartyApp("$app: $song")
+            return RouteResult(handled = true, responseText = resp)
         }
 
         // 4d. Control de Volumen y Modos de Sonido
@@ -514,14 +553,6 @@ class VoiceActionRouter(
             return RouteResult(handled = true, responseText = "Temporizador iniciado para $count $unit.")
         }
 
-        // 9. Reproducción en Apps de Terceros (YouTube Music, Spotify, YouTube)
-        val playMatch = Regex("^(reproduce|reproducir?|pon|poner?|toca|tocar?|escuchar?)\\s+(.+?)\\s+(en|por)\\s+(youtube\\s+music|spotify|youtube|deezer|apple\\s+music|opentune).*$", RegexOption.IGNORE_CASE).find(normalized)
-        if (playMatch != null) {
-            val song = cleanTarget(playMatch.groupValues[2])
-            val app = playMatch.groupValues[4].trim()
-            actionExecutor.playInThirdPartyApp("$app: $song")
-            return RouteResult(handled = true, responseText = "Abriendo $app y reproduciendo $song...")
-        }
 
         // 10. Abrir Apps: ej: "abre la calculadora", "abrir instagram"
         val openAppMatch = Regex("^(abre|abrir?|lanzar?|lanza|iniciar?|inicia|ejecutar?|ejecuta)\\s+(la\\s+app\\s+de\\s+|la\\s+aplicacion\\s+de\\s+|el\\s+|la\\s+)?([a-zA-Z0-9_ ]+)$", RegexOption.IGNORE_CASE).find(trimmed)

@@ -34,6 +34,7 @@ import com.myvu.client.skills.handlers.QuickAlarmTimerHandler
 import com.myvu.client.skills.handlers.OpenAppHandler
 import com.myvu.client.skills.handlers.VoipCallHandler
 import com.myvu.client.skills.handlers.HealthSummaryHandler
+import com.myvu.client.skills.handlers.AppMediaControlHandler
 
 object SkillRegistry {
 
@@ -79,6 +80,7 @@ object SkillRegistry {
         registerHandler("rag-history-search", RagHistorySearchHandler())
         registerHandler("quick-alarm-timer", QuickAlarmTimerHandler())
         registerHandler("open-app", OpenAppHandler())
+        registerHandler("app-media-control", AppMediaControlHandler())
 
         // 2. Load SKILL.md manifests from Assets
         val skills = SkillLoader.loadSkillsFromAssets(context)
