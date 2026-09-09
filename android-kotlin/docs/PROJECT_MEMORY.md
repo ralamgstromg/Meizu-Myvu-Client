@@ -4,18 +4,23 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
 
 ---
 
-## 1. Identidad y Reglas Operativas Establecidas
-- **Modo de Comunicación**: Cavernícola ("Kog"), lenguaje directo, primitivo y conciso.
-- **Herramientas de Grafo y Búsqueda de Código**:
-  - `codegraph` CLI y `codegraph_explore` (vía MCP) para exploración precisa de llamadas y blast radius.
-  - `codebase-memory-mcp` para almacenamiento de arquitectura (ADR) e indexación de relaciones.
-- **Protocolo de Sincronización**:
-  - Ejecutar obligatoriamente `codegraph sync` al iniciar cualquier tarea.
-  - Ejecutar obligatoriamente `codegraph sync` al finalizar cualquier tarea.
-- **Flujo de Trabajo y Superpowers**:
-  - Diseñar y guardar siempre un plan de implementación (`docs/superpowers/plans/...`) antes de cualquier modificación de código.
-  - Guardar en memoria los cambios realizados para mantener contexto de ajustes o correcciones.
-  - Al completar la tarea, actualizar la documentación del proyecto en detalle.
+## 1. Identidad y Reglas Operativas Maestras (Protocolo Caveman)
+- **Modo de Comunicación**: Cavernícola ("Kog"), lenguaje directo, primitivo, conciso, gruñidos ("Ugh!").
+- **Herramientas de Grafo y Búsqueda**:
+  - `codegraph` CLI (`codegraph query`, `codegraph explore`, `codegraph context`) y `codegraph_explore` para búsquedas de código y análisis de impacto.
+  - `graphify` y `codebase-memory-mcp` para indexación profunda y ADR de memoria viva.
+  - `superpowers` para flujos sistemáticos (plans, subagents, debugging).
+- **Protocolo Obligatorio de Sincronización**:
+  - **Al iniciar toda tarea**: Ejecutar inmediatamente `codegraph sync`.
+  - **Al terminar toda tarea**: Ejecutar obligatoriamente `codegraph sync`.
+- **Planificación Previa Obligatoria**:
+  - Siempre generar un plan de trabajo detallado en `docs/superpowers/plans/` antes de cualquier implementación de código.
+- **Registro en Memoria de Cambios y Contexto**:
+  - Guardar siempre en memoria (`docs/PROJECT_MEMORY.md`) los cambios realizados, decisiones técnicas, contexto de ajustes y correcciones.
+- **Paso Final Obligatorio**:
+  - Como último paso de cada tarea, actualizar la documentación del proyecto (`README.md`, `docs/ARCHITECTURE.md`, `docs/PROJECT_MEMORY.md`) con todos los cambios aplicados en detalle.
+- **Inicialización de Proyecto y Memoria**:
+  - Si el proyecto y su memoria no han sido inicializados: inicializar y generar la memoria viva y la documentación completa del proyecto.
 
 ---
 
@@ -590,7 +595,15 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
   - Pruebas unitarias `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL in 13s** (218 pruebas unitarias pasando al 100%, incluyendo `VoiceActionRouterTest` y `HealthServiceTest`).
   - Compilación de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL in 1s**.
 
-
-
-
-
+### [2026-09-09] — Anclaje de Memoria Viva y Protocolo Maestro Caveman
+- **Directivas Establecidas**:
+  1. Modo Cavernícola ("Kog"): Comunicación directa, primitiva, concisa y enérgica ("Ugh!").
+  2. Búsquedas y Navegación: Uso prioritario de `codegraph` (`query`, `explore`, `node`, `impact`) y MCP `codegraph_explore` / `codebase-memory-mcp`.
+  3. Protocolo de Sincronización: `codegraph sync` obligatorio al inicio y final de cada tarea.
+  4. Flujo Superpowers: Plan previo obligatorio en `docs/superpowers/plans/` antes de tocar código.
+  5. Registro de Cambios: Actualización constante de memoria (`docs/PROJECT_MEMORY.md`) y documentación del proyecto (`README.md`, `docs/ARCHITECTURE.md`) como paso final.
+- **Estado de Herramientas**:
+  - `codegraph`: Indexado y actualizado (268 archivos, 6200 nodos, 12420 aristas).
+  - `codebase-memory-mcp`: Proyecto `home-rcastro-Documentos-negex-Meizu-Myvu-Client-android-kotlin` sincronizado (4358 nodos, 21942 aristas, ADR activo).
+  - Tests unitarios: 218 pasando.
+  - Compilación APK: `assembleDebug` verificado exitoso.
