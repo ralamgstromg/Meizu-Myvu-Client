@@ -70,10 +70,48 @@ class AutoSendAccessibilityService : AccessibilityService() {
                 if (v) triggerTelegramAutoSend() else if (targetPackage?.contains("telegram") == true) isAutoSendActive = false
             }
 
+        @Volatile
+        var wasLockedOnTrigger: Boolean = false
+
+        @Volatile
+        var isGeminiWatchActive: Boolean = false
+        private var geminiWatchRunnable: Runnable? = null
+        @Volatile
+        private var geminiHadFocus: Boolean = false
+        private val mainHandler = Handler(Looper.getMainLooper())
+
         fun isServiceRunning(): Boolean = activeInstance != null
+
+        fun armGeminiAutoLock(context: Context, timeoutMs: Long = 18000L) {
+            cancelGeminiAutoLock()
+            isGeminiWatchActive = true
+            geminiHadFocus = false
+            LogBus.log("AutoSendAccessibilityService -> Armed Gemini auto-lock watcher (timeout=${timeoutMs}ms)")
+
+            val runnable = Runnable {
+                if (isGeminiWatchActive) {
+                    isGeminiWatchActive = false
+                    geminiHadFocus = false
+                    if (com.myvu.client.core.Prefs.isAutoLockAfterActionEnabled(context)) {
+                        LogBus.log("AutoSendAccessibilityService -> Gemini safety timeout elapsed, locking device screen")
+                        com.myvu.client.core.LockScreenHelper.lockDeviceScreen()
+                    }
+                }
+            }
+            geminiWatchRunnable = runnable
+            mainHandler.postDelayed(runnable, timeoutMs)
+        }
+
+        fun cancelGeminiAutoLock() {
+            geminiWatchRunnable?.let { mainHandler.removeCallbacks(it) }
+            geminiWatchRunnable = null
+            isGeminiWatchActive = false
+            geminiHadFocus = false
+        }
 
         fun triggerAutoCall(packageName: String = "com.whatsapp", isDeviceLocked: Boolean = false, timeoutMs: Long = 0L) {
             val duration = if (timeoutMs > 0) timeoutMs else if (isDeviceLocked) 45000L else 15000L
+            wasLockedOnTrigger = isDeviceLocked
             // Asegurar que cualquier envío previo de mensaje pendiente no interfiera con la llamada
             isAutoSendActive = false
             isAutoCallActive = true
@@ -228,6 +266,7 @@ class AutoSendAccessibilityService : AccessibilityService() {
          */
         fun triggerAutoSend(packageName: String? = null, isDeviceLocked: Boolean = false, timeoutMs: Long = 0L) {
             val duration = if (timeoutMs > 0) timeoutMs else if (isDeviceLocked) 45000L else 15000L
+            wasLockedOnTrigger = isDeviceLocked
             isAutoSendActive = true
             targetPackage = packageName
             autoSendExpiresAt = System.currentTimeMillis() + duration
@@ -241,6 +280,7 @@ class AutoSendAccessibilityService : AccessibilityService() {
                     LogBus.log("AutoSendAccessibilityService -> Auto-send window timed out for '$packageName'")
                     isAutoSendActive = false
                     targetPackage = null
+                    wasLockedOnTrigger = false
                 }
             }, duration)
         }
@@ -263,6 +303,10 @@ class AutoSendAccessibilityService : AccessibilityService() {
                                     if (clicked) {
                                         isAutoSendActive = false
                                         targetPackage = null
+                                        if (wasLockedOnTrigger && com.myvu.client.core.Prefs.isAutoLockAfterActionEnabled(service)) {
+                                            com.myvu.client.core.LockScreenHelper.scheduleAutoLock(1500L, "WhatsApp/Telegram message auto-sent (burst)")
+                                        }
+                                        wasLockedOnTrigger = false
                                     }
                                 }
                             } catch (e: Exception) {
@@ -292,6 +336,10 @@ class AutoSendAccessibilityService : AccessibilityService() {
                                     if (clicked) {
                                         isAutoCallActive = false
                                         targetPackage = null
+                                        if (wasLockedOnTrigger && com.myvu.client.core.Prefs.isAutoLockAfterActionEnabled(service)) {
+                                            com.myvu.client.core.LockScreenHelper.scheduleAutoLock(3000L, "WhatsApp/Telegram call auto-connected (burst)")
+                                        }
+                                        wasLockedOnTrigger = false
                                     }
                                 }
                             } catch (e: Exception) {
@@ -363,17 +411,33 @@ class AutoSendAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
+        val pkg = event.packageName?.toString() ?: return
+
+        // 1. Gemini Lifecycle Tracking and Auto-Lock
+        if (isGeminiWatchActive) {
+            val isGoogleOrGemini = pkg.contains("googlequicksearchbox") || pkg.contains("bard") || pkg.contains("gemini")
+            if (isGoogleOrGemini) {
+                geminiHadFocus = true
+            } else if (geminiHadFocus && !isTransientSystemUi(pkg)) {
+                LogBus.log("AutoSendAccessibilityService -> Gemini dismissed (transitioned to '$pkg'), triggering auto-lock")
+                cancelGeminiAutoLock()
+                if (com.myvu.client.core.Prefs.isAutoLockAfterActionEnabled(this)) {
+                    com.myvu.client.core.LockScreenHelper.scheduleAutoLock(800L, "Gemini session dismissed")
+                }
+            }
+        }
+
         if (System.currentTimeMillis() > autoSendExpiresAt) {
             isAutoSendActive = false
             isAutoCallActive = false
             targetPackage = null
+            wasLockedOnTrigger = false
             return
         }
 
-        val pkg = event.packageName?.toString() ?: return
         val target = targetPackage
 
-        // 1. Auto Call button handling
+        // 2. Auto Call button handling
         if (isAutoCallActive) {
             val isTargetCallApp = target == null || pkg == target || pkg.contains(target) || target.contains(pkg)
             if (isTargetCallApp) {
@@ -382,12 +446,16 @@ class AutoSendAccessibilityService : AccessibilityService() {
                 if (clicked) {
                     isAutoCallActive = false
                     targetPackage = null
+                    if (wasLockedOnTrigger && com.myvu.client.core.Prefs.isAutoLockAfterActionEnabled(this)) {
+                        com.myvu.client.core.LockScreenHelper.scheduleAutoLock(3000L, "WhatsApp/Telegram call auto-connected")
+                    }
+                    wasLockedOnTrigger = false
                 }
             }
             return
         }
 
-        // 2. Auto Send message button handling
+        // 3. Auto Send message button handling
         if (!isAutoSendActive) return
         val isTargetApp = target == null || pkg == target || pkg.contains(target) || target.contains(pkg) || isMessagingPackage(pkg)
         if (isTargetApp) {
@@ -396,8 +464,17 @@ class AutoSendAccessibilityService : AccessibilityService() {
             if (clicked) {
                 isAutoSendActive = false
                 targetPackage = null
+                if (wasLockedOnTrigger && com.myvu.client.core.Prefs.isAutoLockAfterActionEnabled(this)) {
+                    com.myvu.client.core.LockScreenHelper.scheduleAutoLock(1500L, "WhatsApp/Telegram message auto-sent")
+                }
+                wasLockedOnTrigger = false
             }
         }
+    }
+
+    private fun isTransientSystemUi(pkg: String): Boolean {
+        val p = pkg.lowercase()
+        return p == "com.android.systemui" || p.contains("inputmethod") || p.contains("keyboard") || p == "android"
     }
 
     fun findAndClickCallButton(root: AccessibilityNodeInfo?, targetPkg: String? = null): Boolean {

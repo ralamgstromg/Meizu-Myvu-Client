@@ -252,4 +252,27 @@ class TouchGestureManagerTest {
         // Must NOT be blocked by the previous NONE action!
         assertTrue(secondExecutor.mediaPlayPauseCalled)
     }
+
+    @Test
+    fun contactBounceUnder40msDoesNotResetTapAccumulator() {
+        var simulatedTime = 5000L
+        TouchGestureManager.timeProvider = { simulatedTime }
+
+        // Tap 1 at t=5000ms
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, executor)
+        assertTrue(executor.noneCalled)
+
+        // Electrical contact bounce at t=5005ms (+5ms, < 40ms)
+        simulatedTime = 5005L
+        val bounceExecutor = MockActionExecutor()
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, bounceExecutor)
+        assertFalse(bounceExecutor.noneCalled)
+
+        // Tap 2 at t=5200ms (+200ms from the original tap at 5000ms)
+        simulatedTime = 5200L
+        val secondExecutor = MockActionExecutor()
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, secondExecutor)
+        // Must successfully synthesize DOUBLE_TAP because the 5ms bounce did not corrupt lastTapTime
+        assertTrue(secondExecutor.mediaPlayPauseCalled)
+    }
 }

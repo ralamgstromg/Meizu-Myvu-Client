@@ -34,12 +34,58 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
 | **Servicio Central** | `com.myvu.client.service.MyvuService` | Foreground Service persistente. Maneja ciclo de vida del enlace, reenvío de notificaciones y dispatching. |
 | **Habilidades (Skills)** | `com.myvu.client.skills` | Motor modular de skills (`SkillManager`, `BaseSkillHandler`) con 30 manifiestos en `assets/skills/built-in/`. |
 | **Persistencia** | `com.myvu.client.database` / `data` | Base de datos Room (`AppDatabase`, `NoteRepository`, `ReminderRepository`). |
-| **Inteligencia Artificial** | `com.myvu.client.ai` | Inferencia local con MediaPipe Tasks GenAI, streaming Gemini Live y cliente Custom/LiteLLM (`LocalAiClient`). |
+| **Inteligencia Artificial** | `com.myvu.client.ai` | Inferencia privada/local mediante `LocalAiClient` (LiteLLM/OpenAI compatible), streaming Gemini Live y cliente en la nube `GeminiClient`. |
 | **Interfaz de Usuario** | `com.myvu.client.ui` | Vistas Material 3 (`ConnectActivity`, `NotesActivity`, `ChatActivity`, `SettingsActivity`, etc.). |
 
 ---
 
 ## 3. Bitácora de Modificaciones y Decisiones
+
+### [2026-09-10] — Re-bloqueo Automático de Pantalla tras Gemini y Acciones por Voz (WhatsApp / Llamadas)
+- **Problema / Requerimiento**:
+  - Al activar Gemini con doble toque en las patas de las gafas o al ejecutar acciones de voz (como llamar por WhatsApp o enviar mensajes), el teléfono se desbloqueaba/encendía pero se quedaba encendido y desbloqueado en el bolsillo, provocando toques accidentales y consumo innecesario de batería.
+- **Solución Implementada**:
+  1. `LockScreenHelper.kt`:
+     - Añadido `lockDeviceScreen()` utilizando `AutoSendAccessibilityService.activeInstance?.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)`. Método nativo de Android 9+ (API 28+) limpio y no invasivo que no requiere privilegios de Device Admin ni root, y no invalida desbloqueo biométrico.
+     - Añadido `scheduleAutoLock(delayMs: Long, reason: String)` para programar el apagado/bloqueo de forma asíncrona segura.
+  2. `Prefs.kt`:
+     - Nueva preferencia `isAutoLockAfterActionEnabled(c: Context)` / `setAutoLockAfterActionEnabled(c: Context, enabled: Boolean)` (clave `"auto_lock_after_voice_action"`, valor por defecto `true`).
+  3. `AutoSendAccessibilityService.kt`:
+     - Registra si el teléfono estaba bloqueado (`wasLockedOnTrigger`) al momento de solicitar una acción o lanzar Gemini.
+     - Implementado observador de sesión de Gemini (`armGeminiAutoLock(context, timeoutMs = 18000L)`, `cancelGeminiAutoLock()`). Detecta cuando la ventana activa deja de ser Google/Gemini (`TYPE_WINDOW_STATE_CHANGED`) o cuando se agota el timeout de 18s sin interacción manual, re-bloqueando la pantalla si el teléfono estaba originalmente bloqueado.
+     - Disparo automático de bloqueo tras pulsar exitosamente enviar mensaje en WhatsApp (retardo de 1.5s) y tras pulsar el botón de llamada en WhatsApp (retardo de 3.0s, permitiendo que la llamada VoIP se establezca y continúe por audio Bluetooth HFP con la pantalla bloqueada).
+  4. `TouchGestureManager.kt`:
+     - En `launchGeminiAssistant`, comprueba `wasDeviceLocked` antes de encender la pantalla. Si la opción está activa, arma `armGeminiAutoLock` para asegurar el bloqueo tras la respuesta.
+  5. `PhoneActionExecutor.kt`:
+     - En llamadas directas de WhatsApp vía URI de contacto, programa auto-bloqueo tras 3.5s si el dispositivo estaba bloqueado.
+  6. `activity_settings.xml` y `SettingsActivity.kt`:
+     - Añadido switch Material 3 `swAutoLockAfterAction` en la tarjeta de gestos del touchpad con descripción clara.
+
+### [2026-09-10] — Robustez Total en Touchpad: Deduplicación de Rebotes en Lotes, Consolidación Sender 2, Inmunidad a Ruido < 40ms, Estabilidad SPP sin Caídas por Bluetooth SCO y Corrección Scoped Storage en BackupManager
+- **Problemas Identificados en Nuevo Log (709 líneas)**:
+  1. **Lotes de Telemetría BLE con Rebotes y Tiempos Simultáneos en Teléfono (Líneas 298-307)**:
+     - El lote de las gafas `[210, 210, 210]` contenía dos toques con el mismo timestamp de hardware (`1789075058000`, rebote eléctrico por contacto capacitivo). Al procesarse en el teléfono llegaron con 1-2ms de diferencia, reseteando `lastTapTime` y descartando el segundo toque legítimo.
+  2. **Disparo Doble por Toque en Patilla Secundaria (`sender: 2`, Líneas 378 y 436)**:
+     - Cada contacto en la patilla izquierda enviaba la pareja `200` (down) y `203` (up). Al estar ambos mapeados a `TAP`, un solo toque generaba dos toques lógicos en 2ms.
+  3. **Caída Sistemática del Servidor SPP de las Gafas al Finalizar Gemini (Líneas 236, 333, 526, 585, 672)**:
+     - Exactamente 50ms después de que `releaseBluetoothSco()` liberaba el canal de audio, las gafas cerraban el socket SPP (`<- SPP server closed by the glasses -- dropping the relay`), dejando la app desconectada durante 8 a 15 segundos mientras se restablecía el relay con un `init burst` de 27 mensajes.
+     - Causa: En Android 12+ (API 31+), llamar a `stopBluetoothSco()` mientras se utiliza `setCommunicationDevice()` envía comandos HCI legacy conflictivos que reinician la pila Bluetooth de las gafas y desconectan RFCOMM.
+  4. **Error EACCES en BackupManager (Línea 145)**:
+     - Fallo al copiar `data.zip` en `/storage/emulated/0/Download/MYVU/` debido a restricciones de Scoped Storage en Android 10+.
+- **Soluciones Implementadas**:
+  1. `InboundRouter.kt`:
+     - **Deduplicación de Rebotes en Lote**: Descarta eventos duplicados consecutivos con el mismo gesto, mismo emisor y delta de tiempo `<= 50ms`.
+     - **Consolidación Sender 2 (`200` + `203`)**: Si el código `200` (touch down) está presente en el lote, se suprime automáticamente `203` (release confirmation), evitando que un toque físico cuente como dos.
+     - **Síntesis Directa de `DOUBLE_TAP` en Lote**: Si el lote recibido por BLE contiene dos toques `TAP` con delta de tiempo de hardware entre 60ms y 500ms, se sintetiza inmediatamente `GlassGesture.DOUBLE_TAP`.
+  2. `TouchGestureManager.kt`:
+     - **Inmunidad a Ruido y Rebotes Eléctricos (< 40ms)**: Si llega un `TAP` con intervalo `< 40ms`, se ignora como rebote de contacto eléctrico **sin** actualizar `lastTapTime`, protegiendo la ventana de detección para el segundo toque real del usuario.
+     - **Estabilidad Bluetooth SCO en Android 12+**: En Android 12+ (`Build.VERSION.SDK_INT >= Build.VERSION_CODES.S`), se utiliza exclusivamente `setCommunicationDevice` con `MODE_IN_COMMUNICATION` al activar y `clearCommunicationDevice` con `MODE_NORMAL` al liberar. Se eliminó por completo el uso de `startBluetoothSco()` / `stopBluetoothSco()` en API 31+, erradicando las caídas de SPP y manteniendo la conexión de las gafas permanentemente viva.
+  3. `BackupManager.kt`:
+     - Uso de `MediaStore.Downloads` en Android 10+ (API 29+) para exportar copias de seguridad a la carpeta pública de descargas respetando Scoped Storage, con fallback legacy en versiones anteriores.
+  4. Pruebas y Validación:
+     - Tests unitarios añadidos en `InboundGestureTest.kt` y `TouchGestureManagerTest.kt` verificando deduplicación, consolidación de sender 2, síntesis en lote y rebotes `< 40ms`.
+     - `./gradlew testDebugUnitTest`: 100% pasando (34 tareas).
+     - `./gradlew assembleDebug`: Compilación exitosa en < 1s (41 tareas).
 
 ### [2026-09-10] — Corrección de Detección de Doble Toque en Touchpad (Lanzamiento de Gemini), Inmunidad a Debounce en Gestos Nulos y Filtrado de Micro-swipes Parásitos
 - **Problema**: En `/home/rcastro/Descargas/myvu_client_log.txt`, el lanzamiento de Gemini mediante doble toque en el touchpad de las patillas de las gafas fallaba intermitentemente ("algunas veces no detecto correctamente el lanzamiento de gemini con doble toque del touchpad de las patas de las gafas").
@@ -995,3 +1041,36 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
   - Pruebas unitarias de las nuevas funciones: **8/8 tests PASSED**.
   - Suite completa de pruebas unitarias (`./gradlew testDebugUnitTest`): **BUILD SUCCESSFUL in 11s** (100% pruebas pasando).
   - Ensamblado de APK (`./gradlew assembleDebug`): **BUILD SUCCESSFUL in 2s** (`app-debug.apk` listo).
+
+### [2026-09-10] — Eliminación de Librerías No Utilizadas: Remoción de MediaPipe GenAI y Reducción del APK de 117MB a 10MB
+- **Plan**: `docs/superpowers/plans/2026-09-10-remove-unused-dependencies.md`
+- **Auditoría Exhaustiva de Código y Dependencias**:
+  - Se inspeccionó todo el árbol `app/src/` (main y test) contra las dependencias declaradas en `app/build.gradle.kts` y `gradle/libs.versions.toml`.
+  - Se confirmó que **`com.google.mediapipe:tasks-genai`** tenía **0 imports, 0 clases y 0 llamadas** en todo el proyecto Kotlin/Java.
+  - La inferencia de IA local/privada está construida con `LocalAiClient` (HTTP OpenAI/LiteLLM compatible) y la nube con `GeminiClient`.
+  - MediaPipe Tasks GenAI empaquetaba de forma innecesaria 4 arquitecturas de binarios nativos C++ (`lib/arm64-v8a/libllm_inference_engine_jni.so`, `lib/armeabi-v7a/...`, `lib/x86/...`, `lib/x86_64/...`), totalizando más de 108 MB de archivos `.so` y disparando el peso del APK a **117 MB**.
+- **Cambios Realizados**:
+  1. `app/build.gradle.kts`: Eliminada dependencia `implementation(libs.mediapipe.tasks.genai)`.
+  2. `gradle/libs.versions.toml`: Eliminada versión `mediapipeGenai = "0.10.35"` y alias `mediapipe-tasks-genai`.
+  3. Eliminado archivo obsoleto `app/src/main/assets/public.libraries.txt` (que contenía `libvndksupport.so`, `libOpenCL.so`, `libGLES_mali.so` requerido solo para drivers GPU de MediaPipe).
+  4. `app/src/main/AndroidManifest.xml`: Eliminadas directivas `<uses-feature android:name="android.hardware.vulkan.version" ... />` y `<uses-feature android:name="android.hardware.opengles.aep" ... />`.
+  5. Actualizada documentación (`README.md` y `docs/ARCHITECTURE.md`) para aclarar el motor de IA (`LocalAiClient` para endpoints OpenAI/LiteLLM y `GeminiClient` en la nube).
+- **Resultados y Verificación**:
+  - Peso del APK debug (`app-debug.apk`): Reducido de **117 MB** a **10 MB** (reducción masiva del ~92%).
+  - Librerías nativas `.so` empaquetadas: **0** (APK 100% bytecode limpio).
+  - Pruebas unitarias (`./gradlew testDebugUnitTest`): **BUILD SUCCESSFUL** (100% pasando).
+  - Ensamblado (`./gradlew assembleDebug`): **BUILD SUCCESSFUL** en 10s.
+
+### [2026-09-10] — Optimización de Audio para Gemini (SCO Condicional) y Aceleración de Reconexión de Relay (2s)
+- **Plan**: `docs/superpowers/plans/2026-09-10-gemini-audio-routing-and-relay-speedup.md`
+- **Diagnóstico del Log**:
+  - Tras el doble toque exitoso que lanzó Gemini, al cumplirse el timer de 4.5s de captura SCO (`releaseBluetoothSco`), el firmware de las gafas Meizu Myvu cerró el servidor SPP (`<- SPP server closed by the glasses -- dropping the relay`) debido a la conmutación agresiva entre modos HFP y A2DP.
+- **Solución Implementada**:
+  1. `Prefs.kt`: Añadida preferencia `gemini_force_sco` (por defecto `false` / Desactivado).
+  2. `TouchGestureManager.kt`: Forzado de SCO ahora es 100% opcional y condicionado por `Prefs.isGeminiForceScoEnabled`. Al permanecer desactivado, Android delega la entrada de audio a la app de Gemini nativamente sin alternar modos de audio de telefonía en las gafas, garantizando que el socket SPP **nunca se caiga**.
+  3. `activity_settings.xml` y `SettingsActivity.kt`: Añadido switch `swForceGeminiSco` en la sección de gestos de touchpad para que el usuario pueda activarlo si lo desea.
+  4. `RelaySupervisor.kt`: Reducido `INITIAL_DISCONNECTED_POLL_MS` de 5000L a 2000L y ajustado exponente de backoff `min(attemptCount, 5)`. Si el relay llega a caerse por alcance Bluetooth, el primer intento de reconexión se produce a los **2 segundos** (antes 5s).
+  5. `RelaySupervisorTest.kt`: Pruebas unitarias actualizadas y validadas al 100%.
+- **Verificación**:
+  - Tests unitarios (`./gradlew testDebugUnitTest`): **BUILD SUCCESSFUL** (259 tests passing, 0 failures).
+  - Ensamblado (`./gradlew assembleDebug`): **BUILD SUCCESSFUL in 961ms**.

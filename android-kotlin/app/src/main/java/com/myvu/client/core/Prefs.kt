@@ -649,4 +649,32 @@ object Prefs {
     fun setActiveRoutineMode(c: Context, mode: String) {
         prefs(c).edit().putString("active_routine_mode", mode).apply()
     }
+
+    // --- Audio Routing para Gemini ---
+
+    private const val KEY_GEMINI_FORCE_SCO = "gemini_force_sco"
+
+    @JvmStatic
+    fun isGeminiForceScoEnabled(c: Context): Boolean {
+        return prefs(c).getBoolean(KEY_GEMINI_FORCE_SCO, false)
+    }
+
+    @JvmStatic
+    fun setGeminiForceScoEnabled(c: Context, enabled: Boolean) {
+        prefs(c).edit().putBoolean(KEY_GEMINI_FORCE_SCO, enabled).apply()
+    }
+
+    // --- Re-Bloqueo Automático del Celular ---
+
+    private const val KEY_AUTO_LOCK_AFTER_VOICE_ACTION = "auto_lock_after_voice_action"
+
+    @JvmStatic
+    fun isAutoLockAfterActionEnabled(c: Context): Boolean {
+        return prefs(c).getBoolean(KEY_AUTO_LOCK_AFTER_VOICE_ACTION, true)
+    }
+
+    @JvmStatic
+    fun setAutoLockAfterActionEnabled(c: Context, enabled: Boolean) {
+        prefs(c).edit().putBoolean(KEY_AUTO_LOCK_AFTER_VOICE_ACTION, enabled).apply()
+    }
 }

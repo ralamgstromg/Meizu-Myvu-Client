@@ -1,8 +1,11 @@
 package com.myvu.client.core
 
+import android.content.ContentValues
 import android.content.Context
+import android.os.Build
 import android.os.Environment
 import android.preference.PreferenceManager
+import android.provider.MediaStore
 import com.myvu.client.database.LocalDatabase
 import com.myvu.client.database.NoteRepository
 import com.myvu.client.database.ReminderRepository
@@ -195,16 +198,35 @@ object BackupManager {
 
             zipDirectory(backupDir, zipFile)
 
-            // Also copy to Downloads/MYVU if accessible
+            // Also copy to public Downloads/MYVU via MediaStore on Android 10+ (API 29+), or fallback
             try {
-                val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "MYVU").apply { mkdirs() }
-                val publicBackupFile = File(publicDir, "data.zip")
-                FileOutputStream(publicBackupFile).use { out ->
-                    zipFile.inputStream().use { input ->
-                        input.copyTo(out)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val contentValues = ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, "data.zip")
+                        put(MediaStore.MediaColumns.MIME_TYPE, "application/zip")
+                        put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/MYVU")
                     }
+                    val resolver = appContext.contentResolver
+                    val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                    if (uri != null) {
+                        resolver.openOutputStream(uri)?.use { out ->
+                            zipFile.inputStream().use { input ->
+                                input.copyTo(out)
+                            }
+                        }
+                        LogBus.log("BackupManager -> Saved copy in Downloads/MYVU/data.zip via MediaStore")
+                    }
+                } else {
+                    @Suppress("DEPRECATION")
+                    val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "MYVU").apply { mkdirs() }
+                    val publicBackupFile = File(publicDir, "data.zip")
+                    FileOutputStream(publicBackupFile).use { out ->
+                        zipFile.inputStream().use { input ->
+                            input.copyTo(out)
+                        }
+                    }
+                    LogBus.log("BackupManager -> Saved copy in Downloads/MYVU/data.zip")
                 }
-                LogBus.log("BackupManager -> Saved copy in Downloads/MYVU/data.zip")
             } catch (e: Exception) {
                 LogBus.log("BackupManager -> Could not copy to public Downloads: ${e.message}")
             }

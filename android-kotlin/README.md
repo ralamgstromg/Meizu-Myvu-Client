@@ -5,7 +5,7 @@
 [![Material Design](https://img.shields.io/badge/Material-3-purple.svg)](https://m3.material.io/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-Cliente complementario nativo en Android (Kotlin) para gafas de realidad aumentada (AR) **Meizu Myvu Smart Glasses**. Permite sincronización bidireccional mediante Bluetooth SPP y BLE, visualización de notificaciones en el HUD, teleprompter de navegación, reporte del clima, grabación de voz, gestión de notas/recordatorios y asistente de inteligencia artificial (local con MediaPipe y en la nube con Gemini Live).
+Cliente complementario nativo en Android (Kotlin) para gafas de realidad aumentada (AR) **Meizu Myvu Smart Glasses**. Permite sincronización bidireccional mediante Bluetooth SPP y BLE, visualización de notificaciones en el HUD, teleprompter de navegación, reporte del clima, grabación de voz, gestión de notas/recordatorios y asistente de inteligencia artificial (local con endpoints compatibles OpenAI/LiteLLM y en la nube con Gemini Live).
 
 ---
 
@@ -25,7 +25,7 @@ Cliente complementario nativo en Android (Kotlin) para gafas de realidad aumenta
   - **Gemini + LiteLLM con Native Tool Calling**: Ejecución autónoma de herramientas del sistema mediante Function Calling directo en `/v1/chat/completions`.
   - **Bucle Agéntico ReAct**: Orquestador multi-paso (`AgenticToolExecutor`) para resolver tareas complejas consultando herramientas y sintetizando la respuesta para las gafas.
   - **Salidas Estructuradas (JSON Mode)**: Análisis 100% estricto de notas y reuniones con `response_format: json_object`.
-  - **IA Local Offline**: Inferencia en el dispositivo mediante **Google MediaPipe Tasks GenAI**.
+  - **IA Local / Self-Hosted**: Inferencia local o en red privada mediante endpoints compatibles con OpenAI / LiteLLM (`LocalAiClient`).
   - **IA en la Nube**: Streaming conversacional con **Gemini Live**.
   - **Notas de Voz y Grabación**: Grabador integrado con análisis y transcripción (`VoiceRecorderActivity`).
 
@@ -36,9 +36,10 @@ Cliente complementario nativo en Android (Kotlin) para gafas de realidad aumenta
 - **Botón Físico y Gestos Táctiles de Patillas ("Patas")**:
   - **Botón Físico de la Montura Inmutable**: Dedicado 100% y de forma fija al flujo de reconocimiento de voz **STT -> Modelo de IA configurado** (`ai().onTrigger(code)`), sin interceptación ni retrasos.
   - **Mapeo Personalizable de Patillas**: Soporte completo para todos los emisores táctiles de hardware (`key_event_sender`: 1, 2 y 4) y keycodes Flyme XR (210 Click/Tap, 211 Doble Tap, 212 Pulsación Larga, 206 Deslizar Adelante, 207 Deslizar Atrás; además de 200, 201, 202, 203, 237).
-  - **Doble Toque Confiable y Síntesis Software**: Si el firmware de las gafas reporta dos toques simples rápidos (`210` + `210` en 40-450ms) en lugar de un doble toque de hardware (`211`), el sistema sintetiza y ejecuta automáticamente el doble toque configurado.
-  - **Filtrado Antirruido y Debounce Inteligente**: Suprime micro-swipes parásitos generados por la fricción del dedo al tocar la patilla en el mismo milisegundo, y evita que acciones no configuradas (`NONE`) bloqueen toques posteriores por debounce.
-  - **Activación Manos Libres de Gemini por Gesto de Patilla**: Despierta el teléfono con brillo total, desbloquea la pantalla, conecta el micrófono de las gafas por Bluetooth SCO durante la ventana de petición (4.5s) y restaura de inmediato el canal multimedia A2DP para que la respuesta de voz de Gemini se escuche de forma continua, estéreo y sin silencios.
+  - **Doble Toque Confiable y Síntesis Software**: Si el firmware de las gafas reporta dos toques simples rápidos (`210` o `200` en 40-450ms) en lugar de un doble toque de hardware (`211`), el sistema sintetiza y ejecuta automáticamente el doble toque configurado. Incluye síntesis directa dentro de paquetes BLE por hardware timestamps.
+  - **Deduplicación de Rebotes y Filtrado Antirruido**: Suprime micro-swipes parásitos simultáneos, consolida la pareja `200`+`203` de la patilla izquierda en un único toque, descarta rebotes eléctricos de contacto `< 40ms` sin alterar el acumulador y evita que acciones no configuradas (`NONE`) bloqueen toques posteriores por debounce.
+  - **Activación Manos Libres de Gemini y Estabilidad Continua SPP**: Despierta el teléfono con brillo total, desbloquea la pantalla, conecta el micrófono de las gafas mediante `setCommunicationDevice` sin comandos legacy que desconectaban el servidor SPP de las gafas, y restaura de inmediato el canal multimedia A2DP para que la respuesta de voz de Gemini se escuche de forma continua, estéreo y sin silencios.
+  - **Re-bloqueo Automático Inteligente de Pantalla**: Tras finalizar la respuesta de voz de Gemini o tras despachar una llamada/mensaje de WhatsApp iniciado por voz, el servicio de accesibilidad detecta si el teléfono estaba bloqueado y apaga/bloquea de nuevo la pantalla de forma no invasiva (`GLOBAL_ACTION_LOCK_SCREEN`), manteniendo la seguridad en el bolsillo y preservando los datos biométricos.
   - **Lanzador de Apps Instaladas**: Vincula cualquier gesto a cualquier app del teléfono (Spotify, WhatsApp, YouTube, Cámara) encendiendo la pantalla y quitando el bloqueo automáticamente.
   - Acciones del sistema: Asistente del Teléfono, IA Local, Play/Pausa, Siguiente, Anterior, Modo Zen, Sincronización del Clima, Notificaciones y Teleprompter.
   - Sincronización dinámica de `set_music_tp_control_mode` para forzar reenvío de toques desde el launcher de las gafas.
@@ -62,7 +63,7 @@ graph TD
     Service <--> Mirror[Notification Mirror Listener]
     Service <--> AutoSend[Accessibility Service: Auto-Send]
 
-    Skills <--> AI[AI Engine: MediaPipe / Gemini Live]
+    Skills <--> AI[AI Engine: Local OpenAI-LiteLLM / Gemini Live]
     Skills <--> DB[(Room Database: Notes & Reminders)]
     Skills <--> External[System APIS: Contacts / Calendar / Location]
 
@@ -77,7 +78,7 @@ graph TD
 | `protocol/` | Encoders/decoders TLV (Type-Length-Value), tramas binarias y protocolo de enlace. |
 | `service/` | Servicios en segundo plano: `MyvuService`, `MirrorNotificationListener`, `AutoSendAccessibilityService`. |
 | `skills/` | Orquestador de habilidades (`SkillManager`, `BaseSkillHandler`) y handlers de negocio en `handlers/`. |
-| `ai/` | Motores de IA: MediaPipe Tasks GenAI (local) y Gemini Live (remoto). |
+| `ai/` | Motores de IA: `LocalAiClient` (OpenAI/LiteLLM compatible) y `GeminiClient` (remoto). |
 | `recorder/` | Grabación de notas de audio y procesamiento de voz. |
 | `reminder/` | Planificador de alarmas y recordatorios sincronizados con el HUD. |
 | `database/` / `data/` | Entidades y repositorios Room (`NoteRepository`, `ReminderRepository`, `AppDatabase`). |

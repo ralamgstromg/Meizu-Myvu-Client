@@ -65,13 +65,18 @@ object TouchGestureManager {
             val am = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 am.clearCommunicationDevice()
-            }
-            if (am.isBluetoothScoOn) {
-                am.stopBluetoothSco()
-                am.isBluetoothScoOn = false
-            }
-            if (am.mode != AudioManager.MODE_NORMAL) {
-                am.mode = AudioManager.MODE_NORMAL
+                if (am.mode != AudioManager.MODE_NORMAL) {
+                    am.mode = AudioManager.MODE_NORMAL
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                if (am.isBluetoothScoOn) {
+                    am.stopBluetoothSco()
+                    am.isBluetoothScoOn = false
+                }
+                if (am.mode != AudioManager.MODE_NORMAL) {
+                    am.mode = AudioManager.MODE_NORMAL
+                }
             }
             LogBus.log("Released Bluetooth SCO audio routing -- restored A2DP media channel for Gemini reply")
         } catch (e: Exception) {
@@ -133,6 +138,11 @@ object TouchGestureManager {
         // instead of hardware synthesizing DOUBLE_TAP (code 211).
         if (gesture == GlassGesture.TAP) {
             val dtFromLastTap = now - lastTapTime
+            if (lastTapTime != 0L && dtFromLastTap < DOUBLE_TAP_MIN_INTERVAL_MS) {
+                // Electrical contact bounce: ignore without updating lastTapTime
+                LogBus.trace("Contact bounce tap ignored (${dtFromLastTap}ms < ${DOUBLE_TAP_MIN_INTERVAL_MS}ms)")
+                return
+            }
             if (dtFromLastTap in DOUBLE_TAP_MIN_INTERVAL_MS..DOUBLE_TAP_MAX_INTERVAL_MS) {
                 val doubleTapActionId = getRawActionIdForGesture(context, GlassGesture.DOUBLE_TAP)
                 val doubleTapAction = GestureAction.fromId(doubleTapActionId)
@@ -228,6 +238,12 @@ object TouchGestureManager {
         if (context == null) return
         val appContext = context.applicationContext
 
+        // 0. Check if device was locked to automatically re-lock after Gemini completes
+        val wasDeviceLocked = com.myvu.client.core.LockScreenHelper.isDeviceLocked(appContext)
+        if (wasDeviceLocked && com.myvu.client.core.Prefs.isAutoLockAfterActionEnabled(appContext)) {
+            com.myvu.client.service.AutoSendAccessibilityService.armGeminiAutoLock(appContext, 18000L)
+        }
+
         // 1. Wake up phone screen with bright wakelock
         try {
             com.myvu.client.core.LockScreenHelper.wakeUpScreen(
@@ -239,27 +255,36 @@ object TouchGestureManager {
             LogBus.warn("LockScreen wakeUp error: ${e.message}")
         }
 
-        // 2. Route Bluetooth SCO microphone so Gemini receives audio input directly from glasses
+        // 2. Route Bluetooth SCO microphone only if explicitly enabled in preferences
+        val forceSco = com.myvu.client.core.Prefs.isGeminiForceScoEnabled(appContext)
         val am = appContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-        if (am != null) {
+        if (forceSco && am != null) {
             try {
                 // Cancel previous release timer if user triggered again
                 scoReleaseRunnable?.let { audioHandler.removeCallbacks(it) }
 
-                if (am.mode != AudioManager.MODE_NORMAL) {
-                    am.mode = AudioManager.MODE_NORMAL
-                }
-                am.startBluetoothSco()
-                am.isBluetoothScoOn = true
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     val btScoDevice = am.availableCommunicationDevices.firstOrNull {
                         it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
                     }
                     if (btScoDevice != null) {
+                        am.mode = AudioManager.MODE_IN_COMMUNICATION
                         am.setCommunicationDevice(btScoDevice)
+                        LogBus.log("Set communication device to Bluetooth SCO (${btScoDevice.productName}) for Gemini")
+                    } else {
+                        LogBus.log("No Bluetooth SCO communication device available for Gemini; keeping system default")
+                    }
+                } else {
+                    @Suppress("DEPRECATION")
+                    if (!am.isBluetoothScoOn) {
+                        if (am.mode != AudioManager.MODE_NORMAL) {
+                            am.mode = AudioManager.MODE_NORMAL
+                        }
+                        am.startBluetoothSco()
+                        am.isBluetoothScoOn = true
+                        LogBus.log("Started legacy Bluetooth SCO for Gemini")
                     }
                 }
-                LogBus.log("Enabled Bluetooth SCO audio routing to glasses microphone for Gemini")
 
                 // Auto-release SCO after prompt capture window (4.5s) to immediately restore A2DP media channel for Gemini's voice reply
                 val release = Runnable {
@@ -270,6 +295,8 @@ object TouchGestureManager {
             } catch (e: Exception) {
                 LogBus.warn("Could not route Bluetooth SCO for Gemini: ${e.message}")
             }
+        } else {
+            LogBus.log("Using native system Bluetooth routing for Gemini (SCO force disabled, preserving SPP stability)")
         }
 
         // 3. Dispatch KEYCODE_VOICE_ASSIST to system AudioManager

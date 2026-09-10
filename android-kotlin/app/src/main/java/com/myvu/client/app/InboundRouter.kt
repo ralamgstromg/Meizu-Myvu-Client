@@ -458,6 +458,30 @@ class InboundRouter(private val sender: Sender) {
         val parsedList = rawItems.mapNotNull { parseGestureItem(it) }
         if (parsedList.isEmpty()) return
 
+        // 1. Deduplicate identical bounce events in the same batch
+        val deduplicated = ArrayList<ParsedGesture>()
+        for (item in parsedList) {
+            val isDuplicateBounce = deduplicated.any { existing ->
+                existing.gesture == item.gesture &&
+                        (existing.sender == 0 || item.sender == 0 || existing.sender == item.sender) &&
+                        existing.eventTime != -1L && item.eventTime != -1L &&
+                        Math.abs(existing.eventTime - item.eventTime) <= 50L
+            }
+            if (!isDuplicateBounce) {
+                deduplicated.add(item)
+            } else {
+                LogBus.log("Filtered duplicate bounce ${item.gesture} (time=${item.eventTime}, sender=${item.sender})")
+            }
+        }
+
+        // 2. Consolidate sender 2 (left temple) touch down (200) and touch up (203)
+        // If code 200 is present, code 203 in the same batch is release confirmation noise
+        val consolidated = if (deduplicated.any { it.actionValue == 200 }) {
+            deduplicated.filterNot { it.actionValue == 203 }
+        } else {
+            deduplicated
+        }
+
         val isTapOrPress = { g: GlassGesture ->
             g == GlassGesture.TAP || g == GlassGesture.DOUBLE_TAP ||
                     g == GlassGesture.TRIPLE_TAP || g == GlassGesture.LONG_PRESS
@@ -466,11 +490,11 @@ class InboundRouter(private val sender: Sender) {
             g == GlassGesture.SWIPE_FORWARD || g == GlassGesture.SWIPE_BACKWARD
         }
 
-        // Filter out parasitic micro-swipes occurring simultaneously with a tap/press
-        val filtered = if (parsedList.size > 1) {
-            val tapEvents = parsedList.filter { isTapOrPress(it.gesture) }
+        // 3. Filter out parasitic micro-swipes occurring simultaneously with a tap/press
+        val noSwipes = if (consolidated.size > 1) {
+            val tapEvents = consolidated.filter { isTapOrPress(it.gesture) }
             if (tapEvents.isNotEmpty()) {
-                parsedList.filterNot { swipeCandidate ->
+                consolidated.filterNot { swipeCandidate ->
                     if (!isSwipe(swipeCandidate.gesture)) return@filterNot false
                     tapEvents.any { tap ->
                         val sameSender = (swipeCandidate.sender == 0 || tap.sender == 0 || swipeCandidate.sender == tap.sender)
@@ -485,10 +509,42 @@ class InboundRouter(private val sender: Sender) {
                     }
                 }
             } else {
-                parsedList
+                consolidated
             }
         } else {
-            parsedList
+            consolidated
+        }
+
+        // 4. Synthesize DOUBLE_TAP if the batch contains two consecutive TAPs within 60..500ms
+        val synthesized = ArrayList<ParsedGesture>()
+        var i = 0
+        while (i < noSwipes.size) {
+            val current = noSwipes[i]
+            if (current.gesture == GlassGesture.TAP && i + 1 < noSwipes.size) {
+                val next = noSwipes[i + 1]
+                val sameSender = (current.sender == 0 || next.sender == 0 || current.sender == next.sender)
+                val dt = if (current.eventTime != -1L && next.eventTime != -1L) {
+                    Math.abs(next.eventTime - current.eventTime)
+                } else {
+                    -1L
+                }
+                if (next.gesture == GlassGesture.TAP && sameSender && dt in 60L..500L) {
+                    LogBus.log("Synthesized DOUBLE_TAP from batch containing 2 TAPs (${dt}ms apart, sender=${current.sender})")
+                    synthesized.add(
+                        ParsedGesture(
+                            GlassGesture.DOUBLE_TAP,
+                            211,
+                            "double_tap",
+                            current.sender,
+                            next.eventTime
+                        )
+                    )
+                    i += 2
+                    continue
+                }
+            }
+            synthesized.add(current)
+            i++
         }
 
         val gesturePriority = { g: GlassGesture ->
@@ -504,8 +560,8 @@ class InboundRouter(private val sender: Sender) {
         }
 
         // Sort events with matching timestamps by priority, otherwise keep arrival order
-        val sorted = if (filtered.size > 1) {
-            filtered.sortedWith { a, b ->
+        val sorted = if (synthesized.size > 1) {
+            synthesized.sortedWith { a, b ->
                 if (a.eventTime != -1L && b.eventTime != -1L && Math.abs(a.eventTime - b.eventTime) <= 50L) {
                     gesturePriority(a.gesture).compareTo(gesturePriority(b.gesture))
                 } else {
@@ -513,7 +569,7 @@ class InboundRouter(private val sender: Sender) {
                 }
             }
         } else {
-            filtered
+            synthesized
         }
 
         for (item in sorted) {

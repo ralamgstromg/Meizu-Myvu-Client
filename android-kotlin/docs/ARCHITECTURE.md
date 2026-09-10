@@ -43,7 +43,7 @@ La aplicación actúa como puente bidireccional entre el sistema operativo Andro
    ┌─────────────────────────────┬─────────────────────────────┐
    │        Skills Engine        │        UI & Storage         │
    │ - SkillManager              │ - Room Database (Notes/Rem) │
-   │ - AI Engine (MediaPipe)     │ - Material 3 Activities     │
+   │ - AI Engine (Local/Cloud)   │ - Material 3 Activities     │
    │ - Built-in Skills Handlers  │ - Live StateFlow Observers  │
    └─────────────────────────────┴─────────────────────────────┘
 ```
@@ -100,8 +100,12 @@ Los metadatos y configuraciones se empaquetan en estructuras **Type-Length-Value
 - Filtra notificaciones según la configuración de aplicaciones habilitadas por el usuario (`NotificationAppsActivity`).
 - Extrae título, texto, icono de la app remitente y las formatea como tarjetas de HUD para ser proyectadas en las gafas.
 
-### 4.3 `AutoSendAccessibilityService` y Watchdog de Persistencia
+### 4.3 `AutoSendAccessibilityService`, Re-bloqueo de Pantalla y Watchdog de Persistencia
 - Permite acciones de accesibilidad para automatizar el envío de mensajes de texto en aplicaciones como WhatsApp, Telegram y SMS sin requerir manipulación manual del dispositivo.
+- **Re-bloqueo Automático de Pantalla (`LockScreenHelper` & `GLOBAL_ACTION_LOCK_SCREEN`)**:
+  - Tras lanzar Gemini (por doble toque en las patas de las gafas) o tras ejecutar llamadas/mensajes por voz (WhatsApp VoIP / chat), el servicio gestiona el apagado y bloqueo automático de la pantalla si el dispositivo se encontraba bloqueado en el bolsillo (`wasLockedOnTrigger`).
+  - Utiliza `performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)` (Android 9+ / API 28+), el cual re-bloquea la pantalla de inmediato sin invalidar los sensores biométricos (huella dactilar/rostro) y sin requerir privilegios invasivos de Administrador de Dispositivos.
+  - Para Gemini, implementa `armGeminiAutoLock(context, timeoutMs)` que monitoriza la transición de ventana (`TYPE_WINDOW_STATE_CHANGED`) al cerrarse la interfaz de voz o por timeout de seguridad, asegurando que el teléfono vuelva a quedar suspendido en el bolsillo.
 - **Watchdog de Persistencia y Auto-Activación**:
   - Al actualizar el APK (`ACTION_MY_PACKAGE_REPLACED`), Android apaga con frecuencia los servicios de accesibilidad de apps externas.
   - `autoEnableIfPermitted(context)`: Reactiva el servicio de forma programática escribiendo en `Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES` si la app posee permiso `android.permission.WRITE_SECURE_SETTINGS` (concedido una sola vez mediante `adb shell pm grant com.myvu.client android.permission.WRITE_SECURE_SETTINGS`).
@@ -124,6 +128,8 @@ Los metadatos y configuraciones se empaquetan en estructuras **Type-Length-Value
 - **Enrutamiento Dual de Toques (Protocolo RFCOMM + Bluetooth AVRCP)**:
   - **Capa de Protocolo StarryNet (`InboundRouter`)**: Analiza eventos entrantes desde `event_tracking`, `sync_glass_event`, `phonepad`, `trackpad`. Extrae `key_code` de `_event_attr_value_` e ignora liberaciones (`down_or_up: 0`) para evitar dobles disparos, procesando todos los emisores táctiles (1, 2, 4). Filtra telemetría no táctil (`suspend_stats`, `iot_screen_status_change`, `iot_voice_wakeup`, `iot_voice_quit`).
     - **Filtrado Antirruido de Micro-Swipes Parásitos**: Al apoyar el dedo sobre la patilla capacitiva, el hardware frecuentemente genera micro-desplazamientos de fricción reportando un swipe (`206` o `207`) junto con un toque (`210`) en el mismo milisegundo (`key_event_time`). `InboundRouter.dispatchGestureBatch` detecta y suprime automáticamente los micro-swipes que ocurran a `<= 50ms` de un toque intencional del mismo sensor.
+    - **Deduplicación de Rebotes en Lote y Consolidación Sender 2**: Elimina rebotes de contacto capacitivo idénticos consecutivos con el mismo timestamp de hardware. En la patilla secundaria (`sender: 2`), consolida la pareja `200` (down) y `203` (up) en un único toque, evitando dobles disparos lógicos por un único contacto físico.
+    - **Síntesis Directa de `DOUBLE_TAP` en Lote**: Si el buffer de telemetría de las gafas agrupa dos toques `TAP` con diferencia de hardware timestamp entre 60ms y 500ms, promueve los eventos inmediatamente a `DOUBLE_TAP`, neutralizando la latencia de entrega de BLE.
     - **Ordenamiento por Prioridad en Lotes Simultáneos**: Si un lote contiene múltiples gestos en la misma ventana temporal, se procesan respetando la jerarquía de intención: `DOUBLE_TAP` > `TRIPLE_TAP` > `TAP` > `LONG_PRESS` > `SWIPE`.
   - **Capa Bluetooth AVRCP (`MyvuService.MediaSession`)**: Alberga una `MediaSession` activa que intercepta eventos de hardware transmitidos por el perfil de audio clásico (`BluetoothHeadset` / AVRCP) de las gafas (`KEYCODE_HEADSETHOOK`, `KEYCODE_MEDIA_PLAY_PAUSE`, `KEYCODE_MEDIA_NEXT`, `KEYCODE_MEDIA_PREVIOUS`, `KEYCODE_MEDIA_FAST_FORWARD`, `KEYCODE_MEDIA_REWIND`, `KEYCODE_VOICE_ASSIST`), distinguiendo pulsaciones simples y dobles para enrutarlas a `TouchGestureManager`.
   - **Mapeo Unificado (`GlassGesture.fromCode`)**: Asocia keycodes estándar y nativos Flyme XR:
@@ -136,10 +142,11 @@ Los metadatos y configuraciones se empaquetan en estructuras **Type-Length-Value
 - **Despacho Personalizable, Debounce Inteligente y Sintetizador de Gestos (`TouchGestureManager`)**:
   - `ConnectionManager` y `GlassesEventHandler` enrutan los toques de patilla detectados a través de `TouchGestureManager.handleGesture()`.
   - **Inmunidad de Debounce para Acciones Nulas (`NONE`)**: Los gestos sin acción configurada o no asignados no actualizan la marca de tiempo de debounce, impidiendo que roces accidentales bloqueen toques intencionales durante 350ms.
-  - **Sintetizador Software de Doble Toque**: Cuando el firmware Flyme XR de las gafas emite dos eventos `TAP` simples consecutivos (`210`) dentro de un rango de 40ms a 450ms en lugar de sintetizar `DOUBLE_TAP` nativo por hardware (`211`), `TouchGestureManager` promueve y despacha automáticamente la acción asignada a `DOUBLE_TAP` (ej. Gemini o Reproducción/Pausa).
+  - **Protección contra Rebotes Eléctricos (< 40ms)**: Si llega un `TAP` dentro de un intervalo menor a 40ms respecto al anterior, se descarta como rebote eléctrico sin sobreescribir `lastTapTime`, manteniendo intacta la ventana de detección para el segundo toque real.
+  - **Sintetizador Software de Doble Toque**: Cuando el firmware Flyme XR de las gafas emite dos eventos `TAP` simples consecutivos (`210` o `200`) dentro de un rango de 40ms a 450ms en lugar de sintetizar `DOUBLE_TAP` nativo por hardware (`211`), `TouchGestureManager` promueve y despacha automáticamente la acción asignada a `DOUBLE_TAP` (ej. Gemini o Reproducción/Pausa).
   - Respeta las preferencias del usuario para cada gesto: `TAP`, `DOUBLE_TAP`, `TRIPLE_TAP`, `SWIPE_FORWARD`, `SWIPE_BACKWARD`, `LONG_PRESS`.
   - **Lanzamiento Universal de Apps (`app:<package_name>`)**: Permite vincular cualquier gesto con aplicaciones instaladas en el teléfono móvil (ej. Spotify, WhatsApp, Cámara, YouTube). Al detectarse el gesto, `LockScreenHelper.wakeUpScreen()` enciende la pantalla, `SendTrampolineActivity` descarta el keyguard y lanza la app al frente, notificando en el HUD de las gafas (*"Abriendo [App]..."*).
-  - **Integración con Gemini Manos Libres (`LAUNCH_GEMINI`)**: Al ejecutarse mediante gesto de patilla, enciende la pantalla con brillo completo (`PowerManager.WakeLock`), descarta el bloqueo mediante `SendTrampolineActivity`, establece el enlace de audio Bluetooth SCO (`AudioManager.startBluetoothSco()` y `setCommunicationDevice` con `TYPE_BLUETOOTH_SCO`) para que el micrófono de las gafas sea la entrada directa de voz con un temporizador de captura de 4.5 segundos (`GEMINI_SCO_CAPTURE_WINDOW_MS`). Al transcurrir la ventana de comando, se invoca automáticamente `releaseBluetoothSco()`, restaurando el canal multimedia A2DP para que la respuesta de voz de Gemini se escuche de inmediato sin cortes ni silencios, evitando colisiones de radio y preservando la batería de las gafas y el teléfono. Despacha `ACTION_VOICE_SEARCH_HANDS_FREE` / `ACTION_VOICE_COMMAND` delegándole el control de pantalla y ejecución a Gemini.
+  - **Integración con Gemini Manos Libres y Estabilidad SCO (`LAUNCH_GEMINI`)**: Al ejecutarse mediante gesto de patilla, enciende la pantalla con brillo completo (`PowerManager.WakeLock`), descarta el bloqueo mediante `SendTrampolineActivity`. En Android 12+ (API 31+), gestiona el micrófono de las gafas exclusivamente mediante `setCommunicationDevice` con `MODE_IN_COMMUNICATION` durante 4.5 segundos y restaura a `MODE_NORMAL` vía `clearCommunicationDevice()`, suprimiendo los comandos legacy `startBluetoothSco()` / `stopBluetoothSco()` que reiniciaban el chip de las gafas y provocaban caídas del socket RFCOMM SPP. Despacha `ACTION_VOICE_SEARCH_HANDS_FREE` / `ACTION_VOICE_COMMAND` delegándole el control de pantalla y ejecución a Gemini.
   - Acciones nativas adicionales: `LAUNCH_LOCAL_AI`, `LAUNCH_PHONE_ASSISTANT`, `MEDIA_PLAY_PAUSE`, `MEDIA_NEXT`, `MEDIA_PREV`, `WEATHER_SYNC`, `ZEN_MODE`, `TOGGLE_MIRROR`, `OPEN_TELEPROMPTER` o `NONE`.
 - **Control de Reenvío del Launcher**:
   - Al cambiar cualquier preferencia en `SettingsActivity`, se envía de inmediato `SystemSettings.setMusicTpControl(true)` a las gafas para garantizar que el launcher FlymeAR reenvíe todos los eventos táctiles en lugar de consumirlos localmente.
@@ -191,10 +198,10 @@ El subsistema en `com.myvu.client.skills` permite añadir funcionalidades al dis
     3. Retorna las observaciones a Gemini con el rol `tool` (`tool_call_id`).
     4. Gemini sintetiza la respuesta informada final optimizada para el display HUD de las gafas AR (1-2 oraciones claras).
   - **Structured Outputs**: Salida JSON garantizada (`response_format: {"type": "json_object"}`) en `NoteAiProcessor` y `MeetingAiProcessor` para extracción sin fallos de regex.
-- **Motor Local Offline (MediaPipe Tasks GenAI)**:
-  - Inferencia local de respaldo en el dispositivo para comandos y respuestas cuando no hay conexión.
-- **Motor Nube Conversacional (Gemini Live)**:
-  - Streaming de audio bidireccional de baja latencia con Gemini Live.
+- **Motor Local / Privado (`LocalAiClient`)**:
+  - Inferencia mediante servidor local u OpenAI-compatible endpoint (LiteLLM, Ollama, vLLM) en la red local o dispositivo con soporte completo de Function Calling.
+- **Motor Nube Conversacional (Gemini Live / GeminiClient)**:
+  - Streaming conversacional de baja latencia con Gemini Live o API REST de Gemini.
 
 ---
 

@@ -78,7 +78,6 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.play.services.auth)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.mediapipe.tasks.genai)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)

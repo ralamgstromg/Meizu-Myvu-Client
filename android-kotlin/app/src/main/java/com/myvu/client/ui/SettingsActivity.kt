@@ -474,6 +474,18 @@ class SettingsActivity : AppCompatActivity() {
             { Prefs.touchpadLongPressAction(this) },
             { Prefs.setTouchpadLongPressAction(this, it) }
         )
+
+        val swForceGeminiSco: MaterialSwitch? = findViewById(R.id.swForceGeminiSco)
+        swForceGeminiSco?.isChecked = Prefs.isGeminiForceScoEnabled(this)
+        swForceGeminiSco?.setOnCheckedChangeListener { _, isChecked ->
+            Prefs.setGeminiForceScoEnabled(this, isChecked)
+        }
+
+        val swAutoLockAfterAction: MaterialSwitch? = findViewById(R.id.swAutoLockAfterAction)
+        swAutoLockAfterAction?.isChecked = Prefs.isAutoLockAfterActionEnabled(this)
+        swAutoLockAfterAction?.setOnCheckedChangeListener { _, isChecked ->
+            Prefs.setAutoLockAfterActionEnabled(this, isChecked)
+        }
     }
 
     private fun wireLogging() {

@@ -328,4 +328,42 @@ class InboundGestureTest {
         assertEquals(GlassGesture.TAP, receivedGestures[0].gesture)
         assertEquals(210, receivedGestures[0].code)
     }
+
+    @Test
+    fun filtersDuplicateBounceTapsWithIdenticalTimestampInBatch() {
+        val json = "{\"action\":\"event_tracking\",\"data\":{\"action\":\"sync_glass_event\",\"value\":[" +
+                "{\"_action_value_\":\"key_event\",\"_event_attr_value_\":{\"down_or_up\":\"1\",\"key_code\":\"210\",\"key_event_sender\":1,\"key_event_time\":1789075058000},\"_event_id_\":\"key_event\"}," +
+                "{\"_action_value_\":\"key_event\",\"_event_attr_value_\":{\"down_or_up\":\"1\",\"key_code\":\"210\",\"key_event_sender\":1,\"key_event_time\":1789075058000},\"_event_id_\":\"key_event\"}" +
+                "]}}"
+        router.handle(json)
+
+        assertEquals(1, receivedGestures.size)
+        assertEquals(GlassGesture.TAP, receivedGestures[0].gesture)
+        assertEquals(210, receivedGestures[0].code)
+    }
+
+    @Test
+    fun consolidatesSender2TouchDownAndConfirmPairToSingleTap() {
+        val json = "{\"action\":\"event_tracking\",\"data\":{\"action\":\"sync_glass_event\",\"value\":[" +
+                "{\"_action_value_\":\"key_event\",\"_event_attr_value_\":{\"down_or_up\":\"1\",\"key_code\":\"200\",\"key_event_sender\":2,\"key_event_time\":1789075095000},\"_event_id_\":\"key_event\"}," +
+                "{\"_action_value_\":\"key_event\",\"_event_attr_value_\":{\"down_or_up\":\"1\",\"key_code\":\"203\",\"key_event_sender\":2,\"key_event_time\":1789075096000},\"_event_id_\":\"key_event\"}" +
+                "]}}"
+        router.handle(json)
+
+        assertEquals(1, receivedGestures.size)
+        assertEquals(GlassGesture.TAP, receivedGestures[0].gesture)
+        assertEquals(200, receivedGestures[0].code)
+    }
+
+    @Test
+    fun synthesizesDoubleTapWhenTwoTapsInSameBatchWithinTimeWindow() {
+        val json = "{\"action\":\"event_tracking\",\"data\":{\"action\":\"sync_glass_event\",\"value\":[" +
+                "{\"_action_value_\":\"key_event\",\"_event_attr_value_\":{\"down_or_up\":\"1\",\"key_code\":\"210\",\"key_event_sender\":1,\"key_event_time\":1789075058000},\"_event_id_\":\"key_event\"}," +
+                "{\"_action_value_\":\"key_event\",\"_event_attr_value_\":{\"down_or_up\":\"1\",\"key_code\":\"210\",\"key_event_sender\":1,\"key_event_time\":1789075058200},\"_event_id_\":\"key_event\"}" +
+                "]}}"
+        router.handle(json)
+
+        assertEquals(1, receivedGestures.size)
+        assertEquals(GlassGesture.DOUBLE_TAP, receivedGestures[0].gesture)
+    }
 }

@@ -1,3 +1,0 @@
-libvndksupport.so
-libOpenCL.so
-libGLES_mali.so

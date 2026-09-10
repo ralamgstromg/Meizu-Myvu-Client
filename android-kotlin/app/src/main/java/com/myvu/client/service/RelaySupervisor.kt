@@ -108,7 +108,7 @@ class RelaySupervisor(
 
     companion object {
         private const val CONNECTED_POLL_MS = 60000L
-        private const val INITIAL_DISCONNECTED_POLL_MS = 5000L
+        private const val INITIAL_DISCONNECTED_POLL_MS = 2000L
         private const val MAX_DISCONNECTED_POLL_MS = 60000L
         private const val MAX_ATTEMPTS = 6
         private const val RESET_ATTEMPTS_AFTER_MS = 120000L
@@ -116,7 +116,7 @@ class RelaySupervisor(
         @JvmStatic
         fun calculateBackoffDelay(attemptCount: Int): Long {
             if (attemptCount <= 0) return INITIAL_DISCONNECTED_POLL_MS
-            val shift = min(attemptCount, 4)
+            val shift = min(attemptCount, 5)
             val factor = 1L shl shift
             return min(MAX_DISCONNECTED_POLL_MS, INITIAL_DISCONNECTED_POLL_MS * factor)
         }

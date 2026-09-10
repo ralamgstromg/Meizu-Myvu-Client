@@ -12,7 +12,6 @@ junit = "4.13.2"
 robolectric = "4.16.1"
 json = "20260814"
 lifecycleRuntimeKtx = "2.11.0"
-mediapipeGenai = "0.10.35"
 room = "2.8.4"
 
 
@@ -28,7 +27,6 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 json = { module = "org.json:json", version.ref = "json" }
-mediapipe-tasks-genai = { module = "com.google.mediapipe:tasks-genai", version.ref = "mediapipeGenai" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
