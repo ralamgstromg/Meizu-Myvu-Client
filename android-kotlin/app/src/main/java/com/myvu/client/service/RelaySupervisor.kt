@@ -64,9 +64,12 @@ class RelaySupervisor(
         conn.postDelayed(poll, INITIAL_DISCONNECTED_POLL_MS)
     }
 
-    /** Called when the relay drops, so the next poll retries promptly. */
+    /** Called when the relay drops, so the next poll retries with backoff instead of hammering. */
     fun onRelayLost() {
-        attempt = 0
+        if (!running) return
+        conn.removeCallbacks(poll)
+        val delay = calculateBackoffDelay(attempt)
+        conn.postDelayed(poll, delay)
     }
 
     private fun check(): Boolean {
@@ -107,7 +110,7 @@ class RelaySupervisor(
         private const val INITIAL_DISCONNECTED_POLL_MS = 5000L
         private const val MAX_DISCONNECTED_POLL_MS = 60000L
         private const val MAX_ATTEMPTS = 6
-        private const val RESET_ATTEMPTS_AFTER_MS = 30000L
+        private const val RESET_ATTEMPTS_AFTER_MS = 120000L
 
         @JvmStatic
         fun calculateBackoffDelay(attemptCount: Int): Long {

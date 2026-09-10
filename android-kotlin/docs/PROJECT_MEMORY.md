@@ -665,3 +665,53 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
 - **Verificación**:
   - Pruebas unitarias `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL in 33s** (100% pasando).
   - Compilación de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL in 2s**.
+
+### [2026-09-10] — Diagnóstico Profundo de Log (1h 38m) y Plan Integral de Optimización de Batería/Recursos
+- **Log Analizado**: `/home/rcastro/Descargas/myvu_client_log.txt` (Sesión de 10:11:58 a 11:49:41).
+- **Plan Detallado**: [`docs/superpowers/plans/2026-09-10-battery-and-resource-optimization-plan.md`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/docs/superpowers/plans/2026-09-10-battery-and-resource-optimization-plan.md).
+- **Comportamiento Observado de Batería**:
+  - Gafas pasaron de 100% (10:55:06, al desconectar cargador) a 93% (11:48:05): 7% en 53 minutos (~8.0% por hora) en reposo pasivo.
+- **Causas Raíz y Fugas Identificadas**:
+  1. *Fuga crítica en `captured_init.txt` / `InitBurst.kt`*: La trama capturada 1117 (mensaje 24) reenvía `isContinuousDialogueEnable: true` e `isLowPowerWakeupEnable: true` en el init burst de RFCOMM, sobreescribiendo las preferencias del usuario porque `applyDefaults` se omite al reconectar el relay.
+  2. *Polling excesivo de `get_device_info`*: Emitido 11 veces en 50 minutos por llamadas en `onResume` y `batteryQueryTask`, forzando a las gafas a responder con JSON pesado cuando ya emiten push espontáneo de batería (`sync_glass_battery_info`).
+  3. *Sensores a 60Hz en segundo plano (`HealthService.kt`)*: `STEP_COUNTER` y `STEP_DETECTOR` registrados con `SENSOR_DELAY_UI`, impidiendo que el SoC del celular entre en deep sleep.
+  4. *Heartbeat BLE rígido cada 10s*: Sin coalescencia; `notifyDataActivity()` nunca es llamado ante tráfico real.
+  5. *Watchdog rompe Doze Mode*: `ServiceWatchdogReceiver` utiliza `setAndAllowWhileIdle(WAKEUP)` cada 15 min, despertando al celular innecesariamente.
+  6. *Tempestad de reconexiones RFCOMM*: Sin backoff progresivo ante caídas del servidor SPP de las gafas.
+- **Fases del Plan de Mejora**:
+  - Fase 1: Filtro de init burst en `InitBurst.kt` y forzado de `applyDefaults()` en reconexiones.
+  - Fase 2: Supresión de polling redundante de batería en `ConnectionManager`, `ConnectActivity` y `NotesActivity`.
+  - Fase 3: Heartbeat BLE inteligente con coalescencia e intervalo extendido.
+  - Fase 4: Optimización de sensores de salud (`SENSOR_DELAY_NORMAL` + batching) y watchdog amigable con Doze.
+  - Fase 5: Backoff exponencial en reconexiones RFCOMM.
+  - Fase 6: Pruebas, compilación y verificación.
+- **Implementación Realizada**:
+  1. `InitBurst.kt`:
+     - Se filtran automáticamente tramas con `com.upuphone.ai.assistant` e `isContinuousDialogueEnable` para evitar que el init burst capturado en código duro sobreescriba las preferencias de bajo consumo.
+  2. `ConnectionManager.kt`:
+     - Añadido `lastBatteryUpdateTime` para registrar frescura de telemetría de batería.
+     - `queryBatteryInfo`: No consulta `get_device_info` si la batería ya es conocida y tiene menos de 15 minutos (a menos que se pase `force = true`).
+     - `batteryQueryTask`: Convertido en comprobación de seguridad cada 30 minutos, ejecutando `queryBatteryInfo` únicamente si no ha habido reporte push en > 45 minutos.
+     - Enlace de Relay: En caso de que BLE ya haya ejecutado `applyDefaults()`, se envía de forma dirigida el `assistantConfig` de bajo consumo (`continuousDialogue = false`, `voiceWakeup = false`) para garantizar que el canal relay no quede desalineado.
+  3. `ConnectActivity.kt` y `NotesActivity.kt`:
+     - En `onServiceConnected` de `ConnectActivity`, solo se consulta batería si `glassesInfo()?.battery == null`.
+     - Los toques explícitos del usuario en `cardStatus` y `layNotesGlassesBattery` pasan `force = true`.
+  4. `BleHeartbeat.kt` y `BleTransport.kt`:
+     - Conectado `notifyDataActivity()` a `dispatchNotification` (recepción) y `writerFor` (transmisión) en `BleTransport`.
+     - `BleHeartbeat`: Intervalos ajustados a `STANDARD_INTERVAL_MS = 20000L` (20s) y `EXTENDED_INTERVAL_MS = 25000L` (25s). Cada paquete intercambiado reprograma el temporizador evitando disparar el heartbeat durante tráfico activo.
+     - Corregido bug en `isDataActive` requiriendo `lastDataActivityTime > 0L`.
+  5. `HealthService.kt`:
+     - Cambiado `SENSOR_DELAY_UI` (60 Hz) a `SENSOR_DELAY_NORMAL` con batching de hardware de 60 segundos (`maxReportLatencyUs = 60_000_000`), permitiendo que el SoC del celular permanezca en reposo profundo.
+     - Si `TYPE_STEP_COUNTER` está presente, se omite registrar `TYPE_STEP_DETECTOR`, eliminando interrupciones por paso en CPU.
+  6. `ServiceWatchdogReceiver.kt`:
+     - Reemplazado `setAndAllowWhileIdle(ELAPSED_REALTIME_WAKEUP)` por `alarmManager.set(AlarmManager.ELAPSED_REALTIME, ...)` (sin WAKEUP), permitiendo que el celular duerma plenamente en Doze Mode.
+  7. `RelaySupervisor.kt`:
+     - `onRelayLost`: Ya no resetea `attempt = 0` inmediatamente, sino que respeta el `calculateBackoffDelay(attempt)` (5s -> 10s -> 20s -> 40s -> 60s) para no asediar el socket SPP de las gafas mientras reciclan su servidor.
+     - `RESET_ATTEMPTS_AFTER_MS` ampliado a 120 segundos.
+  8. `InitBurstTest.kt` y `BleHeartbeatTest.kt`:
+     - Creadas suites de pruebas unitarias que verifican la exclusión de tramas de escucha activa y la coalescencia de tráfico del heartbeat.
+- **Verificación**:
+  - Pruebas unitarias `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL in 10s** (233 pruebas ejecutadas, 100% pasando).
+  - Compilación de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL in 929ms** (`app-debug.apk` generado correctamente).
+
+

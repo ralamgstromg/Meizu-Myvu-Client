@@ -733,7 +733,7 @@ class NotesActivity : AppCompatActivity() {
         layBattery.setOnClickListener {
             val conn = com.myvu.client.service.MyvuService.activeConnection()
             if (conn != null && conn.state() == com.myvu.client.service.ConnectionState.READY) {
-                conn.queryBatteryInfo()
+                conn.queryBatteryInfo(force = true)
                 Toast.makeText(this, "Actualizando batería de gafas...", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Gafas desconectadas", Toast.LENGTH_SHORT).show()

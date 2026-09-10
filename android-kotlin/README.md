@@ -147,7 +147,7 @@ adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 4. **Desbloqueo Extendido / Smart Lock** (`Ajustes -> Seguridad -> Desbloqueo extendido -> Dispositivos de confianza`): Añadir las gafas **MYVU** para permitir el envío de WhatsApp/Telegram y control de apps con el teléfono en el bolsillo sin requerir PIN.
 5. **Asistente Digital Predeterminado** (`Ajustes -> Aplicaciones -> Aplicaciones predeterminadas -> Aplicación de asistente digital`): Seleccionar **MyVU Client**.
 6. **Batería sin Restricciones** (`Ajustes -> Aplicaciones -> MyVU Client -> Batería`): Seleccionar **Sin restricciones** para evitar que Android mate el servicio en reposo.
-7. **Escucha y Batería de las Gafas** (`Ajustes -> Escucha y Ahorro de Batería`): La **Escucha activa continua** y la **Activación por voz (Wake word)** vienen desactivadas por defecto para optimizar la batería de las gafas (~16.5% de ahorro estimado por hora). Pueden activarse voluntariamente si se desea conversación continuada sin tocar la patilla.
+7. **Escucha y Ahorro de Batería** (`Ajustes -> Escucha y Ahorro de Batería`): La **Escucha activa continua** y la **Activación por voz (Wake word)** vienen desactivadas por defecto para optimizar la batería de las gafas (~16.5% de ahorro estimado por hora). Además, el cliente incluye filtrado de tramas obsoletas en init burst, heartbeat BLE adaptativo con coalescencia a 20s, sensores de salud batched (60s) en reposo profundo y watchdog no-wakeup compatible con Android Doze Mode.
 
 ---
 

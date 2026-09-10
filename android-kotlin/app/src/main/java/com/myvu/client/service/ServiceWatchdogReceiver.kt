@@ -76,20 +76,14 @@ class ServiceWatchdogReceiver : BroadcastReceiver() {
 
                 val triggerAt = SystemClock.elapsedRealtime() + WATCHDOG_INTERVAL_MS
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    alarmManager.setAndAllowWhileIdle(
-                        AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                        triggerAt,
-                        pendingIntent
-                    )
-                } else {
-                    alarmManager.set(
-                        AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                        triggerAt,
-                        pendingIntent
-                    )
-                }
-                LogBus.log("ServiceWatchdogReceiver -> Scheduled periodic watchdog in 15 minutes")
+                // Use ELAPSED_REALTIME (non-wakeup) to avoid breaking Android Doze Mode.
+                // Foreground services remain active in memory; watchdog checks when the device is awake.
+                alarmManager.set(
+                    AlarmManager.ELAPSED_REALTIME,
+                    triggerAt,
+                    pendingIntent
+                )
+                LogBus.log("ServiceWatchdogReceiver -> Scheduled periodic watchdog in 15 minutes (non-wakeup)")
             } catch (e: Exception) {
                 LogBus.error("ServiceWatchdogReceiver -> Failed to schedule watchdog", e)
             }

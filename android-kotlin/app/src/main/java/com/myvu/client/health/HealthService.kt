@@ -81,19 +81,33 @@ class HealthService(context: Context) : SensorEventListener {
         try {
             val stepCounter = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
             if (stepCounter != null) {
-                val ok = sensorManager.registerListener(this, stepCounter, SensorManager.SENSOR_DELAY_UI)
+                // Batch steps up to 60s to allow phone CPU to remain in deep sleep (low power)
+                val ok = sensorManager.registerListener(
+                    this,
+                    stepCounter,
+                    SensorManager.SENSOR_DELAY_NORMAL,
+                    60_000_000
+                )
                 if (ok) {
                     registered = true
-                    LogBus.log("HealthService -> Hardware STEP_COUNTER sensor registered successfully")
+                    LogBus.log("HealthService -> Hardware STEP_COUNTER sensor registered successfully (low-power batched)")
                 }
             }
 
-            val stepDetector = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR)
-            if (stepDetector != null) {
-                val ok = sensorManager.registerListener(this, stepDetector, SensorManager.SENSOR_DELAY_UI)
-                if (ok) {
-                    registered = true
-                    LogBus.log("HealthService -> Hardware STEP_DETECTOR sensor registered successfully")
+            // Only fallback to STEP_DETECTOR if STEP_COUNTER is absent, avoiding duplicate wakeups/interrupts
+            if (!registered) {
+                val stepDetector = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR)
+                if (stepDetector != null) {
+                    val ok = sensorManager.registerListener(
+                        this,
+                        stepDetector,
+                        SensorManager.SENSOR_DELAY_NORMAL,
+                        60_000_000
+                    )
+                    if (ok) {
+                        registered = true
+                        LogBus.log("HealthService -> Hardware STEP_DETECTOR sensor registered successfully (fallback)")
+                    }
                 }
             }
 

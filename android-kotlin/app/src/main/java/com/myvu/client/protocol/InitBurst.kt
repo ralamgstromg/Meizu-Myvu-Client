@@ -51,7 +51,11 @@ object InitBurst {
             if (m == null || m.msgType != MsgType.SEND) continue
 
             val bodyText = String(m.msgBody, StandardCharsets.UTF_8)
-            if (bodyText.contains("SyncOffSetTime") || bodyText.contains("sync_clone_data")) {
+            if (bodyText.contains("SyncOffSetTime") || 
+                bodyText.contains("sync_clone_data") ||
+                bodyText.contains("com.upuphone.ai.assistant") ||
+                bodyText.contains("isContinuousDialogueEnable")
+            ) {
                 continue
             }
             out.add(Entry(frame, m.msgBody, m.needCallback, m.category, m.appUniteCode))

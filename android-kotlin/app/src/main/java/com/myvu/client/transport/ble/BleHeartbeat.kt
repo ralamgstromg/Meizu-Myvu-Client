@@ -51,10 +51,14 @@ class BleHeartbeat @JvmOverloads constructor(
 
     fun notifyDataActivity() {
         lastDataActivityTime = timeProvider.currentTimeMillis()
+        if (isRunning) {
+            scheduler.removeCallbacks(tick)
+            scheduler.postDelayed(tick, interval)
+        }
     }
 
     val isDataActive: Boolean
-        get() = (timeProvider.currentTimeMillis() - lastDataActivityTime) < ACTIVE_DATA_TIMEOUT_MS
+        get() = lastDataActivityTime > 0L && (timeProvider.currentTimeMillis() - lastDataActivityTime) < ACTIVE_DATA_TIMEOUT_MS
 
     val interval: Long
         get() = if (isDataActive) EXTENDED_INTERVAL_MS else STANDARD_INTERVAL_MS
@@ -84,8 +88,8 @@ class BleHeartbeat @JvmOverloads constructor(
     companion object {
         @JvmField
         val HEARTBEAT_DATA: ByteArray = byteArrayOf(0, 0, 9, 16, 0)
-        const val STANDARD_INTERVAL_MS: Long = 10000
-        const val EXTENDED_INTERVAL_MS: Long = 15000
-        const val ACTIVE_DATA_TIMEOUT_MS: Long = 15000
+        const val STANDARD_INTERVAL_MS: Long = 20000L
+        const val EXTENDED_INTERVAL_MS: Long = 25000L
+        const val ACTIVE_DATA_TIMEOUT_MS: Long = 15000L
     }
 }

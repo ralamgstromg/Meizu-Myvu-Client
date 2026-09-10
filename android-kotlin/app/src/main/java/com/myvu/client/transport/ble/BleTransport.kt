@@ -185,6 +185,7 @@ open class BleTransport(
     private fun dispatchNotification(uuid: UUID, value: ByteArray?) {
         if (value == null || value.isEmpty()) return
         val copy = value.clone()
+        heartbeat?.notifyDataActivity()
         conn.post {
             _payloadFlow.tryEmit(copy)
             val ic = internalChar
@@ -288,6 +289,7 @@ open class BleTransport(
 
     private fun writerFor(ch: BluetoothGattCharacteristic): BleMessageChannel.Writer {
         return BleMessageChannel.Writer { packet ->
+            heartbeat?.notifyDataActivity()
             queue.enqueue(GattOp.write(ch, packet))
         }
     }

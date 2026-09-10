@@ -304,17 +304,30 @@ class ConnectionManager(
 
     fun connHandler(): Handler = conn
 
+    private var lastBatteryUpdateTime: Long = 0L
+
     private val batteryQueryTask = object : Runnable {
         override fun run() {
             if (state == ConnectionState.READY) {
-                queryBatteryInfo()
-                conn.postDelayed(this, 15 * 60 * 1000L) // 15 min periodic check
+                val elapsedSinceUpdate = System.currentTimeMillis() - lastBatteryUpdateTime
+                // Glasses proactively push battery updates via sync_glass_battery_info.
+                // Only poll get_device_info as safety fallback if no update was received for > 45 minutes.
+                if (elapsedSinceUpdate >= 45 * 60 * 1000L) {
+                    queryBatteryInfo(force = true)
+                }
+                conn.postDelayed(this, 30 * 60 * 1000L) // 30 min periodic safety check
             }
         }
     }
 
-    fun queryBatteryInfo() {
+    @JvmOverloads
+    fun queryBatteryInfo(force: Boolean = false) {
         if (state == ConnectionState.READY) {
+            val elapsed = System.currentTimeMillis() - lastBatteryUpdateTime
+            // If battery info is known and fresh (<15 minutes), skip polling to save glasses battery & RFCOMM traffic
+            if (!force && glassesInfoVal != null && elapsed < 15 * 60 * 1000L) {
+                return
+            }
             try {
                 sendActionNow(SystemSettings.query("get_device_info"))
             } catch (e: Exception) {
@@ -326,6 +339,7 @@ class ConnectionManager(
     @JvmOverloads
     fun updateGlassesBattery(battery: Int, isCharging: Boolean = false) {
         if (battery < 0 || battery > 100) return
+        lastBatteryUpdateTime = System.currentTimeMillis()
         conn.post {
             val current = glassesInfoVal
             if (current == null) {
@@ -592,6 +606,7 @@ class ConnectionManager(
             object : BlePairing.Callback {
                 override fun onPaired(glasses: DeviceInfo) {
                     glassesInfoVal = glasses
+                    lastBatteryUpdateTime = System.currentTimeMillis()
                     bondKey = pairing?.sharedSecret
                     bondIv = pairing?.iv
                     bondMode = pairing?.encryptMode ?: 0
@@ -980,6 +995,19 @@ class ConnectionManager(
             applyDefaults()
         } else {
             LogBus.log("applyDefaults skipped on relay session — BLE already applied settings")
+            conn.postDelayed({
+                try {
+                    sendActionNow(
+                        AiProtocol.assistantConfig(
+                            Prefs.voiceWakeupEnabled(context),
+                            Prefs.continuousDialogueEnabled(context)
+                        ),
+                        AiProtocol.PKG,
+                        AiProtocol.PKG
+                    )
+                } catch (ignored: Exception) {
+                }
+            }, 300)
         }
         connectAudioProfiles()
 

@@ -106,7 +106,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
             if (conn != null) {
                 observeConnectionState(conn)
                 render(conn.state())
-                if (conn.state() == ConnectionState.READY) {
+                if (conn.state() == ConnectionState.READY && conn.glassesInfo()?.battery == null) {
                     conn.queryBatteryInfo()
                 }
             } else {
@@ -310,7 +310,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
 
         findViewById<View>(R.id.cardStatus).setOnClickListener {
             if (need()) {
-                service?.connection()?.queryBatteryInfo()
+                service?.connection()?.queryBatteryInfo(force = true)
                 LogBus.log("refreshing battery info...")
             }
         }

@@ -184,9 +184,15 @@ El subsistema en `com.myvu.client.skills` permite añadir funcionalidades al dis
   - `ServiceWatchdogReceiver.onReceive`: cancela la alarma y omite cualquier acción si `autoReconnectEnabled` es false.
   - `BootReceiver`: omite reactivar el servicio tras eventos del sistema (`ACTION_USER_PRESENT`, `POWER_CONNECTED`) si el usuario se desconectó voluntariamente.
   - `ConnectionManager`: en `onDisconnected()` y `fail()`, comprueba `userStopped` para no cambiar a `FAILED` ni programar reintentos en bucle cuando el usuario detuvo la conexión.
-- **Optimización de Batería en las Gafas (Escucha Activa y Wake Word)**:
+- **Optimización Integral de Batería y Recursos (Gafas y Teléfono)**:
   - **Diálogo Continuo / Escucha Activa (`isContinuousDialogueEnable`)**: Deshabilitado por defecto (`continuous_dialogue_enabled = false`). En el firmware FlymeAR, este flag mantenía el DSP de audio y el circuito de micrófono en escucha continua, causando drenajes acelerados de ~16.5% por hora.
   - **Activación por Voz / Wake Word (`isLowPowerWakeupEnable`)**: Deshabilitado por defecto (`voice_wakeup_enabled = false`).
+  - **Filtro Estricto en `InitBurst`**: `InitBurst.load()` descarta tramas con `com.upuphone.ai.assistant` e `isContinuousDialogueEnable` de `captured_init.txt`, impidiendo que reconexiones del relay RFCOMM sobreescriban los ajustes de bajo consumo.
+  - **Caché Inteligente de Batería**: Las gafas reportan telemetría espontánea vía `sync_glass_battery_info`. `ConnectionManager.queryBatteryInfo()` evita emitir `get_device_info` si la batería ya es conocida y tiene menos de 15 minutos, suprimiendo despertares del procesador de las gafas.
+  - **Heartbeat BLE Adaptativo con Coalescencia**: `BleHeartbeat` opera a 20s en reposo (en lugar de 10s ciegos) y pospone el pulso ante tráfico real en los canales internos/externos de `BleTransport`.
+  - **Sensores de Salud de Bajo Consumo (`HealthService`)**: Uso de `SENSOR_DELAY_NORMAL` con batching de hardware de 60 segundos (`maxReportLatencyUs = 60_000_000`) y supresión de `STEP_DETECTOR` redundante cuando `STEP_COUNTER` está disponible, permitiendo al SoC del celular entrar en reposo profundo (*deep sleep*).
+  - **Watchdog Compatible con Android Doze Mode**: `ServiceWatchdogReceiver` utiliza `AlarmManager.ELAPSED_REALTIME` (sin WAKEUP), evitando despertar al dispositivo en reposo prolongado cuando el servicio en primer plano ya está corriendo saludablemente.
+  - **Backoff Exponencial en Reconexión RFCOMM (`RelaySupervisor`)**: Evita tormentas de reintentos consecutivos tras desconexiones de socket SPP, permitiendo a la pila Bluetooth de las gafas reciclarse limpiamente.
   - **Sincronización Dinámica en Caliente**: Modificaciones en `SettingsActivity` despachan en tiempo real `AiProtocol.assistantConfig()` a las gafas sin reiniciar el enlace Bluetooth.
 
 ---
