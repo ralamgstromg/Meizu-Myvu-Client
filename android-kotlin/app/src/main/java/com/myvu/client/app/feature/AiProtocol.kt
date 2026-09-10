@@ -41,7 +41,10 @@ object AiProtocol {
 
     @JvmStatic
     @JvmOverloads
-    fun assistantConfig(lowPowerWakeupEnabled: Boolean = false): String {
+    fun assistantConfig(
+        lowPowerWakeupEnabled: Boolean = false,
+        continuousDialogueEnabled: Boolean = false
+    ): String {
         try {
             return message(
                 CODE_ASSISTANT_CONFIG, JSONObject()
@@ -49,7 +52,7 @@ object AiProtocol {
                     .put("isAsrResultScreenEnable", true)
                     .put("isChatGptCardDisplayEnable", true)
                     .put("isChatGptTTSPlayEnable", true)
-                    .put("isContinuousDialogueEnable", true)
+                    .put("isContinuousDialogueEnable", continuousDialogueEnabled)
                     .put("isLowPowerWakeupEnable", lowPowerWakeupEnabled)
                     .put("isLowPowerWakeupScreenOffEnable", lowPowerWakeupEnabled)
                     .put("isNetworkAvailable", true)

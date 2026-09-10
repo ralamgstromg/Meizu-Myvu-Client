@@ -288,6 +288,68 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- ===== Voice Listening & Battery Optimization ===== -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Card.Myvu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/CardTitle.Myvu"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Escucha y Ahorro de Batería" />
+
+                    <TextView
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Controla los modos de escucha del asistente en las gafas. Mantenerlos desactivados maximiza la duración de batería." />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/swContinuousDialogue"
+                        style="@style/Switch.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:textSize="13sp"
+                        android:textColor="@color/on_surface_obsidian"
+                        android:text="Escucha activa continua" />
+
+                    <TextView
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textSize="11sp"
+                        android:text="Mantiene el micrófono abierto tras responder para diálogo continuado sin tocar la patilla. Aumenta el consumo de batería." />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/swVoiceWakeup"
+                        style="@style/Switch.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:textSize="13sp"
+                        android:textColor="@color/on_surface_obsidian"
+                        android:text="Activación por voz (Wake word)" />
+
+                    <TextView
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textSize="11sp"
+                        android:text="Despierta al asistente por comando de voz en segundo plano. Aumenta el consumo de batería." />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- ===== Speech to text ===== -->
             <com.google.android.material.card.MaterialCardView
                 style="@style/Card.Myvu"

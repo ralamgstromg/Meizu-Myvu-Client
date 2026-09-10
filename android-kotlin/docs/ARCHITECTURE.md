@@ -184,6 +184,10 @@ El subsistema en `com.myvu.client.skills` permite añadir funcionalidades al dis
   - `ServiceWatchdogReceiver.onReceive`: cancela la alarma y omite cualquier acción si `autoReconnectEnabled` es false.
   - `BootReceiver`: omite reactivar el servicio tras eventos del sistema (`ACTION_USER_PRESENT`, `POWER_CONNECTED`) si el usuario se desconectó voluntariamente.
   - `ConnectionManager`: en `onDisconnected()` y `fail()`, comprueba `userStopped` para no cambiar a `FAILED` ni programar reintentos en bucle cuando el usuario detuvo la conexión.
+- **Optimización de Batería en las Gafas (Escucha Activa y Wake Word)**:
+  - **Diálogo Continuo / Escucha Activa (`isContinuousDialogueEnable`)**: Deshabilitado por defecto (`continuous_dialogue_enabled = false`). En el firmware FlymeAR, este flag mantenía el DSP de audio y el circuito de micrófono en escucha continua, causando drenajes acelerados de ~16.5% por hora.
+  - **Activación por Voz / Wake Word (`isLowPowerWakeupEnable`)**: Deshabilitado por defecto (`voice_wakeup_enabled = false`).
+  - **Sincronización Dinámica en Caliente**: Modificaciones en `SettingsActivity` despachan en tiempo real `AiProtocol.assistantConfig()` a las gafas sin reiniciar el enlace Bluetooth.
 
 ---
 

@@ -128,6 +128,7 @@ class SettingsActivity : AppCompatActivity() {
         configureProviderSelectors()
         bindStoredValues()
         configureResponseMode()
+        configureListeningSettings()
         configurePersistence()
         configureButtons()
         setupBackupRestoreUi()
@@ -251,6 +252,38 @@ class SettingsActivity : AppCompatActivity() {
                 else -> AiResponseMode.VOICE_AND_VISUAL
             }
             Prefs.setAiResponseMode(this, selected.id)
+        }
+    }
+
+    private fun configureListeningSettings() {
+        val swContinuousDialogue: MaterialSwitch? = findViewById(R.id.swContinuousDialogue)
+        swContinuousDialogue?.isChecked = Prefs.continuousDialogueEnabled(this)
+        swContinuousDialogue?.setOnCheckedChangeListener { _, isChecked ->
+            Prefs.setContinuousDialogueEnabled(this, isChecked)
+            pushAssistantConfigToGlasses()
+        }
+
+        val swVoiceWakeup: MaterialSwitch? = findViewById(R.id.swVoiceWakeup)
+        swVoiceWakeup?.isChecked = Prefs.voiceWakeupEnabled(this)
+        swVoiceWakeup?.setOnCheckedChangeListener { _, isChecked ->
+            Prefs.setVoiceWakeupEnabled(this, isChecked)
+            pushAssistantConfigToGlasses()
+        }
+    }
+
+    private fun pushAssistantConfigToGlasses() {
+        try {
+            val payload = com.myvu.client.app.feature.AiProtocol.assistantConfig(
+                Prefs.voiceWakeupEnabled(this),
+                Prefs.continuousDialogueEnabled(this)
+            )
+            com.myvu.client.service.MyvuService.activeConnection()?.sendAction(
+                payload,
+                com.myvu.client.app.feature.AiProtocol.PKG,
+                com.myvu.client.app.feature.AiProtocol.PKG
+            )
+        } catch (e: Exception) {
+            com.myvu.client.core.LogBus.error("Failed to push assistantConfig to glasses", e)
         }
     }
 

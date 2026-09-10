@@ -493,6 +493,16 @@ object Prefs {
     }
 
     @JvmStatic
+    fun continuousDialogueEnabled(c: Context): Boolean {
+        return prefs(c).getBoolean("continuous_dialogue_enabled", false)
+    }
+
+    @JvmStatic
+    fun setContinuousDialogueEnabled(c: Context, enabled: Boolean) {
+        prefs(c).edit().putBoolean("continuous_dialogue_enabled", enabled).apply()
+    }
+
+    @JvmStatic
     fun weatherIntervalMinutes(c: Context): Int {
         return prefs(c).getInt("weather_interval_minutes", 60)
     }

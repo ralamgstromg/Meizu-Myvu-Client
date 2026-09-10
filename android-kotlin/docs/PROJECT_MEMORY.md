@@ -639,3 +639,29 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
   - Pruebas unitarias `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL in 12s** (228 pruebas unitarias ejecutadas y pasando al 100%).
   - Compilación de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL in 1s** (`app-debug.apk` 117MB).
 
+### [2026-09-10] — Corrección de Drenaje Rápido de Batería y Desactivación de Escucha Activa por Defecto
+- **Plan de Trabajo**: `docs/superpowers/plans/2026-09-10-glasses-battery-drain-and-active-listening-fix.md`.
+- **Problema Detectado en Logs (`myvu_client_log.txt`)**:
+  - Drenaje acelerado de batería en las gafas: caída de 23% a 15% en ~29 minutos (aprox. 16.5% por hora) en reposo relativo.
+  - Causa raíz: En el mensaje de configuración inicial enviado a las gafas (`CODE_ASSISTANT_CONFIG`, msgId=40), el flag `"isContinuousDialogueEnable": true` estaba clavado en código duro (`hardcoded`) dentro de `AiProtocol.kt`.
+  - En el firmware FlymeAR de Meizu Myvu, `isContinuousDialogueEnable: true` activa el modo de diálogo continuo / escucha activa permanente en el DSP de audio, manteniendo el micrófono y subsistema de reconocimiento en vigilia esperando más habla sin pulsar la patilla.
+  - Además, no existía preferencia ni interfaz de usuario para que el usuario gestionara este comportamiento.
+- **Solución Implementada**:
+  1. `Prefs.kt`:
+     - Añadidos `continuousDialogueEnabled(context)` y `setContinuousDialogueEnabled(context, boolean)`, con valor por defecto **`false`**.
+     - `voiceWakeupEnabled` permanece también en **`false`** por defecto.
+  2. `AiProtocol.kt`:
+     - Actualizado `assistantConfig(lowPowerWakeupEnabled = false, continuousDialogueEnabled = false)`.
+     - `isContinuousDialogueEnable` ahora toma el valor del parámetro (por defecto `false`), enviando `false` a las gafas.
+  3. `ConnectionManager.kt` y `AiConversation.kt`:
+     - Transmisión sincronizada de `AiProtocol.assistantConfig(Prefs.voiceWakeupEnabled(context), Prefs.continuousDialogueEnabled(context))` al conectar y en cada turno.
+  4. `activity_settings.xml` y `SettingsActivity.kt`:
+     - Añadida tarjeta "Escucha y Ahorro de Batería" en Ajustes con switches Material 3 para:
+       - `swContinuousDialogue`: "Escucha activa continua" (con advertencia de batería, default apagado).
+       - `swVoiceWakeup`: "Activación por voz (Wake word)" (con advertencia de batería, default apagado).
+     - Actualización dinámica instantánea hacia las gafas al alternar los switches sin necesidad de reconectar (`pushAssistantConfigToGlasses()`).
+  5. `AiProtocolTest.kt`:
+     - Nueva suite de pruebas unitarias validando que `assistantConfig()` genera `isContinuousDialogueEnable: false` e `isLowPowerWakeupEnable: false` por defecto.
+- **Verificación**:
+  - Pruebas unitarias `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL in 33s** (100% pasando).
+  - Compilación de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL in 2s**.

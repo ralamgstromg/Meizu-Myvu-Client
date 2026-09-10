@@ -1053,7 +1053,14 @@ class ConnectionManager(
             } catch (ignored: Exception) {
             }
             try {
-                sendActionNow(AiProtocol.assistantConfig(Prefs.voiceWakeupEnabled(context)), AiProtocol.PKG, AiProtocol.PKG)
+                sendActionNow(
+                    AiProtocol.assistantConfig(
+                        Prefs.voiceWakeupEnabled(context),
+                        Prefs.continuousDialogueEnabled(context)
+                    ),
+                    AiProtocol.PKG,
+                    AiProtocol.PKG
+                )
             } catch (ignored: Exception) {
             }
         }, 400)

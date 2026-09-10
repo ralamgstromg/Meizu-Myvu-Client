@@ -234,7 +234,7 @@ class AiConversation(
         stopRequested = false
         textMode = false
         turnCount = 0
-        send(AiProtocol.assistantConfig(Prefs.voiceWakeupEnabled(context)))
+        send(AiProtocol.assistantConfig(Prefs.voiceWakeupEnabled(context), Prefs.continuousDialogueEnabled(context)))
         prepareTts()
         startListening(if (triggerCode == AiProtocol.CODE_START_VR_REQ) "button" else "wake word")
     }
@@ -742,7 +742,7 @@ class AiConversation(
             stopRequested = false
             textMode = true
             turnCount = 0
-            send(AiProtocol.assistantConfig(Prefs.voiceWakeupEnabled(context)))
+            send(AiProtocol.assistantConfig(Prefs.voiceWakeupEnabled(context), Prefs.continuousDialogueEnabled(context)))
             prepareTts()
             sessionId = UUID.randomUUID().toString()
 
