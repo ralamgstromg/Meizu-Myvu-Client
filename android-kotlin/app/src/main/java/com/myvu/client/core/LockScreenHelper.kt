@@ -60,7 +60,7 @@ object LockScreenHelper {
 
                 override fun onDismissError() {
                     super.onDismissError()
-                    LogBus.warn("LockScreenHelper: Keyguard dismiss error")
+                    LogBus.log("LockScreenHelper: Keyguard requires PIN/biometrics or dismiss rejected; proceeding over lock screen")
                     onCancelledOrFailed?.invoke()
                 }
             })

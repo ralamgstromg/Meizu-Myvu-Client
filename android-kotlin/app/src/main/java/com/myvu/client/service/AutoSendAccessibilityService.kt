@@ -16,6 +16,10 @@ import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityNodeInfo
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import androidx.core.app.NotificationCompat
 import com.myvu.client.core.LogBus
 import java.util.ArrayDeque
 
@@ -79,7 +83,12 @@ class AutoSendAccessibilityService : AccessibilityService() {
             scheduleBurstCallRetries(shortBurst = false)
         }
 
+        const val NOTIFICATION_ID_ACCESSIBILITY_DISABLED = 9122
+        const val CHANNEL_ID_ACCESSIBILITY_ALERT = "myvu_accessibility_alert"
+        const val ADB_GRANT_COMMAND = "adb shell pm grant com.myvu.client android.permission.WRITE_SECURE_SETTINGS"
+
         fun isAccessibilityServiceEnabled(context: Context): Boolean {
+            if (activeInstance != null) return true
             return try {
                 val am = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
                 if (am == null || !am.isEnabled) return false
@@ -88,10 +97,116 @@ class AutoSendAccessibilityService : AccessibilityService() {
                     Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
                 ) ?: return false
                 enabledServices.contains(context.packageName + "/" + AutoSendAccessibilityService::class.java.canonicalName) ||
+                        enabledServices.contains(context.packageName + "/" + AutoSendAccessibilityService::class.java.name) ||
                         enabledServices.contains(AutoSendAccessibilityService::class.java.simpleName)
             } catch (e: Exception) {
                 false
             }
+        }
+
+        /**
+         * Automatically reactivates the Accessibility Service programmatically if the application
+         * has been granted android.permission.WRITE_SECURE_SETTINGS via ADB or root.
+         */
+        fun autoEnableIfPermitted(context: Context): Boolean {
+            return try {
+                val cr = context.contentResolver
+                val serviceComponent = "${context.packageName}/${AutoSendAccessibilityService::class.java.name}"
+                val enabledServices = Settings.Secure.getString(cr, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: ""
+                val success = if (!enabledServices.contains(serviceComponent)) {
+                    val newServices = if (enabledServices.isBlank()) serviceComponent else "$enabledServices:$serviceComponent"
+                    Settings.Secure.putString(cr, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, newServices)
+                } else {
+                    true
+                }
+                Settings.Secure.putInt(cr, Settings.Secure.ACCESSIBILITY_ENABLED, 1)
+                LogBus.log("AutoSendAccessibilityService -> Successfully auto-enabled accessibility service via Secure Settings (success=$success)")
+                cancelDisabledNotification(context)
+                true
+            } catch (e: SecurityException) {
+                LogBus.warn("AutoSendAccessibilityService -> Cannot auto-enable without WRITE_SECURE_SETTINGS: ${e.message}")
+                false
+            } catch (e: Exception) {
+                LogBus.warn("AutoSendAccessibilityService -> Unexpected error auto-enabling service: ${e.message}")
+                false
+            }
+        }
+
+        /**
+         * Posts a high-priority heads-up notification directing the user directly to the
+         * Accessibility Settings screen so they can re-enable the service with a single tap.
+         */
+        fun notifyAccessibilityDisabled(context: Context) {
+            try {
+                val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val channel = NotificationChannel(
+                        CHANNEL_ID_ACCESSIBILITY_ALERT,
+                        "MYVU Alertas de Accesibilidad",
+                        NotificationManager.IMPORTANCE_HIGH
+                    ).apply {
+                        description = "Notificaciones para reactivar el servicio de accesibilidad tras actualizaciones"
+                        setShowBadge(true)
+                    }
+                    nm.createNotificationChannel(channel)
+                }
+
+                val openSettingsIntent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+                val pendingIntent = PendingIntent.getActivity(
+                    context,
+                    NOTIFICATION_ID_ACCESSIBILITY_DISABLED,
+                    openSettingsIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+
+                val notification = NotificationCompat.Builder(context, CHANNEL_ID_ACCESSIBILITY_ALERT)
+                    .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                    .setContentTitle("⚠️ MYVU Auto-Send Assistant desactivado")
+                    .setContentText("Toca para reactivar el servicio tras la actualización")
+                    .setStyle(
+                        NotificationCompat.BigTextStyle()
+                            .bigText("Android desactivó el servicio de accesibilidad de MYVU al actualizar. Toca aquí para reactivarlo en Ajustes y mantener el envío automático de WhatsApp/Telegram.")
+                    )
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setCategory(NotificationCompat.CATEGORY_ERROR)
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent)
+                    .build()
+
+                nm.notify(NOTIFICATION_ID_ACCESSIBILITY_DISABLED, notification)
+                LogBus.log("AutoSendAccessibilityService -> Posted notification for disabled accessibility service")
+            } catch (e: Exception) {
+                LogBus.warn("AutoSendAccessibilityService -> Failed to post accessibility disabled notification: ${e.message}")
+            }
+        }
+
+        fun cancelDisabledNotification(context: Context) {
+            try {
+                val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                nm?.cancel(NOTIFICATION_ID_ACCESSIBILITY_DISABLED)
+            } catch (e: Exception) {
+                // Ignored
+            }
+        }
+
+        /**
+         * Comprehensive watchdog: Checks if the service is running. If not, attempts silent auto-enable
+         * via WRITE_SECURE_SETTINGS. If still disabled, posts a heads-up notification.
+         */
+        fun checkAndRestoreOrNotify(context: Context): Boolean {
+            if (isAccessibilityServiceEnabled(context)) {
+                cancelDisabledNotification(context)
+                return true
+            }
+            val restored = autoEnableIfPermitted(context)
+            if (restored && isAccessibilityServiceEnabled(context)) {
+                cancelDisabledNotification(context)
+                return true
+            }
+            notifyAccessibilityDisabled(context)
+            return false
         }
 
         fun triggerWhatsAppAutoSend(isLocked: Boolean = false) {
@@ -202,6 +317,7 @@ class AutoSendAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         activeInstance = this
+        cancelDisabledNotification(this)
         val info = AccessibilityServiceInfo().apply {
             eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC

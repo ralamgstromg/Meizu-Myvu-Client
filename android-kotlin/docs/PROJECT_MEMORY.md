@@ -41,6 +41,36 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
 
 ## 3. Bitácora de Modificaciones y Decisiones
 
+### [2026-09-10] — Watchdog Proactivo de Accesibilidad (Auto-Send Assistant), Auto-Activación ADB y Corrección de Handshake RFCOMM
+- **Problemas Identificados**:
+  1. **Deshabilitación de Accesibilidad tras Actualizar**: En Android (especialmente en OEM skins como MIUI/HyperOS, Samsung, etc.), al actualizar el APK (`ACTION_MY_PACKAGE_REPLACED`), el sistema operativo detiene y deshabilita automáticamente el servicio `AutoSendAccessibilityService`. El usuario no recibía ninguna notificación ni advertencia visual y el envío automático de WhatsApp, Telegram y SMS fallaba silenciosamente.
+  2. **Timeout Prematuro en Handshake RFCOMM (Líneas 715-717 del log)**: `relayEstablishTimeout` de 10s en `ConnectionManager` se iniciaba al llamar a `transport.connect()`. Si la negociación RFCOMM tardaba 8.5 segundos en conectar el socket a nivel de hardware, el temporizador de 10s vencía apenas 1.5s después de conectar el socket, matando la conexión de forma abrupta a mitad de la ráfaga de 27 mensajes (`init burst`) en el mensaje 12 (`!! link dropped during the init burst at message 12`).
+  3. **Conmutación Brusca de Audio y Cierre de SPP**: Al liberar Bluetooth SCO tras invocar Gemini, invocar `am.mode = AudioManager.MODE_NORMAL` bruscamente cuando ya estaba en modo normal generaba un reset de endpoints de datos SPP en las gafas.
+  4. **Log Ruidoso de Desbloqueo en Pantalla Bloqueada**: `LockScreenHelper` reportaba `!! LockScreenHelper: Keyguard dismiss error` como warning ruidoso cuando el teléfono tiene bloqueo seguro (huella/PIN).
+- **Soluciones Implementadas**:
+  1. `AutoSendAccessibilityService.kt`:
+     - Implementado `autoEnableIfPermitted(context)`: Escribe directamente en `Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES` y `Settings.Secure.ACCESSIBILITY_ENABLED` si la app cuenta con permiso `android.permission.WRITE_SECURE_SETTINGS` (concedido una única vez por ADB: `adb shell pm grant com.myvu.client android.permission.WRITE_SECURE_SETTINGS`). ¡Reactivación 100% silenciosa y automática tras actualizaciones!
+     - Implementado `notifyAccessibilityDisabled(context)`: Si no dispone de permiso ADB y el servicio está apagado, lanza inmediatamente una notificación de alta prioridad (Heads-Up) con canal propio (`myvu_accessibility_alert`) y PendingIntent que abre directamente los Ajustes de Accesibilidad.
+     - Implementado `checkAndRestoreOrNotify(context)`: Watchdog integral que verifica, intenta restaurar automáticamente y, de no ser posible, notifica al usuario.
+     - `cancelDisabledNotification(context)`: Cancela la notificación en cuanto el servicio se activa (`onServiceConnected`).
+     - Declarado `<uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />` en `AndroidManifest.xml`.
+  2. Integración del Watchdog en el Ciclo de Vida:
+     - `BootReceiver.kt`: Se ejecuta en `ACTION_MY_PACKAGE_REPLACED` y `ACTION_BOOT_COMPLETED`.
+     - `MyvuService.kt`: Se ejecuta en `onCreate()`.
+     - `ConnectActivity.kt` & `SettingsActivity.kt`: Se ejecuta en `onResume()`.
+  3. Feedback Visual y Asistente ADB en UI:
+     - `view_dashboard.xml` / `ConnectActivity.kt`: Añadida tarjeta de advertencia ámbar `cardAccessibilityWarning` visible únicamente cuando el servicio está inactivo, con botones para "Activar en Ajustes" y "Copiar ADB" al portapapeles.
+     - `activity_settings.xml` / `SettingsActivity.kt`: Añadida tarjeta de configuración para "MYVU Auto-Send Assistant" que muestra estado en tiempo real (`Activo` en verde / `Inactivo` en ámbar) con botones para abrir ajustes y copiar comando ADB.
+  4. `ConnectionManager.kt`:
+     - En `relayListener.onConnected(transport)`, se reinicia `relayEstablishTimeout` (`conn.removeCallbacks(relayEstablishTimeout)` seguido de `conn.postDelayed(relayEstablishTimeout, RELAY_ESTABLISH_TIMEOUT_MS)`), garantizando que el handshake de sesión y la ráfaga de 27 mensajes `init burst` dispongan de sus 10 segundos completos desde la conexión efectiva del socket, eliminando desconexiones falsas.
+  5. `TouchGestureManager.kt` & `LockScreenHelper.kt`:
+     - En `releaseBluetoothSco` y `launchGeminiAssistant`, solo se conmuta a `MODE_NORMAL` si `am.mode != AudioManager.MODE_NORMAL`.
+     - En `LockScreenHelper.onDismissError()`, se reemplazó el warning por log informativo normal, ya que la app continúa sin problemas mostrando la actividad sobre el lockscreen.
+  6. Pruebas y Validación:
+     - Pruebas añadidas en `AutoSendAccessibilityServiceTest.kt` cubriendo `autoEnableIfPermitted`, `checkAndRestoreOrNotify`, `activeInstance` y notificaciones.
+     - `./gradlew testDebugUnitTest`: 100% pasando (34 tareas).
+     - `./gradlew assembleDebug`: Compilación exitosa (41 tareas).
+
 ### [2026-09-10] — Optimización de Audio Gemini (SCO/A2DP), Prevención de Caídas SPP y Ahorro de Batería
 - **Problema**: Al invocar Gemini mediante el gesto táctil de las patillas, Gemini escuchaba la orden del usuario y la procesaba, pero al responder, la voz de Gemini se cortaba durante varios segundos ("se va la voz y después de unos segundos regresa"). Además, se observaba un drenaje acelerado de batería y desconexiones intermitentes del socket RFCOMM SPP de las gafas.
 - **Causa Raíz Identificada en Log (`myvu_client_log.txt`)**:

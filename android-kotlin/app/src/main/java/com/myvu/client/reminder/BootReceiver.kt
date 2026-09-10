@@ -32,6 +32,11 @@ class BootReceiver : BroadcastReceiver() {
                 LogBus.log("BootReceiver -> Auto-reconnect disabled by user; skipping service start on $action")
             }
 
+            // Proactively check and restore or notify accessibility service status (especially on update)
+            if (Intent.ACTION_MY_PACKAGE_REPLACED == action || Intent.ACTION_BOOT_COMPLETED == action) {
+                com.myvu.client.service.AutoSendAccessibilityService.checkAndRestoreOrNotify(context)
+            }
+
             if (Intent.ACTION_BOOT_COMPLETED == action ||
                 Intent.ACTION_TIME_CHANGED == action ||
                 Intent.ACTION_TIMEZONE_CHANGED == action

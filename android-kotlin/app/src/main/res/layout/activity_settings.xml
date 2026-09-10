@@ -881,6 +881,72 @@
             <!-- ===== Assistant behaviour ===== -->
 
 
+            <!-- ===== MYVU Auto-Send Assistant (Accesibilidad) ===== -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Card.Myvu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/CardTitle.Myvu"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="MYVU Auto-Send Assistant" />
+
+                        <TextView
+                            android:id="@+id/txtAutoSendStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="?attr/textAppearanceLabelMedium"
+                            android:textStyle="bold"
+                            android:text="Inactivo"
+                            android:textColor="#FFB74D" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Servicio de accesibilidad para pulsar 'Enviar' automáticamente en WhatsApp, Telegram y SMS al dictar desde las gafas. Si actualizas la app, Android puede apagarlo por seguridad a menos que concedas el permiso permanente por ADB." />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnOpenAccessibilitySettings"
+                            style="@style/Button.Myvu"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="8dp"
+                            android:text="Ajustes de Accesibilidad" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCopyAdbSettings"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Copiar ADB" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- ===== Application Logging ===== -->
             <com.google.android.material.card.MaterialCardView
                 style="@style/Card.Myvu"

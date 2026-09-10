@@ -77,8 +77,32 @@ class AutoSendAccessibilityServiceTest {
 
     @Test
     fun testAccessibilityServiceCheckSafelyHandlesContext() {
-        // Should not crash and return false in test environment
+        // Should not crash and return false in test environment when no service is running
+        AutoSendAccessibilityService.activeInstance = null
         val isEnabled = AutoSendAccessibilityService.isAccessibilityServiceEnabled(context)
         assertFalse(isEnabled)
+    }
+
+    @Test
+    fun testAutoEnableIfPermittedAndWatchdog() {
+        val enabled = AutoSendAccessibilityService.autoEnableIfPermitted(context)
+        assertTrue(enabled)
+
+        AutoSendAccessibilityService.notifyAccessibilityDisabled(context)
+        AutoSendAccessibilityService.cancelDisabledNotification(context)
+
+        val result = AutoSendAccessibilityService.checkAndRestoreOrNotify(context)
+        // With settings updated, checkAndRestoreOrNotify handles without crashing
+        assertNotNull(result)
+    }
+
+    @Test
+    fun testActiveInstanceBypassesSettingsCheck() {
+        AutoSendAccessibilityService.activeInstance = null
+        assertFalse(AutoSendAccessibilityService.isAccessibilityServiceEnabled(context))
+        val mockService = AutoSendAccessibilityService()
+        AutoSendAccessibilityService.activeInstance = mockService
+        assertTrue(AutoSendAccessibilityService.isAccessibilityServiceEnabled(context))
+        AutoSendAccessibilityService.activeInstance = null
     }
 }

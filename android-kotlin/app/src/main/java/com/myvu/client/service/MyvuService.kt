@@ -41,6 +41,7 @@ class MyvuService : Service(), ConnectionManager.Listener {
         connection = ConnectionManager(this, this)
         active = connection
         setupMediaSession()
+        AutoSendAccessibilityService.checkAndRestoreOrNotify(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

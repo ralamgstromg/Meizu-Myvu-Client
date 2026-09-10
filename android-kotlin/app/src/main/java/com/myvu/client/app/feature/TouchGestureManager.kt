@@ -64,7 +64,9 @@ object TouchGestureManager {
                 am.stopBluetoothSco()
                 am.isBluetoothScoOn = false
             }
-            am.mode = AudioManager.MODE_NORMAL
+            if (am.mode != AudioManager.MODE_NORMAL) {
+                am.mode = AudioManager.MODE_NORMAL
+            }
             LogBus.log("Released Bluetooth SCO audio routing -- restored A2DP media channel for Gemini reply")
         } catch (e: Exception) {
             LogBus.warn("Error releasing Bluetooth SCO: ${e.message}")
@@ -192,7 +194,9 @@ object TouchGestureManager {
                 // Cancel previous release timer if user triggered again
                 scoReleaseRunnable?.let { audioHandler.removeCallbacks(it) }
 
-                am.mode = AudioManager.MODE_NORMAL
+                if (am.mode != AudioManager.MODE_NORMAL) {
+                    am.mode = AudioManager.MODE_NORMAL
+                }
                 am.startBluetoothSco()
                 am.isBluetoothScoOn = true
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

@@ -6,6 +6,8 @@ import android.animation.ArgbEvaluator
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
 import android.animation.ValueAnimator
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -26,6 +28,7 @@ import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -170,6 +173,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         wireConnection()
         wireFeatures()
         wireSettings()
+        wireAccessibilityCard()
         wireNavigationDrawer()
         com.myvu.client.core.EdgeToEdgeHelper.setupEdgeToEdge(this, findViewById(R.id.topBarConnect))
         animateEntrance()
@@ -192,7 +196,31 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
     override fun onResume() {
         super.onResume()
         updateDashboardData()
+        updateAccessibilityWarningBanner()
         com.myvu.client.health.HealthService.getInstance(this).registerHardwareSensor()
+    }
+
+    private fun wireAccessibilityCard() {
+        findViewById<View>(R.id.btnEnableAccessibility)?.setOnClickListener {
+            try {
+                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(this, "No se pudo abrir Ajustes de Accesibilidad", Toast.LENGTH_SHORT).show()
+            }
+        }
+        findViewById<View>(R.id.btnCopyAdbCommand)?.setOnClickListener {
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            val clip = ClipData.newPlainText("MYVU ADB Command", com.myvu.client.service.AutoSendAccessibilityService.ADB_GRANT_COMMAND)
+            clipboard?.setPrimaryClip(clip)
+            Toast.makeText(this, "Comando ADB copiado al portapapeles", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun updateAccessibilityWarningBanner() {
+        val isEnabled = com.myvu.client.service.AutoSendAccessibilityService.isAccessibilityServiceEnabled(this)
+        findViewById<View>(R.id.cardAccessibilityWarning)?.visibility = if (isEnabled) View.GONE else View.VISIBLE
     }
 
     override fun onStop() {

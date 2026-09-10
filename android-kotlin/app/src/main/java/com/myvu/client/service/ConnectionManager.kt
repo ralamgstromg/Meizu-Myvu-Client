@@ -818,6 +818,10 @@ class ConnectionManager(
     private val relayListener = object : TransportListener {
         override fun onConnected(transport: Transport) {
             LogBus.log("app relay connected -- running its own session handshake")
+            // Give the session handshake and init burst a fresh full window from actual socket connection
+            conn.removeCallbacks(relayEstablishTimeout)
+            conn.postDelayed(relayEstablishTimeout, RELAY_ESTABLISH_TIMEOUT_MS)
+
             sendAbility(rfSession, transport)
             conn.postDelayed({
                 if (rfSession?.authConfirmed != true && rfcomm === transport) {

@@ -100,8 +100,13 @@ Los metadatos y configuraciones se empaquetan en estructuras **Type-Length-Value
 - Filtra notificaciones según la configuración de aplicaciones habilitadas por el usuario (`NotificationAppsActivity`).
 - Extrae título, texto, icono de la app remitente y las formatea como tarjetas de HUD para ser proyectadas en las gafas.
 
-### 4.3 `AutoSendAccessibilityService`
-- Permite acciones de accesibilidad para automatizar el envío de mensajes de texto en aplicaciones como WhatsApp o Telegram sin requerir manipulación manual del dispositivo.
+### 4.3 `AutoSendAccessibilityService` y Watchdog de Persistencia
+- Permite acciones de accesibilidad para automatizar el envío de mensajes de texto en aplicaciones como WhatsApp, Telegram y SMS sin requerir manipulación manual del dispositivo.
+- **Watchdog de Persistencia y Auto-Activación**:
+  - Al actualizar el APK (`ACTION_MY_PACKAGE_REPLACED`), Android apaga con frecuencia los servicios de accesibilidad de apps externas.
+  - `autoEnableIfPermitted(context)`: Reactiva el servicio de forma programática escribiendo en `Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES` si la app posee permiso `android.permission.WRITE_SECURE_SETTINGS` (concedido una sola vez mediante `adb shell pm grant com.myvu.client android.permission.WRITE_SECURE_SETTINGS`).
+  - `notifyAccessibilityDisabled(context)`: Si no tiene permiso ADB, despacha una notificación de alta prioridad (Heads-Up) con canal propio (`myvu_accessibility_alert`) que conduce directamente a la pantalla de Ajustes de Accesibilidad con un solo toque.
+  - Se ejecuta proactivamente en `BootReceiver` (`MY_PACKAGE_REPLACED`, `BOOT_COMPLETED`), `MyvuService` (`onCreate`) y en la UI (`ConnectActivity` y `SettingsActivity` en `onResume`), con banner de alerta y utilidad para copiar el comando ADB al portapapeles.
 
 ### 4.4 Gestión de Audio Bluetooth Clásico (`AudioProfiles` & `ConnectionManager`)
 - **Doble Enlace (BLE + Classic Bluetooth)**: Las gafas Myvu utilizan BLE para el canal de telemetría/control y Bluetooth clásico (BR/EDR) para audio (HFP para llamadas/micrófono y A2DP para salida estéreo).

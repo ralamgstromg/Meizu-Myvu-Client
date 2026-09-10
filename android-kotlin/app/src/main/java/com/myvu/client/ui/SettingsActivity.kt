@@ -1,8 +1,12 @@
 package com.myvu.client.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
@@ -134,6 +138,7 @@ class SettingsActivity : AppCompatActivity() {
         configureButtons()
         setupBackupRestoreUi()
         setupLockScreenSettings()
+        configureAutoSendUi()
     }
 
 
@@ -649,6 +654,39 @@ class SettingsActivity : AppCompatActivity() {
             "No apps selected — nothing is mirrored"
         } else {
             "$count app${if (count == 1) "" else "s"} selected"
+        }
+        updateAutoSendStatus()
+    }
+
+    private fun configureAutoSendUi() {
+        findViewById<View>(R.id.btnOpenAccessibilitySettings)?.setOnClickListener {
+            try {
+                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(this, "No se pudo abrir Ajustes de Accesibilidad", Toast.LENGTH_SHORT).show()
+            }
+        }
+        findViewById<View>(R.id.btnCopyAdbSettings)?.setOnClickListener {
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            val clip = ClipData.newPlainText("MYVU ADB Command", com.myvu.client.service.AutoSendAccessibilityService.ADB_GRANT_COMMAND)
+            clipboard?.setPrimaryClip(clip)
+            Toast.makeText(this, "Comando ADB copiado al portapapeles", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun updateAutoSendStatus() {
+        val isEnabled = com.myvu.client.service.AutoSendAccessibilityService.isAccessibilityServiceEnabled(this)
+        val txtStatus = findViewById<TextView>(R.id.txtAutoSendStatus)
+        if (txtStatus != null) {
+            if (isEnabled) {
+                txtStatus.text = "Activo"
+                txtStatus.setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+            } else {
+                txtStatus.text = "Inactivo"
+                txtStatus.setTextColor(android.graphics.Color.parseColor("#FFB74D"))
+            }
         }
     }
 

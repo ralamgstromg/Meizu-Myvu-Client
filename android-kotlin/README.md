@@ -157,7 +157,13 @@ adb install -r -g app/build/outputs/apk/debug/app-debug.apk
    - **Micrófono** (`RECORD_AUDIO`)
    - **Calendario** (`READ_CALENDAR`, `WRITE_CALENDAR`)
 2. **Acceso a Notificaciones** (`Ajustes -> Notificaciones -> Acceso a notificaciones`): Activar **MyVU Client** para proyectar alertas y mensajes en el HUD.
-3. **Servicio de Accesibilidad** (`Ajustes -> Accesibilidad -> MyVU Auto Send Service`): Activar para permitir el envío automático de WhatsApp y Telegram sin pulsar la pantalla *(si aparece "Ajuste restringido", ir a información de app -> menú 3 puntos -> Permitir ajustes restringidos)*.
+3. **Servicio de Accesibilidad** (`Ajustes -> Accesibilidad -> MYVU Auto-Send Assistant`): Activar para permitir el envío automático de WhatsApp, Telegram y SMS sin pulsar la pantalla.
+   - *Watchdog proactivo*: Si actualizas la app y Android apaga el servicio, la app te notificará inmediatamente y mostrará un banner de reactivación en el Dashboard.
+   - *Auto-activación permanente vía ADB*: Si ejecutas este comando una única vez en tu PC con el móvil conectado:
+     ```bash
+     adb shell pm grant com.myvu.client android.permission.WRITE_SECURE_SETTINGS
+     ```
+     La app se reactivará **100% sola de forma automática e instantánea** cada vez que se actualice o se reinicie el teléfono, sin requerir intervención manual.
 4. **Desbloqueo Extendido / Smart Lock** (`Ajustes -> Seguridad -> Desbloqueo extendido -> Dispositivos de confianza`): Añadir las gafas **MYVU** para permitir el envío de WhatsApp/Telegram y control de apps con el teléfono en el bolsillo sin requerir PIN.
 5. **Asistente Digital Predeterminado** (`Ajustes -> Aplicaciones -> Aplicaciones predeterminadas -> Aplicación de asistente digital`): Seleccionar **MyVU Client**.
 6. **Batería sin Restricciones** (`Ajustes -> Aplicaciones -> MyVU Client -> Batería`): Seleccionar **Sin restricciones** para evitar que Android mate el servicio en reposo.
