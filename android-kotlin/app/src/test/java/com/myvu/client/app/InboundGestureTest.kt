@@ -313,4 +313,19 @@ class InboundGestureTest {
         assertEquals(1, receivedGestures.size)
         assertEquals(GlassGesture.SWIPE_FORWARD, receivedGestures[0].gesture)
     }
+
+    @Test
+    fun filtersParasiticSwipeWhenSimultaneousTapOccursInBatch() {
+        // Exact payload from log line 361: finger landing produces micro-swipe (206) and tap (210) at same timestamp
+        val json = "{\"action\":\"event_tracking\",\"data\":{\"action\":\"sync_glass_event\",\"value\":[" +
+                "{\"_action_value_\":\"key_event\",\"_event_attr_value_\":{\"down_or_up\":\"1\",\"key_code\":\"206\",\"key_event_sender\":2,\"key_event_time\":7133096},\"_event_id_\":\"key_event\"}," +
+                "{\"_action_value_\":\"key_event\",\"_event_attr_value_\":{\"down_or_up\":\"1\",\"key_code\":\"210\",\"key_event_sender\":2,\"key_event_time\":7133096},\"_event_id_\":\"key_event\"}" +
+                "]}}"
+        router.handle(json)
+
+        // The parasitic swipe forward (206) at the exact same key_event_time must be filtered out
+        assertEquals(1, receivedGestures.size)
+        assertEquals(GlassGesture.TAP, receivedGestures[0].gesture)
+        assertEquals(210, receivedGestures[0].code)
+    }
 }

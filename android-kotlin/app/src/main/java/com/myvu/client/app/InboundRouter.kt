@@ -259,37 +259,45 @@ class InboundRouter(private val sender: Sender) {
         }
     }
 
+    private data class ParsedGesture(
+        val gesture: GlassGesture,
+        val actionValue: Int,
+        val actionName: String,
+        val sender: Int,
+        val eventTime: Long
+    )
+
     private fun processGestureValue(valueRaw: Any?, listener: TouchGestureListener) {
         if (valueRaw == null) return
 
         when (valueRaw) {
             is JSONArray -> {
+                val list = ArrayList<JSONObject>()
                 for (i in 0 until valueRaw.length()) {
                     val item = valueRaw.optJSONObject(i)
-                    if (item != null) {
-                        dispatchGestureItem(item, listener)
-                    }
+                    if (item != null) list.add(item)
                 }
+                dispatchGestureBatch(list, listener)
             }
             is JSONObject -> {
-                dispatchGestureItem(valueRaw, listener)
+                dispatchGestureBatch(listOf(valueRaw), listener)
             }
             is String -> {
                 val str = valueRaw.trim()
                 if (str.startsWith("[")) {
                     try {
                         val arr = JSONArray(str)
+                        val list = ArrayList<JSONObject>()
                         for (i in 0 until arr.length()) {
                             val item = arr.optJSONObject(i)
-                            if (item != null) {
-                                dispatchGestureItem(item, listener)
-                            }
+                            if (item != null) list.add(item)
                         }
+                        dispatchGestureBatch(list, listener)
                     } catch (ignored: JSONException) {
                     }
                 } else if (str.startsWith("{")) {
                     try {
-                        dispatchGestureItem(JSONObject(str), listener)
+                        dispatchGestureBatch(listOf(JSONObject(str)), listener)
                     } catch (ignored: JSONException) {
                     }
                 }
@@ -304,7 +312,7 @@ class InboundRouter(private val sender: Sender) {
         }
     }
 
-    private fun dispatchGestureItem(item: JSONObject, listener: TouchGestureListener) {
+    private fun parseGestureItem(item: JSONObject): ParsedGesture? {
         var actionName = ""
         val nameKeys = listOf(
             "key_name", "keyName",
@@ -336,7 +344,7 @@ class InboundRouter(private val sender: Sender) {
             "starrynet_devices_reconnect", "screen_off_timeout_change", "standby_position"
         )
         if (actionName in nonTouchTelemetry) {
-            return
+            return null
         }
 
         val attrObj = item.optJSONObject("_event_attr_value_")
@@ -344,7 +352,44 @@ class InboundRouter(private val sender: Sender) {
         val downOrUp = attrObj?.optInt("down_or_up", item.optInt("down_or_up", -1)) ?: item.optInt("down_or_up", -1)
         if (downOrUp == 0) {
             // Key release/up event -- ignore to prevent duplicate triggers
-            return
+            return null
+        }
+
+        var eventTime = -1L
+        val timeKeys = listOf("key_event_time", "event_time", "_event_time_", "timestamp", "time")
+        if (attrObj != null) {
+            for (k in timeKeys) {
+                if (attrObj.has(k)) {
+                    val raw = attrObj.opt(k)
+                    if (raw is Number) {
+                        eventTime = raw.toLong()
+                        break
+                    } else if (raw is String) {
+                        val parsed = raw.toLongOrNull()
+                        if (parsed != null) {
+                            eventTime = parsed
+                            break
+                        }
+                    }
+                }
+            }
+        }
+        if (eventTime == -1L) {
+            for (k in timeKeys) {
+                if (item.has(k)) {
+                    val raw = item.opt(k)
+                    if (raw is Number) {
+                        eventTime = raw.toLong()
+                        break
+                    } else if (raw is String) {
+                        val parsed = raw.toLongOrNull()
+                        if (parsed != null) {
+                            eventTime = parsed
+                            break
+                        }
+                    }
+                }
+            }
         }
 
         var actionValue = -1
@@ -396,17 +441,85 @@ class InboundRouter(private val sender: Sender) {
             }
         }
 
-        if (actionName.isEmpty() && actionValue == -1) return
+        if (actionName.isEmpty() && actionValue == -1) return null
 
         val gesture = GlassGesture.fromCode(actionValue, actionName)
         if (gesture == GlassGesture.UNKNOWN) {
             if (actionName.isNotEmpty() && actionName !in nonTouchTelemetry) {
                 LogBus.log("Glass event unmapped: $item (actionName=$actionName, actionValue=$actionValue)")
             }
-            return
+            return null
         }
-        LogBus.log("Touch gesture received: $gesture (code=$actionValue, name=$actionName, sender=$sender)")
-        listener.onTouchGesture(gesture, actionValue, actionName)
+
+        return ParsedGesture(gesture, actionValue, actionName, sender, eventTime)
+    }
+
+    private fun dispatchGestureBatch(rawItems: List<JSONObject>, listener: TouchGestureListener) {
+        val parsedList = rawItems.mapNotNull { parseGestureItem(it) }
+        if (parsedList.isEmpty()) return
+
+        val isTapOrPress = { g: GlassGesture ->
+            g == GlassGesture.TAP || g == GlassGesture.DOUBLE_TAP ||
+                    g == GlassGesture.TRIPLE_TAP || g == GlassGesture.LONG_PRESS
+        }
+        val isSwipe = { g: GlassGesture ->
+            g == GlassGesture.SWIPE_FORWARD || g == GlassGesture.SWIPE_BACKWARD
+        }
+
+        // Filter out parasitic micro-swipes occurring simultaneously with a tap/press
+        val filtered = if (parsedList.size > 1) {
+            val tapEvents = parsedList.filter { isTapOrPress(it.gesture) }
+            if (tapEvents.isNotEmpty()) {
+                parsedList.filterNot { swipeCandidate ->
+                    if (!isSwipe(swipeCandidate.gesture)) return@filterNot false
+                    tapEvents.any { tap ->
+                        val sameSender = (swipeCandidate.sender == 0 || tap.sender == 0 || swipeCandidate.sender == tap.sender)
+                        val sameTime = swipeCandidate.eventTime != -1L && tap.eventTime != -1L &&
+                                Math.abs(swipeCandidate.eventTime - tap.eventTime) <= 50L
+                        if (sameSender && sameTime) {
+                            LogBus.log("Filtered parasitic ${swipeCandidate.gesture} occurring simultaneously with ${tap.gesture} (time=${swipeCandidate.eventTime}, sender=${swipeCandidate.sender})")
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                }
+            } else {
+                parsedList
+            }
+        } else {
+            parsedList
+        }
+
+        val gesturePriority = { g: GlassGesture ->
+            when (g) {
+                GlassGesture.DOUBLE_TAP -> 1
+                GlassGesture.TRIPLE_TAP -> 2
+                GlassGesture.TAP -> 3
+                GlassGesture.LONG_PRESS -> 4
+                GlassGesture.SWIPE_FORWARD -> 5
+                GlassGesture.SWIPE_BACKWARD -> 6
+                GlassGesture.UNKNOWN -> 99
+            }
+        }
+
+        // Sort events with matching timestamps by priority, otherwise keep arrival order
+        val sorted = if (filtered.size > 1) {
+            filtered.sortedWith { a, b ->
+                if (a.eventTime != -1L && b.eventTime != -1L && Math.abs(a.eventTime - b.eventTime) <= 50L) {
+                    gesturePriority(a.gesture).compareTo(gesturePriority(b.gesture))
+                } else {
+                    0
+                }
+            }
+        } else {
+            filtered
+        }
+
+        for (item in sorted) {
+            LogBus.log("Touch gesture received: ${item.gesture} (code=${item.actionValue}, name=${item.actionName}, sender=${item.sender})")
+            listener.onTouchGesture(item.gesture, item.actionValue, item.actionName)
+        }
     }
 
     companion object {

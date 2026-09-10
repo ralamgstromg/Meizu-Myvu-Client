@@ -47,8 +47,14 @@ object TouchGestureManager {
     }
 
     private const val DEBOUNCE_MS = 350L
+    private const val DOUBLE_TAP_MIN_INTERVAL_MS = 40L
+    private const val DOUBLE_TAP_MAX_INTERVAL_MS = 450L
     private const val GEMINI_SCO_CAPTURE_WINDOW_MS = 4500L
     private var lastTriggerTime = 0L
+    private var lastTapTime = 0L
+
+    @JvmField
+    internal var timeProvider: () -> Long = { System.currentTimeMillis() }
 
     private val audioHandler = Handler(Looper.getMainLooper())
     private var scoReleaseRunnable: Runnable? = null
@@ -76,6 +82,8 @@ object TouchGestureManager {
     @JvmStatic
     fun resetDebounceForTesting() {
         lastTriggerTime = 0L
+        lastTapTime = 0L
+        timeProvider = { System.currentTimeMillis() }
     }
 
     @JvmStatic
@@ -118,14 +126,59 @@ object TouchGestureManager {
     ) {
         if (executor == null || gesture == GlassGesture.UNKNOWN) return
 
-        val now = System.currentTimeMillis()
+        val now = timeProvider()
+
+        // Software double-tap detection:
+        // Flyme XR glasses frequently send two consecutive TAP events (code 210)
+        // instead of hardware synthesizing DOUBLE_TAP (code 211).
+        if (gesture == GlassGesture.TAP) {
+            val dtFromLastTap = now - lastTapTime
+            if (dtFromLastTap in DOUBLE_TAP_MIN_INTERVAL_MS..DOUBLE_TAP_MAX_INTERVAL_MS) {
+                val doubleTapActionId = getRawActionIdForGesture(context, GlassGesture.DOUBLE_TAP)
+                val doubleTapAction = GestureAction.fromId(doubleTapActionId)
+                if (doubleTapAction != GestureAction.NONE) {
+                    lastTapTime = 0L
+                    LogBus.log("Software synthesized DOUBLE_TAP from 2 rapid TAPs (${dtFromLastTap}ms apart)")
+                    dispatchAction(context, GlassGesture.DOUBLE_TAP, rawCode, doubleTapActionId, doubleTapAction, executor, now)
+                    return
+                }
+            }
+            lastTapTime = now
+        } else {
+            // Any non-TAP gesture resets software double-tap accumulator
+            lastTapTime = 0L
+        }
+
+        val rawActionId = getRawActionIdForGesture(context, gesture)
+        val action = GestureAction.fromId(rawActionId)
+
+        // If action is NONE, do not trigger debounce so legitimate subsequent gestures are not swallowed
+        if (action == GestureAction.NONE) {
+            LogBus.log("Touchpad gesture received ($gesture, code=$rawCode) -> Action: none (NONE)")
+            executor.executeNone()
+            return
+        }
+
+        // Apply debounce only for non-NONE actions
         if (now - lastTriggerTime < DEBOUNCE_MS) {
             LogBus.trace("Touchpad gesture ignored -- debounce (" + (now - lastTriggerTime) + "ms)")
             return
         }
+
+        dispatchAction(context, gesture, rawCode, rawActionId, action, executor, now)
+    }
+
+    private fun dispatchAction(
+        context: Context?,
+        gesture: GlassGesture,
+        rawCode: Int,
+        rawActionId: String,
+        action: GestureAction,
+        executor: ActionExecutor,
+        now: Long
+    ) {
         lastTriggerTime = now
 
-        val rawActionId = getRawActionIdForGesture(context, gesture)
         if (GestureAction.isAppAction(rawActionId)) {
             val pkg = GestureAction.getAppPackage(rawActionId)
             if (!pkg.isNullOrEmpty()) {
@@ -135,7 +188,6 @@ object TouchGestureManager {
             }
         }
 
-        val action = GestureAction.fromId(rawActionId)
         LogBus.log("Touchpad gesture received ($gesture, code=$rawCode) -> Action: ${action.id} (${action.name})")
 
         when (action) {

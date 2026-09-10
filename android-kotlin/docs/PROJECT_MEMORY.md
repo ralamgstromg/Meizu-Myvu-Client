@@ -41,7 +41,31 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
 
 ## 3. Bitácora de Modificaciones y Decisiones
 
-### [2026-09-10] — Watchdog Proactivo de Accesibilidad (Auto-Send Assistant), Auto-Activación ADB y Corrección de Handshake RFCOMM
+### [2026-09-10] — Corrección de Detección de Doble Toque en Touchpad (Lanzamiento de Gemini), Inmunidad a Debounce en Gestos Nulos y Filtrado de Micro-swipes Parásitos
+- **Problema**: En `/home/rcastro/Descargas/myvu_client_log.txt`, el lanzamiento de Gemini mediante doble toque en el touchpad de las patillas de las gafas fallaba intermitentemente ("algunas veces no detecto correctamente el lanzamiento de gemini con doble toque del touchpad de las patas de las gafas").
+- **Causas Raíz Identificadas en Log**:
+  1. **Debounce en Gestos Nulos (`NONE`) Bloqueando Toques Legítimos (Líneas 361-381)**:
+     - En `TouchGestureManager.handleGesture`, `lastTriggerTime = now` se actualizaba antes de evaluar la acción resuelta.
+     - Si llegaba un gesto con acción `NONE` (por ejemplo, un micro-swipe `206` no mapeado), establecía el temporizador de debounce. Cuando 4ms después llegaba el `TAP` (`210`), la condición `now - lastTriggerTime < 350ms` se cumplía y el toque era descartado silenciosamente.
+  2. **Micro-swipes Parásitos Simultáneos en Lotes de Telemetría (Líneas 361 y 362)**:
+     - Al apoyar el dedo sobre la patilla para dar un toque, el sensor capacitivo registra una micro-fricción/desplazamiento enviando simultáneamente un swipe (`206` o `207`) y un toque (`210`) con el **mismo timestamp exacto** (`key_event_time: 7133096` / `_event_time_: 1789074004000`) en un único lote `JSONArray`.
+     - Al procesarse en orden secuencial sin priorización, el swipe consumía la ventana de debounce e ignoraba el toque.
+  3. **Falta de Síntesis Software de Doble Toque**:
+     - El firmware Flyme XR de las gafas no siempre sintetiza el keycode nativo `211` (`DOUBLE_TAP`); con frecuencia emite dos eventos `210` (`TAP`) rápidos consecutivos (~150-250ms).
+     - La ventana de debounce de 350ms descartaba el segundo toque simple, impidiendo cualquier detección de doble toque.
+- **Soluciones Implementadas**:
+  1. `TouchGestureManager.kt`:
+     - **Inmunidad a Debounce para Acción `NONE`**: Si la acción resuelta es `GestureAction.NONE`, se ejecuta `executor.executeNone()` y **no** se actualiza `lastTriggerTime`. Gestos nulos o accidentales ya no bloquean gestos posteriores.
+     - **Acumulador y Sintetizador Software de Doble Toque**: Si llega un `GlassGesture.TAP` y han transcurrido entre `40ms` y `450ms` desde el toque anterior, y `DOUBLE_TAP` tiene una acción asignada (por defecto `LAUNCH_GEMINI` o configurada por el usuario), se sintetiza y despacha directamente `GlassGesture.DOUBLE_TAP`.
+     - **Inyección de Tiempo para Pruebas**: Añadido `timeProvider: () -> Long` reseteable para pruebas unitarias deterministas sin delays reales.
+  2. `InboundRouter.kt`:
+     - **Filtrado de Micro-swipes Parásitos**: En `dispatchGestureBatch`, si un lote contiene gestos de toque/pulsación (`TAP`, `DOUBLE_TAP`, `TRIPLE_TAP`, `LONG_PRESS`) junto con gestos de deslizamiento (`SWIPE_FORWARD`, `SWIPE_BACKWARD`) del mismo emisor con diferencia temporal `<= 50ms` (o igual timestamp), el swipe es identificado como ruido de aterrizaje táctil y se descarta (`Filtered parasitic SWIPE_FORWARD occurring simultaneously with TAP`).
+     - **Priorización de Gestos Simultáneos**: Gestos legítimos que coinciden en timestamp se ordenan según su jerarquía de intención: `DOUBLE_TAP` > `TRIPLE_TAP` > `TAP` > `LONG_PRESS` > `SWIPE`.
+  3. Pruebas y Validación:
+     - `TouchGestureManagerTest.kt`: Pruebas `twoTapsWithinWindowSynthesizeDoubleTap` y `gestureWithActionNoneDoesNotDebounceSubsequentTap`.
+     - `InboundGestureTest.kt`: Prueba `filtersParasiticSwipeWhenSimultaneousTapOccursInBatch` con el payload exacto del log.
+     - `./gradlew testDebugUnitTest`: 100% exitoso (todas las pruebas pasan).
+     - `./gradlew assembleDebug`: Compilación exitosa de APK.
 - **Problemas Identificados**:
   1. **Deshabilitación de Accesibilidad tras Actualizar**: En Android (especialmente en OEM skins como MIUI/HyperOS, Samsung, etc.), al actualizar el APK (`ACTION_MY_PACKAGE_REPLACED`), el sistema operativo detiene y deshabilita automáticamente el servicio `AutoSendAccessibilityService`. El usuario no recibía ninguna notificación ni advertencia visual y el envío automático de WhatsApp, Telegram y SMS fallaba silenciosamente.
   2. **Timeout Prematuro en Handshake RFCOMM (Líneas 715-717 del log)**: `relayEstablishTimeout` de 10s en `ConnectionManager` se iniciaba al llamar a `transport.connect()`. Si la negociación RFCOMM tardaba 8.5 segundos en conectar el socket a nivel de hardware, el temporizador de 10s vencía apenas 1.5s después de conectar el socket, matando la conexión de forma abrupta a mitad de la ráfaga de 27 mensajes (`init burst`) en el mensaje 12 (`!! link dropped during the init burst at message 12`).

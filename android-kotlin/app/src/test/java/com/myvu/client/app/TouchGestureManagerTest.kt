@@ -213,4 +213,43 @@ class TouchGestureManagerTest {
             assertTrue(action.displayName.isNotEmpty())
         }
     }
+
+    @Test
+    fun twoTapsWithinWindowSynthesizeDoubleTap() {
+        var simulatedTime = 1000L
+        TouchGestureManager.timeProvider = { simulatedTime }
+
+        // Tap 1 at t=1000ms: TAP action is NONE by default
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, executor)
+        assertTrue(executor.noneCalled)
+        assertFalse(executor.mediaPlayPauseCalled)
+
+        // Reset executor flags
+        val secondExecutor = MockActionExecutor()
+
+        // Tap 2 at t=1180ms (+180ms, within 40..450ms window)
+        // DOUBLE_TAP action is MEDIA_PLAY_PAUSE by default
+        simulatedTime = 1180L
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, secondExecutor)
+        assertTrue(secondExecutor.mediaPlayPauseCalled)
+        assertFalse(secondExecutor.noneCalled)
+    }
+
+    @Test
+    fun gestureWithActionNoneDoesNotDebounceSubsequentTap() {
+        var simulatedTime = 2000L
+        TouchGestureManager.timeProvider = { simulatedTime }
+
+        // A gesture with action NONE (e.g. TAP or unconfigured swipe)
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, executor)
+        assertTrue(executor.noneCalled)
+
+        // 10ms later (simulatedTime = 2010L, well under 350ms debounce)
+        simulatedTime = 2010L
+        val secondExecutor = MockActionExecutor()
+        // Hardware double tap arrives
+        TouchGestureManager.handleGesture(null, GlassGesture.DOUBLE_TAP, 2, secondExecutor)
+        // Must NOT be blocked by the previous NONE action!
+        assertTrue(secondExecutor.mediaPlayPauseCalled)
+    }
 }
