@@ -68,6 +68,7 @@ class RelaySupervisor(
     fun onRelayLost() {
         if (!running) return
         conn.removeCallbacks(poll)
+        lastAttemptAt = System.currentTimeMillis()
         val delay = calculateBackoffDelay(attempt)
         conn.postDelayed(poll, delay)
     }

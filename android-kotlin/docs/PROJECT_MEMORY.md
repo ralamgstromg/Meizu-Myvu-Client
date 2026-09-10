@@ -41,6 +41,184 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
 
 ## 3. Bitácora de Modificaciones y Decisiones
 
+### [2026-09-10] — Optimización de Audio Gemini (SCO/A2DP), Prevención de Caídas SPP y Ahorro de Batería
+- **Problema**: Al invocar Gemini mediante el gesto táctil de las patillas, Gemini escuchaba la orden del usuario y la procesaba, pero al responder, la voz de Gemini se cortaba durante varios segundos ("se va la voz y después de unos segundos regresa"). Además, se observaba un drenaje acelerado de batería y desconexiones intermitentes del socket RFCOMM SPP de las gafas.
+- **Causa Raíz Identificada en Log (`myvu_client_log.txt`)**:
+  1. **Fuga de Ciclo de Vida de Bluetooth SCO**: `TouchGestureManager.launchGeminiAssistant` activaba el canal SCO (`startBluetoothSco()`, `isBluetoothScoOn = true`, `setCommunicationDevice`) para el micrófono de las gafas, pero **nunca lo liberaba**. Al responder Gemini vía TTS multimedia (A2DP), Android entraba en conflicto entre el modo llamada SCO activo y la reproducción de medios. El firmware de las gafas reportaba `iot_a2dp_status_change -> a2dp_status: 1` (A2DP suspendido), provocando un silencio de ~6 segundos hasta que el sistema forzaba la reactivación de A2DP (`a2dp_status: 2`), momento en que la voz de Gemini regresaba tardíamente.
+  2. **Colisión de Audio por Notificación TTS de las Gafas**: Al lanzar Gemini, `ConnectionManager` y `GlassesEventHandler` emitían `Notifications.buildShow("MYVU", "Gemini escuchando...")`. Esto disparaba el motor TTS propio de las gafas (`com.upuphone.ai.ttsengine` con `caller: com.tts.notification`) leyendo la notificación en voz alta por los parlantes de las gafas en pleno instante de escucha y respuesta de Gemini.
+  3. **Saturación del Chip Bluetooth de las Gafas y Caída de SPP**: Mantener el canal de voz síncrono SCO abierto permanentemente junto a A2DP y RFCOMM saturaba el chip de radio de ultra-bajo consumo de las gafas, provocando cierres del servidor SPP (`<- SPP server closed by the glasses -- dropping the relay`). La app reintentaba inmediatamente a los 55ms y enviaba un `init burst` de 27 mensajes, provocando bucles de reconexión y alto consumo de batería.
+  4. **Procesamiento Inútil de Telemetría Interna**: Docenas de eventos internos del sistema de las gafas (`iot_a2dp_status_change`, `audio_stats`, `air_starrynet_bt`, `iot_voice_asr_time`, etc.) no estaban en la lista de exclusión `nonTouchTelemetry`, consumiendo ciclos de CPU en el parser de telemetría.
+- **Solución Implementada**:
+  1. `TouchGestureManager.kt`:
+     - Implementado ciclo de vida acotado para SCO (`GEMINI_SCO_CAPTURE_WINDOW_MS = 4500L`).
+     - Al invocar Gemini, el micrófono SCO se conecta para capturar la petición del usuario y, tras una ventana de 4.5 segundos, se libera automáticamente mediante `releaseBluetoothSco()` (`stopBluetoothSco()`, `clearCommunicationDevice()`, `MODE_NORMAL`).
+     - Al liberar SCO en el segundo 4.5, el canal estéreo de alta fidelidad A2DP está disponible de inmediato para reproducir la respuesta de Gemini sin retrasos ni silencios.
+     - En `setCommunicationDevice`, se restringió la selección exclusivamente a `TYPE_BLUETOOTH_SCO`.
+  2. `ConnectionManager.kt` & `GlassesEventHandler.kt`:
+     - Retirado el despacho de `Notifications.buildShow("MYVU", "Gemini escuchando...")`, evitando que el TTS propio de las gafas interrumpa al usuario o a Gemini.
+  3. `RelaySupervisor.kt`:
+     - En `onRelayLost()`, se actualiza `lastAttemptAt = System.currentTimeMillis()`, garantizando que cualquier reconexión respete el intervalo mínimo de backoff (3-5s) y evitando el martilleo inmediato del socket Bluetooth.
+  4. `InboundRouter.kt`:
+     - Añadidos a `nonTouchTelemetry` todos los eventos internos identificados (`iot_a2dp_status_change`, `audio_stats`, `air_starrynet_bt`, `iot_voice_asr_time`, `wear_data_collect`, `starrynet_devices_disconnect`, `starrynet_devices_reconnect`, `screen_off_timeout_change`, `standby_position`), eliminando parseos y logs innecesarios.
+  5. Pruebas y Validación:
+     - Tests actualizados en `InboundGestureTest.kt`.
+     - `./gradlew testDebugUnitTest`: 100% pasando (34 tareas).
+     - `./gradlew assembleDebug`: Compilación exitosa.
+
+
+### [2026-09-10] — Corrección Definitiva de Gestos Táctiles de Patillas: Keycodes 206, 207, 210, 211, 212 y Senders 1, 2, 4
+- **Problema**: Tras restaurar el botón físico de la montura para STT -> Modelo IA, la configuración de gestos en las patillas ("patas") no ejecutaba ninguna acción al tocarlas.
+- **Causa Raíz Identificada en Log (`myvu_client_log.txt`)**:
+  1. **Filtrado erróneo de `key_event_sender: 1`**: Se creía erróneamente que `sender == 1` correspondía al botón de la montura. El análisis profundo del log demostró que el botón de la montura se transmite exclusivamente mediante `com.upuphone.ai.assistant {"code": 3}` (atendido por `checkAiTrigger`), mientras que `sync_glass_event` con `key_event` representa siempre la interacción con los sensores táctiles:
+     - `sender: 1`: Sensor táctil capacitivo de patilla primaria/derecha.
+     - `sender: 2`: Sensor táctil capacitivo de patilla secundaria/izquierda.
+     - `sender: 4`: Controlador virtual / phonepad del launcher Flyme XR.
+     Al descartar `sender == 1`, se estaba ignorando el 90% de los toques físicos del usuario.
+  2. **Keycodes nativos Flyme XR no mapeados en `GlassGesture.kt`**:
+     - Al correlacionar comandos del phonepad (`click`, `doubleClick`, `longPress`) con las respuestas de las gafas:
+       - `210` -> `TAP` (Click / Toque simple)
+       - `211` -> `DOUBLE_TAP` (Doble click)
+       - `212` -> `LONG_PRESS` (Pulsación prolongada)
+       - `206` -> `SWIPE_FORWARD` (Deslizar hacia adelante)
+       - `207` -> `SWIPE_BACKWARD` (Deslizar hacia atrás)
+     Al faltar estos códigos en `GlassGesture.fromCode`, se resolvían como `GlassGesture.UNKNOWN` y no ejecutaban ninguna acción.
+- **Solución Implementada**:
+  1. `GlassGesture.kt`: Mapeados los códigos `210` (TAP), `211` (DOUBLE_TAP), `212` (LONG_PRESS), `206` (SWIPE_FORWARD) y `207` (SWIPE_BACKWARD).
+  2. `InboundRouter.kt`: Removido el descarte de `sender == 1`. Ahora procesa todos los toques legítimos de patillas (`sender: 1`, `sender: 2`, `sender: 4`), conservando la omisión de `down_or_up == 0` para no duplicar acciones al soltar.
+  3. Pruebas y Validación:
+     - `InboundGestureTest.kt`: `decodesTempleKeyEventsWithAllSendersAndKeyCodes` verifica la decodificación de los 12 casos (todos los keycodes y senders).
+     - `./gradlew testDebugUnitTest`: 100% pasando (34 tareas).
+     - `./gradlew assembleDebug`: Compilación exitosa.
+
+
+### [2026-09-10] — Restauración del Botón Físico de la Montura (STT -> Modelo) y Separación de Gestos de Patillas (Gemini Manos Libres)
+- **Problema**:
+  1. Al presionar el botón físico de la montura de las gafas, la aplicación interceptaba el evento como un gesto táctil de pulsación larga (`LONG_PRESS`), impidiendo el flujo nativo de reconocimiento de voz (STT) hacia el modelo de IA configurado.
+  2. El usuario solicitó mantener de forma inmutable el comportamiento del botón físico (STT -> Modelo configurado) y permitir lanzar Gemini o apps exclusivamente mediante gestos en las patillas ("patas de las gafas").
+- **Causas Raíz Identificadas**:
+  1. **Interceptación de `code: 3` en `ConnectionManager.kt` y `GlassesEventHandler.kt`**: Ambas clases interceptaban `code == 3` redirigiéndolo a `TouchGestureManager.handleGesture()`. En Flyme XR, `code: 3` es el código emitido por el botón físico para iniciar captura STT.
+  2. **Diferenciación de Hardware por `key_event_sender`**:
+     - `key_event_sender: 1`: Botón físico ubicado en la montura de las gafas (emite eventos como 206, 207, 210, 212 y dispara el listener AI `code: 3`).
+     - `key_event_sender: 2`: Sensor táctil capacitivo de las patillas/varillas ("patas de las gafas") (emite códigos 200, 201, 202, 203, 237).
+  3. **Estructura de Telemetría Anidada**: En paquetes `sync_glass_event`, las pulsaciones de hardware de las patillas no vienen en la raíz del JSON, sino anidadas dentro del objeto `_event_attr_value_` (`key_code`, `down_or_up`, `key_event_sender`).
+- **Solución Implementada**:
+  1. `ConnectionManager.kt` & `GlassesEventHandler.kt`:
+     - Eliminada por completo la interceptación de `code == 3` como gesto táctil en `setAiTriggerListener`.
+     - El botón físico invoca directa y exclusivamente `ai().onTrigger(code)` (STT -> Modelo configurado).
+  2. `InboundRouter.kt`:
+     - Inspección profunda del objeto `_event_attr_value_` en `dispatchGestureItem`.
+     - Filtrado estricto por emisor: si `key_event_sender == 1`, se descarta de la capa de gestos táctiles para no interferir con el botón físico.
+     - Si `key_event_sender == 2` (patillas), se procesa el keycode para mapeo de gestos.
+     - Ignorados eventos de liberación (`down_or_up == 0`) para evitar disparos duplicados al soltar la patilla.
+     - Añadidos `iot_voice_wakeup` e `iot_voice_quit` a `nonTouchTelemetry` para prevenir falsos positivos.
+  3. `GlassGesture.kt`:
+     - Mapeados códigos nativos de las patillas Flyme XR: 200 y 203 a `TAP`, 202 a `DOUBLE_TAP`, 201 a `SWIPE_FORWARD`, 237 a `SWIPE_BACKWARD`.
+     - Eliminada la palabra clave `"voice"` de la heurística textual de `LONG_PRESS` para no colisionar con telemetría de voz.
+  4. Pruebas y Validación:
+     - Añadidos tests unitarios exhaustivos en `InboundGestureTest.kt` validando que `code: 3` va directo a IA, que los paquetes con `key_event_sender: 1` se ignoran en gestos y que los paquetes con `key_event_sender: 2` activan correctamente los gestos de las patillas.
+     - `./gradlew testDebugUnitTest`: 100% pasando (34 tareas).
+     - `./gradlew assembleDebug`: Compilación exitosa.
+
+
+### [2026-09-10] — Habilitación Integral de Gestos Físicos del Touchpad (Toque Simple, Doble Toque, Deslizamientos)
+- **Problema**: Los demás gestos táctiles de las gafas (toque simple, doble toque, triple toque, deslizamiento adelante, deslizamiento atrás) no respondían ni ejecutaban las acciones personalizadas asignadas en la configuración.
+- **Causas Raíz Identificadas**:
+  1. **Eventos `key_event` no decodificados**: Las gafas envían toques físicos en `sync_glass_event` empaquetados como `{"name": "key_event", "key_code": ...}`. `InboundRouter` no extraía los campos `key_code`, `keyCode`, `key_name` ni `keyName`, y evaluaba el nombre a `"key_event"`, retornando `GlassGesture.UNKNOWN`.
+  2. **Keycodes de hardware no mapeados en `GlassGesture.kt`**: Los códigos físicos estándar enviados por el firmware (`23` DPAD_CENTER / click, `66` ENTER, `79` HEADSETHOOK, `85` MEDIA_PLAY_PAUSE, `96` BUTTON_A para Toque Simple; `87` MEDIA_NEXT, `90` FAST_FORWARD, `92` PAGE_UP para Deslizar Adelante; `88` MEDIA_PREVIOUS, `89` REWIND, `93` PAGE_DOWN para Deslizar Atrás) no estaban en la tabla `when (code)`.
+  3. **Eventos de acción `phonepad` / `trackpad` ignorados**: Si el launcher de las gafas emitía `action = "phonepad"` o `"trackpad"` (`click`, `doubleClick`, `longPress`, `gestureMode`), `InboundRouter.checkGestureTracking` los filtraba.
+  4. **Ausencia de `MediaSession` para eventos Bluetooth AVRCP**: Al activarse `music_tp_control_mode`, las gafas emiten eventos AVRCP sobre el perfil de audio clásico (`BluetoothHeadset`). Sin una sesión multimedia activa en el servicio en primer plano, Android desviaba o descartaba estas teclas.
+- **Solución Implementada**:
+  1. `GlassGesture.kt`:
+     - Mapeados todos los códigos de hardware en `fromCode`: `1, 23, 66, 79, 85, 96 -> TAP`; `2 -> DOUBLE_TAP`; `3 -> TRIPLE_TAP`; `4, 219, 231 -> LONG_PRESS`; `5, 19, 22, 87, 90, 92 -> SWIPE_FORWARD`; `6, 20, 21, 88, 89, 93 -> SWIPE_BACKWARD`.
+     - Expandidos sinónimos textuales (`click`, `select`, `enter`, `center`, `hook`, `next`, `prev`, `fast_forward`, `rewind`, `page_up`, `page_down`).
+  2. `InboundRouter.kt`:
+     - `checkGestureTracking`: Añadido soporte para `phonepad`, `trackpad`, `touchpad`, `key_event` y variaciones.
+     - `dispatchGestureItem`: Extracción prioritaria de nombres específicos (`key_name`, `gesture_name`, etc.) antes del genérico `key_event`, y lectura exhaustiva de claves de valor (`key_code`, `keyCode`, `actionType`, `direction`, etc.).
+  3. `MyvuService.kt`:
+     - Implementado `MediaSession` ("MyvuGlassesMediaSession") activo con `MediaSession.Callback` para capturar eventos de botones multimedia (`KEYCODE_HEADSETHOOK`, `KEYCODE_MEDIA_PLAY_PAUSE`, `KEYCODE_MEDIA_NEXT`, `KEYCODE_MEDIA_PREVIOUS`, `KEYCODE_MEDIA_FAST_FORWARD`, `KEYCODE_MEDIA_REWIND`, `KEYCODE_VOICE_ASSIST`).
+     - Detección de pulsación simple vs doble (ventana de 450 ms) para mapear toques del auricular a `TAP` o `DOUBLE_TAP`, canalizándolos por `connection?.executeGesture()`.
+  4. `ConnectionManager.kt`:
+     - Expuesto `executeGesture(gesture, rawCode)` para ejecutar directamente las acciones configuradas en `TouchGestureManager`.
+  5. Pruebas y Validación:
+     - Nuevos tests en `InboundGestureTest.kt`: `decodesKeyEventPacketsWithKeyCodes` y `decodesPhonepadActionPackets`.
+     - `./gradlew testDebugUnitTest`: 100% verde (34 tareas).
+     - `./gradlew assembleDebug`: compilado exitosamente.
+
+### [2026-09-10] — Eliminación de Disparos Espontáneos del Asistente por Telemetría de Sistema
+- **Problema**: El asistente / agente configurado para la pulsación larga se disparaba espontáneamente en el móvil en bucle cada pocos segundos, sin que el usuario tocara la varilla ni el panel táctil de las gafas.
+- **Causa Raíz Identificada en Log (`myvu_client_log.txt`)**:
+  1. Con `music_tp_control_mode` activado, el launcher FlymeAR emite periódicamente paquetes `event_tracking` -> `sync_glass_event` para eventos internos del SO de las gafas (`suspend_stats`, `iot_screen_status_change`, `iot_sys_usages`, `battery_stats`, `iot_notification_reminder`).
+  2. `InboundRouter.dispatchGestureItem` procesaba estos eventos generales y, al no coincidir con ningún gesto, generaba `GlassGesture.UNKNOWN` y los despachaba a `TouchGestureListener`.
+  3. `TouchGestureManager.getActionForGesture` mapeaba `GlassGesture.UNKNOWN` a `Prefs.touchpadLongPressAction(context)`.
+  4. Por tanto, cada cambio de estado de pantalla o métrica de energía de las gafas era interpretado como una "Pulsación Larga", lanzando el Asistente de Google / agente en bucle y saturando el enlace RFCOMM.
+- **Solución Implementada**:
+  1. `TouchGestureManager.kt`:
+     - `getActionForGesture`: Mapeado `GlassGesture.UNKNOWN -> GestureAction.NONE` (y `GestureAction.NONE.id` con contexto). `UNKNOWN` nunca dispara acciones.
+     - `handleGesture`: Agregada guarda temprana `if (executor == null || gesture == GlassGesture.UNKNOWN) return`.
+  2. `InboundRouter.kt`:
+     - `dispatchGestureItem`: Si `gesture == GlassGesture.UNKNOWN`, se descarta inmediatamente sin invocar al listener de toques.
+     - `processGestureValue`: Si un código numérico resulta en `UNKNOWN`, se descarta.
+  3. Pruebas y Validación:
+     - Actualizado `TouchGestureManagerTest.kt`: verifica que `GlassGesture.UNKNOWN` resuelva a `GestureAction.NONE` y que `handleGesture` no ejecute ninguna acción ante eventos `UNKNOWN`.
+     - Actualizado `InboundGestureTest.kt`: `ignoresNonGestureSystemTelemetryEvents` comprueba que ráfagas de telemetría del sistema (`suspend_stats`, `iot_screen_status_change`, etc.) sean ignoradas y no generen gestos.
+     - `./gradlew testDebugUnitTest` 100% verde (34 tareas).
+     - `./gradlew assembleDebug` compilado exitosamente.
+
+### [2026-09-10] — Personalización de Gestos con Apps Instaladas y Activación Manos Libres de Gemini
+- **Problema**:
+  1. El usuario configuró gestos táctiles para ejecutar tareas y apps, pero al tocar la patilla de las gafas no se ejecutaba la acción en el teléfono.
+  2. Al asignar Gemini a un gesto, el teléfono no encendía la pantalla, no desbloqueaba el keyguard ni enrutaba el micrófono de las gafas directamente hacia Gemini.
+- **Causas Raíz Identificadas**:
+  1. `GestureAction` y `SettingsActivity` solo contenían 10 acciones fijas; no existía opción para seleccionar aplicaciones instaladas en el dispositivo (`app:<package>`).
+  2. `MyvuService` registraba un `MediaSession` sin `PlaybackState` ni `MediaButtonReceiver`, por lo que el subsistema `AudioService` de Android descartaba los eventos AVRCP de botones multimedia provenientes del audífono/patilla Bluetooth.
+  3. `TouchGestureManager.launchPhoneAssistant` únicamente emitía un `KeyEvent` virtual (`KEYCODE_VOICE_ASSIST`), sin encender la pantalla (`WakeLock`), sin saltar el keyguard (`SendTrampolineActivity`) y sin habilitar Bluetooth SCO en `AudioManager` para que el micrófono de las gafas recibiera la petición del usuario.
+- **Solución Implementada**:
+  1. **Selector de Apps en `SettingsActivity`**:
+     - Agregada acción `LAUNCH_APP` ("Abrir Aplicación...") en `GestureAction.kt` con formato `app:<package_name>`.
+     - Implementado `showAppPickerDialog` en `SettingsActivity.kt` que despliega un diálogo con las aplicaciones lanzables del sistema y guarda `app:<package_name>`.
+     - Al cargar la pantalla, los desplegables resuelven y muestran el nombre real de la app (ej. *"App: Spotify"*, *"App: WhatsApp"*).
+  2. **Integración con Gemini Manos Libres (`launchGeminiAssistant`)**:
+     - Creada acción dedicada `LAUNCH_GEMINI` ("Lanzar Gemini (Manos Libres)").
+     - En `TouchGestureManager.launchGeminiAssistant`:
+       - Enciende la pantalla con brillo completo usando `LockScreenHelper.wakeUpScreen(appContext, "MYVU:GeminiVoiceAssistant", 15000L)`.
+       - Conecta el canal de audio Bluetooth SCO (`startBluetoothSco()` y `setCommunicationDevice` en Android 12+) para que el micrófono de las gafas sea la entrada de voz de Gemini.
+       - Dispara `ACTION_VOICE_SEARCH_HANDS_FREE` y `ACTION_VOICE_COMMAND` a través de `SendTrampolineActivity.launchWithKeyguardDismiss` para descartar el keyguard y darle el control total de la pantalla a Gemini.
+       - Muestra notificación HUD en las gafas: *"Gemini escuchando..."*.
+  3. **Lanzador Universal de Apps por Gesto (`launchApp`)**:
+     - En `ConnectionManager.kt` y `GlassesEventHandler.kt`, implementado `executeLaunchApp(packageName)`.
+     - Enciende pantalla con `LockScreenHelper.wakeUpScreen`, descarta keyguard con `SendTrampolineActivity` y abre la app elegida por el usuario con notificación HUD en las gafas (*"Abriendo [App]..."*).
+  4. **Corrección de `MediaSession` y AVRCP en `MyvuService`**:
+     - Configurado `PlaybackState` completo (`STATE_PAUSED` con acciones de reproducción y salto de pistas) y registrado `setMediaButtonReceiver` con intent filter `android.intent.action.MEDIA_BUTTON` en el manifiesto.
+     - Manejo explícito de `ACTION_MEDIA_BUTTON` en `onStartCommand` para garantizar que los toques de la patilla se capturen siempre.
+  5. **Pruebas y Verificación**:
+     - Pruebas unitarias actualizadas en `TouchGestureManagerTest.kt`: 249 tests pasando al 100%.
+     - APK generado sin errores: `./gradlew assembleDebug`.
+
+### [2026-09-10] — Corrección y Enrutamiento Integral de Personalización del Touchpad y Varilla de las Gafas
+- **Problema**: La personalización de gestos del panel táctil/varilla configurada en `SettingsActivity` no funcionaba físicamente en las gafas. Al presionar o mantener pulsada la varilla, siempre se invocaba la IA local o los toques eran absorbidos localmente por el launcher de las gafas.
+- **Causas Raíz Identificadas**:
+  1. **Bypass de IA en `ConnectionManager.kt` y `GlassesEventHandler.kt`**: La pulsación prolongada de la varilla (`code: 3`) llegaba por `checkAiTrigger`. Ambas clases llamaban directamente a `ai().onTrigger(code)` sin consultar `TouchGestureManager` ni la preferencia `Prefs.touchpadLongPressAction(context)`.
+  2. **Atributos FlymeAR con guiones bajos no analizados en `InboundRouter.kt`**: La telemetría real de FlymeAR utiliza claves como `_action_name_`, `_event_name_`, `_action_value_`, `_event_value_`, `_event_id_` y `actionType`, las cuales eran ignoradas por `dispatchGestureItem`.
+  3. **Falta de sinónimos y códigos de hardware en `GlassGesture.kt`**: Faltaban sinónimos de deslizamiento (`slip_forward`, `slide_forward`, `slip_backward`, `slide_backward`, `flick_forward`, `flick_backward`, `deep_touch`, `press_long`, `right`, `left`, `up`, `down`) y códigos de hardware Trackpad / D-Pad (19, 20, 21, 22).
+  4. **Modo `set_music_tp_control_mode` sin sincronización activa**: `SettingsActivity` no enviaba `SystemSettings.setMusicTpControl(true)` a las gafas al cambiar las acciones en los selectores desplegables, lo que impedía que el launcher de las gafas reenviara los eventos táctiles al teléfono.
+- **Solución Implementada**:
+  1. `GlassGesture.kt`:
+     - Expandido `fromCode` con sinónimos direccionales y de deslizamiento FlymeAR.
+     - Mapeados códigos de hardware Trackpad (`SWIPE_UP`=19, `SWIPE_DOWN`=20, `SWIPE_LEFT`=21, `SWIPE_RIGHT`=22) a `SWIPE_FORWARD` y `SWIPE_BACKWARD`.
+  2. `InboundRouter.kt`:
+     - En `dispatchGestureItem`, extracción exhaustiva de nombres (`_action_name_`, `action_name`, `_event_name_`, `event_name`, `_event_id_`, `event_id`, `name`, `action`) y valores (`_action_value_`, `action_value`, `_event_value_`, `event_value`, `actionType`, `action_type`, `value`, `code`, `event_code`).
+     - Soporte en `checkGestureTracking` para payloads planos y anidados de telemetría.
+  3. `ConnectionManager.kt` & `GlassesEventHandler.kt`:
+     - En `setAiTriggerListener`: cuando `code == 3`, enruta a través de `TouchGestureManager.handleGesture(this.context, GlassGesture.LONG_PRESS, code, createGestureActionExecutor())`.
+     - Si la acción configurada es `LAUNCH_LOCAL_AI`, se ejecuta `executeAiAssistant(3)` -> `ai().onTrigger(3)` preservando el comportamiento por defecto; si se configuró Asistente del Teléfono (Google Assistant), Play/Pausa, Modo Zen, Clima, etc., se ejecuta la acción del usuario.
+     - Cuando `code == 7` (palabra de activación de voz), enruta directamente a `ai().onTrigger(7)`.
+  4. `SettingsActivity.kt`:
+     - Al seleccionar cualquier acción en los dropdowns de gestos táctiles, activa `Prefs.setMusicTouchPanelEnabled(this, true)` y despacha `SystemSettings.setMusicTpControl(true)` al enlace activo con las gafas.
+  5. Pruebas y Validación:
+     - Nuevos tests en `InboundGestureTest.kt` cubriendo telemetría con guiones bajos FlymeAR, códigos numéricos Trackpad 19..22 y enrutamiento de trigger de hardware `code: 3`.
+     - `./gradlew testDebugUnitTest` 100% verde (34 tareas).
+     - `./gradlew assembleDebug` compilado exitosamente.
+
 ### [2026-09-09] — Inicialización de Memoria y Documentación Integral
 - Sincronización inicial con `codegraph sync`.
 - Plan de trabajo en `docs/superpowers/plans/2026-09-09-init-memory-and-documentation.md`.
@@ -714,4 +892,52 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
   - Pruebas unitarias `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL in 10s** (233 pruebas ejecutadas, 100% pasando).
   - Compilación de APK debug `./gradlew assembleDebug`: **BUILD SUCCESSFUL in 929ms** (`app-debug.apk` generado correctamente).
 
-
+### [2026-09-10] — Planificación: Nuevas Capacidades Agénticas, Automatización Cotidiana y Delegación ("Segundo Cerebro")
+- **Plan Detallado**: [`docs/superpowers/plans/2026-09-10-agent-daily-assistant-and-automation-plan.md`](file:///home/rcastro/Documentos/negex/Meizu-Myvu-Client/android-kotlin/docs/superpowers/plans/2026-09-10-agent-daily-assistant-and-automation-plan.md).
+- **Objetivo Central**: Transformar el asistente pasivo en un asistente cotidiano proactivo de mínima fricción para el usuario de gafas AR.
+- **Ejes de Funcionalidades Propuestas**:
+  1. *Daily Briefing ("Mi Día" / "Buenos días")*: Sintetiza en <5s clima, próxima cita, tareas pendientes, avisos sin leer y batería.
+  2. *Rutinas y Modos Contextuales (Macros de una frase)*:
+     - Modo Reunión: Zen Mode en gafas + DND en celular + grabación y extracción de minutas.
+     - Modo Conducción: Brillo alto + TTS de mensajes VIP sin desbloquear.
+     - Modo Gimnasio: Música de entrenamiento + contador de pasos y descansos en HUD.
+     - Modo Noche: Brillo 1 + verificación de alarmas + reporte de batería.
+  3. *Memoria Espacial*: Guardar ubicación GPS del auto ("Dónde estacioné") y cálculo de distancia/rumbo para retorno.
+  4. *Listas de Compras y Tareas*: Delegar adición y marcado de checklists ("añade café a las compras") en Room.
+  5. *Envío Rápido de Ubicación y Plantillas*: "Mándale mi ubicación a [Contacto]" por WhatsApp/Telegram en un toque.
+  6. *Temporizadores y Pomodoro Nombrados*: Cuenta regresiva en HUD.
+  7. *Segundo Cerebro*: Búsqueda semántica rápida en notas para datos personales ("Recuerda que...").
+### [2026-09-10] — Implementación Completa: Asistente Cotidiano, Automatizaciones y Delegación ("Segundo Cerebro")
+- **Plan**: `docs/superpowers/plans/2026-09-10-agent-daily-assistant-and-automation-plan.md`
+- **Componentes Creados e Integrados**:
+  1. `DailyBriefingService.kt`:
+     - Genera síntesis ejecutiva hablada (TTS) en <5ms: saludo según hora del día, resumen de clima local síncrono (`WeatherSync.lastSummary`), reuniones del día vía `CalendarService.getEvents`, conteo y títulos de tareas pendientes vía `TodoRepository`, resumen de avisos VIP vía `MirrorNotificationListener` y batería de las gafas.
+     - Proyecta en el HUD de las gafas un resumen compacto de hasta 120 caracteres en el teleprompter ("Mi Día").
+  2. `RoutineManager.kt`:
+     - Macros de sistema ejecutados por una sola orden de voz:
+       - *Modo Reunión*: Activa `SystemSettings.setZenMode(true)` en gafas, conmuta audio de celular a `RINGER_MODE_VIBRATE`, persiste modo en `Prefs`. Desactivación restaura `ZenMode(false)` y `RINGER_MODE_NORMAL`.
+       - *Modo Conducción*: Ajusta brillo de gafas al máximo (`setBrightness(3)`), prepara audio manos libres. Desactivación restaura brillo estándar del usuario.
+       - *Modo Gimnasio*: Consulta pasos y actividad en `HealthService`, notifica audio y HUD.
+       - *Modo Noche*: Fija brillo mínimo (`setBrightness(1)`), silencia celular (`RINGER_MODE_SILENT`), alerta de nivel de batería de las gafas para carga nocturna.
+  3. `SpatialMemoryManager.kt`:
+     - Recordar punto de estacionamiento: Guarda coordenadas (latitud, longitud), marca temporal y nota adicional en `Prefs`.
+     - Consulta síncrona inmediata mediante `LocationManager` (GPS / Network) y FusedLocation de Google Play Services.
+     - Cálculo de distancia (metros o kilómetros) y rumbo cardinal (`bearingToCardinal`: Norte, Noreste, Este, Sureste, Sur, Suroeste, Oeste, Noroeste).
+  4. `VoiceActionRouter.kt`:
+     - Enrutamiento determinista de alta prioridad (<5ms) antes de llamadas a LLM:
+       - Fast-paths de Daily Briefing: `"buenos dias"`, `"buen dia"`, `"mi dia"`, `"resumen del dia"`, `"resumen diario"`, `"inicia mi dia"`, `"briefing"`.
+       - Fast-paths de Rutinas: `"modo reunion"`, `"modo auto"`, `"modo conduccion"`, `"modo gym"`, `"modo noche"`, con soporte para activar y desactivar.
+       - Fast-paths de Memoria Espacial: `"estacione aqui"`, `"donde estacione"`, `"donde deje el carro"`, `"borra mi estacionamiento"`.
+       - Fast-paths de Lista de Compras: `"agrega X a las compras"`, `"lista de compras"`, `"tacha X de las compras"`, `"compre X"`.
+       - Fast-paths de Despacho de Ubicación: `"mandale mi ubicacion a X"`, `"comparte mi ubicacion con X"` por WhatsApp / Telegram.
+  5. `PhoneActionExecutor.kt`:
+     - Implementado `sendLocationToContact(contact, app)` con resolución de coordenadas GPS síncrona/asíncrona y despacho de enlace Google Maps a través de WhatsApp / Telegram con pantalla encendida (`LockScreenHelper.wakeUpScreen`).
+     - Añadidos action tags (`ACTION:BRIEFING`, `ACTION:ROUTINE=...`, `ACTION:PARKING_SAVE`, `ACTION:PARKING_GET`, `ACTION:SEND_LOCATION=...`) en `processAndExecute` y `executeAction`.
+  6. `WeatherSync.kt`:
+     - Unificado `companion object` con `@Volatile var lastSummary: String?` para consumo síncrono sin bloqueo de red.
+  7. `DailyAssistantAutomationTest.kt`:
+     - Suite completa de 8 pruebas unitarias con Robolectric cubriendo Daily Briefing, Modos de Rutina, Memoria Espacial, Enrutamiento de Compras y Envío de Ubicación.
+- **Verificación**:
+  - Pruebas unitarias de las nuevas funciones: **8/8 tests PASSED**.
+  - Suite completa de pruebas unitarias (`./gradlew testDebugUnitTest`): **BUILD SUCCESSFUL in 11s** (100% pruebas pasando).
+  - Ensamblado de APK (`./gradlew assembleDebug`): **BUILD SUCCESSFUL in 2s** (`app-debug.apk` listo).

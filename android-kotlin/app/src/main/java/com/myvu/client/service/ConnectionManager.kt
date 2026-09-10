@@ -12,6 +12,7 @@ import com.myvu.client.app.InboundRouter
 import com.myvu.client.app.RelaySession
 import com.myvu.client.app.feature.AiProtocol
 import com.myvu.client.app.feature.ClockSync
+import com.myvu.client.app.feature.GlassGesture
 import com.myvu.client.app.feature.Notifications
 import com.myvu.client.app.feature.SystemSettings
 import com.myvu.client.app.feature.Teleprompter
@@ -218,16 +219,38 @@ class ConnectionManager(
         }
     }
 
+    fun executeGesture(gesture: GlassGesture, rawCode: Int = gesture.code) {
+        TouchGestureManager.handleGesture(this.context, gesture, rawCode, createGestureActionExecutor())
+    }
+
     private fun createGestureActionExecutor(): TouchGestureManager.ActionExecutor {
         return object : TouchGestureManager.ActionExecutor {
-            override fun executeAiAssistant(triggerCode: Int) {
-                ai().onTrigger(triggerCode)
+            override fun executeAiAssistant(code: Int) {
+                ai().onTrigger(code)
+            }
+
+            override fun executeGeminiAssistant() {
+                TouchGestureManager.launchGeminiAssistant(this@ConnectionManager.context)
             }
 
             override fun executePhoneAssistant() {
                 TouchGestureManager.launchPhoneAssistant(this@ConnectionManager.context)
                 try {
                     sendAction(Notifications.buildShow("MYVU", "Asistente activado"))
+                } catch (ignored: Exception) {
+                }
+            }
+
+            override fun executeLaunchApp(packageName: String) {
+                TouchGestureManager.launchApp(this@ConnectionManager.context, packageName)
+                try {
+                    val appName = try {
+                        val pm = this@ConnectionManager.context.packageManager
+                        pm.getApplicationLabel(pm.getApplicationInfo(packageName, 0)).toString()
+                    } catch (e: Exception) {
+                        packageName
+                    }
+                    sendAction(Notifications.buildShow("MYVU", "Abriendo $appName..."))
                 } catch (ignored: Exception) {
                 }
             }
@@ -896,7 +919,8 @@ class ConnectionManager(
             }
 
             val body = String(m.msgBody, StandardCharsets.UTF_8)
-            LogBus.log("<- msgId=${m.msgId} ${truncate(body, 200)}")
+            val logLimit = if (body.contains("sync_glass_event") || body.contains("phonepad") || body.contains("trackpad") || body.contains("key_event")) 1000 else 200
+            LogBus.log("<- msgId=${m.msgId} ${truncate(body, logLimit)}")
             if (m.needCallback != 0) sendOn(transport, session.seq.ackFrame(m))
             inbound.handle(body)
             return

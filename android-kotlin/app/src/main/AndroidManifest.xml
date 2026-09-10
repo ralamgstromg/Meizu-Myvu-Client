@@ -173,8 +173,12 @@
         <!-- Foreground & Background Services -->
         <service
             android:name=".service.MyvuService"
-            android:exported="false"
-            android:foregroundServiceType="connectedDevice" />
+            android:exported="true"
+            android:foregroundServiceType="connectedDevice">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </service>
 
         <service
             android:name=".service.MirrorNotificationListener"

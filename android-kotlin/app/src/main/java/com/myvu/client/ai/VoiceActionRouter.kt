@@ -40,6 +40,93 @@ class VoiceActionRouter(
         val trimmed = if (cleanedTrimmed.isNotBlank()) cleanedTrimmed else rawTrimmed
         val normalized = normalize(trimmed)
 
+        // 0a. Daily Briefing Ejecutivo ("Buenos días", "Mi día", "Resumen del día", "Inicia mi día")
+        if (normalized == "buenos dias" || normalized == "buen dia" ||
+            normalized == "mi dia" || normalized == "resumen del dia" ||
+            normalized == "resumen diario" || normalized == "inicia mi dia" ||
+            normalized == "briefing" || normalized == "dame mi briefing" ||
+            normalized == "como pinta el dia" || normalized == "plan de hoy"
+        ) {
+            LogBus.log("VoiceActionRouter -> Fast-Path Daily Briefing")
+            val text = DailyBriefingService.generateBriefingText(context)
+            try {
+                val hudText = DailyBriefingService.generateHudBriefing(context)
+                val conn = com.myvu.client.service.MyvuService.activeConnection()
+                conn?.openTeleprompter(hudText, "Mi Día")
+            } catch (ignored: Exception) {}
+            return RouteResult(handled = true, responseText = text)
+        }
+
+        // 0b. Modos de Rutina y Automatizaciones Contextuales
+        if (normalized.contains("modo reunion") || normalized.contains("modo junta")) {
+            val enable = !normalized.contains("desactiva") && !normalized.contains("quitar") && !normalized.contains("off") && !normalized.contains("termina") && !normalized.contains("salir")
+            val resp = RoutineManager.setMeetingMode(context, enable)
+            return RouteResult(handled = true, responseText = resp)
+        }
+        if (normalized.contains("modo auto") || normalized.contains("modo carro") || normalized.contains("modo vehiculo") || normalized.contains("modo conduccion") || normalized.contains("modo manejar")) {
+            val enable = !normalized.contains("desactiva") && !normalized.contains("quitar") && !normalized.contains("off") && !normalized.contains("apaga") && !normalized.contains("llegue")
+            val resp = RoutineManager.setDriveMode(context, enable)
+            return RouteResult(handled = true, responseText = resp)
+        }
+        if (normalized.contains("modo gym") || normalized.contains("modo gimnasio") || normalized.contains("modo entrenamiento") || normalized.contains("modo ejercicio")) {
+            val enable = !normalized.contains("desactiva") && !normalized.contains("quitar") && !normalized.contains("off") && !normalized.contains("terminar") && !normalized.contains("fin")
+            val resp = RoutineManager.setGymMode(context, enable)
+            return RouteResult(handled = true, responseText = resp)
+        }
+        if (normalized.contains("modo noche") || normalized.contains("modo dormir") || normalized.contains("modo descanso")) {
+            val enable = !normalized.contains("desactiva") && !normalized.contains("quitar") && !normalized.contains("off") && !normalized.contains("despertar")
+            val resp = RoutineManager.setNightMode(context, enable)
+            return RouteResult(handled = true, responseText = resp)
+        }
+        if (normalized == "que modo esta activo" || normalized == "modo activo" || normalized == "estado de rutina") {
+            val resp = RoutineManager.getActiveMode(context)
+            return RouteResult(handled = true, responseText = resp)
+        }
+
+        // 0c. Memoria Espacial y Estacionamiento (Parking)
+        if (normalized.contains("estacione aqui") || normalized.contains("estacione aca") ||
+            normalized.contains("deje el carro aqui") || normalized.contains("deje el auto aqui") ||
+            normalized.contains("guardar estacionamiento") || normalized.contains("guardar parqueadero") ||
+            normalized.contains("recuerda donde estacione")
+        ) {
+            val resp = SpatialMemoryManager.saveParkingLocation(context)
+            return RouteResult(handled = true, responseText = resp)
+        }
+        if (normalized.contains("donde estacione") || normalized.contains("donde deje el carro") ||
+            normalized.contains("donde deje el auto") || normalized.contains("donde deje mi carro") ||
+            normalized.contains("donde deje mi auto") || normalized.contains("donde esta el carro") ||
+            normalized.contains("donde esta mi auto") || normalized.contains("donde parquee") ||
+            normalized.contains("donde esta el vehiculo") || normalized.contains("donde esta el parqueadero")
+        ) {
+            val resp = SpatialMemoryManager.getParkingLocation(context)
+            return RouteResult(handled = true, responseText = resp)
+        }
+        if (normalized.contains("borra mi estacionamiento") || normalized.contains("borrar estacionamiento") ||
+            normalized.contains("olvida donde estacione") || normalized.contains("quitar estacionamiento") ||
+            normalized.contains("borrar parqueadero")
+        ) {
+            val resp = SpatialMemoryManager.clearParkingLocation(context)
+            return RouteResult(handled = true, responseText = resp)
+        }
+
+        // 0d. Despacho Rápido de Ubicación GPS a Contacto ("mándale mi ubicación a Carlos")
+        val sendLocMatch = Regex("^(mandale|manda|enviar?|envia|comparte|compartir?)\\s+(mi\\s+)?ubicacion(\\s+actual)?(\\s+por\\s+(whatsapp|telegram))?\\s+(a|con|para)\\s+(.+)$", RegexOption.IGNORE_CASE).find(normalized)
+        if (sendLocMatch != null) {
+            val app = if (normalized.contains("telegram")) "telegram" else "whatsapp"
+            val lastGroup = sendLocMatch.groups[7]
+            val rawTarget = if (lastGroup != null && lastGroup.range.first < trimmed.length) {
+                trimmed.substring(lastGroup.range.first).trim()
+            } else {
+                sendLocMatch.groupValues[7]
+            }
+            val target = cleanTarget(rawTarget)
+            if (target.isNotBlank()) {
+                LogBus.log("VoiceActionRouter -> Fast-Path sendLocation to $target via $app")
+                actionExecutor.sendLocationToContact(target, app)
+                return RouteResult(handled = true, responseText = "Enviando tu ubicación actual a $target...")
+            }
+        }
+
         // 1. Agenda / Calendario (Reuniones próximas)
         if (normalized.contains("reunion") || normalized.contains("reunione") || normalized.contains("agenda") ||
             normalized.contains("calendario") || normalized.contains("evento") || normalized.contains("cita") ||
@@ -446,6 +533,52 @@ class VoiceActionRouter(
         }
 
         // 6. Listas de Tareas (To-Do)
+        // 6a.0 Lista de Compras Especializada
+        val shoppingAddMatch = Regex("^(agrega|agregar?|anade|anadir?|pon|poner?)\\s+(.+?)\\s+(a\\s+la\\s+lista\\s+de\\s+compras|en\\s+la\\s+lista\\s+de\\s+compras|a\\s+las\\s+compras|en\\s+las\\s+compras|a\\s+compras|en\\s+compras)$", RegexOption.IGNORE_CASE).find(normalized)
+            ?: Regex("^(agrega|agregar?|anade|anadir?|pon|poner?)\\s+(a\\s+la\\s+lista\\s+de\\s+compras|en\\s+la\\s+lista\\s+de\\s+compras|a\\s+las\\s+compras|en\\s+las\\s+compras|a\\s+compras|en\\s+compras)\\s+(.+)$", RegexOption.IGNORE_CASE).find(normalized)
+            ?: Regex("^comprar\\s+(.+)$", RegexOption.IGNORE_CASE).find(normalized)
+
+        if (shoppingAddMatch != null) {
+            val itemRaw = when {
+                normalized.startsWith("comprar") -> shoppingAddMatch.groupValues[1]
+                shoppingAddMatch.groupValues[2].contains("compra") -> shoppingAddMatch.groupValues[3]
+                else -> shoppingAddMatch.groupValues[2]
+            }
+            val item = cleanTarget(itemRaw)
+            if (item.isNotBlank()) {
+                val repo = TodoRepository(context)
+                repo.createTodo(title = item, listName = "Compras")
+                LogBus.log("VoiceActionRouter -> Fast-Path shopping item added: '$item'")
+                return RouteResult(handled = true, responseText = "Agregado '$item' a tu lista de compras.")
+            }
+        }
+
+        if (normalized == "lista de compras" || normalized == "que hay en la lista de compras" ||
+            normalized == "que hay en las compras" || normalized == "que tengo que comprar" ||
+            normalized == "que debo comprar" || normalized == "ver compras" ||
+            normalized == "consultar compras" || normalized == "que hay de compras"
+        ) {
+            val repo = TodoRepository(context)
+            val pending = repo.getPendingTodos("Compras")
+            val resp = if (pending.isEmpty()) {
+                "Tu lista de compras está vacía."
+            } else {
+                "En tu lista de compras tienes: " + pending.joinToString(", ") { it.title } + "."
+            }
+            return RouteResult(handled = true, responseText = resp)
+        }
+
+        val shoppingDoneMatch = Regex("^(tacha|tachar?|compre|comprado|marca\\s+como\\s+comprado|elimina\\s+de\\s+compras)\\s+(.+?)\\s*(de\\s+las\\s+compras|de\\s+la\\s+lista\\s+de\\s+compras|de\\s+compras)?$", RegexOption.IGNORE_CASE).find(normalized)
+        if (shoppingDoneMatch != null) {
+            val item = cleanTarget(shoppingDoneMatch.groupValues[2])
+            if (item.isNotBlank() && item != "la lista" && item != "compras") {
+                val repo = TodoRepository(context)
+                repo.markCompletedByTitle(item, true)
+                LogBus.log("VoiceActionRouter -> Fast-Path shopping item bought: '$item'")
+                return RouteResult(handled = true, responseText = "Marcado '$item' como comprado en tu lista de compras.")
+            }
+        }
+
         // 6a. Añadir Tarea: ej: "agrega a la lista compras comprar manzanas"
         val todoAddMatch = Regex("^(agrega|agregar?|anota|anotar?|pon|poner?|nueva\\s+tarea)\\s+(a\\s+la\\s+lista\\s+de\\s+|a\\s+la\\s+lista\\s+|en\\s+la\\s+lista\\s+de\\s+|en\\s+la\\s+lista\\s+|a\\s+|en\\s+)?([^:]+?)(:|\\s+que\\s+|\\s+de\\s+|\\s+tarea\\s+)?\\s+(.+)$", RegexOption.IGNORE_CASE).find(normalized)
         if (todoAddMatch != null && (normalized.contains("lista") || normalized.contains("tarea"))) {

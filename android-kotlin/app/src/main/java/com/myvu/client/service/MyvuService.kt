@@ -7,9 +7,11 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.media.session.MediaSession
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import com.myvu.client.app.feature.GlassGesture
 import com.myvu.client.core.LogBus
 import com.myvu.client.core.Prefs
 import com.myvu.client.ui.ConnectActivity
@@ -24,6 +26,7 @@ import com.myvu.client.ui.ConnectActivity
 class MyvuService : Service(), ConnectionManager.Listener {
 
     private var connection: ConnectionManager? = null
+    private var mediaSession: MediaSession? = null
 
     inner class LocalBinder : Binder() {
         fun getService(): MyvuService = this@MyvuService
@@ -37,6 +40,7 @@ class MyvuService : Service(), ConnectionManager.Listener {
         createNotificationChannel()
         connection = ConnectionManager(this, this)
         active = connection
+        setupMediaSession()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -59,6 +63,19 @@ class MyvuService : Service(), ConnectionManager.Listener {
         // startForeground must happen promptly after startForegroundService,
         // and on API 34+ the type is mandatory and must match the manifest.
         startInForeground("Connecting...")
+
+        if (Intent.ACTION_MEDIA_BUTTON == action && intent != null) {
+            val event = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, android.view.KeyEvent::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT) as? android.view.KeyEvent
+            }
+            if (event != null && event.action == android.view.KeyEvent.ACTION_DOWN) {
+                mediaSession?.controller?.dispatchMediaButtonEvent(event)
+            }
+            return START_STICKY
+        }
 
         if (ACTION_START == action || action == null) {
             Prefs.setAutoReconnectEnabled(this, true)
@@ -149,8 +166,124 @@ class MyvuService : Service(), ConnectionManager.Listener {
         return binder
     }
 
+    private fun setupMediaSession() {
+        try {
+            val session = MediaSession(this, "MyvuGlassesMediaSession")
+            session.setCallback(object : MediaSession.Callback() {
+                private var lastHookTime = 0L
+                private var hookTapCount = 0
+                private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+                private val hookRunnable = Runnable {
+                    val count = hookTapCount
+                    hookTapCount = 0
+                    val gesture = when {
+                        count >= 3 -> GlassGesture.TRIPLE_TAP
+                        count == 2 -> GlassGesture.DOUBLE_TAP
+                        else -> GlassGesture.TAP
+                    }
+                    LogBus.log("Bluetooth media button -> $gesture (tap count=$count)")
+                    connection?.executeGesture(gesture, gesture.code)
+                }
+
+                override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
+                    val event = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, android.view.KeyEvent::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT) as? android.view.KeyEvent
+                    } ?: return super.onMediaButtonEvent(mediaButtonIntent)
+
+                    if (event.action != android.view.KeyEvent.ACTION_DOWN) {
+                        return true
+                    }
+
+                    LogBus.log("Bluetooth media key event received: keyCode=${event.keyCode}")
+                    when (event.keyCode) {
+                        android.view.KeyEvent.KEYCODE_HEADSETHOOK,
+                        android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                            val now = android.os.SystemClock.uptimeMillis()
+                            handler.removeCallbacks(hookRunnable)
+                            if (now - lastHookTime < 450L) {
+                                hookTapCount++
+                            } else {
+                                hookTapCount = 1
+                            }
+                            lastHookTime = now
+                            handler.postDelayed(hookRunnable, 350L)
+                            return true
+                        }
+                        android.view.KeyEvent.KEYCODE_MEDIA_NEXT -> {
+                            LogBus.log("Bluetooth media key NEXT -> SWIPE_FORWARD / DOUBLE_TAP")
+                            connection?.executeGesture(GlassGesture.SWIPE_FORWARD, event.keyCode)
+                            return true
+                        }
+                        android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                            LogBus.log("Bluetooth media key PREVIOUS -> SWIPE_BACKWARD / TRIPLE_TAP")
+                            connection?.executeGesture(GlassGesture.SWIPE_BACKWARD, event.keyCode)
+                            return true
+                        }
+                        android.view.KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
+                            connection?.executeGesture(GlassGesture.SWIPE_FORWARD, event.keyCode)
+                            return true
+                        }
+                        android.view.KeyEvent.KEYCODE_MEDIA_REWIND -> {
+                            connection?.executeGesture(GlassGesture.SWIPE_BACKWARD, event.keyCode)
+                            return true
+                        }
+                        android.view.KeyEvent.KEYCODE_VOICE_ASSIST,
+                        android.view.KeyEvent.KEYCODE_ASSIST -> {
+                            connection?.executeGesture(GlassGesture.LONG_PRESS, event.keyCode)
+                            return true
+                        }
+                    }
+                    return super.onMediaButtonEvent(mediaButtonIntent)
+                }
+            })
+
+            val state = android.media.session.PlaybackState.Builder()
+                .setActions(
+                    android.media.session.PlaybackState.ACTION_PLAY or
+                    android.media.session.PlaybackState.ACTION_PAUSE or
+                    android.media.session.PlaybackState.ACTION_PLAY_PAUSE or
+                    android.media.session.PlaybackState.ACTION_SKIP_TO_NEXT or
+                    android.media.session.PlaybackState.ACTION_SKIP_TO_PREVIOUS or
+                    android.media.session.PlaybackState.ACTION_FAST_FORWARD or
+                    android.media.session.PlaybackState.ACTION_REWIND
+                )
+                .setState(android.media.session.PlaybackState.STATE_PAUSED, 0L, 1.0f)
+                .build()
+            session.setPlaybackState(state)
+
+            val mediaButtonIntent = Intent(Intent.ACTION_MEDIA_BUTTON)
+            mediaButtonIntent.setClass(this, MyvuService::class.java)
+            val pendingIntent = PendingIntent.getService(
+                this,
+                0,
+                mediaButtonIntent,
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+            )
+            session.setMediaButtonReceiver(pendingIntent)
+            session.setFlags(
+                MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or
+                MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS
+            )
+
+            session.isActive = true
+            mediaSession = session
+            LogBus.log("MyvuService: MediaSession active for Bluetooth touch gestures")
+        } catch (e: Throwable) {
+            LogBus.error("MyvuService: Failed to initialize MediaSession", e)
+        }
+    }
+
     override fun onDestroy() {
         LogBus.log("service stopping")
+        try {
+            mediaSession?.isActive = false
+            mediaSession?.release()
+        } catch (ignored: Throwable) {
+        }
+        mediaSession = null
         active = null
         connection?.shutdown()
         super.onDestroy()

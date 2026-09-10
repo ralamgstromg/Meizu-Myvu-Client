@@ -14,6 +14,8 @@ class TouchGestureManagerTest {
     private class MockActionExecutor : TouchGestureManager.ActionExecutor {
         var aiCode: Int? = null
         var phoneAssistantCalled = false
+        var geminiAssistantCalled = false
+        var launchAppPackage: String? = null
         var weatherSyncCalled = false
         var toggleMirrorCalled = false
         var mediaPlayPauseCalled = false
@@ -27,8 +29,16 @@ class TouchGestureManagerTest {
             aiCode = code
         }
 
+        override fun executeGeminiAssistant() {
+            geminiAssistantCalled = true
+        }
+
         override fun executePhoneAssistant() {
             phoneAssistantCalled = true
+        }
+
+        override fun executeLaunchApp(packageName: String) {
+            launchAppPackage = packageName
         }
 
         override fun executeWeatherSync() {
@@ -76,7 +86,8 @@ class TouchGestureManagerTest {
     fun parsesAllGestureActionIdsCorrectly() {
         assertEquals(GestureAction.NONE, GestureAction.fromId("none"))
         assertEquals(GestureAction.LAUNCH_PHONE_ASSISTANT, GestureAction.fromId("phone_assistant"))
-        assertEquals(GestureAction.LAUNCH_PHONE_ASSISTANT, GestureAction.fromId("gemini"))
+        assertEquals(GestureAction.LAUNCH_GEMINI, GestureAction.fromId("gemini"))
+        assertEquals(GestureAction.LAUNCH_GEMINI, GestureAction.fromId("launch_gemini"))
         assertEquals(GestureAction.LAUNCH_PHONE_ASSISTANT, GestureAction.fromId("google_assistant"))
         assertEquals(GestureAction.LAUNCH_LOCAL_AI, GestureAction.fromId("ai_assistant"))
         assertEquals(GestureAction.LAUNCH_LOCAL_AI, GestureAction.fromId("local_ai"))
@@ -101,19 +112,41 @@ class TouchGestureManagerTest {
     fun defaultActionsForGesturesAreAccurate() {
         assertEquals(GestureAction.NONE, TouchGestureManager.getActionForGesture(null, GlassGesture.TAP))
         assertEquals(GestureAction.MEDIA_PLAY_PAUSE, TouchGestureManager.getActionForGesture(null, GlassGesture.DOUBLE_TAP))
-        assertEquals(GestureAction.LAUNCH_PHONE_ASSISTANT, TouchGestureManager.getActionForGesture(null, GlassGesture.TRIPLE_TAP))
+        assertEquals(GestureAction.LAUNCH_GEMINI, TouchGestureManager.getActionForGesture(null, GlassGesture.TRIPLE_TAP))
         assertEquals(GestureAction.MEDIA_NEXT, TouchGestureManager.getActionForGesture(null, GlassGesture.SWIPE_FORWARD))
         assertEquals(GestureAction.MEDIA_PREV, TouchGestureManager.getActionForGesture(null, GlassGesture.SWIPE_BACKWARD))
         assertEquals(GestureAction.LAUNCH_LOCAL_AI, TouchGestureManager.getActionForGesture(null, GlassGesture.LONG_PRESS))
-        assertEquals(GestureAction.LAUNCH_LOCAL_AI, TouchGestureManager.getActionForGesture(null, GlassGesture.UNKNOWN))
+        assertEquals(GestureAction.NONE, TouchGestureManager.getActionForGesture(null, GlassGesture.UNKNOWN))
     }
 
     @Test
-    fun dispatchesTripleTapToPhoneAssistantByDefault() {
+    fun unknownGestureDoesNotExecuteAnyAction() {
+        TouchGestureManager.handleGesture(null, GlassGesture.UNKNOWN, -1, executor)
+        assertFalse(executor.phoneAssistantCalled)
+        assertFalse(executor.geminiAssistantCalled)
+        assertFalse(executor.mediaPlayPauseCalled)
+        assertFalse(executor.noneCalled)
+        assertEquals(null, executor.aiCode)
+    }
+
+    @Test
+    fun dispatchesTripleTapToGeminiAssistantByDefault() {
         TouchGestureManager.handleGesture(null, GlassGesture.TRIPLE_TAP, 3, executor)
-        assertTrue(executor.phoneAssistantCalled)
+        assertTrue(executor.geminiAssistantCalled)
         assertFalse(executor.mediaPlayPauseCalled)
         assertEquals(null, executor.aiCode)
+    }
+
+    @Test
+    fun resolvesAppActionAndExtractsPackageName() {
+        val appActionId = GestureAction.makeAppActionId("com.spotify.music")
+        assertEquals("app:com.spotify.music", appActionId)
+        assertTrue(GestureAction.isAppAction(appActionId))
+        assertEquals("com.spotify.music", GestureAction.getAppPackage(appActionId))
+        assertEquals(GestureAction.LAUNCH_APP, GestureAction.fromId(appActionId))
+
+        assertFalse(GestureAction.isAppAction("launch_gemini"))
+        assertEquals(null, GestureAction.getAppPackage("launch_gemini"))
     }
 
     @Test

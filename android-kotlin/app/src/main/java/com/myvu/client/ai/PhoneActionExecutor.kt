@@ -105,6 +105,30 @@ class PhoneActionExecutor(context: Context) {
                     val app = action.arguments["app"] ?: action.arguments["target_app"] ?: ""
                     searchInThirdPartyApp(if (app.isNotBlank()) "$app: $query" else query)
                 }
+                "daily_briefing", "my_day" -> {
+                    DailyBriefingService.generateBriefingText(context)
+                }
+                "routine_mode" -> {
+                    val mode = action.arguments["mode"] ?: ""
+                    val enable = action.arguments["enable"]?.toBoolean() ?: true
+                    when (mode.lowercase()) {
+                        "meeting", "reunion" -> RoutineManager.setMeetingMode(context, enable)
+                        "drive", "auto", "conduccion" -> RoutineManager.setDriveMode(context, enable)
+                        "gym", "entrenamiento" -> RoutineManager.setGymMode(context, enable)
+                        "night", "noche", "dormir" -> RoutineManager.setNightMode(context, enable)
+                    }
+                }
+                "save_parking" -> {
+                    val note = action.arguments["note"] ?: ""
+                    SpatialMemoryManager.saveParkingLocation(context, note)
+                }
+                "send_location" -> {
+                    val target = action.arguments["target"] ?: action.arguments["contact"] ?: ""
+                    val app = action.arguments["app"] ?: "whatsapp"
+                    if (target.isNotBlank()) {
+                        sendLocationToContact(target, app)
+                    }
+                }
             }
         } catch (t: Throwable) {
             LogBus.error("PhoneActionExecutor: Failed to execute action ${action.type}", t)
@@ -358,6 +382,51 @@ class PhoneActionExecutor(context: Context) {
         if (lower.contains("action:health_summary") || lower.contains("action:health")) {
             val healthInfo = com.myvu.client.health.HealthService.getInstance(context).getFullHealthSummary()
             return stripActionTags(aiText) + "\n\n" + healthInfo
+        }
+
+        // 18. Daily Briefing
+        if (lower.contains("action:briefing") || lower.contains("action:daily_briefing") || lower.contains("action:my_day")) {
+            val briefing = DailyBriefingService.generateBriefingText(context)
+            return stripActionTags(aiText) + "\n\n" + briefing
+        }
+
+        // 19. Routines
+        if (lower.contains("action:routine=")) {
+            val routineCmd = extractValue(aiText, "ACTION:ROUTINE=").lowercase()
+            val resp = when {
+                routineCmd.contains("meeting_off") || routineCmd.contains("reunion_off") -> RoutineManager.setMeetingMode(context, false)
+                routineCmd.contains("meeting") || routineCmd.contains("reunion") -> RoutineManager.setMeetingMode(context, true)
+                routineCmd.contains("drive_off") || routineCmd.contains("auto_off") -> RoutineManager.setDriveMode(context, false)
+                routineCmd.contains("drive") || routineCmd.contains("auto") -> RoutineManager.setDriveMode(context, true)
+                routineCmd.contains("gym_off") -> RoutineManager.setGymMode(context, false)
+                routineCmd.contains("gym") -> RoutineManager.setGymMode(context, true)
+                routineCmd.contains("night_off") || routineCmd.contains("noche_off") -> RoutineManager.setNightMode(context, false)
+                routineCmd.contains("night") || routineCmd.contains("noche") -> RoutineManager.setNightMode(context, true)
+                else -> RoutineManager.getActiveMode(context)
+            }
+            return stripActionTags(aiText) + "\n\n" + resp
+        }
+
+        // 20. Spatial Memory (Parking)
+        if (lower.contains("action:parking_save")) {
+            val note = extractValue(aiText, "ACTION:PARKING_SAVE=")
+            val resp = SpatialMemoryManager.saveParkingLocation(context, note)
+            return stripActionTags(aiText) + "\n\n" + resp
+        }
+        if (lower.contains("action:parking_get") || lower.contains("action:parking_where")) {
+            val resp = SpatialMemoryManager.getParkingLocation(context)
+            return stripActionTags(aiText) + "\n\n" + resp
+        }
+        if (lower.contains("action:parking_clear")) {
+            val resp = SpatialMemoryManager.clearParkingLocation(context)
+            return stripActionTags(aiText) + "\n\n" + resp
+        }
+
+        // 21. Send Location
+        if (lower.contains("action:send_location=")) {
+            val target = extractValue(aiText, "ACTION:SEND_LOCATION=")
+            val app = if (lower.contains("telegram")) "telegram" else "whatsapp"
+            sendLocationToContact(target, app)
         }
 
         return stripActionTags(aiText)
@@ -1523,6 +1592,45 @@ class PhoneActionExecutor(context: Context) {
         } else null
         val condition = reading.condition?.takeIf { it.isNotBlank() }
         return listOfNotNull(current, range, condition?.let { "Cielo $it" }).joinToString(". ") + "."
+    }
+
+    fun sendLocationToContact(contact: String, app: String = "whatsapp") {
+        try {
+            val locManager = context.getSystemService(Context.LOCATION_SERVICE) as? android.location.LocationManager
+            val lastGps = try { locManager?.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER) } catch (e: SecurityException) { null }
+            val lastNet = try { locManager?.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER) } catch (e: SecurityException) { null }
+            val loc = lastGps ?: lastNet
+
+            if (loc != null) {
+                val mapsUrl = "https://maps.google.com/?q=${loc.latitude},${loc.longitude}"
+                val textPayload = "$contact Aquí está mi ubicación actual: $mapsUrl"
+                if (app.lowercase().contains("telegram")) {
+                    openTelegram(textPayload)
+                } else {
+                    openWhatsApp(textPayload)
+                }
+            } else {
+                val fused = com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context)
+                fused.lastLocation.addOnSuccessListener { fusedLoc ->
+                    val url = if (fusedLoc != null) "https://maps.google.com/?q=${fusedLoc.latitude},${fusedLoc.longitude}" else null
+                    val msg = if (url != null) "$contact Aquí está mi ubicación actual: $url" else "$contact No pude obtener mi ubicación GPS en este momento."
+                    if (app.lowercase().contains("telegram")) {
+                        openTelegram(msg)
+                    } else {
+                        openWhatsApp(msg)
+                    }
+                }.addOnFailureListener {
+                    val msg = "$contact No pude obtener mi ubicación GPS en este momento."
+                    if (app.lowercase().contains("telegram")) {
+                        openTelegram(msg)
+                    } else {
+                        openWhatsApp(msg)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            LogBus.error("could not send location to contact $contact", e)
+        }
     }
 
     companion object {

@@ -2,6 +2,7 @@ package com.myvu.client.app
 
 import android.content.Context
 import android.view.KeyEvent
+import com.myvu.client.app.feature.GlassGesture
 import com.myvu.client.app.feature.Notifications
 import com.myvu.client.app.feature.SystemSettings
 import com.myvu.client.app.feature.Teleprompter
@@ -60,8 +61,15 @@ class GlassesEventHandler(
 
     private fun createActionExecutor(): TouchGestureManager.ActionExecutor {
         return object : TouchGestureManager.ActionExecutor {
-            override fun executeAiAssistant(triggerCode: Int) {
-                delegate.triggerAi(triggerCode)
+            override fun executeAiAssistant(code: Int) {
+                delegate.triggerAi(code)
+            }
+
+            override fun executeGeminiAssistant() {
+                val ctx = this@GlassesEventHandler.context
+                if (ctx != null) {
+                    TouchGestureManager.launchGeminiAssistant(ctx)
+                }
             }
 
             override fun executePhoneAssistant() {
@@ -71,6 +79,25 @@ class GlassesEventHandler(
                 }
                 try {
                     delegate.sendAction(Notifications.buildShow("MYVU", "Asistente activado"))
+                } catch (ignored: Exception) {
+                }
+            }
+
+            override fun executeLaunchApp(packageName: String) {
+                val ctx = this@GlassesEventHandler.context
+                if (ctx != null) {
+                    TouchGestureManager.launchApp(ctx, packageName)
+                }
+                try {
+                    val appName = if (ctx != null) {
+                        try {
+                            val pm = ctx.packageManager
+                            pm.getApplicationLabel(pm.getApplicationInfo(packageName, 0)).toString()
+                        } catch (e: Exception) {
+                            packageName
+                        }
+                    } else packageName
+                    delegate.sendAction(Notifications.buildShow("MYVU", "Abriendo $appName..."))
                 } catch (ignored: Exception) {
                 }
             }

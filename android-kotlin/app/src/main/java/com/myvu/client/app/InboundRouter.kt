@@ -211,14 +211,16 @@ class InboundRouter(private val sender: Sender) {
 
     private fun checkGestureTracking(msg: JSONObject) {
         val listener = touchGestureListener ?: return
-        val action = msg.optString("action", "")
+        var action = msg.optString("action")
+        if (action.isEmpty()) action = msg.optString("_action_name_")
+        if (action.isEmpty()) action = msg.optString("name")
 
-        if (action == "event_tracking") {
+        if (action == "event_tracking" || action == "track_event") {
             val dataObj = msg.optJSONObject("data")
             if (dataObj != null) {
-                val dataAction = dataObj.optString("action", "")
+                val dataAction = dataObj.optString("action", dataObj.optString("_action_name_", ""))
                 if (dataAction == "sync_glass_event" || dataAction.contains("event") || dataAction.contains("gesture")) {
-                    processGestureValue(dataObj.opt("value"), listener)
+                    processGestureValue(dataObj.opt("value") ?: dataObj, listener)
                     return
                 }
             } else {
@@ -226,9 +228,9 @@ class InboundRouter(private val sender: Sender) {
                 if (dataStr.isNotEmpty()) {
                     try {
                         val parsedData = JSONObject(dataStr)
-                        val dataAction = parsedData.optString("action", "")
+                        val dataAction = parsedData.optString("action", parsedData.optString("_action_name_", ""))
                         if (dataAction == "sync_glass_event" || dataAction.contains("event") || dataAction.contains("gesture")) {
-                            processGestureValue(parsedData.opt("value"), listener)
+                            processGestureValue(parsedData.opt("value") ?: parsedData, listener)
                             return
                         }
                     } catch (ignored: JSONException) {
@@ -241,13 +243,15 @@ class InboundRouter(private val sender: Sender) {
             return
         }
 
-        if (action == "sync_glass_event" || action == "touch_gesture") {
+        if (action == "sync_glass_event" || action == "touch_gesture" || action == "glass_event" ||
+            action.contains("gesture") || action.contains("pad") || action.contains("touch") ||
+            action.contains("key") || action == "button" || action == "phonepad" || action == "trackpad") {
             if (msg.has("value")) {
                 processGestureValue(msg.opt("value"), listener)
             } else if (msg.has("data")) {
                 val dataObj = msg.optJSONObject("data")
                 if (dataObj != null) {
-                    processGestureValue(dataObj.opt("value"), listener)
+                    processGestureValue(dataObj.opt("value") ?: dataObj, listener)
                 } else {
                     processGestureValue(msg.opt("data"), listener)
                 }
@@ -293,6 +297,7 @@ class InboundRouter(private val sender: Sender) {
             is Number -> {
                 val code = valueRaw.toInt()
                 val gesture = GlassGesture.fromCode(code)
+                if (gesture == GlassGesture.UNKNOWN) return
                 LogBus.log("Touch gesture received: $gesture (code=$code)")
                 listener.onTouchGesture(gesture, code, "touch_gesture")
             }
@@ -300,19 +305,107 @@ class InboundRouter(private val sender: Sender) {
     }
 
     private fun dispatchGestureItem(item: JSONObject, listener: TouchGestureListener) {
-        val actionName = item.optString("action_name", item.optString("event_name", item.optString("name", "")))
-        var actionValue = item.optInt("action_value", -1)
-        if (actionValue == -1 && item.has("action_value")) {
-            actionValue = item.optString("action_value").toIntOrNull() ?: -1
+        var actionName = ""
+        val nameKeys = listOf(
+            "key_name", "keyName",
+            "gesture_name", "gestureName",
+            "touch_name", "touchName",
+            "_action_name_", "action_name",
+            "_event_name_", "event_name",
+            "_event_id_", "event_id",
+            "actionName", "eventName",
+            "name", "action", "type", "key"
+        )
+        for (k in nameKeys) {
+            val v = item.optString(k, "")
+            if (v.isNotEmpty() && v != "action" && v != "key_event" && v != "sync_glass_event") {
+                actionName = v
+                break
+            }
         }
+        if (actionName.isEmpty()) {
+            actionName = item.optString("name", item.optString("action", ""))
+        }
+
+        val nonTouchTelemetry = setOf(
+            "suspend_stats", "iot_screen_status_change", "iot_sys_usages",
+            "battery_stats", "iot_notification_reminder", "sync_glass_battery_info",
+            "iot_voice_wakeup", "iot_voice_quit", "voice_wakeup", "voice_quit",
+            "iot_a2dp_status_change", "audio_stats", "air_starrynet_bt",
+            "iot_voice_asr_time", "wear_data_collect", "starrynet_devices_disconnect",
+            "starrynet_devices_reconnect", "screen_off_timeout_change", "standby_position"
+        )
+        if (actionName in nonTouchTelemetry) {
+            return
+        }
+
+        val attrObj = item.optJSONObject("_event_attr_value_")
+        val sender = attrObj?.optInt("key_event_sender", item.optInt("key_event_sender", 0)) ?: item.optInt("key_event_sender", 0)
+        val downOrUp = attrObj?.optInt("down_or_up", item.optInt("down_or_up", -1)) ?: item.optInt("down_or_up", -1)
+        if (downOrUp == 0) {
+            // Key release/up event -- ignore to prevent duplicate triggers
+            return
+        }
+
+        var actionValue = -1
+        val valKeys = listOf(
+            "key_code", "keyCode", "keycode",
+            "keyValue", "key_value",
+            "_action_value_", "action_value",
+            "_event_value_", "event_value",
+            "actionType", "action_type",
+            "gesture_code", "gestureCode",
+            "gesture_type", "gestureType",
+            "touch_type", "touchType",
+            "direction", "value", "code", "event_code", "key"
+        )
+        // 1. Check inside nested _event_attr_value_ first
+        if (attrObj != null) {
+            for (k in valKeys) {
+                if (attrObj.has(k)) {
+                    val raw = attrObj.opt(k)
+                    if (raw is Number) {
+                        actionValue = raw.toInt()
+                        break
+                    } else if (raw is String) {
+                        val parsed = raw.toIntOrNull()
+                        if (parsed != null) {
+                            actionValue = parsed
+                            break
+                        }
+                    }
+                }
+            }
+        }
+        // 2. Check top-level item if not found
         if (actionValue == -1) {
-            actionValue = item.optInt("value", item.optInt("code", -1))
+            for (k in valKeys) {
+                if (item.has(k)) {
+                    val raw = item.opt(k)
+                    if (raw is Number) {
+                        actionValue = raw.toInt()
+                        break
+                    } else if (raw is String) {
+                        val parsed = raw.toIntOrNull()
+                        if (parsed != null) {
+                            actionValue = parsed
+                            break
+                        }
+                    }
+                }
+            }
         }
 
         if (actionName.isEmpty() && actionValue == -1) return
 
         val gesture = GlassGesture.fromCode(actionValue, actionName)
-        LogBus.log("Touch gesture received: $gesture (code=$actionValue, name=$actionName)")
+        if (gesture == GlassGesture.UNKNOWN) {
+            if (actionName.isNotEmpty() && actionName !in nonTouchTelemetry) {
+                LogBus.log("Glass event unmapped: $item (actionName=$actionName, actionValue=$actionValue)")
+            }
+            return
+        }
+        LogBus.log("Touch gesture received: $gesture (code=$actionValue, name=$actionName, sender=$sender)")
         listener.onTouchGesture(gesture, actionValue, actionName)
     }
 

@@ -109,6 +109,35 @@ Los metadatos y configuraciones se empaquetan en estructuras **Type-Length-Value
 - **Resolución de MAC Dual**: Mediante `resolveTargetDevice`, busca el dispositivo clásico emparejado en Android con nombre conteniendo `"MYVU"` o coincidencia de dirección MAC.
 - **Enlace de Proxies y Políticas**: Realiza binding asíncrono con `BluetoothProfile.HEADSET` y `BluetoothProfile.A2DP`, encola la conexión pendiente si los proxies aún no están vinculados, y aplica por reflexión `setConnectionPolicy(device, 100)` y `setPriority(device, 1000)` para forzar la reconexión de audio en el subsistema Bluetooth del sistema operativo.
 
+### 4.5 Subsistema de Gestos Táctiles y Botón Físico (`TouchGestureManager`, `InboundRouter`, `GlassGesture`, `MediaSession`)
+- **Separación Estricta: Botón Físico de Montura vs. Sensores Táctiles de Patillas ("Patas")**:
+  - **Botón Físico de la Montura (`com.upuphone.ai.assistant`, `checkAiTrigger`, `code: 3`)**: Su función es exclusiva, fija e inmutable: invoca directamente el motor STT hacia el modelo de IA configurado (`ai().onTrigger(code)`). No viaja como evento de telemetría táctil y nunca es interceptado por `TouchGestureManager`.
+  - **Sensores Táctiles de las Patillas (`sync_glass_event` -> `key_event`)**: Captura las interacciones táctiles en las varillas de las gafas a través de todos los emisores de hardware:
+    - `sender: 1`: Sensor táctil capacitivo de la patilla principal/derecha.
+    - `sender: 2`: Sensor táctil capacitivo de la patilla secundaria/izquierda.
+    - `sender: 4`: Controlador virtual / phonepad del launcher Flyme XR.
+- **Enrutamiento Dual de Toques (Protocolo RFCOMM + Bluetooth AVRCP)**:
+  - **Capa de Protocolo StarryNet (`InboundRouter`)**: Analiza eventos entrantes desde `event_tracking`, `sync_glass_event`, `phonepad`, `trackpad`. Extrae `key_code` de `_event_attr_value_` e ignora liberaciones (`down_or_up: 0`) para evitar dobles disparos, procesando todos los emisores táctiles (1, 2, 4). Filtra telemetría no táctil (`suspend_stats`, `iot_screen_status_change`, `iot_voice_wakeup`, `iot_voice_quit`).
+  - **Capa Bluetooth AVRCP (`MyvuService.MediaSession`)**: Alberga una `MediaSession` activa que intercepta eventos de hardware transmitidos por el perfil de audio clásico (`BluetoothHeadset` / AVRCP) de las gafas (`KEYCODE_HEADSETHOOK`, `KEYCODE_MEDIA_PLAY_PAUSE`, `KEYCODE_MEDIA_NEXT`, `KEYCODE_MEDIA_PREVIOUS`, `KEYCODE_MEDIA_FAST_FORWARD`, `KEYCODE_MEDIA_REWIND`, `KEYCODE_VOICE_ASSIST`), distinguiendo pulsaciones simples y dobles para enrutarlas a `TouchGestureManager`.
+  - **Mapeo Unificado (`GlassGesture.fromCode`)**: Asocia keycodes estándar y nativos Flyme XR:
+    - `1, 23` (DPAD_CENTER), `66` (ENTER), `79` (HEADSETHOOK), `85` (PLAY_PAUSE), `96` (BUTTON_A), `200, 203, 210` (Flyme Temple/Phonepad Tap) -> `TAP`.
+    - `2, 202, 211` (Flyme Temple/Phonepad Double Tap) -> `DOUBLE_TAP`.
+    - `3` -> `TRIPLE_TAP`.
+    - `4, 212` (Flyme Temple/Phonepad Long Press), `219, 231` (VOICE_ASSIST) -> `LONG_PRESS`.
+    - `5, 19` (DPAD_UP), `22` (DPAD_RIGHT), `87` (NEXT), `90` (FAST_FORWARD), `92` (PAGE_UP), `201, 206` (Flyme Temple Swipe Forward) -> `SWIPE_FORWARD`.
+    - `6, 20` (DPAD_DOWN), `21` (DPAD_LEFT), `88` (PREV), `89` (REWIND), `93` (PAGE_DOWN), `207, 237` (Flyme Temple Swipe Backward) -> `SWIPE_BACKWARD`.
+- **Despacho Personalizable y Lanzador de Aplicaciones**:
+  - `ConnectionManager` y `GlassesEventHandler` enrutan los toques de patilla detectados a través de `TouchGestureManager.handleGesture()`.
+  - Respeta las preferencias del usuario para cada gesto: `TAP`, `DOUBLE_TAP`, `TRIPLE_TAP`, `SWIPE_FORWARD`, `SWIPE_BACKWARD`, `LONG_PRESS`.
+  - **Lanzamiento Universal de Apps (`app:<package_name>`)**: Permite vincular cualquier gesto con aplicaciones instaladas en el teléfono móvil (ej. Spotify, WhatsApp, Cámara, YouTube). Al detectarse el gesto, `LockScreenHelper.wakeUpScreen()` enciende la pantalla, `SendTrampolineActivity` descarta el keyguard y lanza la app al frente, notificando en el HUD de las gafas (*"Abriendo [App]..."*).
+  - **Integración con Gemini Manos Libres (`LAUNCH_GEMINI`)**: Al ejecutarse mediante gesto de patilla, enciende la pantalla con brillo completo (`PowerManager.WakeLock`), descarta el bloqueo mediante `SendTrampolineActivity`, establece el enlace de audio Bluetooth SCO (`AudioManager.startBluetoothSco()` y `setCommunicationDevice` con `TYPE_BLUETOOTH_SCO`) para que el micrófono de las gafas sea la entrada directa de voz con un temporizador de captura de 4.5 segundos (`GEMINI_SCO_CAPTURE_WINDOW_MS`). Al transcurrir la ventana de comando, se invoca automáticamente `releaseBluetoothSco()`, restaurando el canal multimedia A2DP para que la respuesta de voz de Gemini se escuche de inmediato sin cortes ni silencios, evitando colisiones de radio y preservando la batería de las gafas y el teléfono. Despacha `ACTION_VOICE_SEARCH_HANDS_FREE` / `ACTION_VOICE_COMMAND` delegándole el control de pantalla y ejecución a Gemini.
+  - Acciones nativas adicionales: `LAUNCH_LOCAL_AI`, `LAUNCH_PHONE_ASSISTANT`, `MEDIA_PLAY_PAUSE`, `MEDIA_NEXT`, `MEDIA_PREV`, `WEATHER_SYNC`, `ZEN_MODE`, `TOGGLE_MIRROR`, `OPEN_TELEPROMPTER` o `NONE`.
+- **Control de Reenvío del Launcher**:
+  - Al cambiar cualquier preferencia en `SettingsActivity`, se envía de inmediato `SystemSettings.setMusicTpControl(true)` a las gafas para garantizar que el launcher FlymeAR reenvíe todos los eventos táctiles en lugar de consumirlos localmente.
+- **Selector de Apps en Ajustes**:
+  - `SettingsActivity.showAppPickerDialog()` permite seleccionar interactivamente cualquier app del dispositivo y mapearla al gesto táctil deseado.
+
+
 
 ---
 
@@ -203,3 +232,35 @@ El subsistema en `com.myvu.client.skills` permite añadir funcionalidades al dis
 - **Gradle**: 8.14.3 (con wrapper oficial `./gradlew`).
 - **Kotlin Gradle Plugin**: 2.1.10 con soporte de bytecode Java 21 (`jvmTarget = "21"`).
 - **Compatibilidad Android (D8 / Desugar)**: `JavaVersion.VERSION_21` para `compileOptions`.
+
+---
+
+## 10. Asistente Cotidiano, Automatizaciones y Segundo Cerebro (`com.myvu.client.ai`)
+
+Para delegación y automatización cotidiana con mínima fricción cognitiva:
+
+### 10.1 Daily Briefing Ejecutivo (`DailyBriefingService`)
+- Síntesis verbal (TTS) y proyección visual HUD en <5ms sin invocar modelos LLM:
+  - Saludo adaptado según la hora del día.
+  - Clima meteorológico local inmediato (`WeatherSync.lastSummary`).
+  - Próximos compromisos y reuniones del día (`CalendarService.getEvents`).
+  - Conteo y detalles prioritarios de tareas pendientes (`TodoRepository`).
+  - Avisos y mensajes VIP no leídos (`MirrorNotificationListener`).
+  - Nivel de batería actual de las gafas AR.
+
+### 10.2 Modos Contextuales y Macros de Rutina (`RoutineManager`)
+- Conmutación orquestada del estado del sistema con una sola orden vocal:
+  - **Modo Reunión**: `SystemSettings.setZenMode(true)` en gafas, celular en `RINGER_MODE_VIBRATE`. Desactivación restaura `ZenMode(false)` y `RINGER_MODE_NORMAL`.
+  - **Modo Conducción**: Brillo de display al máximo (`setBrightness(3)`), audio manos libres preparado.
+  - **Modo Gimnasio**: Conteo de pasos y métricas de salud (`HealthService`), feedback en audio/HUD.
+  - **Modo Noche**: Brillo mínimo de pantalla (`setBrightness(1)`), celular en silencio absoluto (`RINGER_MODE_SILENT`), reporte preventivo de carga de batería.
+
+### 10.3 Memoria Espacial y Parking (`SpatialMemoryManager`)
+- Registro de coordenadas de estacionamiento con timestamp y nota en `Prefs`.
+- Consulta con cálculo síncrono de distancia (metros/kilómetros) y rumbo cardinal de navegación (`bearingToCardinal`: Norte, Noreste, etc.) utilizando `LocationManager` y `FusedLocationProviderClient`.
+
+### 10.4 Listas de Compras y Checklists Manos Libres
+- Fast-paths en `VoiceActionRouter` para agregar productos (`createTodo(title, listName = "Compras")`), consultar pendientes y tachar ítems comprados (`markCompletedByTitle`) en Room SQLite sin interacción visual.
+
+### 10.5 Despacho Rápido de Ubicación GPS
+- Obtención inmediata de coordenadas del usuario y generación de URL de Google Maps despachada por WhatsApp o Telegram mediante `PhoneActionExecutor.sendLocationToContact(contact, app)` con encendido de pantalla asistido (`LockScreenHelper.wakeUpScreen`).

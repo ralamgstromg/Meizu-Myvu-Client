@@ -33,6 +33,15 @@ Cliente complementario nativo en Android (Kotlin) para gafas de realidad aumenta
   - Sistema extensible de plugins definido por manifiestos `SKILL.md`.
   - 30 habilidades nativas expuestas dinámicamente como herramientas OpenAI/Gemini Schema (`SkillToolConverter`) listas para interactuar con el entorno (llamadas, calendario, WhatsApp, Telegram, calculadora, traducción, OCR, navegación HUD, etc.).
 
+- **Botón Físico y Gestos Táctiles de Patillas ("Patas")**:
+  - **Botón Físico de la Montura Inmutable**: Dedicado 100% y de forma fija al flujo de reconocimiento de voz **STT -> Modelo de IA configurado** (`ai().onTrigger(code)`), sin interceptación ni retrasos.
+  - **Mapeo Personalizable de Patillas**: Soporte completo para todos los emisores táctiles de hardware (`key_event_sender`: 1, 2 y 4) y keycodes Flyme XR (210 Click/Tap, 211 Doble Tap, 212 Pulsación Larga, 206 Deslizar Adelante, 207 Deslizar Atrás; además de 200, 201, 202, 203, 237).
+  - **Activación Manos Libres de Gemini por Gesto de Patilla**: Despierta el teléfono con brillo total, desbloquea la pantalla, conecta el micrófono de las gafas por Bluetooth SCO durante la ventana de petición (4.5s) y restaura de inmediato el canal multimedia A2DP para que la respuesta de voz de Gemini se escuche de forma continua, estéreo y sin silencios.
+  - **Lanzador de Apps Instaladas**: Vincula cualquier gesto a cualquier app del teléfono (Spotify, WhatsApp, YouTube, Cámara) encendiendo la pantalla y quitando el bloqueo automáticamente.
+  - Acciones del sistema: Asistente del Teléfono, IA Local, Play/Pausa, Siguiente, Anterior, Modo Zen, Sincronización del Clima, Notificaciones y Teleprompter.
+  - Sincronización dinámica de `set_music_tp_control_mode` para forzar reenvío de toques desde el launcher de las gafas.
+
+
 - **Interfaz Moderna**:
   - Construida con **Material Design 3**, ViewBinding y soporte completo Edge-to-Edge (`EdgeToEdgeHelper`).
   - Modo pantalla de bloqueo (`LockScreenHelper`) para interactuar con las gafas sin desbloquear el teléfono.
@@ -95,6 +104,11 @@ Ubicadas en `app/src/main/assets/skills/built-in/`:
 | `google-search` / `duckduckgo-search` | Respuestas rápidas de motores de búsqueda. |
 | `app-media-control` | Control de NewPipe, OpenTune, Spotify, YouTube Music, saltar canciones y qué está sonando. |
 | `code-calculator-math` | Resolución de cálculos matemáticos al instante. |
+| `daily-briefing` | Resumen ejecutivo matutino ("Mi Día"): clima, agenda, tareas pendientes, avisos VIP y batería de gafas. |
+| `routine-macros` | Macros contextuales de una frase: Modo Reunión (Zen + vibración), Conducción (brillo alto), Gimnasio y Noche. |
+| `spatial-memory` | Memoria espacial para recordar dónde estacionó el auto ("¿dónde estacioné?") con cálculo de distancia y rumbo. |
+| `shopping-checklists` | Gestión manos libres de listas de compras ("agrega pan a las compras", "tacha pan", "ver compras"). |
+| `quick-location-dispatch` | Envío instantáneo de coordenadas GPS con enlace de Google Maps a contactos vía WhatsApp o Telegram. |
 
 ---
 

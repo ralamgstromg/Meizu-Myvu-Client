@@ -595,4 +595,58 @@ object Prefs {
     fun setAutoReconnectEnabled(c: Context, enabled: Boolean) {
         prefs(c).edit().putBoolean(KEY_AUTO_RECONNECT, enabled).apply()
     }
+
+    // --- Memoria Espacial: Estacionamiento ---
+
+    @JvmStatic
+    fun setParkingLocation(c: Context, lat: Double, lon: Double, note: String = "") {
+        prefs(c).edit()
+            .putString("spatial_parking_lat", lat.toString())
+            .putString("spatial_parking_lon", lon.toString())
+            .putLong("spatial_parking_time", System.currentTimeMillis())
+            .putString("spatial_parking_note", note)
+            .apply()
+    }
+
+    @JvmStatic
+    fun parkingLatitude(c: Context): Double {
+        return prefs(c).getString("spatial_parking_lat", null)?.toDoubleOrNull() ?: 0.0
+    }
+
+    @JvmStatic
+    fun parkingLongitude(c: Context): Double {
+        return prefs(c).getString("spatial_parking_lon", null)?.toDoubleOrNull() ?: 0.0
+    }
+
+    @JvmStatic
+    fun parkingTime(c: Context): Long {
+        return prefs(c).getLong("spatial_parking_time", 0L)
+    }
+
+    @JvmStatic
+    fun parkingNote(c: Context): String {
+        return prefs(c).getString("spatial_parking_note", "") ?: ""
+    }
+
+    @JvmStatic
+    fun clearParkingLocation(c: Context) {
+        prefs(c).edit()
+            .remove("spatial_parking_lat")
+            .remove("spatial_parking_lon")
+            .remove("spatial_parking_time")
+            .remove("spatial_parking_note")
+            .apply()
+    }
+
+    // --- Rutinas y Modos Activos ---
+
+    @JvmStatic
+    fun activeRoutineMode(c: Context): String {
+        return prefs(c).getString("active_routine_mode", "none") ?: "none"
+    }
+
+    @JvmStatic
+    fun setActiveRoutineMode(c: Context, mode: String) {
+        prefs(c).edit().putString("active_routine_mode", mode).apply()
+    }
 }

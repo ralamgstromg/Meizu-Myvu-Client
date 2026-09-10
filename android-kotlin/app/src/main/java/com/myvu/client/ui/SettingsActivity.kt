@@ -31,6 +31,7 @@ import com.myvu.client.ai.AiResponseMode
 import com.myvu.client.ai.SttProvider
 import com.myvu.client.ai.TtsProvider
 import com.myvu.client.app.feature.GestureAction
+import com.myvu.client.app.feature.SystemSettings
 import com.myvu.client.app.feature.TouchGestureManager
 import com.myvu.client.core.BackupManager
 import com.myvu.client.core.GlassesConfig
@@ -344,9 +345,63 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<View?>(R.id.btnSettingsDrawer)?.setOnClickListener { navigateToDashboard() }
     }
 
+    private fun showAppPickerDialog(onAppSelected: (pkg: String, label: String) -> Unit) {
+        val pm = packageManager
+        val launchable = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        val resolved = pm.queryIntentActivities(launchable, 0)
+        val appList = ArrayList<Pair<String, String>>()
+        val seen = HashSet<String>()
+        for (ri in resolved) {
+            val ai = ri.activityInfo?.applicationInfo ?: continue
+            if (seen.add(ai.packageName)) {
+                val label = pm.getApplicationLabel(ai).toString()
+                appList.add(ai.packageName to label)
+            }
+        }
+        appList.sortBy { it.second.lowercase() }
+        val names = appList.map { it.second }.toTypedArray()
+
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Seleccionar Aplicación")
+            .setItems(names) { _, which ->
+                if (which in appList.indices) {
+                    val chosen = appList[which]
+                    onAppSelected(chosen.first, chosen.second)
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun resolveActionDisplayName(actionId: String): String {
+        return if (GestureAction.isAppAction(actionId)) {
+            val pkg = GestureAction.getAppPackage(actionId) ?: ""
+            try {
+                val pm = packageManager
+                val label = pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+                "App: $label"
+            } catch (e: Exception) {
+                "App: $pkg"
+            }
+        } else {
+            GestureAction.fromId(actionId).displayName
+        }
+    }
+
     private fun wireTouchpad() {
         val actions = GestureAction.entries.toTypedArray()
         val displayNames = actions.map { it.displayName }.toTypedArray()
+
+        fun syncMusicTp() {
+            Prefs.setMusicTouchPanelEnabled(this, true)
+            try {
+                MyvuService.activeConnection()?.sendAction(
+                    SystemSettings.setMusicTpControl(true)
+                )
+            } catch (e: Exception) {
+                LogBus.error("Failed to sync music tp control to glasses", e)
+            }
+        }
 
         fun setupDropdown(
             actId: Int,
@@ -361,13 +416,25 @@ class SettingsActivity : AppCompatActivity() {
             )
             act.setAdapter(adapter)
 
-            val currentAction = GestureAction.fromId(getSavedActionId())
-            act.setText(currentAction.displayName, false)
+            val currentRawId = getSavedActionId()
+            act.setText(resolveActionDisplayName(currentRawId), false)
+            act.setOnClickListener { act.showDropDown() }
 
             act.setOnItemClickListener { _, _, position, _ ->
                 if (position in actions.indices) {
                     val selected = actions[position]
-                    saveActionId(selected.id)
+                    if (selected == GestureAction.LAUNCH_APP) {
+                        showAppPickerDialog { pkg, label ->
+                            val appActionId = GestureAction.makeAppActionId(pkg)
+                            saveActionId(appActionId)
+                            act.setText("App: $label", false)
+                            syncMusicTp()
+                        }
+                    } else {
+                        saveActionId(selected.id)
+                        act.setText(selected.displayName, false)
+                        syncMusicTp()
+                    }
                 }
             }
         }

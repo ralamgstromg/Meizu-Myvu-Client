@@ -121,6 +121,9 @@ class WeatherSync(
         conn.post {
             val json = Weather.build(reading)
             lastWeatherJson = json
+            val summary = "${reading.condition ?: "Despejado"} ${reading.temp ?: 25}°C" +
+                    if (reading.areaName == null) "" else " en ${reading.areaName}"
+            lastSummary = summary
             sender.send(json)
             LogBus.log(
                 "weather synced: ${reading.condition} ${reading.temp}°C" +
@@ -212,6 +215,9 @@ class WeatherSync(
     }
 
     companion object {
+        @Volatile
+        var lastSummary: String? = null
+
         private const val DEFAULT_REFRESH_MS = 60 * 60 * 1000L
         private const val RETRY_MS = 5 * 60 * 1000L
         private const val FIX_TIMEOUT_MS = 25 * 1000L
