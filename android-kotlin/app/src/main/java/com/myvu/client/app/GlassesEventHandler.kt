@@ -46,8 +46,8 @@ class GlassesEventHandler(
             delegate.triggerAi(code)
         }
 
-        inbound.setTouchGestureListener { gestureType, rawCode, _ ->
-            TouchGestureManager.handleGesture(this.context, gestureType, rawCode, createActionExecutor())
+        inbound.setTouchGestureListener { gestureType, rawCode, _, eventTime ->
+            TouchGestureManager.handleGesture(this.context, gestureType, rawCode, createActionExecutor(), eventTime)
         }
 
         inbound.setWeatherRequestListener {
@@ -68,7 +68,14 @@ class GlassesEventHandler(
             override fun executeGeminiAssistant() {
                 val ctx = this@GlassesEventHandler.context
                 if (ctx != null) {
-                    TouchGestureManager.launchGeminiAssistant(ctx)
+                    TouchGestureManager.launchGeminiAssistant(ctx, isLive = false)
+                }
+            }
+
+            override fun executeGeminiLive() {
+                val ctx = this@GlassesEventHandler.context
+                if (ctx != null) {
+                    TouchGestureManager.launchGeminiAssistant(ctx, isLive = true)
                 }
             }
 

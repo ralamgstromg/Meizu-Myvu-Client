@@ -36,7 +36,7 @@ class InboundRouter(private val sender: Sender) {
 
     /** Fired when the glasses send a physical temple touch gesture event. */
     fun interface TouchGestureListener {
-        fun onTouchGesture(gestureType: GlassGesture, rawCode: Int, gestureName: String)
+        fun onTouchGesture(gestureType: GlassGesture, rawCode: Int, gestureName: String, eventTime: Long)
     }
 
     private var aiListener: AiTriggerListener? = null
@@ -307,7 +307,7 @@ class InboundRouter(private val sender: Sender) {
                 val gesture = GlassGesture.fromCode(code)
                 if (gesture == GlassGesture.UNKNOWN) return
                 LogBus.log("Touch gesture received: $gesture (code=$code)")
-                listener.onTouchGesture(gesture, code, "touch_gesture")
+                listener.onTouchGesture(gesture, code, "touch_gesture", -1L)
             }
         }
     }
@@ -490,7 +490,7 @@ class InboundRouter(private val sender: Sender) {
             g == GlassGesture.SWIPE_FORWARD || g == GlassGesture.SWIPE_BACKWARD
         }
 
-        // 3. Filter out parasitic micro-swipes occurring simultaneously with a tap/press
+        // 3. Filter out parasitic micro-swipes occurring simultaneously (<= 50ms) with a tap/press
         val noSwipes = if (consolidated.size > 1) {
             val tapEvents = consolidated.filter { isTapOrPress(it.gesture) }
             if (tapEvents.isNotEmpty()) {
@@ -515,32 +515,55 @@ class InboundRouter(private val sender: Sender) {
             consolidated
         }
 
-        // 4. Synthesize DOUBLE_TAP if the batch contains two consecutive TAPs within 60..500ms
+        // 4. Synthesize TRIPLE_TAP or DOUBLE_TAP if the batch contains rapid consecutive TAPs
         val synthesized = ArrayList<ParsedGesture>()
         var i = 0
         while (i < noSwipes.size) {
             val current = noSwipes[i]
-            if (current.gesture == GlassGesture.TAP && i + 1 < noSwipes.size) {
-                val next = noSwipes[i + 1]
-                val sameSender = (current.sender == 0 || next.sender == 0 || current.sender == next.sender)
-                val dt = if (current.eventTime != -1L && next.eventTime != -1L) {
-                    Math.abs(next.eventTime - current.eventTime)
-                } else {
-                    -1L
-                }
-                if (next.gesture == GlassGesture.TAP && sameSender && dt in 60L..500L) {
-                    LogBus.log("Synthesized DOUBLE_TAP from batch containing 2 TAPs (${dt}ms apart, sender=${current.sender})")
-                    synthesized.add(
-                        ParsedGesture(
-                            GlassGesture.DOUBLE_TAP,
-                            211,
-                            "double_tap",
-                            current.sender,
-                            next.eventTime
+            if (current.gesture == GlassGesture.TAP) {
+                // Check 3 consecutive TAPs -> TRIPLE_TAP
+                if (i + 2 < noSwipes.size && noSwipes[i + 1].gesture == GlassGesture.TAP && noSwipes[i + 2].gesture == GlassGesture.TAP) {
+                    val tap2 = noSwipes[i + 1]
+                    val tap3 = noSwipes[i + 2]
+                    val dt1 = if (current.eventTime != -1L && tap2.eventTime != -1L) Math.abs(tap2.eventTime - current.eventTime) else 100L
+                    val dt2 = if (tap2.eventTime != -1L && tap3.eventTime != -1L) Math.abs(tap3.eventTime - tap2.eventTime) else 100L
+                    if (dt1 in 30L..800L && dt2 in 30L..800L) {
+                        LogBus.log("Synthesized TRIPLE_TAP from batch containing 3 TAPs (${dt1}ms, ${dt2}ms apart)")
+                        synthesized.add(
+                            ParsedGesture(
+                                GlassGesture.TRIPLE_TAP,
+                                3,
+                                "triple_tap",
+                                current.sender,
+                                tap3.eventTime
+                            )
                         )
-                    )
-                    i += 2
-                    continue
+                        i += 3
+                        continue
+                    }
+                }
+                // Check 2 consecutive TAPs -> DOUBLE_TAP
+                if (i + 1 < noSwipes.size && noSwipes[i + 1].gesture == GlassGesture.TAP) {
+                    val next = noSwipes[i + 1]
+                    val dt = if (current.eventTime != -1L && next.eventTime != -1L) {
+                        Math.abs(next.eventTime - current.eventTime)
+                    } else {
+                        100L
+                    }
+                    if (dt in 30L..800L) {
+                        LogBus.log("Synthesized DOUBLE_TAP from batch containing 2 TAPs (${dt}ms apart, sender=${current.sender})")
+                        synthesized.add(
+                            ParsedGesture(
+                                GlassGesture.DOUBLE_TAP,
+                                211,
+                                "double_tap",
+                                current.sender,
+                                next.eventTime
+                            )
+                        )
+                        i += 2
+                        continue
+                    }
                 }
             }
             synthesized.add(current)
@@ -574,7 +597,7 @@ class InboundRouter(private val sender: Sender) {
 
         for (item in sorted) {
             LogBus.log("Touch gesture received: ${item.gesture} (code=${item.actionValue}, name=${item.actionName}, sender=${item.sender})")
-            listener.onTouchGesture(item.gesture, item.actionValue, item.actionName)
+            listener.onTouchGesture(item.gesture, item.actionValue, item.actionName, item.eventTime)
         }
     }
 

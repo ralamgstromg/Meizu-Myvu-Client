@@ -480,12 +480,6 @@ class SettingsActivity : AppCompatActivity() {
         swForceGeminiSco?.setOnCheckedChangeListener { _, isChecked ->
             Prefs.setGeminiForceScoEnabled(this, isChecked)
         }
-
-        val swAutoLockAfterAction: MaterialSwitch? = findViewById(R.id.swAutoLockAfterAction)
-        swAutoLockAfterAction?.isChecked = Prefs.isAutoLockAfterActionEnabled(this)
-        swAutoLockAfterAction?.setOnCheckedChangeListener { _, isChecked ->
-            Prefs.setAutoLockAfterActionEnabled(this, isChecked)
-        }
     }
 
     private fun wireLogging() {

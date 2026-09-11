@@ -19,6 +19,7 @@ import com.myvu.client.core.Prefs
 object TouchGestureManager {
     const val ACTION_NONE: String = "none"
     const val ACTION_GEMINI: String = "launch_gemini"
+    const val ACTION_GEMINI_LIVE: String = "gemini_live"
     const val ACTION_PHONE_ASSISTANT: String = "phone_assistant"
     const val ACTION_APP: String = "launch_app"
     const val ACTION_AI_ASSISTANT: String = "ai_assistant"
@@ -34,6 +35,7 @@ object TouchGestureManager {
     fun interface ActionExecutor {
         fun executeAiAssistant(code: Int)
         fun executeGeminiAssistant() { executePhoneAssistant() }
+        fun executeGeminiLive() { executeGeminiAssistant() }
         fun executePhoneAssistant() { }
         fun executeLaunchApp(packageName: String) { }
         fun executeWeatherSync() { }
@@ -46,12 +48,15 @@ object TouchGestureManager {
         fun executeNone() { }
     }
 
-    private const val DEBOUNCE_MS = 350L
-    private const val DOUBLE_TAP_MIN_INTERVAL_MS = 40L
-    private const val DOUBLE_TAP_MAX_INTERVAL_MS = 450L
-    private const val GEMINI_SCO_CAPTURE_WINDOW_MS = 4500L
+    private const val DEBOUNCE_MS = 200L
+    private const val DOUBLE_TAP_MIN_INTERVAL_MS = 30L
+    private const val DOUBLE_TAP_MAX_INTERVAL_MS = 1100L
+    private const val TRIPLE_TAP_MAX_INTERVAL_MS = 1350L
+    private const val GEMINI_SCO_CAPTURE_WINDOW_MS = 8500L
     private var lastTriggerTime = 0L
     private var lastTapTime = 0L
+    private var lastTapEventTime = -1L
+    private var accumulatedTapCount = 0
 
     @JvmField
     internal var timeProvider: () -> Long = { System.currentTimeMillis() }
@@ -88,6 +93,8 @@ object TouchGestureManager {
     fun resetDebounceForTesting() {
         lastTriggerTime = 0L
         lastTapTime = 0L
+        lastTapEventTime = -1L
+        accumulatedTapCount = 0
         timeProvider = { System.currentTimeMillis() }
     }
 
@@ -96,7 +103,7 @@ object TouchGestureManager {
         if (context == null) {
             return when (gesture) {
                 GlassGesture.TAP -> GestureAction.NONE.id
-                GlassGesture.DOUBLE_TAP -> GestureAction.MEDIA_PLAY_PAUSE.id
+                GlassGesture.DOUBLE_TAP -> GestureAction.LAUNCH_GEMINI.id
                 GlassGesture.TRIPLE_TAP -> GestureAction.LAUNCH_GEMINI.id
                 GlassGesture.SWIPE_FORWARD -> GestureAction.MEDIA_NEXT.id
                 GlassGesture.SWIPE_BACKWARD -> GestureAction.MEDIA_PREV.id
@@ -127,36 +134,63 @@ object TouchGestureManager {
         context: Context?,
         gesture: GlassGesture,
         rawCode: Int = gesture.code,
-        executor: ActionExecutor?
+        executor: ActionExecutor?,
+        eventTime: Long = -1L
     ) {
         if (executor == null || gesture == GlassGesture.UNKNOWN) return
 
         val now = timeProvider()
 
-        // Software double-tap detection:
-        // Flyme XR glasses frequently send two consecutive TAP events (code 210)
-        // instead of hardware synthesizing DOUBLE_TAP (code 211).
+        // Software double-tap and triple-tap detection:
+        // Flyme XR glasses frequently send consecutive TAP events (code 210 / 200)
+        // across separate packets instead of hardware synthesizing DOUBLE_TAP (211) or TRIPLE_TAP.
         if (gesture == GlassGesture.TAP) {
-            val dtFromLastTap = now - lastTapTime
+            val dtFromLastTap = if (lastTapEventTime > 0L && eventTime > 0L) {
+                Math.abs(eventTime - lastTapEventTime)
+            } else if (lastTapTime != 0L) {
+                Math.abs(now - lastTapTime)
+            } else {
+                Long.MAX_VALUE
+            }
+
             if (lastTapTime != 0L && dtFromLastTap < DOUBLE_TAP_MIN_INTERVAL_MS) {
                 // Electrical contact bounce: ignore without updating lastTapTime
                 LogBus.trace("Contact bounce tap ignored (${dtFromLastTap}ms < ${DOUBLE_TAP_MIN_INTERVAL_MS}ms)")
                 return
             }
-            if (dtFromLastTap in DOUBLE_TAP_MIN_INTERVAL_MS..DOUBLE_TAP_MAX_INTERVAL_MS) {
+
+            if (accumulatedTapCount == 2 && dtFromLastTap <= TRIPLE_TAP_MAX_INTERVAL_MS) {
+                val tripleTapActionId = getRawActionIdForGesture(context, GlassGesture.TRIPLE_TAP)
+                val tripleTapAction = GestureAction.fromId(tripleTapActionId)
+                accumulatedTapCount = 0
+                lastTapTime = 0L
+                lastTapEventTime = -1L
+                if (tripleTapAction != GestureAction.NONE) {
+                    LogBus.log("Software synthesized TRIPLE_TAP from 3 consecutive TAPs (${dtFromLastTap}ms apart)")
+                    dispatchAction(context, GlassGesture.TRIPLE_TAP, rawCode, tripleTapActionId, tripleTapAction, executor, now)
+                    return
+                }
+            } else if (accumulatedTapCount == 1 && dtFromLastTap <= DOUBLE_TAP_MAX_INTERVAL_MS) {
                 val doubleTapActionId = getRawActionIdForGesture(context, GlassGesture.DOUBLE_TAP)
                 val doubleTapAction = GestureAction.fromId(doubleTapActionId)
+                accumulatedTapCount = 2
+                lastTapTime = now
+                lastTapEventTime = eventTime
                 if (doubleTapAction != GestureAction.NONE) {
-                    lastTapTime = 0L
-                    LogBus.log("Software synthesized DOUBLE_TAP from 2 rapid TAPs (${dtFromLastTap}ms apart)")
+                    LogBus.log("Software synthesized DOUBLE_TAP from 2 consecutive TAPs (${dtFromLastTap}ms apart)")
                     dispatchAction(context, GlassGesture.DOUBLE_TAP, rawCode, doubleTapActionId, doubleTapAction, executor, now)
                     return
                 }
+            } else {
+                accumulatedTapCount = 1
+                lastTapTime = now
+                lastTapEventTime = eventTime
             }
-            lastTapTime = now
         } else {
-            // Any non-TAP gesture resets software double-tap accumulator
+            // Any non-TAP gesture resets software multi-tap accumulator
+            accumulatedTapCount = 0
             lastTapTime = 0L
+            lastTapEventTime = -1L
         }
 
         val rawActionId = getRawActionIdForGesture(context, gesture)
@@ -203,6 +237,7 @@ object TouchGestureManager {
         when (action) {
             GestureAction.NONE -> executor.executeNone()
             GestureAction.LAUNCH_GEMINI -> executor.executeGeminiAssistant()
+            GestureAction.LAUNCH_GEMINI_LIVE -> executor.executeGeminiLive()
             GestureAction.LAUNCH_PHONE_ASSISTANT -> executor.executePhoneAssistant()
             GestureAction.LAUNCH_APP -> {
                 val pkg = GestureAction.getAppPackage(rawActionId)
@@ -224,38 +259,46 @@ object TouchGestureManager {
     }
 
     @JvmStatic
-    fun handleTrigger(context: Context?, code: Int, executor: ActionExecutor?) {
+    @JvmOverloads
+    fun handleTrigger(context: Context?, code: Int, executor: ActionExecutor?, eventTime: Long = -1L) {
         val gesture = GlassGesture.fromCode(code)
-        handleGesture(context, gesture, code, executor)
+        handleGesture(context, gesture, code, executor, eventTime)
     }
 
     /**
      * Wakes up the phone screen, unlocks keyguard, connects Bluetooth SCO microphone from glasses,
-     * and triggers Gemini in active hands-free voice command mode delegating full screen control.
+     * and triggers Gemini in active hands-free voice command mode or Gemini Live continuous conversation.
      */
     @JvmStatic
-    fun launchGeminiAssistant(context: Context?) {
+    @JvmOverloads
+    fun launchGeminiAssistant(context: Context?, isLive: Boolean = false) {
         if (context == null) return
         val appContext = context.applicationContext
-
-        // 0. Check if device was locked to automatically re-lock after Gemini completes
-        val wasDeviceLocked = com.myvu.client.core.LockScreenHelper.isDeviceLocked(appContext)
-        if (wasDeviceLocked && com.myvu.client.core.Prefs.isAutoLockAfterActionEnabled(appContext)) {
-            com.myvu.client.service.AutoSendAccessibilityService.armGeminiAutoLock(appContext, 18000L)
-        }
+        val isLocked = com.myvu.client.core.LockScreenHelper.isDeviceLocked(appContext)
 
         // 1. Wake up phone screen with bright wakelock
         try {
             com.myvu.client.core.LockScreenHelper.wakeUpScreen(
                 appContext,
                 "MYVU:GeminiVoiceAssistant",
-                15000L
+                if (isLive) 60000L else 15000L
             )
         } catch (e: Exception) {
             LogBus.warn("LockScreen wakeUp error: ${e.message}")
         }
 
-        // 2. Route Bluetooth SCO microphone only if explicitly enabled in preferences
+        // 2. Trigger Accessibility Service for Gemini Live or Gemini Voice Dictation/Mic auto-click
+        if (isLive) {
+            com.myvu.client.service.AutoSendAccessibilityService.triggerGeminiLiveAutoStart(
+                isDeviceLocked = isLocked
+            )
+        } else {
+            com.myvu.client.service.AutoSendAccessibilityService.triggerGeminiVoiceAutoStart(
+                isDeviceLocked = isLocked
+            )
+        }
+
+        // 3. Route Bluetooth SCO microphone only if explicitly enabled in preferences
         val forceSco = com.myvu.client.core.Prefs.isGeminiForceScoEnabled(appContext)
         val am = appContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
         if (forceSco && am != null) {
@@ -270,7 +313,7 @@ object TouchGestureManager {
                     if (btScoDevice != null) {
                         am.mode = AudioManager.MODE_IN_COMMUNICATION
                         am.setCommunicationDevice(btScoDevice)
-                        LogBus.log("Set communication device to Bluetooth SCO (${btScoDevice.productName}) for Gemini")
+                        LogBus.log("Set communication device to Bluetooth SCO (${btScoDevice.productName}) for Gemini (isLive=$isLive)")
                     } else {
                         LogBus.log("No Bluetooth SCO communication device available for Gemini; keeping system default")
                     }
@@ -282,16 +325,21 @@ object TouchGestureManager {
                         }
                         am.startBluetoothSco()
                         am.isBluetoothScoOn = true
-                        LogBus.log("Started legacy Bluetooth SCO for Gemini")
+                        LogBus.log("Started legacy Bluetooth SCO for Gemini (isLive=$isLive)")
                     }
                 }
 
-                // Auto-release SCO after prompt capture window (4.5s) to immediately restore A2DP media channel for Gemini's voice reply
-                val release = Runnable {
-                    releaseBluetoothSco(appContext)
+                // If isLive is true: Keep communication device active continuously so entire conversation uses glasses mic!
+                // If isLive is false: Give user 8.5s capture window to ask question, then restore A2DP media channel for Gemini's voice reply.
+                if (!isLive) {
+                    val release = Runnable {
+                        releaseBluetoothSco(appContext)
+                    }
+                    scoReleaseRunnable = release
+                    audioHandler.postDelayed(release, GEMINI_SCO_CAPTURE_WINDOW_MS)
+                } else {
+                    LogBus.log("Gemini Live active: Bluetooth SCO communication channel kept open continuously for conversation")
                 }
-                scoReleaseRunnable = release
-                audioHandler.postDelayed(release, GEMINI_SCO_CAPTURE_WINDOW_MS)
             } catch (e: Exception) {
                 LogBus.warn("Could not route Bluetooth SCO for Gemini: ${e.message}")
             }
@@ -299,54 +347,62 @@ object TouchGestureManager {
             LogBus.log("Using native system Bluetooth routing for Gemini (SCO force disabled, preserving SPP stability)")
         }
 
-        // 3. Dispatch KEYCODE_VOICE_ASSIST to system AudioManager
+        // 4. Primary: Launch Gemini App (com.google.android.apps.bard) directly over keyguard
         try {
-            if (am != null) {
-                val now = SystemClock.uptimeMillis()
-                val down = KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOICE_ASSIST, 0)
-                val up = KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_VOICE_ASSIST, 0)
-                am.dispatchMediaKeyEvent(down)
-                am.dispatchMediaKeyEvent(up)
-                LogBus.log("Dispatched KEYCODE_VOICE_ASSIST")
+            val bardLaunchIntent = appContext.packageManager.getLaunchIntentForPackage("com.google.android.apps.bard")
+            if (bardLaunchIntent != null) {
+                bardLaunchIntent.addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+                )
+                com.myvu.client.ui.SendTrampolineActivity.launchWithKeyguardDismiss(appContext, bardLaunchIntent)
+                LogBus.log("Launched Gemini app (com.google.android.apps.bard) via SendTrampolineActivity (isLive=$isLive)")
+                return
             }
         } catch (e: Exception) {
-            LogBus.warn("Could not dispatch KEYCODE_VOICE_ASSIST: ${e.message}")
+            LogBus.warn("Could not launch com.google.android.apps.bard: ${e.message}")
         }
 
-        // 4. Launch Gemini Hands-Free Voice Activity over keyguard
+        // 5. Fallback: System Assist intent (triggers Gemini assistant overlay if set as default assistant)
+        try {
+            val assistIntent = Intent(Intent.ACTION_ASSIST).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+            if (assistIntent.resolveActivity(appContext.packageManager) != null) {
+                com.myvu.client.ui.SendTrampolineActivity.launchWithKeyguardDismiss(appContext, assistIntent)
+                LogBus.log("Launched assistant via ACTION_ASSIST (fallback)")
+                return
+            }
+        } catch (e: Exception) {
+            LogBus.warn("Could not launch ACTION_ASSIST: ${e.message}")
+        }
+
+        // 6. Fallback: Hands-Free Voice Search over keyguard
         try {
             val voiceSearchIntent = Intent(android.speech.RecognizerIntent.ACTION_VOICE_SEARCH_HANDS_FREE).apply {
                 putExtra(android.speech.RecognizerIntent.EXTRA_SECURE, true)
                 putExtra("android.speech.extras.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 2500L)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
-            com.myvu.client.ui.SendTrampolineActivity.launchWithKeyguardDismiss(appContext, voiceSearchIntent)
-            LogBus.log("Launched Gemini hands-free search via SendTrampolineActivity")
-            return
+            if (voiceSearchIntent.resolveActivity(appContext.packageManager) != null) {
+                com.myvu.client.ui.SendTrampolineActivity.launchWithKeyguardDismiss(appContext, voiceSearchIntent)
+                LogBus.log("Launched hands-free search via SendTrampolineActivity (fallback)")
+                return
+            }
         } catch (e: Exception) {
             LogBus.warn("Could not launch ACTION_VOICE_SEARCH_HANDS_FREE: ${e.message}")
         }
 
-        // 5. Fallback: Google QuickSearchBox Voice Command Intent
-        try {
-            val voiceIntent = Intent(Intent.ACTION_VOICE_COMMAND).apply {
-                setPackage("com.google.android.googlequicksearchbox")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            }
-            com.myvu.client.ui.SendTrampolineActivity.launchWithKeyguardDismiss(appContext, voiceIntent)
-            LogBus.log("Launched Google Assistant voice command via SendTrampolineActivity")
-            return
-        } catch (e: Exception) {
-            LogBus.warn("Could not launch Google Assistant voice command: ${e.message}")
-        }
-
-        // 6. Generic ACTION_VOICE_COMMAND fallback
+        // 7. Generic ACTION_VOICE_COMMAND fallback only if Gemini is not installed
         try {
             val genericVoiceIntent = Intent(Intent.ACTION_VOICE_COMMAND).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
-            com.myvu.client.ui.SendTrampolineActivity.launchWithKeyguardDismiss(appContext, genericVoiceIntent)
-            LogBus.log("Launched generic ACTION_VOICE_COMMAND")
+            if (genericVoiceIntent.resolveActivity(appContext.packageManager) != null) {
+                com.myvu.client.ui.SendTrampolineActivity.launchWithKeyguardDismiss(appContext, genericVoiceIntent)
+                LogBus.log("Launched generic ACTION_VOICE_COMMAND (fallback)")
+            }
         } catch (e: Exception) {
             LogBus.warn("Could not launch generic ACTION_VOICE_COMMAND: ${e.message}")
         }
@@ -354,7 +410,56 @@ object TouchGestureManager {
 
     @JvmStatic
     fun launchPhoneAssistant(context: Context?) {
-        launchGeminiAssistant(context)
+        if (context == null) return
+        val appContext = context.applicationContext
+        try {
+            com.myvu.client.core.LockScreenHelper.wakeUpScreen(
+                appContext,
+                "MYVU:PhoneVoiceAssistant",
+                15000L
+            )
+        } catch (e: Exception) {
+            LogBus.warn("Could not wake up screen for phone assistant: ${e.message}")
+        }
+
+        val am = appContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+        try {
+            if (am != null) {
+                val now = SystemClock.uptimeMillis()
+                val down = KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOICE_ASSIST, 0)
+                val up = KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_VOICE_ASSIST, 0)
+                am.dispatchMediaKeyEvent(down)
+                am.dispatchMediaKeyEvent(up)
+                LogBus.log("Dispatched KEYCODE_VOICE_ASSIST for Phone Assistant")
+            }
+        } catch (e: Exception) {
+            LogBus.warn("Could not dispatch KEYCODE_VOICE_ASSIST: ${e.message}")
+        }
+
+        try {
+            val voiceIntent = Intent(Intent.ACTION_VOICE_COMMAND).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+            if (voiceIntent.resolveActivity(appContext.packageManager) != null) {
+                com.myvu.client.ui.SendTrampolineActivity.launchWithKeyguardDismiss(appContext, voiceIntent)
+                LogBus.log("Launched Phone Assistant via ACTION_VOICE_COMMAND")
+                return
+            }
+        } catch (e: Exception) {
+            LogBus.warn("Could not launch ACTION_VOICE_COMMAND for Phone Assistant: ${e.message}")
+        }
+
+        try {
+            val assistIntent = Intent(Intent.ACTION_ASSIST).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+            if (assistIntent.resolveActivity(appContext.packageManager) != null) {
+                com.myvu.client.ui.SendTrampolineActivity.launchWithKeyguardDismiss(appContext, assistIntent)
+                LogBus.log("Launched Phone Assistant via ACTION_ASSIST")
+            }
+        } catch (e: Exception) {
+            LogBus.warn("Could not launch ACTION_ASSIST for Phone Assistant: ${e.message}")
+        }
     }
 
     @JvmStatic

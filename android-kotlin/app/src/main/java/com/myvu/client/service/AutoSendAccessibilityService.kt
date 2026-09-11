@@ -36,6 +36,12 @@ class AutoSendAccessibilityService : AccessibilityService() {
                 if (isAutoSendActive) {
                     scheduleBurstRetries(shortBurst = true)
                 }
+                if (isGeminiLiveActive) {
+                    scheduleBurstGeminiLiveRetries()
+                }
+                if (isGeminiVoiceActive) {
+                    scheduleBurstGeminiVoiceRetries()
+                }
             }
         }
     }
@@ -64,61 +70,55 @@ class AutoSendAccessibilityService : AccessibilityService() {
         @Volatile
         var isAutoCallActive: Boolean = false
 
+        @Volatile
+        var isGeminiLiveActive: Boolean = false
+
+        @Volatile
+        var isGeminiVoiceActive: Boolean = false
+
         var shouldAutoSendTelegram: Boolean
             get() = isAutoSendActive && (targetPackage == null || targetPackage!!.contains("telegram"))
             set(v) {
                 if (v) triggerTelegramAutoSend() else if (targetPackage?.contains("telegram") == true) isAutoSendActive = false
             }
 
-        @Volatile
-        var wasLockedOnTrigger: Boolean = false
-
-        @Volatile
-        var isGeminiWatchActive: Boolean = false
-        private var geminiWatchRunnable: Runnable? = null
-        @Volatile
-        private var geminiHadFocus: Boolean = false
-        private val mainHandler = Handler(Looper.getMainLooper())
-
         fun isServiceRunning(): Boolean = activeInstance != null
-
-        fun armGeminiAutoLock(context: Context, timeoutMs: Long = 18000L) {
-            cancelGeminiAutoLock()
-            isGeminiWatchActive = true
-            geminiHadFocus = false
-            LogBus.log("AutoSendAccessibilityService -> Armed Gemini auto-lock watcher (timeout=${timeoutMs}ms)")
-
-            val runnable = Runnable {
-                if (isGeminiWatchActive) {
-                    isGeminiWatchActive = false
-                    geminiHadFocus = false
-                    if (com.myvu.client.core.Prefs.isAutoLockAfterActionEnabled(context)) {
-                        LogBus.log("AutoSendAccessibilityService -> Gemini safety timeout elapsed, locking device screen")
-                        com.myvu.client.core.LockScreenHelper.lockDeviceScreen()
-                    }
-                }
-            }
-            geminiWatchRunnable = runnable
-            mainHandler.postDelayed(runnable, timeoutMs)
-        }
-
-        fun cancelGeminiAutoLock() {
-            geminiWatchRunnable?.let { mainHandler.removeCallbacks(it) }
-            geminiWatchRunnable = null
-            isGeminiWatchActive = false
-            geminiHadFocus = false
-        }
 
         fun triggerAutoCall(packageName: String = "com.whatsapp", isDeviceLocked: Boolean = false, timeoutMs: Long = 0L) {
             val duration = if (timeoutMs > 0) timeoutMs else if (isDeviceLocked) 45000L else 15000L
-            wasLockedOnTrigger = isDeviceLocked
             // Asegurar que cualquier envío previo de mensaje pendiente no interfiera con la llamada
             isAutoSendActive = false
             isAutoCallActive = true
+            isGeminiLiveActive = false
+            isGeminiVoiceActive = false
             targetPackage = packageName
             autoSendExpiresAt = System.currentTimeMillis() + duration
             LogBus.log("AutoSendAccessibilityService -> Triggered auto-call (pkg='$packageName', locked=$isDeviceLocked, duration=${duration}ms)")
             scheduleBurstCallRetries(shortBurst = false)
+        }
+
+        fun triggerGeminiLiveAutoStart(isDeviceLocked: Boolean = false, timeoutMs: Long = 0L) {
+            val duration = if (timeoutMs > 0) timeoutMs else if (isDeviceLocked) 45000L else 15000L
+            isAutoSendActive = false
+            isAutoCallActive = false
+            isGeminiVoiceActive = false
+            isGeminiLiveActive = true
+            targetPackage = "com.google.android.apps.bard"
+            autoSendExpiresAt = System.currentTimeMillis() + duration
+            LogBus.log("AutoSendAccessibilityService -> Triggered Gemini Live auto-start (duration=${duration}ms, ready=${activeInstance != null})")
+            scheduleBurstGeminiLiveRetries()
+        }
+
+        fun triggerGeminiVoiceAutoStart(isDeviceLocked: Boolean = false, timeoutMs: Long = 0L) {
+            val duration = if (timeoutMs > 0) timeoutMs else if (isDeviceLocked) 45000L else 15000L
+            isAutoSendActive = false
+            isAutoCallActive = false
+            isGeminiLiveActive = false
+            isGeminiVoiceActive = true
+            targetPackage = "com.google.android.apps.bard"
+            autoSendExpiresAt = System.currentTimeMillis() + duration
+            LogBus.log("AutoSendAccessibilityService -> Triggered Gemini Voice auto-start (duration=${duration}ms, ready=${activeInstance != null})")
+            scheduleBurstGeminiVoiceRetries()
         }
 
         const val NOTIFICATION_ID_ACCESSIBILITY_DISABLED = 9122
@@ -266,7 +266,6 @@ class AutoSendAccessibilityService : AccessibilityService() {
          */
         fun triggerAutoSend(packageName: String? = null, isDeviceLocked: Boolean = false, timeoutMs: Long = 0L) {
             val duration = if (timeoutMs > 0) timeoutMs else if (isDeviceLocked) 45000L else 15000L
-            wasLockedOnTrigger = isDeviceLocked
             isAutoSendActive = true
             targetPackage = packageName
             autoSendExpiresAt = System.currentTimeMillis() + duration
@@ -280,7 +279,6 @@ class AutoSendAccessibilityService : AccessibilityService() {
                     LogBus.log("AutoSendAccessibilityService -> Auto-send window timed out for '$packageName'")
                     isAutoSendActive = false
                     targetPackage = null
-                    wasLockedOnTrigger = false
                 }
             }, duration)
         }
@@ -303,10 +301,6 @@ class AutoSendAccessibilityService : AccessibilityService() {
                                     if (clicked) {
                                         isAutoSendActive = false
                                         targetPackage = null
-                                        if (wasLockedOnTrigger && com.myvu.client.core.Prefs.isAutoLockAfterActionEnabled(service)) {
-                                            com.myvu.client.core.LockScreenHelper.scheduleAutoLock(1500L, "WhatsApp/Telegram message auto-sent (burst)")
-                                        }
-                                        wasLockedOnTrigger = false
                                     }
                                 }
                             } catch (e: Exception) {
@@ -336,14 +330,95 @@ class AutoSendAccessibilityService : AccessibilityService() {
                                     if (clicked) {
                                         isAutoCallActive = false
                                         targetPackage = null
-                                        if (wasLockedOnTrigger && com.myvu.client.core.Prefs.isAutoLockAfterActionEnabled(service)) {
-                                            com.myvu.client.core.LockScreenHelper.scheduleAutoLock(3000L, "WhatsApp/Telegram call auto-connected (burst)")
-                                        }
-                                        wasLockedOnTrigger = false
                                     }
                                 }
                             } catch (e: Exception) {
                                 LogBus.warn("AutoSendAccessibilityService -> Retry call click failed: ${e.message}")
+                            }
+                        }
+                    }
+                }, d)
+            }
+        }
+
+        fun isGeminiAppWindow(pkg: String?): Boolean {
+            if (pkg == null) return false
+            val p = pkg.lowercase()
+            if (p.contains("launcher")) return false
+            return p.contains("bard") || p.contains("googlequicksearchbox")
+        }
+
+        fun scheduleBurstGeminiLiveRetries() {
+            val delays = longArrayOf(150L, 350L, 700L, 1200L, 1800L, 2500L, 3500L, 5000L, 7000L, 9500L, 12500L)
+            val handler = Handler(Looper.getMainLooper())
+            for (d in delays) {
+                handler.postDelayed({
+                    if (isGeminiLiveActive && System.currentTimeMillis() < autoSendExpiresAt) {
+                        activeInstance?.let { service ->
+                            try {
+                                var clicked = false
+                                val root = service.rootInActiveWindow
+                                val rootPkg = root?.packageName?.toString() ?: ""
+                                if (root != null && isGeminiAppWindow(rootPkg)) {
+                                    clicked = service.findAndClickGeminiLiveButton(root)
+                                }
+                                if (!clicked) {
+                                    for (window in service.windows) {
+                                        val wRoot = window.root ?: continue
+                                        val wPkg = wRoot.packageName?.toString() ?: ""
+                                        if (isGeminiAppWindow(wPkg)) {
+                                            if (service.findAndClickGeminiLiveButton(wRoot)) {
+                                                clicked = true
+                                                break
+                                            }
+                                        }
+                                    }
+                                }
+                                if (clicked) {
+                                    isGeminiLiveActive = false
+                                    targetPackage = null
+                                }
+                            } catch (e: Exception) {
+                                LogBus.warn("AutoSendAccessibilityService -> Retry Gemini Live click failed: ${e.message}")
+                            }
+                        }
+                    }
+                }, d)
+            }
+        }
+
+        fun scheduleBurstGeminiVoiceRetries() {
+            val delays = longArrayOf(150L, 350L, 700L, 1200L, 1800L, 2500L, 3500L, 5000L, 7000L, 9500L, 12500L)
+            val handler = Handler(Looper.getMainLooper())
+            for (d in delays) {
+                handler.postDelayed({
+                    if (isGeminiVoiceActive && System.currentTimeMillis() < autoSendExpiresAt) {
+                        activeInstance?.let { service ->
+                            try {
+                                var clicked = false
+                                val root = service.rootInActiveWindow
+                                val rootPkg = root?.packageName?.toString() ?: ""
+                                if (root != null && isGeminiAppWindow(rootPkg)) {
+                                    clicked = service.findAndClickGeminiMicButton(root)
+                                }
+                                if (!clicked) {
+                                    for (window in service.windows) {
+                                        val wRoot = window.root ?: continue
+                                        val wPkg = wRoot.packageName?.toString() ?: ""
+                                        if (isGeminiAppWindow(wPkg)) {
+                                            if (service.findAndClickGeminiMicButton(wRoot)) {
+                                                clicked = true
+                                                break
+                                            }
+                                        }
+                                    }
+                                }
+                                if (clicked) {
+                                    isGeminiVoiceActive = false
+                                    targetPackage = null
+                                }
+                            } catch (e: Exception) {
+                                LogBus.warn("AutoSendAccessibilityService -> Retry Gemini Voice click failed: ${e.message}")
                             }
                         }
                     }
@@ -394,6 +469,10 @@ class AutoSendAccessibilityService : AccessibilityService() {
         LogBus.log("AutoSendAccessibilityService connected and ready (Universal Mode)")
     }
 
+    override fun onInterrupt() {
+        LogBus.warn("AutoSendAccessibilityService interrupted")
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         if (activeInstance == this) {
@@ -407,37 +486,25 @@ class AutoSendAccessibilityService : AccessibilityService() {
                 // Ignore
             }
         }
+        LogBus.log("AutoSendAccessibilityService destroyed")
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
-        val pkg = event.packageName?.toString() ?: return
-
-        // 1. Gemini Lifecycle Tracking and Auto-Lock
-        if (isGeminiWatchActive) {
-            val isGoogleOrGemini = pkg.contains("googlequicksearchbox") || pkg.contains("bard") || pkg.contains("gemini")
-            if (isGoogleOrGemini) {
-                geminiHadFocus = true
-            } else if (geminiHadFocus && !isTransientSystemUi(pkg)) {
-                LogBus.log("AutoSendAccessibilityService -> Gemini dismissed (transitioned to '$pkg'), triggering auto-lock")
-                cancelGeminiAutoLock()
-                if (com.myvu.client.core.Prefs.isAutoLockAfterActionEnabled(this)) {
-                    com.myvu.client.core.LockScreenHelper.scheduleAutoLock(800L, "Gemini session dismissed")
-                }
-            }
-        }
 
         if (System.currentTimeMillis() > autoSendExpiresAt) {
             isAutoSendActive = false
             isAutoCallActive = false
+            isGeminiLiveActive = false
+            isGeminiVoiceActive = false
             targetPackage = null
-            wasLockedOnTrigger = false
             return
         }
 
+        val pkg = event.packageName?.toString() ?: return
         val target = targetPackage
 
-        // 2. Auto Call button handling
+        // 1. Auto Call button handling
         if (isAutoCallActive) {
             val isTargetCallApp = target == null || pkg == target || pkg.contains(target) || target.contains(pkg)
             if (isTargetCallApp) {
@@ -446,16 +513,74 @@ class AutoSendAccessibilityService : AccessibilityService() {
                 if (clicked) {
                     isAutoCallActive = false
                     targetPackage = null
-                    if (wasLockedOnTrigger && com.myvu.client.core.Prefs.isAutoLockAfterActionEnabled(this)) {
-                        com.myvu.client.core.LockScreenHelper.scheduleAutoLock(3000L, "WhatsApp/Telegram call auto-connected")
-                    }
-                    wasLockedOnTrigger = false
                 }
             }
             return
         }
 
-        // 3. Auto Send message button handling
+        // 2. Gemini Live button handling
+        if (isGeminiLiveActive) {
+            if (isGeminiAppWindow(pkg)) {
+                var clicked = false
+                val root = rootInActiveWindow
+                if (root != null) {
+                    clicked = findAndClickGeminiLiveButton(root)
+                }
+                if (!clicked && event.source != null) {
+                    clicked = findAndClickGeminiLiveButton(event.source)
+                }
+                if (!clicked) {
+                    for (window in windows) {
+                        val wRoot = window.root ?: continue
+                        val wPkg = wRoot.packageName?.toString() ?: ""
+                        if (isGeminiAppWindow(wPkg)) {
+                            if (findAndClickGeminiLiveButton(wRoot)) {
+                                clicked = true
+                                break
+                            }
+                        }
+                    }
+                }
+                if (clicked) {
+                    isGeminiLiveActive = false
+                    targetPackage = null
+                }
+            }
+            return
+        }
+
+        // 3. Gemini Voice Mic button handling
+        if (isGeminiVoiceActive) {
+            if (isGeminiAppWindow(pkg)) {
+                var clicked = false
+                val root = rootInActiveWindow
+                if (root != null) {
+                    clicked = findAndClickGeminiMicButton(root)
+                }
+                if (!clicked && event.source != null) {
+                    clicked = findAndClickGeminiMicButton(event.source)
+                }
+                if (!clicked) {
+                    for (window in windows) {
+                        val wRoot = window.root ?: continue
+                        val wPkg = wRoot.packageName?.toString() ?: ""
+                        if (isGeminiAppWindow(wPkg)) {
+                            if (findAndClickGeminiMicButton(wRoot)) {
+                                clicked = true
+                                break
+                            }
+                        }
+                    }
+                }
+                if (clicked) {
+                    isGeminiVoiceActive = false
+                    targetPackage = null
+                }
+            }
+            return
+        }
+
+        // 4. Auto Send message button handling
         if (!isAutoSendActive) return
         val isTargetApp = target == null || pkg == target || pkg.contains(target) || target.contains(pkg) || isMessagingPackage(pkg)
         if (isTargetApp) {
@@ -464,17 +589,227 @@ class AutoSendAccessibilityService : AccessibilityService() {
             if (clicked) {
                 isAutoSendActive = false
                 targetPackage = null
-                if (wasLockedOnTrigger && com.myvu.client.core.Prefs.isAutoLockAfterActionEnabled(this)) {
-                    com.myvu.client.core.LockScreenHelper.scheduleAutoLock(1500L, "WhatsApp/Telegram message auto-sent")
-                }
-                wasLockedOnTrigger = false
             }
         }
     }
 
-    private fun isTransientSystemUi(pkg: String): Boolean {
-        val p = pkg.lowercase()
-        return p == "com.android.systemui" || p.contains("inputmethod") || p.contains("keyboard") || p == "android"
+    fun findAndClickGeminiLiveButton(root: AccessibilityNodeInfo?, targetPkg: String? = null): Boolean {
+        if (root == null) return false
+        val rootPkg = root.packageName?.toString()?.lowercase() ?: ""
+        if (rootPkg.contains("launcher")) {
+            return false
+        }
+
+        val queue = ArrayDeque<AccessibilityNodeInfo>()
+        queue.add(root)
+
+        val targetLiveIds = listOf(
+            "live_button", "btn_live", "gemini_live", "live", "waveform", "mic_live",
+            "sparkle", "action_live", "voice_mode", "live_chat_button", "voice_sheet_live_entrypoint",
+            "live_fab", "live_entrypoint", "gemini_live_button"
+        )
+
+        while (queue.isNotEmpty()) {
+            val node = queue.removeFirst()
+
+            // Always enqueue children first so no subtrees are pruned
+            for (i in 0 until node.childCount) {
+                val child = node.getChild(i)
+                if (child != null) {
+                    queue.add(child)
+                }
+            }
+
+            val nodePkg = node.packageName?.toString()?.lowercase() ?: ""
+            if (nodePkg.contains("launcher")) {
+                continue
+            }
+
+            val viewId = node.viewIdResourceName?.lowercase() ?: ""
+            if (viewId.contains("search_widget") || viewId.contains("ghost_voice") || viewId.contains("widget_ghost")) {
+                continue
+            }
+
+            val desc = node.contentDescription?.toString()?.lowercase()?.trim() ?: ""
+            val text = node.text?.toString()?.lowercase()?.trim() ?: ""
+
+            val matchesId = targetLiveIds.any { viewId.endsWith(it) || viewId.contains(it) }
+            val matchesDesc = desc in listOf(
+                "live", "gemini live", "iniciar live", "live chat", "conversación live",
+                "hablar en directo", "conversación en tiempo real", "en vivo", "abrir live",
+                "start live", "live voice", "modo conversación", "open gemini live"
+            ) || desc.startsWith("live") || desc.contains("gemini live") || desc.contains("open gemini live") ||
+                    desc.contains("waveform")
+            val matchesText = text in listOf("live", "gemini live", "iniciar live", "en vivo", "live chat")
+
+            if (matchesId || matchesDesc || matchesText) {
+                var clicked = false
+                if (node.isClickable && node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                    LogBus.log("AutoSendAccessibilityService -> Clicked Gemini Live button via ACTION_CLICK (viewId='$viewId', desc='$desc', text='$text')")
+                    clicked = true
+                }
+                if (!clicked) {
+                    var parent = node.parent
+                    var depth = 0
+                    while (parent != null && depth < 4) {
+                        if (parent.isClickable && parent.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                            LogBus.log("AutoSendAccessibilityService -> Clicked parent Gemini Live button via ACTION_CLICK (viewId='$viewId', desc='$desc')")
+                            clicked = true
+                            break
+                        }
+                        parent = parent.parent
+                        depth++
+                    }
+                }
+
+                // Coordinate tap for Jetpack Compose support
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    val rect = Rect()
+                    node.getBoundsInScreen(rect)
+                    if (rect.width() > 0 && rect.height() > 0) {
+                        val path = Path().apply {
+                            moveTo(rect.centerX().toFloat(), rect.centerY().toFloat())
+                        }
+                        val gesture = GestureDescription.Builder()
+                            .addStroke(GestureDescription.StrokeDescription(path, 0, 80))
+                            .build()
+                        val dispatched = dispatchGesture(gesture, object : GestureResultCallback() {
+                            override fun onCompleted(gestureDescription: GestureDescription?) {
+                                LogBus.log("AutoSendAccessibilityService -> Coordinate tap completed on Gemini Live at (${rect.centerX()}, ${rect.centerY()})")
+                            }
+                            override fun onCancelled(gestureDescription: GestureDescription?) {
+                                LogBus.warn("AutoSendAccessibilityService -> Coordinate tap cancelled on Gemini Live at (${rect.centerX()}, ${rect.centerY()})")
+                            }
+                        }, null)
+                        if (dispatched) {
+                            LogBus.log("AutoSendAccessibilityService -> Dispatched coordinate tap on Gemini Live button at (${rect.centerX()}, ${rect.centerY()})")
+                            clicked = true
+                        }
+                    }
+                }
+
+                if (clicked) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    fun findAndClickGeminiMicButton(root: AccessibilityNodeInfo?, targetPkg: String? = null): Boolean {
+        if (root == null) return false
+        val rootPkg = root.packageName?.toString()?.lowercase() ?: ""
+        if (rootPkg.contains("launcher")) {
+            return false
+        }
+
+        val queue = ArrayDeque<AccessibilityNodeInfo>()
+        queue.add(root)
+
+        val targetMicIds = listOf(
+            "mic", "microphone", "voice_input", "btn_mic",
+            "dictation", "mic_button", "voice_action", "voice_button", "dictation_button",
+            "text_input_voice_icon", "chat_input_voice_button",
+            "sparkle_mic", "audio_input", "record_audio", "speech_to_text", "voice_fab",
+            "mic_icon", "action_mic"
+        )
+
+        while (queue.isNotEmpty()) {
+            val node = queue.removeFirst()
+
+            // Always enqueue children first so no subtrees are pruned
+            for (i in 0 until node.childCount) {
+                val child = node.getChild(i)
+                if (child != null) {
+                    queue.add(child)
+                }
+            }
+
+            val nodePkg = node.packageName?.toString()?.lowercase() ?: ""
+            if (nodePkg.contains("launcher")) {
+                continue
+            }
+
+            val viewId = node.viewIdResourceName?.lowercase() ?: ""
+            if (viewId.contains("search_widget") || viewId.contains("ghost_voice") || viewId.contains("widget_ghost")) {
+                continue
+            }
+
+            val desc = node.contentDescription?.toString()?.lowercase()?.trim() ?: ""
+            val text = node.text?.toString()?.lowercase()?.trim() ?: ""
+
+            // Exclude Google Search widget text/desc (e.g. "búsqueda por voz", "buscar por voz", "voice search")
+            if (desc == "búsqueda por voz" || desc == "voice search" || desc == "buscar por voz" ||
+                text == "búsqueda por voz" || text == "voice search") {
+                continue
+            }
+
+            val matchesId = targetMicIds.any { viewId.endsWith(it) || viewId.contains(it) }
+            val matchesDesc = desc in listOf(
+                "mic", "micrófono", "hablar", "entrada de voz", "dictar",
+                "usar micrófono", "usar el micrófono", "abrir micrófono",
+                "dictado por voz", "voice input", "use microphone", "use mic",
+                "record audio", "speak", "tap to speak",
+                "grabar audio", "pulsar para hablar", "habla", "dictado"
+            ) || desc.startsWith("usar el mic") || desc.startsWith("use mic") ||
+                    desc.contains("micrófono") || desc.contains("microphone") ||
+                    desc.contains("entrada de voz") || desc.contains("voice input") ||
+                    desc.contains("habla para") || desc.contains("speak to")
+            val matchesText = text in listOf("hablar", "dictar", "mic", "speak", "escuchar") ||
+                    text.contains("micrófono") || text.contains("habla")
+
+            if (matchesId || matchesDesc || matchesText) {
+                var clicked = false
+                if (node.isClickable && node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                    LogBus.log("AutoSendAccessibilityService -> Clicked Gemini Voice mic button via ACTION_CLICK (viewId='$viewId', desc='$desc', text='$text')")
+                    clicked = true
+                }
+                if (!clicked) {
+                    var parent = node.parent
+                    var depth = 0
+                    while (parent != null && depth < 4) {
+                        if (parent.isClickable && parent.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                            LogBus.log("AutoSendAccessibilityService -> Clicked parent Gemini Voice mic button via ACTION_CLICK (viewId='$viewId', desc='$desc')")
+                            clicked = true
+                            break
+                        }
+                        parent = parent.parent
+                        depth++
+                    }
+                }
+
+                // Coordinate tap for Jetpack Compose support
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    val rect = Rect()
+                    node.getBoundsInScreen(rect)
+                    if (rect.width() > 0 && rect.height() > 0) {
+                        val path = Path().apply {
+                            moveTo(rect.centerX().toFloat(), rect.centerY().toFloat())
+                        }
+                        val gesture = GestureDescription.Builder()
+                            .addStroke(GestureDescription.StrokeDescription(path, 0, 80))
+                            .build()
+                        val dispatched = dispatchGesture(gesture, object : GestureResultCallback() {
+                            override fun onCompleted(gestureDescription: GestureDescription?) {
+                                LogBus.log("AutoSendAccessibilityService -> Coordinate tap completed on Gemini mic at (${rect.centerX()}, ${rect.centerY()})")
+                            }
+                            override fun onCancelled(gestureDescription: GestureDescription?) {
+                                LogBus.warn("AutoSendAccessibilityService -> Coordinate tap cancelled on Gemini mic at (${rect.centerX()}, ${rect.centerY()})")
+                            }
+                        }, null)
+                        if (dispatched) {
+                            LogBus.log("AutoSendAccessibilityService -> Dispatched coordinate tap on Gemini mic button at (${rect.centerX()}, ${rect.centerY()})")
+                            clicked = true
+                        }
+                    }
+                }
+
+                if (clicked) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
     fun findAndClickCallButton(root: AccessibilityNodeInfo?, targetPkg: String? = null): Boolean {
@@ -626,6 +961,4 @@ class AutoSendAccessibilityService : AccessibilityService() {
 
         return false
     }
-
-    override fun onInterrupt() {}
 }

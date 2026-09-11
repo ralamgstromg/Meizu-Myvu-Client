@@ -127,35 +127,4 @@ object LockScreenHelper {
             }
         }
     }
-
-    /**
-     * Locks the device screen immediately using the active AccessibilityService without root or admin.
-     * Preserves biometrics and smart unlock.
-     */
-    fun lockDeviceScreen(): Boolean {
-        return try {
-            val service = com.myvu.client.service.AutoSendAccessibilityService.activeInstance
-            if (service != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                val locked = service.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)
-                LogBus.log("LockScreenHelper: Locked device screen via AccessibilityService (result=$locked)")
-                locked
-            } else {
-                LogBus.log("LockScreenHelper: Cannot lock screen (serviceActive=${service != null}, sdk=${Build.VERSION.SDK_INT})")
-                false
-            }
-        } catch (e: Exception) {
-            LogBus.warn("LockScreenHelper: Error locking device screen: ${e.message}")
-            false
-        }
-    }
-
-    /**
-     * Schedules a lock screen operation after a specified delay on the main thread.
-     */
-    fun scheduleAutoLock(delayMs: Long = 2000L, reason: String = "") {
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-            LogBus.log("LockScreenHelper: Executing scheduled auto-lock ($reason)")
-            lockDeviceScreen()
-        }, delayMs)
-    }
 }

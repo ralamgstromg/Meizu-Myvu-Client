@@ -39,27 +39,169 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
 
 ---
 
-## 3. Bitácora de Modificaciones y Decisiones
+### [2026-09-11] — Corrección Raíz de Activación de Micrófono y Gemini Live (canPerformGestures y Desbloqueo de BFS)
+- **Diagnóstico y Causas Raíz Identificadas**:
+  1. **Permiso de Gestos Deshabilitado en XML (`accessibility_service_config.xml`)**:
+     - `app/src/main/res/xml/accessibility_service_config.xml` carecía del atributo `android:canPerformGestures="true"`.
+     - Por diseño de seguridad estricto de Android, el método `dispatchGesture(...)` falla silenciosamente y nunca despacha eventos táctiles (strokes) si este flag no está declarado a nivel de manifiesto/configuración del servicio de accesibilidad.
+     - Como Gemini está desarrollado en **Jetpack Compose**, sus botones de micrófono y Live frecuentemente devuelven `false` a `performAction(ACTION_CLICK)`. El fallback indispensable por coordenadas táctiles físicas (`dispatchGesture`) estaba bloqueado por el propio sistema operativo Android.
+  2. **Poda Errónea del Árbol de Vistas en Búsqueda BFS (`AutoSendAccessibilityService.kt`)**:
+     - En `findAndClickGeminiMicButton` y `findAndClickGeminiLiveButton`, existía una comprobación de filtrado contra IDs de contenedores (`searchbox`, `search_plate`, `search_edit`) que ejecutaba `continue` *antes* de encolar los hijos del nodo (`node.getChild(i)`).
+     - La jerarquía de la app de Google / Gemini sitúa toda la pantalla y el campo de composición dentro de contenedores superiores que contienen el substring `"searchbox"`.
+     - Como consecuencia de ejecutar `continue` antes de explorar a los hijos, el algoritmo BFS descartaba la totalidad del subárbol de la ventana de Gemini y nunca llegaba a evaluar los botones de Micrófono ni de Live situados en su interior.
+  3. **Ausencia de Doble Acción (PerformAction + DispatchGesture)**:
+     - Los botones de Compose requieren a menudo tanto el evento de accesibilidad como la simulación táctil por inyección de coordenadas con callback (`GestureResultCallback`) para forzar la apertura del asistente de voz.
+- **Ajustes y Correcciones Realizadas**:
+  - **`app/src/main/res/xml/accessibility_service_config.xml`**:
+    - Declarado formalmente `android:canPerformGestures="true"`.
+  - **`AutoSendAccessibilityService.kt`**:
+    - **Reestructuración de BFS**: Se aseguró que todos los nodos hijos (`node.getChild(i)`) sean encolados incondicionalmente en la cola `queue` *antes* de aplicar cualquier regla de exclusión o comprobación de coincidencia sobre el nodo actual.
+    - **Doble Despacho (Dual-Action Click)**: En `findAndClickGeminiMicButton` y `findAndClickGeminiLiveButton`, cuando se detecta el nodo meta, se invoca `performAction(ACTION_CLICK)` y de inmediato se complementa con `dispatchGesture` hacia el centro de las coordenadas de la vista mediante un `Path` y `GestureResultCallback` verificado con timeout y log.
+    - **Fallback Multiventana y Source Event**: En `onAccessibilityEvent`, si `rootInActiveWindow` es nulo o no contiene la ventana meta, se inspecciona `event.source` y se recorre exhaustivamente la colección `service.windows`.
+- **Verificación**:
+  - Se corrió `./gradlew testDebugUnitTest` completando exitosamente 264 pruebas unitarias sin fallos (`BUILD SUCCESSFUL`).
 
-### [2026-09-10] — Re-bloqueo Automático de Pantalla tras Gemini y Acciones por Voz (WhatsApp / Llamadas)
-- **Problema / Requerimiento**:
-  - Al activar Gemini con doble toque en las patas de las gafas o al ejecutar acciones de voz (como llamar por WhatsApp o enviar mensajes), el teléfono se desbloqueaba/encendía pero se quedaba encendido y desbloqueado en el bolsillo, provocando toques accidentales y consumo innecesario de batería.
-- **Solución Implementada**:
-  1. `LockScreenHelper.kt`:
-     - Añadido `lockDeviceScreen()` utilizando `AutoSendAccessibilityService.activeInstance?.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)`. Método nativo de Android 9+ (API 28+) limpio y no invasivo que no requiere privilegios de Device Admin ni root, y no invalida desbloqueo biométrico.
-     - Añadido `scheduleAutoLock(delayMs: Long, reason: String)` para programar el apagado/bloqueo de forma asíncrona segura.
-  2. `Prefs.kt`:
-     - Nueva preferencia `isAutoLockAfterActionEnabled(c: Context)` / `setAutoLockAfterActionEnabled(c: Context, enabled: Boolean)` (clave `"auto_lock_after_voice_action"`, valor por defecto `true`).
-  3. `AutoSendAccessibilityService.kt`:
-     - Registra si el teléfono estaba bloqueado (`wasLockedOnTrigger`) al momento de solicitar una acción o lanzar Gemini.
-     - Implementado observador de sesión de Gemini (`armGeminiAutoLock(context, timeoutMs = 18000L)`, `cancelGeminiAutoLock()`). Detecta cuando la ventana activa deja de ser Google/Gemini (`TYPE_WINDOW_STATE_CHANGED`) o cuando se agota el timeout de 18s sin interacción manual, re-bloqueando la pantalla si el teléfono estaba originalmente bloqueado.
-     - Disparo automático de bloqueo tras pulsar exitosamente enviar mensaje en WhatsApp (retardo de 1.5s) y tras pulsar el botón de llamada en WhatsApp (retardo de 3.0s, permitiendo que la llamada VoIP se establezca y continúe por audio Bluetooth HFP con la pantalla bloqueada).
-  4. `TouchGestureManager.kt`:
-     - En `launchGeminiAssistant`, comprueba `wasDeviceLocked` antes de encender la pantalla. Si la opción está activa, arma `armGeminiAutoLock` para asegurar el bloqueo tras la respuesta.
-  5. `PhoneActionExecutor.kt`:
-     - En llamadas directas de WhatsApp vía URI de contacto, programa auto-bloqueo tras 3.5s si el dispositivo estaba bloqueado.
-  6. `activity_settings.xml` y `SettingsActivity.kt`:
-     - Añadido switch Material 3 `swAutoLockAfterAction` en la tarjeta de gestos del touchpad con descripción clara.
+### [2026-09-11] — Restauración del Clic Automático de Micrófono y Gemini Live con Aislamiento de Widgets del Launcher
+- **Diagnóstico y Análisis de Log (`/home/rcastro/Descargas/myvu_client_log.txt`)**:
+  - Tras el bloqueo total de `googlequicksearchbox`, la app de Gemini abría pero se quedaba estática en pantalla sin activar el micrófono ni iniciar Gemini Live.
+  - Causa técnica: La app de Gemini (`com.google.android.apps.bard`) delega el renderizado de su interfaz de usuario, ventanas y actividades a la infraestructura de `com.google.android.googlequicksearchbox`. Al haber rechazado `googlequicksearchbox` en accesibilidad, el servicio ignoraba la ventana real de Gemini.
+- **Ajustes y Correcciones Realizadas**:
+  - **`AutoSendAccessibilityService.kt`**:
+    - Se creó la función `isGeminiAppWindow(pkg)` que acepta paquetes que contengan `bard` o `googlequicksearchbox` pero **excluye estrictamente** cualquier paquete de Launcher (`launcher`, `nexuslauncher`, `sec.android.app.launcher`).
+    - En `scheduleBurstGeminiLiveRetries` y `scheduleBurstGeminiVoiceRetries`, se restauró la inspección de ventanas compatibles con Gemini y se amplió el abanico de reintentos hasta 12.5s (`150ms, 350ms, 700ms, 1200ms, 1800ms, 2500ms, 3500ms, 5000ms, 7000ms, 9500ms, 12500ms`).
+    - En `findAndClickGeminiMicButton`:
+      - Se eliminaron selectores de búsqueda ("voice_search", "voice_search_button") y se excluyeron de forma contundente nodos con `viewId` que contengan `widget`, `searchbox`, `ghost_voice`, `search_plate` o `search_edit`.
+      - Se excluyeron descripciones y textos que contengan `buscar` o `search` (propios del widget de Google Search), permitiendo únicamente selectores legítimos de entrada de voz de Gemini (`usar el micrófono`, `voice input`, `micrófono`, etc.).
+    - En `findAndClickGeminiLiveButton`:
+      - Se excluyeron nodos con `viewId` que contengan `widget`, `searchbox`, `ghost_voice` o pertenezcan a launchers.
+      - Se preservaron y afinaron los selectores de Gemini Live (`open gemini live`, `gemini live`, `iniciar live`, `live`, etc.) con soporte por coordenadas geométricas.
+- **Verificación**:
+  - Suite de 264 pruebas unitarias ejecutada con éxito (`BUILD SUCCESSFUL`, 0 errores).
+
+### [2026-09-11] — Corrección del Secuestro de Gemini y Gemini Live por Google App (`googlequicksearchbox`)
+- **Diagnóstico y Análisis de Log (`/home/rcastro/Descargas/myvu_client_log.txt`)**:
+  - Al realizar doble toque o pulsación larga en la patilla táctil, algunas veces no abría Gemini sino la app de Google clásica (Google Search / Assistant antiguo).
+  - El análisis del log detectó tres causas críticas:
+    1. **`ACTION_VOICE_COMMAND` sin componente explícito**: Android resolvía este Intent genérico hacia `com.google.android.googlequicksearchbox` y ejecutaba un `return` inmediato, impidiendo que el código alcanzara el lanzamiento de la app oficial de Gemini (`com.google.android.apps.bard`).
+    2. **Emisión de `KEYCODE_VOICE_ASSIST` al AudioManager**: `am.dispatchMediaKeyEvent(KEYCODE_VOICE_ASSIST)` era emitido incondicionalmente, provocando que Android interceptara la tecla de medios a nivel del sistema y lanzara el asistente predeterminado de Google sobre la pantalla.
+    3. **Servicio de Accesibilidad atacando el widget del Launcher**: `AutoSendAccessibilityService` incluía `pkg.contains("googlequicksearchbox")` en `isTargetGemini`, y en `findAndClickGeminiMicButton` buscaba `"voice_search"` sin validar el paquete del nodo. Al desbloquearse la pantalla, el servicio inspeccionaba la ventana del Launcher y pulsaba el botón de micrófono del widget de Google (`com.google.android.googlequicksearchbox:id/googleapp_search_widget_ghost_voice_search`), disparando la búsqueda de voz de Google en vez de esperar a Gemini.
+- **Ajustes y Correcciones Realizadas**:
+  - **`TouchGestureManager.kt`**:
+    - Se priorizó el lanzamiento explícito y directo de `com.google.android.apps.bard` (`getLaunchIntentForPackage`) tanto para Gemini estándar como para Gemini Live.
+    - Se eliminó completamente la emisión de `KEYCODE_VOICE_ASSIST` para acciones de Gemini y Gemini Live.
+    - Se aisló `launchPhoneAssistant` en un método dedicado e independiente que sí utiliza `KEYCODE_VOICE_ASSIST` y `ACTION_VOICE_COMMAND` exclusivamente para cuando el usuario configure la acción `LAUNCH_PHONE_ASSISTANT`.
+    - Los intents genéricos `ACTION_VOICE_COMMAND` y `ACTION_ASSIST` quedaron únicamente como fallbacks finales si Gemini no está instalado en el móvil.
+  - **`AutoSendAccessibilityService.kt`**:
+    - Se eliminó el soporte de `googlequicksearchbox` para Gemini. Solo se procesa `com.google.android.apps.bard`.
+    - `findAndClickGeminiMicButton` y `findAndClickGeminiLiveButton` ahora comprueban que `root` y cada `node` no pertenezcan a `googlequicksearchbox` ni a paquetes `launcher`, y descartan viewIds que contengan `googlequicksearchbox` o `search_widget`.
+    - Las ráfagas de reintento (`scheduleBurstGeminiVoiceRetries` y `scheduleBurstGeminiLiveRetries`) verifican que la ventana activa o alguna ventana pertenezca a `com.google.android.apps.bard` antes de ejecutar la búsqueda o clics de botones.
+  - **Pruebas y Verificación**:
+    - Se añadieron pruebas unitarias en `TouchGestureManagerTest.kt` validando la seguridad y separación de `launchGeminiAssistant` y `launchPhoneAssistant`.
+    - Suite completa de 264 pruebas unitarias ejecutada con éxito (`BUILD SUCCESSFUL`, 0 errores).
+
+### [2026-09-11] — Detección Multi-Toque Robusta entre Paquetes (Hardware Timestamps) y Activación Directa de Micrófono en Gemini
+- **Análisis de Log de Producción (`/home/rcastro/Descargas/myvu_client_log.txt`)**:
+  1. **Toques no reconocidos / Múltiples intentos necesarios**:
+     - Las gafas enviaban toques físicos legítimos (`code: 210` patilla derecha sender 1, `code: 200` patilla izquierda sender 2), pero la app resolvía `Action: none (NONE)`.
+     - `Prefs.touchpadTapAction` tiene por defecto `"none"`, por lo que un toque simple no produce acción visible/audible.
+     - Cuando el usuario realizaba un Doble Toque, las gafas transmitían cada toque en paquetes Bluetooth separados (`msgId=6140` y `msgId=6142`).
+     - `InboundRouter.kt` solo sintetizaba doble toque si ambos toques venían en el *mismo* lote de un solo paquete BLE/RFCOMM.
+     - `TouchGestureManager.kt` medía el tiempo entre toques únicamente con `System.currentTimeMillis()` del teléfono con un límite rígido de 800ms. Debido al retraso de desuspensión de las gafas y el buffer Bluetooth, la diferencia de llegada al teléfono superaba los 800ms (llegó a 2.927ms en el log a pesar de ocurrir con 1.0s de diferencia en las gafas `_event_time_`).
+     - No existía soporte para sintetizar `TRIPLE_TAP` a partir de toques en paquetes separados en `TouchGestureManager`.
+     - Las gafas se apagaban a los 5 segundos (`screen_off_time: 5`) y entraban en sueño profundo (`suspend_stats: type 1`), haciendo que el primer toque sufriera latencia al despertar el microcontrolador.
+  2. **Micrófono de Gemini no se activaba al abrir**:
+     - `TouchGestureManager.launchGeminiAssistant` lanzaba la actividad principal de la app Gemini (`getLaunchIntentForPackage`), que abre el chat en silencio sin modo de escucha activo.
+     - `AutoSendAccessibilityService.findAndClickGeminiMicButton` solo intentaba `performAction(ACTION_CLICK)`, que en interfaces Jetpack Compose devuelve `false` al no exponer acciones de click convencionales.
+     - Faltaba el fallback por coordenadas (`dispatchGesture`) que sí tenía el botón de enviar.
+     - Selectores de descripción y texto en español insuficientes ("usar el micrófono", "habla para enviar", "escribe, habla o comparte", "entrada de voz").
+     - Si `rootInActiveWindow` era nulo durante el arranque, el servicio no examinaba `service.windows` ni `event.source`.
+- **Soluciones Implementadas**:
+  1. **Propagación del Timestamp de Hardware de las Gafas**:
+     - Se actualizó `InboundRouter.TouchGestureListener` para recibir `eventTime: Long`.
+     - `InboundRouter` propaga `item.eventTime` extraído de la telemetría de las gafas (`_event_time_`, `key_event_time`, etc.).
+     - `ConnectionManager.kt` y `GlassesEventHandler.kt` enrutan `eventTime` hacia `TouchGestureManager.handleGesture`.
+  2. **Máquina de Estados Multi-Toque con Ventana Extendida**:
+     - En `TouchGestureManager.kt`:
+       - Se amplió `DOUBLE_TAP_MAX_INTERVAL_MS` a 1100ms (antes 800ms) y se agregó `TRIPLE_TAP_MAX_INTERVAL_MS = 1350L`.
+       - Si `eventTime` está presente, calcula el intervalo con el reloj de hardware de las gafas (`Math.abs(eventTime - lastTapEventTime)`), eliminando cualquier impacto de jitter o buffering Bluetooth.
+       - Acumulador `accumulatedTapCount`: soporte completo para Doble Toque y Triple Toque entre paquetes Bluetooth separados.
+  3. **Activación Directa de Micrófono y Escucha Activa en Gemini**:
+     - En `TouchGestureManager.launchGeminiAssistant`:
+       - Para consultas normales (`isLive = false`), prioriza `Intent(Intent.ACTION_VOICE_COMMAND)` y `ACTION_VOICE_SEARCH_HANDS_FREE`, abriendo directamente el overlay de escucha activa con animación de ondas de voz y micrófono abierto de inmediato.
+       - Fallback robusto a `bardLaunchIntent` si el intent del sistema no está presente.
+     - En `AutoSendAccessibilityService.kt`:
+       - En `findAndClickGeminiMicButton` y `findAndClickGeminiLiveButton`, se implementó fallback por coordenadas con `dispatchGesture` simulando toque físico en el centro del nodo (`getBoundsInScreen`), garantizando compatibilidad con Jetpack Compose.
+       - Soporte para inspeccionar `service.windows` y `event.source` si `rootInActiveWindow` es nulo en transiciones.
+       - Selectores ampliados en español e inglés ("usar el micrófono", "habla para enviar", "escribe, habla o comparte", "entrada de voz", "micrófono", "hablar", "dictado").
+       - Ráfaga de reintentos ampliada hasta 7.000ms.
+  4. **Prevención de Suspensión Inmediata**:
+     - En `Prefs.kt`, se elevó el valor por defecto de `screenOffTime` a 15 segundos (antes 10s / 5s en log) para mantener activas las gafas.
+- **Verificación**:
+  - Se agregaron y ejecutaron pruebas unitarias en `TouchGestureManagerTest.kt`:
+    - `twoTapsAt950msSynthesizeDoubleTapInExtendedWindow`: Verifica la ventana de 1100ms.
+    - `twoTapsWithHardwareEventTimeSynthesizeDoubleTapEvenIfNetworkDelayed`: Verifica síntesis con llegada retrasada en red (3.5s) usando timestamps de hardware.
+    - `threeTapsSynthesizeTripleTapAcrossPackets`: Verifica síntesis de triple toque entre paquetes separados.
+  - Ejecución de `./gradlew testDebugUnitTest`: exitosa (código 0).
+  - `codegraph sync`: grafo sincronizado.
+
+### [2026-09-11] — Modo Escucha Gemini (Asistente/App) y Gemini Live con Micrófono de Lentes y Alta Sensibilidad Táctil
+- **Diagnóstico y Causas Raíz**:
+  1. **Micrófono de las Gafas no se activaba**: La preferencia `isGeminiForceScoEnabled` tenía por defecto `false` en `Prefs.kt`, obligando al usuario a configurarlo manualmente y usando el micrófono interno del teléfono en el bolsillo en lugar de los micrófonos de las gafas.
+  2. **Cierre Prematuro del Micrófono en Gemini Live**: La ventana fija de SCO (`4500L`) liberaba el dispositivo de comunicación tras 4.5 segundos, cortando la entrada de audio de las gafas en conversaciones continuas de Gemini Live.
+  3. **Lanzamiento de Gemini en Pantalla Inactiva**: Al abrir la aplicación `com.google.android.apps.bard`, la UI de Gemini iniciaba en estado inactivo sin presionar automáticamente el micrófono de entrada de voz.
+  4. **Falsos Negativos y Pérdida de Gestos Táctiles**:
+     - `DEBOUNCE_MS` estaba fijado en 350ms, bloqueando toques y gestos rápidos legítimos del usuario.
+     - En `InboundRouter.kt`, la síntesis de toques descartaba eventos si los timestamps de telemetría venían vacíos (`-1L`).
+     - Al tocar la patilla, el dedo generaba micro-desplazamientos instantáneos en el sensor capacitivo.
+- **Soluciones Implementadas**:
+  1. **Activación Predeterminada del Micrófono Bluetooth SCO de las Gafas**:
+     - En `Prefs.kt`, se cambió el valor por defecto de `isGeminiForceScoEnabled` a `true`.
+  2. **Modo Escucha Inmediato para Gemini Asistente/App**:
+     - `TouchGestureManager.launchGeminiAssistant(context, isLive = false)`: Despierta la pantalla con wakelock brillante, descarta el keyguard mediante `SendTrampolineActivity`, activa la ruta de audio Bluetooth SCO (`setCommunicationDevice` / `startBluetoothSco`) con ventana extendida de 8.5s para capturar la pregunta antes de restaurar A2DP para el audio de respuesta.
+     - Dispara `AutoSendAccessibilityService.triggerGeminiVoiceAutoStart(...)` que mediante ráfagas rápidas de reintento (150ms, 350ms, 600ms, 1000ms, 1600ms, 2500ms, 4000ms) y en `onAccessibilityEvent` localiza y presiona automáticamente el botón de micrófono (`findAndClickGeminiMicButton`) en la app de Gemini (`com.google.android.apps.bard`).
+  3. **Modo Conversación Continua para Gemini Live**:
+     - `TouchGestureManager.launchGeminiAssistant(context, isLive = true)`: Despierta y mantiene encendida la pantalla con wakelock de 60s, enruta el micrófono SCO de las gafas y **no** programa liberación automática (`scoReleaseRunnable`), manteniendo el canal SCO permanentemente abierto durante la conversación multidireccional.
+     - `AutoSendAccessibilityService.triggerGeminiLiveAutoStart(...)` localiza y presiona dinámicamente el botón de onda/Live (`waveform`, `live`, `gemini live`, `sparkle`, `hablar en directo`, etc.) para iniciar la sesión continua en manos libres.
+  4. **Optimización Extrema de Detección Táctil en la Patilla**:
+     - En `TouchGestureManager.kt`, se redujo `DEBOUNCE_MS` a 200ms (antes 350ms), se amplió la ventana de doble toque a `30L..800L` (antes 40..700ms).
+     - En `InboundRouter.kt`, se mantuvo el filtrado de rebotes idénticos `<= 50ms`, la consolidación de patilla izquierda `200 + 203`, y se optimizó la síntesis de `DOUBLE_TAP` y `TRIPLE_TAP` tanto con timestamps válidos como con eventos agrupados en el mismo paquete BLE (`dt == -1L`).
+  5. **Verificación y Pruebas**:
+     - Se actualizaron y expandieron las suites de pruebas unitarias en `InboundGestureTest.kt` y `TouchGestureManagerTest.kt` incluyendo síntesis en ventana extendida de 750ms.
+     - `./gradlew testDebugUnitTest`: 260 tests pasando al 100%.
+     - `./gradlew assembleDebug`: Compilación exitosa de APK.
+     - `codegraph sync`: Grafo de código sincronizado.
+
+### [2026-09-10] — Corrección de Doble Toque para Lanzar App Gemini con Desbloqueo y Modo Gemini Live
+- **Diagnóstico y Causas Raíz**:
+  - En el log (`/home/rcastro/Descargas/myvu_client_log.txt`), los toques físicos (`TAP`, código 210) llegaban a la app pero no disparaban Gemini.
+  - La preferencia `touchpad_double_tap_action` tenía por defecto `"media_play_pause"` en `Prefs.kt`, por lo que el doble toque no lanzaba Gemini salvo configuración manual previa.
+  - `DOUBLE_TAP_MAX_INTERVAL_MS` estaba limitado a 450ms. Con la latencia de transmisión BLE de las gafas y la cadencia humana al tocar la patilla, intervalos de 500-700ms eran catalogados como toques individuales aislados (`Action: none`).
+  - `launchGeminiAssistant` llamaba a `ACTION_VOICE_SEARCH_HANDS_FREE`, el cual en Android moderno no lanza la app de Gemini (`com.google.android.apps.bard`).
+- **Soluciones Implementadas**:
+  1. `Prefs.kt`: Se cambió el valor por defecto de `touchpadDoubleTapAction` a `"launch_gemini"`.
+  2. `GestureAction.kt`: Se añadió la acción `LAUNCH_GEMINI_LIVE` (`"gemini_live"`, display: `"Gemini Live (Conversación)"`) y se renombró `LAUNCH_GEMINI` a `"Gemini (Asistente / App)"`.
+  3. `TouchGestureManager.kt`:
+     - Se aumentó `DOUBLE_TAP_MAX_INTERVAL_MS` a 700ms para garantizar que la cadencia humana sea detectada fluidamente.
+     - Se agregó soporte para `LAUNCH_GEMINI_LIVE` en `ActionExecutor` (`executeGeminiLive()`) y en `dispatchAction`.
+     - Se actualizó `launchGeminiAssistant(context, isLive: Boolean = false)`: despierta la pantalla con `LockScreenHelper.wakeUpScreen`, descarta el keyguard con `SendTrampolineActivity.launchWithKeyguardDismiss`, y abre directamente la aplicación oficial de Gemini (`com.google.android.apps.bard`) con flags `FLAG_ACTIVITY_NEW_TASK` y `FLAG_ACTIVITY_CLEAR_TOP`, con cascada de fallbacks a `ACTION_ASSIST`, `ACTION_VOICE_SEARCH_HANDS_FREE` y `ACTION_VOICE_COMMAND`.
+  4. `InboundRouter.kt`: Se amplió la ventana de síntesis de doble toque en lotes BLE de 500ms a 700ms (`50L..700L`).
+  5. `AutoSendAccessibilityService.kt`:
+     - Se implementó `triggerGeminiLiveAutoStart(isDeviceLocked, timeoutMs)` y `scheduleBurstGeminiLiveRetries()`.
+     - Se agregó `findAndClickGeminiLiveButton` para detectar dinámicamente y pulsar el botón de conversación continua de Gemini Live (`viewId` o `contentDescription` con "live", "gemini live", "waveform", "hablar en directo", etc.).
+  6. `ConnectionManager.kt` y `GlassesEventHandler.kt`: Se implementó `executeGeminiLive()` para invocar `launchGeminiAssistant(ctx, isLive = true)`.
+  7. Pruebas Unitarias: Se actualizaron `TouchGestureManagerTest.kt` y `SettingsGestureConfigTest.kt` verificando que el doble toque por defecto sea `LAUNCH_GEMINI`, que la ventana de 600ms sintetice doble toque, y que `LAUNCH_GEMINI_LIVE` se procese correctamente (260 tests pasando).
+
+### [2026-09-10] — Reversión del Re-bloqueo Automático Inteligente de Pantalla
+- **Motivo de Reversión**:
+  - Se confirmó que el re-bloqueo automático (`lockDeviceScreen()` mediante `performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)`) bloqueaba la pantalla prematuramente mientras Gemini aún procesaba o dictaba su respuesta, provocando que Android suspendiera o cancelara de inmediato la sesión del asistente de voz.
+  - Asimismo, en tareas de automatización (como llamadas directas de WhatsApp y despachos que requieren que la actividad siga visible sobre la pantalla de bloqueo o keyguard), el bloqueo forzado cancelaba las tareas pendientes que dependían de la pantalla encendida y activa.
+- **Acciones Realizadas**:
+  1. `LockScreenHelper.kt`: Se eliminaron `lockDeviceScreen()` y `scheduleAutoLock()`, preservando únicamente las funciones legítimas de encendido y superposición sobre keyguard (`wakeUpScreen`, `unlockKeyguard`, etc.).
+  2. `Prefs.kt`: Se eliminó la clave de preferencia `KEY_AUTO_LOCK_AFTER_VOICE_ACTION` y sus métodos getter/setter `isAutoLockAfterActionEnabled` / `setAutoLockAfterActionEnabled`.
+  3. `AutoSendAccessibilityService.kt`: Se removió el observador de ciclo de vida de Gemini (`armGeminiAutoLock`, `cancelGeminiAutoLock`, `isGeminiWatchActive`, `geminiHadFocus`), la variable `wasLockedOnTrigger`, y todas las llamadas a `scheduleAutoLock` en los reintentos y en `onAccessibilityEvent`.
+  4. `TouchGestureManager.kt`: En `launchGeminiAssistant`, se eliminó el chequeo de `wasDeviceLocked` y la llamada a `armGeminiAutoLock`.
+  5. `PhoneActionExecutor.kt`: En `makeWhatsAppCall`, se removió la programación de bloqueo de pantalla diferido.
+  6. `activity_settings.xml` y `SettingsActivity.kt`: Se retiró el switch Material 3 `swAutoLockAfterAction` y su vista asociada, manteniendo `swForceGeminiSco`.
 
 ### [2026-09-10] — Robustez Total en Touchpad: Deduplicación de Rebotes en Lotes, Consolidación Sender 2, Inmunidad a Ruido < 40ms, Estabilidad SPP sin Caídas por Bluetooth SCO y Corrección Scoped Storage en BackupManager
 - **Problemas Identificados en Nuevo Log (709 líneas)**:

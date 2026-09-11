@@ -206,8 +206,8 @@ class ConnectionManager(
             ai().onTrigger(code)
         }
 
-        inbound.setTouchGestureListener { gestureType, rawCode, _ ->
-            TouchGestureManager.handleGesture(this.context, gestureType, rawCode, createGestureActionExecutor())
+        inbound.setTouchGestureListener { gestureType, rawCode, _, eventTime ->
+            TouchGestureManager.handleGesture(this.context, gestureType, rawCode, createGestureActionExecutor(), eventTime)
         }
 
         inbound.setWeatherRequestListener {
@@ -219,8 +219,8 @@ class ConnectionManager(
         }
     }
 
-    fun executeGesture(gesture: GlassGesture, rawCode: Int = gesture.code) {
-        TouchGestureManager.handleGesture(this.context, gesture, rawCode, createGestureActionExecutor())
+    fun executeGesture(gesture: GlassGesture, rawCode: Int = gesture.code, eventTime: Long = -1L) {
+        TouchGestureManager.handleGesture(this.context, gesture, rawCode, createGestureActionExecutor(), eventTime)
     }
 
     private fun createGestureActionExecutor(): TouchGestureManager.ActionExecutor {
@@ -230,7 +230,11 @@ class ConnectionManager(
             }
 
             override fun executeGeminiAssistant() {
-                TouchGestureManager.launchGeminiAssistant(this@ConnectionManager.context)
+                TouchGestureManager.launchGeminiAssistant(this@ConnectionManager.context, isLive = false)
+            }
+
+            override fun executeGeminiLive() {
+                TouchGestureManager.launchGeminiAssistant(this@ConnectionManager.context, isLive = true)
             }
 
             override fun executePhoneAssistant() {

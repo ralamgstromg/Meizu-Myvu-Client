@@ -402,7 +402,7 @@ object Prefs {
 
     @JvmStatic
     fun screenOffTime(c: Context): Int {
-        return prefs(c).getInt("glasses_screen_off_time", 10)
+        return prefs(c).getInt("glasses_screen_off_time", 15)
     }
 
     @JvmStatic
@@ -538,7 +538,7 @@ object Prefs {
 
     @JvmStatic
     fun touchpadDoubleTapAction(c: Context): String {
-        return prefs(c).getString("touchpad_double_tap_action", "media_play_pause") ?: "media_play_pause"
+        return prefs(c).getString("touchpad_double_tap_action", "launch_gemini") ?: "launch_gemini"
     }
 
     @JvmStatic
@@ -656,25 +656,11 @@ object Prefs {
 
     @JvmStatic
     fun isGeminiForceScoEnabled(c: Context): Boolean {
-        return prefs(c).getBoolean(KEY_GEMINI_FORCE_SCO, false)
+        return prefs(c).getBoolean(KEY_GEMINI_FORCE_SCO, true)
     }
 
     @JvmStatic
     fun setGeminiForceScoEnabled(c: Context, enabled: Boolean) {
         prefs(c).edit().putBoolean(KEY_GEMINI_FORCE_SCO, enabled).apply()
-    }
-
-    // --- Re-Bloqueo Automático del Celular ---
-
-    private const val KEY_AUTO_LOCK_AFTER_VOICE_ACTION = "auto_lock_after_voice_action"
-
-    @JvmStatic
-    fun isAutoLockAfterActionEnabled(c: Context): Boolean {
-        return prefs(c).getBoolean(KEY_AUTO_LOCK_AFTER_VOICE_ACTION, true)
-    }
-
-    @JvmStatic
-    fun setAutoLockAfterActionEnabled(c: Context, enabled: Boolean) {
-        prefs(c).edit().putBoolean(KEY_AUTO_LOCK_AFTER_VOICE_ACTION, enabled).apply()
     }
 }

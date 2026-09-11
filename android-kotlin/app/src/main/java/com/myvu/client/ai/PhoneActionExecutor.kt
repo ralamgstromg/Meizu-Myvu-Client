@@ -894,9 +894,6 @@ class PhoneActionExecutor(context: Context) {
                 }
                 if (isLocked) {
                     SendTrampolineActivity.launchWithKeyguardDismiss(context, voipIntent)
-                    if (com.myvu.client.core.Prefs.isAutoLockAfterActionEnabled(context)) {
-                        com.myvu.client.core.LockScreenHelper.scheduleAutoLock(3500L, "WhatsApp direct VoIP call initiated")
-                    }
                 } else {
                     context.startActivity(voipIntent)
                 }

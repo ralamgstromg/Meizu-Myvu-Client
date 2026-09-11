@@ -8,7 +8,8 @@ enum class GestureAction(
     val displayName: String
 ) {
     NONE("none", "Ninguna"),
-    LAUNCH_GEMINI("launch_gemini", "Lanzar Gemini (Manos Libres)"),
+    LAUNCH_GEMINI("launch_gemini", "Gemini (Asistente / App)"),
+    LAUNCH_GEMINI_LIVE("gemini_live", "Gemini Live (Conversación)"),
     LAUNCH_PHONE_ASSISTANT("phone_assistant", "Asistente del Teléfono (Google)"),
     LAUNCH_APP("launch_app", "Abrir Aplicación..."),
     LAUNCH_LOCAL_AI("ai_assistant", "Asistente IA de Gafas"),
@@ -39,7 +40,8 @@ enum class GestureAction(
             val clean = id.trim().lowercase()
             return when (clean) {
                 "none" -> NONE
-                "launch_gemini", "gemini", "gemini_assistant", "gemini_live" -> LAUNCH_GEMINI
+                "gemini_live", "launch_gemini_live", "live" -> LAUNCH_GEMINI_LIVE
+                "launch_gemini", "gemini", "gemini_assistant" -> LAUNCH_GEMINI
                 "phone_assistant", "launch_phone_assistant", "google_assistant", "assistant" -> LAUNCH_PHONE_ASSISTANT
                 "launch_app", "app", "open_app" -> LAUNCH_APP
                 "ai_assistant", "local_ai", "launch_local_ai", "ai" -> LAUNCH_LOCAL_AI

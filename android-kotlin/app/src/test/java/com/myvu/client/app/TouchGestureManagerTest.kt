@@ -15,6 +15,7 @@ class TouchGestureManagerTest {
         var aiCode: Int? = null
         var phoneAssistantCalled = false
         var geminiAssistantCalled = false
+        var geminiLiveCalled = false
         var launchAppPackage: String? = null
         var weatherSyncCalled = false
         var toggleMirrorCalled = false
@@ -31,6 +32,10 @@ class TouchGestureManagerTest {
 
         override fun executeGeminiAssistant() {
             geminiAssistantCalled = true
+        }
+
+        override fun executeGeminiLive() {
+            geminiLiveCalled = true
         }
 
         override fun executePhoneAssistant() {
@@ -88,6 +93,9 @@ class TouchGestureManagerTest {
         assertEquals(GestureAction.LAUNCH_PHONE_ASSISTANT, GestureAction.fromId("phone_assistant"))
         assertEquals(GestureAction.LAUNCH_GEMINI, GestureAction.fromId("gemini"))
         assertEquals(GestureAction.LAUNCH_GEMINI, GestureAction.fromId("launch_gemini"))
+        assertEquals(GestureAction.LAUNCH_GEMINI_LIVE, GestureAction.fromId("gemini_live"))
+        assertEquals(GestureAction.LAUNCH_GEMINI_LIVE, GestureAction.fromId("launch_gemini_live"))
+        assertEquals(GestureAction.LAUNCH_GEMINI_LIVE, GestureAction.fromId("live"))
         assertEquals(GestureAction.LAUNCH_PHONE_ASSISTANT, GestureAction.fromId("google_assistant"))
         assertEquals(GestureAction.LAUNCH_LOCAL_AI, GestureAction.fromId("ai_assistant"))
         assertEquals(GestureAction.LAUNCH_LOCAL_AI, GestureAction.fromId("local_ai"))
@@ -111,7 +119,7 @@ class TouchGestureManagerTest {
     @Test
     fun defaultActionsForGesturesAreAccurate() {
         assertEquals(GestureAction.NONE, TouchGestureManager.getActionForGesture(null, GlassGesture.TAP))
-        assertEquals(GestureAction.MEDIA_PLAY_PAUSE, TouchGestureManager.getActionForGesture(null, GlassGesture.DOUBLE_TAP))
+        assertEquals(GestureAction.LAUNCH_GEMINI, TouchGestureManager.getActionForGesture(null, GlassGesture.DOUBLE_TAP))
         assertEquals(GestureAction.LAUNCH_GEMINI, TouchGestureManager.getActionForGesture(null, GlassGesture.TRIPLE_TAP))
         assertEquals(GestureAction.MEDIA_NEXT, TouchGestureManager.getActionForGesture(null, GlassGesture.SWIPE_FORWARD))
         assertEquals(GestureAction.MEDIA_PREV, TouchGestureManager.getActionForGesture(null, GlassGesture.SWIPE_BACKWARD))
@@ -150,10 +158,10 @@ class TouchGestureManagerTest {
     }
 
     @Test
-    fun dispatchesDoubleTapToMediaPlayPauseByDefault() {
+    fun dispatchesDoubleTapToGeminiByDefault() {
         TouchGestureManager.handleGesture(null, GlassGesture.DOUBLE_TAP, 2, executor)
-        assertTrue(executor.mediaPlayPauseCalled)
-        assertFalse(executor.phoneAssistantCalled)
+        assertTrue(executor.geminiAssistantCalled)
+        assertFalse(executor.mediaPlayPauseCalled)
     }
 
     @Test
@@ -180,18 +188,18 @@ class TouchGestureManagerTest {
     fun dispatchesTapToNoneByDefault() {
         TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, executor)
         assertTrue(executor.noneCalled)
-        assertFalse(executor.mediaPlayPauseCalled)
+        assertFalse(executor.geminiAssistantCalled)
     }
 
     @Test
     fun debounceSuppressesRapidSuccessiveTriggers() {
         TouchGestureManager.handleGesture(null, GlassGesture.DOUBLE_TAP, 2, executor)
-        assertTrue(executor.mediaPlayPauseCalled)
+        assertTrue(executor.geminiAssistantCalled)
 
         // Immediate second event within debounce window should be ignored
         val secondExecutor = MockActionExecutor()
         TouchGestureManager.handleGesture(null, GlassGesture.DOUBLE_TAP, 2, secondExecutor)
-        assertFalse(secondExecutor.mediaPlayPauseCalled)
+        assertFalse(secondExecutor.geminiAssistantCalled)
 
         // After reset, event passes through
         TouchGestureManager.resetDebounceForTesting()
@@ -222,17 +230,33 @@ class TouchGestureManagerTest {
         // Tap 1 at t=1000ms: TAP action is NONE by default
         TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, executor)
         assertTrue(executor.noneCalled)
-        assertFalse(executor.mediaPlayPauseCalled)
+        assertFalse(executor.geminiAssistantCalled)
 
         // Reset executor flags
         val secondExecutor = MockActionExecutor()
 
-        // Tap 2 at t=1180ms (+180ms, within 40..450ms window)
-        // DOUBLE_TAP action is MEDIA_PLAY_PAUSE by default
+        // Tap 2 at t=1180ms (+180ms, within 40..700ms window)
+        // DOUBLE_TAP action is LAUNCH_GEMINI by default
         simulatedTime = 1180L
         TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, secondExecutor)
-        assertTrue(secondExecutor.mediaPlayPauseCalled)
+        assertTrue(secondExecutor.geminiAssistantCalled)
         assertFalse(secondExecutor.noneCalled)
+    }
+
+    @Test
+    fun twoTapsAt600msSynthesizeDoubleTap() {
+        var simulatedTime = 1000L
+        TouchGestureManager.timeProvider = { simulatedTime }
+
+        // Tap 1 at t=1000ms
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, executor)
+        assertTrue(executor.noneCalled)
+
+        // Tap 2 at t=1600ms (+600ms, within 40..700ms window)
+        val secondExecutor = MockActionExecutor()
+        simulatedTime = 1600L
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, secondExecutor)
+        assertTrue(secondExecutor.geminiAssistantCalled)
     }
 
     @Test
@@ -250,7 +274,7 @@ class TouchGestureManagerTest {
         // Hardware double tap arrives
         TouchGestureManager.handleGesture(null, GlassGesture.DOUBLE_TAP, 2, secondExecutor)
         // Must NOT be blocked by the previous NONE action!
-        assertTrue(secondExecutor.mediaPlayPauseCalled)
+        assertTrue(secondExecutor.geminiAssistantCalled)
     }
 
     @Test
@@ -273,6 +297,89 @@ class TouchGestureManagerTest {
         val secondExecutor = MockActionExecutor()
         TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, secondExecutor)
         // Must successfully synthesize DOUBLE_TAP because the 5ms bounce did not corrupt lastTapTime
-        assertTrue(secondExecutor.mediaPlayPauseCalled)
+        assertTrue(secondExecutor.geminiAssistantCalled)
+    }
+
+    @Test
+    fun twoTapsAt750msSynthesizeDoubleTapInExtendedWindow() {
+        var simulatedTime = 1000L
+        TouchGestureManager.timeProvider = { simulatedTime }
+
+        // Tap 1 at t=1000ms
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, executor)
+        assertTrue(executor.noneCalled)
+
+        // Tap 2 at t=1750ms (+750ms, within new 30..1100ms window)
+        val secondExecutor = MockActionExecutor()
+        simulatedTime = 1750L
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, secondExecutor)
+        assertTrue(secondExecutor.geminiAssistantCalled)
+    }
+
+    @Test
+    fun twoTapsAt950msSynthesizeDoubleTapInExtendedWindow() {
+        var simulatedTime = 1000L
+        TouchGestureManager.timeProvider = { simulatedTime }
+
+        // Tap 1 at t=1000ms
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, executor)
+        assertTrue(executor.noneCalled)
+
+        // Tap 2 at t=1950ms (+950ms, within extended 30..1100ms window)
+        val secondExecutor = MockActionExecutor()
+        simulatedTime = 1950L
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, secondExecutor)
+        assertTrue(secondExecutor.geminiAssistantCalled)
+    }
+
+    @Test
+    fun twoTapsWithHardwareEventTimeSynthesizeDoubleTapEvenIfNetworkDelayed() {
+        var simulatedTime = 1000L
+        TouchGestureManager.timeProvider = { simulatedTime }
+
+        // Hardware tap 1 occurred at 1789080160000L, arrived at t=1000ms
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 210, executor, eventTime = 1789080160000L)
+        assertTrue(executor.noneCalled)
+
+        // Hardware tap 2 occurred at 1789080160800L (+800ms on glasses),
+        // but due to Bluetooth suspend wakeup delay, arrived at t=4500ms (+3500ms on phone!)
+        val secondExecutor = MockActionExecutor()
+        simulatedTime = 4500L
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 210, secondExecutor, eventTime = 1789080160800L)
+
+        // Must succeed because hardware interval was 800ms!
+        assertTrue(secondExecutor.geminiAssistantCalled)
+    }
+
+    @Test
+    fun threeTapsSynthesizeTripleTapAcrossPackets() {
+        var simulatedTime = 1000L
+        TouchGestureManager.timeProvider = { simulatedTime }
+
+        // Tap 1 at t=1000ms
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, executor)
+        assertTrue(executor.noneCalled)
+
+        // Tap 2 at t=1200ms (+200ms)
+        val secondExecutor = MockActionExecutor()
+        simulatedTime = 1200L
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, secondExecutor)
+        assertTrue(secondExecutor.geminiAssistantCalled)
+
+        // Tap 3 at t=1450ms (+250ms from tap 2)
+        val thirdExecutor = MockActionExecutor()
+        simulatedTime = 1450L
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 1, thirdExecutor)
+        // With default null context, TRIPLE_TAP triggers LAUNCH_GEMINI
+        assertTrue(thirdExecutor.geminiAssistantCalled)
+    }
+
+    @Test
+    fun launchGeminiAssistantAndPhoneAssistantAreNullSafe() {
+        // Must handle null context gracefully without throwing
+        TouchGestureManager.launchGeminiAssistant(null, isLive = false)
+        TouchGestureManager.launchGeminiAssistant(null, isLive = true)
+        TouchGestureManager.launchPhoneAssistant(null)
     }
 }
+

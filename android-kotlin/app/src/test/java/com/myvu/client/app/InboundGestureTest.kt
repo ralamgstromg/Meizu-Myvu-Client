@@ -14,7 +14,8 @@ class InboundGestureTest {
     private data class GestureEvent(
         val gesture: GlassGesture,
         val code: Int,
-        val name: String
+        val name: String,
+        val eventTime: Long = -1L
     )
 
     private val receivedGestures = ArrayList<GestureEvent>()
@@ -27,8 +28,8 @@ class InboundGestureTest {
         router = InboundRouter(object : InboundRouter.Sender {
             override fun send(actionJson: String, targetPkg: String, sourcePkg: String) {}
         })
-        router.setTouchGestureListener { gestureType, rawCode, gestureName ->
-            receivedGestures.add(GestureEvent(gestureType, rawCode, gestureName))
+        router.setTouchGestureListener { gestureType, rawCode, gestureName, eventTime ->
+            receivedGestures.add(GestureEvent(gestureType, rawCode, gestureName, eventTime))
         }
     }
 

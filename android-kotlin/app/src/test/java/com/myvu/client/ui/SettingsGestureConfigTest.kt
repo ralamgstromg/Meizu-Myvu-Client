@@ -51,7 +51,7 @@ class SettingsGestureConfigTest {
         assertNotNull("actTouchpadLongPress should be present in layout", actLongPress)
 
         assertEquals(GestureAction.NONE.displayName, actTap.text.toString())
-        assertEquals(GestureAction.MEDIA_PLAY_PAUSE.displayName, actDoubleTap.text.toString())
+        assertEquals(GestureAction.LAUNCH_GEMINI.displayName, actDoubleTap.text.toString())
         assertEquals(GestureAction.LAUNCH_PHONE_ASSISTANT.displayName, actTripleTap.text.toString())
         assertEquals(GestureAction.MEDIA_NEXT.displayName, actSwipeFwd.text.toString())
         assertEquals(GestureAction.MEDIA_PREV.displayName, actSwipeBwd.text.toString())
