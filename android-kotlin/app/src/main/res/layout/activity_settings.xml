@@ -1159,6 +1159,33 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:text="Desactivado (Recomendado): Mantiene el enlace SPP estable sin reiniciar la conexión al usar Gemini. Actívalo solo si tu celular no reconoce la voz de las gafas." />
+
+                    <!-- Tiempo para volver a bloquear pantalla tras acciones -->
+                    <TextView
+                        android:id="@+id/lblScreenReLockTimeout"
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Tiempo para volver a bloquear: 60s (1 min)" />
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/sliderScreenReLockTimeout"
+                        style="@style/Slider.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="15"
+                        android:valueTo="300"
+                        android:stepSize="15"
+                        android:value="60" />
+
+                    <TextView
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="1dp"
+                        android:textSize="12sp"
+                        android:text="Apaga y bloquea automáticamente la pantalla tras ejecutar acciones desde las gafas para ahorrar batería y evitar toques accidentales en el bolsillo." />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

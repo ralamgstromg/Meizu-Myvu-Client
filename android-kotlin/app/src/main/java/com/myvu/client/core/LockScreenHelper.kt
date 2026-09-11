@@ -1,11 +1,14 @@
 package com.myvu.client.core
 
+import android.accessibilityservice.AccessibilityService
 import android.app.Activity
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.WindowManager
@@ -69,8 +72,12 @@ object LockScreenHelper {
         }
     }
 
+    private val reLockHandler = Handler(Looper.getMainLooper())
+    private var reLockRunnable: Runnable? = null
+
     /**
-     * Wakes up device screen using PowerManager WakeLock.
+     * Wakes up device screen using PowerManager WakeLock and schedules automatic re-lock
+     * after the user-configured timeout (Prefs.screenReLockTimeoutSeconds, default 60s).
      */
     fun wakeUpScreen(context: Context, tag: String = "MYVU:LockScreenWake", durationMs: Long = 5000L) {
         try {
@@ -84,9 +91,57 @@ object LockScreenHelper {
             )
             wakeLock.acquire(durationMs)
             LogBus.log("LockScreenHelper: Screen awakened for agent interaction ($tag)")
+
+            // Schedule automatic re-lock to protect device and conserve battery
+            scheduleReLock(context)
         } catch (e: Exception) {
             LogBus.warn("LockScreenHelper: Could not acquire WakeLock: ${e.message}")
         }
+    }
+
+    /**
+     * Schedules turning off and re-locking the screen after the configured timeout in Prefs.
+     */
+    fun scheduleReLock(context: Context, timeoutSeconds: Int = 0) {
+        cancelScheduledReLock()
+        val appContext = context.applicationContext
+        val sec = if (timeoutSeconds > 0) timeoutSeconds else Prefs.screenReLockTimeoutSeconds(appContext)
+        val delayMs = sec * 1000L
+
+        val runnable = Runnable {
+            LogBus.log("LockScreenHelper: Re-lock timer expired (${sec}s) -> Re-locking screen")
+            lockDevice(appContext)
+        }
+        reLockRunnable = runnable
+        reLockHandler.postDelayed(runnable, delayMs)
+        LogBus.log("LockScreenHelper: Scheduled screen re-lock in ${sec}s")
+    }
+
+    /**
+     * Cancels any pending re-lock timer (e.g. when user manually uses device or dismisses).
+     */
+    fun cancelScheduledReLock() {
+        reLockRunnable?.let {
+            reLockHandler.removeCallbacks(it)
+            reLockRunnable = null
+        }
+    }
+
+    /**
+     * Immediately locks the screen using Accessibility Service GLOBAL_ACTION_LOCK_SCREEN.
+     */
+    fun lockDevice(context: Context): Boolean {
+        cancelScheduledReLock()
+        val accessibilityService = com.myvu.client.service.AutoSendAccessibilityService.activeInstance
+        if (accessibilityService != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val locked = accessibilityService.performGlobalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)
+            if (locked) {
+                LogBus.log("LockScreenHelper: Screen locked successfully via AccessibilityService GLOBAL_ACTION_LOCK_SCREEN")
+                return true
+            }
+        }
+        LogBus.warn("LockScreenHelper: Unable to lock screen directly (Accessibility service not active or Android < P)")
+        return false
     }
 
     /**

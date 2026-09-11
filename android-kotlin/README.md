@@ -175,6 +175,7 @@ adb install -r -g app/build/outputs/apk/debug/app-debug.apk
    - **Doble Toque Predeterminado**: Lanza **Gemini (Asistente / App)** o **Gemini Live (Conversación)** despertando y desbloqueando el teléfono automáticamente.
    - **Enrutamiento Directo de Micrófono SCO**: Activa por defecto el micrófono integrado de las gafas Meizu MYVU (`AudioDeviceInfo.TYPE_BLUETOOTH_SCO`).
    - **Modo Escucha Inmediato y Auto-Click Dual**: En modo Asistente normal, la app abre Gemini y activa automáticamente el micrófono mediante el servicio de accesibilidad (`canPerformGestures="true"`, exploración BFS sin podas erróneas y doble despacho Compose Action + DispatchGesture por coordenadas) para que puedas hablar de inmediato. En modo **Gemini Live**, invoca directamente el overlay del Asistente del teléfono con micrófono habilitado, pulsa automáticamente el botón de conversación en vivo y mantiene el canal de audio SCO permanentemente abierto manos libres sin interrupción.
+   - **Auto-Bloqueo de Pantalla Parametrizable**: Temporizador configurable en Ajustes (15s a 300s, por defecto **60s / 1 min**) que apaga y bloquea automáticamente la pantalla tras ejecutar acciones desde las gafas, protegiendo el móvil en el bolsillo y ahorrando batería.
    - **Detección Táctil Optimizada**: Debounce ágil a 200ms, ventana ampliada de toques (30ms a 1100ms), sincronización por timestamps de hardware de las gafas y síntesis inteligente de doble y triple toque entre paquetes Bluetooth que elimina falsos positivos por rebotes capacitivos.
 
 ---

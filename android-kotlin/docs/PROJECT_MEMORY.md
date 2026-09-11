@@ -39,6 +39,25 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
 
 ---
 
+### [2026-09-11] — Temporizador Parametrizable de Auto-Bloqueo de Pantalla tras Acciones (Default 60s / 1 min)
+- **Contexto y Requerimiento**:
+  - Al ejecutar acciones desde las gafas que despiertan la pantalla (Gemini, Gemini Live, Asistente de teléfono, Abrir aplicaciones, WhatsApp, Telegram, etc.), el dispositivo se encendía y desbloqueaba el keyguard, pero quedaba expuesto y encendido en el bolsillo dependiendo del timeout del sistema operativo.
+  - El usuario solicitó un ajuste para configurar un tiempo máximo para volver a bloquear la pantalla, parametrizable y con 1 minuto (60s) por defecto.
+- **Solución Implementada**:
+  - **`Prefs.kt`**:
+    - Se incorporaron las claves y métodos `screenReLockTimeoutSeconds(c)` y `setScreenReLockTimeoutSeconds(c, seconds)` con rango de 15 a 600 segundos y valor por defecto de `60` segundos (1 minuto).
+  - **`LockScreenHelper.kt`**:
+    - Se creó `lockDevice(context)`: bloquea de inmediato la pantalla utilizando `AutoSendAccessibilityService.activeInstance?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)`.
+    - Se implementó `scheduleReLock(context, timeoutSeconds)` y `cancelScheduledReLock()`:
+      - Cada invocación de `wakeUpScreen` programa automáticamente un temporizador con el tiempo fijado por el usuario en `Prefs`.
+      - Al expirar, apaga y bloquea el dispositivo automáticamente.
+  - **Interfaz de Ajustes (`activity_settings.xml` y `SettingsActivity.kt`)**:
+    - En la tarjeta **Gestos de la Patilla Táctil (Touchpad)**, se añadió un slider Material 3 (`sliderScreenReLockTimeout`) con rango de 15s a 300s (pasos de 15s) y valor predeterminado de 60s.
+    - Etiqueta dinámica `lblScreenReLockTimeout` formateando segundos y minutos (*"Tiempo para volver a bloquear: 60s (1 minuto)"*).
+- **Verificación**:
+  - Se corrió `./gradlew testDebugUnitTest` pasando 264 pruebas unitarias con éxito (`BUILD SUCCESSFUL`).
+  - Grafo sincronizado mediante `codegraph sync`.
+
 ### [2026-09-11] — Integración de Gemini Live vía Overlay del Asistente del Teléfono (Google/Gemini) con Auto-Start de Live
 - **Contexto y Requerimiento**:
   - Al activar "Asistente del Teléfono (Google)", el sistema abre de inmediato el micrófono en el overlay del Asistente.

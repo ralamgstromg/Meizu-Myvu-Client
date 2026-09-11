@@ -663,4 +663,20 @@ object Prefs {
     fun setGeminiForceScoEnabled(c: Context, enabled: Boolean) {
         prefs(c).edit().putBoolean(KEY_GEMINI_FORCE_SCO, enabled).apply()
     }
+
+    // --- Temporizador de Bloqueo de Pantalla tras Acciones ---
+
+    private const val KEY_SCREEN_RELOCK_TIMEOUT_SECONDS = "screen_relock_timeout_sec"
+    const val DEFAULT_SCREEN_RELOCK_TIMEOUT_SECONDS = 60
+
+    @JvmStatic
+    fun screenReLockTimeoutSeconds(c: Context): Int {
+        return prefs(c).getInt(KEY_SCREEN_RELOCK_TIMEOUT_SECONDS, DEFAULT_SCREEN_RELOCK_TIMEOUT_SECONDS)
+    }
+
+    @JvmStatic
+    fun setScreenReLockTimeoutSeconds(c: Context, seconds: Int) {
+        val clamped = seconds.coerceIn(15, 600)
+        prefs(c).edit().putInt(KEY_SCREEN_RELOCK_TIMEOUT_SECONDS, clamped).apply()
+    }
 }

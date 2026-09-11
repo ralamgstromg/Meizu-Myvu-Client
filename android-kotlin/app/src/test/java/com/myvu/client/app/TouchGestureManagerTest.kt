@@ -381,5 +381,11 @@ class TouchGestureManagerTest {
         TouchGestureManager.launchGeminiAssistant(null, isLive = true)
         TouchGestureManager.launchPhoneAssistant(null)
     }
+
+    @Test
+    fun lockScreenHelperReLockMethodsAreSafe() {
+        // Must handle cancellation and locking without throwing exceptions
+        com.myvu.client.core.LockScreenHelper.cancelScheduledReLock()
+    }
 }
 

@@ -480,6 +480,29 @@ class SettingsActivity : AppCompatActivity() {
         swForceGeminiSco?.setOnCheckedChangeListener { _, isChecked ->
             Prefs.setGeminiForceScoEnabled(this, isChecked)
         }
+
+        val sliderReLock: Slider? = findViewById(R.id.sliderScreenReLockTimeout)
+        val lblReLock: TextView? = findViewById(R.id.lblScreenReLockTimeout)
+        val currentReLockSeconds = Prefs.screenReLockTimeoutSeconds(this)
+
+        fun formatReLockText(sec: Int): String {
+            return if (sec % 60 == 0) {
+                val mins = sec / 60
+                "Tiempo para volver a bloquear: ${sec}s (${mins} ${if (mins == 1) "minuto" else "minutos"})"
+            } else {
+                "Tiempo para volver a bloquear: ${sec}s"
+            }
+        }
+
+        if (sliderReLock != null) {
+            sliderReLock.value = currentReLockSeconds.toFloat()
+            lblReLock?.text = formatReLockText(currentReLockSeconds)
+            sliderReLock.addOnChangeListener { _, value, _ ->
+                val valInt = value.toInt()
+                Prefs.setScreenReLockTimeoutSeconds(this, valInt)
+                lblReLock?.text = formatReLockText(valInt)
+            }
+        }
     }
 
     private fun wireLogging() {
