@@ -347,7 +347,36 @@ object TouchGestureManager {
             LogBus.log("Using native system Bluetooth routing for Gemini (SCO force disabled, preserving SPP stability)")
         }
 
-        // 4. Primary: Launch Gemini App (com.google.android.apps.bard) directly over keyguard
+        // 4. If isLive: First invoke Phone Assistant via media key & voice command (proven to open overlay & mic instantly)
+        if (isLive) {
+            try {
+                if (am != null) {
+                    val now = SystemClock.uptimeMillis()
+                    val down = KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOICE_ASSIST, 0)
+                    val up = KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_VOICE_ASSIST, 0)
+                    am.dispatchMediaKeyEvent(down)
+                    am.dispatchMediaKeyEvent(up)
+                    LogBus.log("Dispatched KEYCODE_VOICE_ASSIST for Gemini Live (Phone Assistant overlay trigger)")
+                }
+            } catch (e: Exception) {
+                LogBus.warn("Could not dispatch KEYCODE_VOICE_ASSIST for Gemini Live: ${e.message}")
+            }
+
+            try {
+                val voiceIntent = Intent(Intent.ACTION_VOICE_COMMAND).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                }
+                if (voiceIntent.resolveActivity(appContext.packageManager) != null) {
+                    com.myvu.client.ui.SendTrampolineActivity.launchWithKeyguardDismiss(appContext, voiceIntent)
+                    LogBus.log("Launched ACTION_VOICE_COMMAND for Gemini Live")
+                    return
+                }
+            } catch (e: Exception) {
+                LogBus.warn("Could not launch ACTION_VOICE_COMMAND for Gemini Live: ${e.message}")
+            }
+        }
+
+        // 5. Primary: Launch Gemini App (com.google.android.apps.bard) directly over keyguard
         try {
             val bardLaunchIntent = appContext.packageManager.getLaunchIntentForPackage("com.google.android.apps.bard")
             if (bardLaunchIntent != null) {
@@ -364,7 +393,7 @@ object TouchGestureManager {
             LogBus.warn("Could not launch com.google.android.apps.bard: ${e.message}")
         }
 
-        // 5. Fallback: System Assist intent (triggers Gemini assistant overlay if set as default assistant)
+        // 6. Fallback: System Assist intent (triggers Gemini assistant overlay if set as default assistant)
         try {
             val assistIntent = Intent(Intent.ACTION_ASSIST).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)

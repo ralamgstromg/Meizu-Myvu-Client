@@ -39,6 +39,28 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
 
 ---
 
+### [2026-09-11] — Integración de Gemini Live vía Overlay del Asistente del Teléfono (Google/Gemini) con Auto-Start de Live
+- **Contexto y Requerimiento**:
+  - Al activar "Asistente del Teléfono (Google)", el sistema abre de inmediato el micrófono en el overlay del Asistente.
+  - El usuario deseaba que al seleccionar **Gemini Live**, la app active el asistente de la misma manera pero pase inmediatamente al modo **Live** manos libres de forma automática.
+- **Diagnóstico**:
+  - `launchPhoneAssistant` despachaba `KEYCODE_VOICE_ASSIST` y `ACTION_VOICE_COMMAND`, levantando de inmediato la tarjeta/overlay del asistente del sistema con el micrófono ya abierto.
+  - `launchGeminiAssistant(isLive = true)` intentaba lanzar la app completa de Gemini (`com.google.android.apps.bard`) en vez de usar el overlay del Asistente.
+- **Ajustes y Correcciones Realizadas**:
+  - **`TouchGestureManager.kt`**:
+    - En `launchGeminiAssistant(isLive = true)`:
+      - Se mantiene el canal de audio SCO permanentemente abierto para la conversación interactiva.
+      - Se activa el modo Live en accesibilidad (`AutoSendAccessibilityService.triggerGeminiLiveAutoStart`).
+      - Se despacha `KEYCODE_VOICE_ASSIST` y `ACTION_VOICE_COMMAND` (el mismo flujo del Asistente del Teléfono), levantando el overlay del asistente del sistema con micrófono activo.
+      - Si el paquete completo de `bard` o `ACTION_ASSIST` se utiliza como fallback, se envía de forma coordinada a través de `SendTrampolineActivity`.
+  - **`AutoSendAccessibilityService.kt`**:
+    - Se aceleró la ráfaga de reintentos (`scheduleBurstGeminiLiveRetries`) comenzando desde 75ms (`75ms, 150ms, 300ms, 550ms...`) para hacer clic en el botón de Live en cuanto el overlay se dibuje.
+    - Se enriquecieron los selectores en `findAndClickGeminiLiveButton`:
+      - IDs: `assistant_live_button`, `chat_live_button`, `live_icon`, `live_toggle`, `live_mode_button`, etc.
+      - Descs/Textos: `"abrir gemini live"`, `"modo live"`, `"live mode"`, `"charlar en vivo"`, `"conversar en vivo"`, `"conversar"`, `"charlar"`, `"onda sonora"`.
+- **Verificación**:
+  - Suite de 264 pruebas unitarias ejecutadas con éxito (`BUILD SUCCESSFUL`, 0 errores).
+
 ### [2026-09-11] — Corrección Raíz de Activación de Micrófono y Gemini Live (canPerformGestures y Desbloqueo de BFS)
 - **Diagnóstico y Causas Raíz Identificadas**:
   1. **Permiso de Gestos Deshabilitado en XML (`accessibility_service_config.xml`)**:

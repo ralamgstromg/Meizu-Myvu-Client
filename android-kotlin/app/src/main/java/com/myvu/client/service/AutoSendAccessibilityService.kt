@@ -349,7 +349,7 @@ class AutoSendAccessibilityService : AccessibilityService() {
         }
 
         fun scheduleBurstGeminiLiveRetries() {
-            val delays = longArrayOf(150L, 350L, 700L, 1200L, 1800L, 2500L, 3500L, 5000L, 7000L, 9500L, 12500L)
+            val delays = longArrayOf(75L, 150L, 300L, 550L, 900L, 1400L, 2000L, 3000L, 4500L, 6500L, 9000L, 12000L)
             val handler = Handler(Looper.getMainLooper())
             for (d in delays) {
                 handler.postDelayed({
@@ -606,7 +606,8 @@ class AutoSendAccessibilityService : AccessibilityService() {
         val targetLiveIds = listOf(
             "live_button", "btn_live", "gemini_live", "live", "waveform", "mic_live",
             "sparkle", "action_live", "voice_mode", "live_chat_button", "voice_sheet_live_entrypoint",
-            "live_fab", "live_entrypoint", "gemini_live_button"
+            "live_fab", "live_entrypoint", "gemini_live_button", "assistant_live_button",
+            "chat_live_button", "live_icon", "live_toggle", "live_mode_button"
         )
 
         while (queue.isNotEmpty()) {
@@ -637,10 +638,14 @@ class AutoSendAccessibilityService : AccessibilityService() {
             val matchesDesc = desc in listOf(
                 "live", "gemini live", "iniciar live", "live chat", "conversación live",
                 "hablar en directo", "conversación en tiempo real", "en vivo", "abrir live",
-                "start live", "live voice", "modo conversación", "open gemini live"
+                "start live", "live voice", "modo conversación", "open gemini live",
+                "abrir gemini live", "modo live", "live mode", "charlar en vivo",
+                "conversar en vivo", "conversar", "charlar"
             ) || desc.startsWith("live") || desc.contains("gemini live") || desc.contains("open gemini live") ||
-                    desc.contains("waveform")
-            val matchesText = text in listOf("live", "gemini live", "iniciar live", "en vivo", "live chat")
+                    desc.contains("abrir gemini live") || desc.contains("iniciar live") ||
+                    desc.contains("waveform") || desc.contains("onda sonora")
+            val matchesText = text in listOf("live", "gemini live", "iniciar live", "en vivo", "live chat", "abrir live") ||
+                    text.contains("gemini live")
 
             if (matchesId || matchesDesc || matchesText) {
                 var clicked = false
