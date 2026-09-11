@@ -44,6 +44,10 @@ Cliente complementario nativo en Android (Kotlin) para gafas de realidad aumenta
   - Acciones del sistema: Gemini (App / Asistente), Gemini Live, Asistente del Teléfono, IA Local, Play/Pausa, Siguiente, Anterior, Modo Zen, Sincronización del Clima, Notificaciones y Teleprompter.
   - Sincronización dinámica de `set_music_tp_control_mode` para forzar reenvío de toques desde el launcher de las gafas.
 
+- **Búsqueda Priorizada de Contactos y Fallback Semántico (`ContactHelper`)**:
+  - **Prioridad Estricta al Nombre Secuencial**: Las búsquedas por voz priorizan el orden exacto de los nombres ingresados ($Q_0 \rightarrow Q_1$).
+  - **Blindaje del Nombre de Pila**: Descarta de inmediato contactos que solo compartan el apellido (ej: `"Denis Castro"` para `"Matias Castro"`), previniendo desvíos accidentales de llamadas o mensajes.
+  - **Fallback Semántico**: Mapeo inteligente de diminutivos y alias en español (`"mati"` $\leftrightarrow$ `"matias"`, `"juanca"` $\leftrightarrow$ `"juan carlos"`), parentescos familiares (`"papa"` $\leftrightarrow$ `"padre"`, `"hijo"`) y tolerancia fonética.
 
 - **Interfaz Moderna**:
   - Construida con **Material Design 3**, ViewBinding y soporte completo Edge-to-Edge (`EdgeToEdgeHelper`).

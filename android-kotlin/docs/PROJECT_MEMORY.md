@@ -39,6 +39,38 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
 
 ---
 
+### [2026-09-11] — Búsqueda Priorizada de Contactos por Orden Secuencial y Fallback Semántico
+- **Contexto y Requerimiento**:
+  - En comandos de voz como `"Enviar mensaje de whatsapp a Matias Castro, hola hijo"`, el motor de resolución de contactos (`ContactHelper.kt`) elegía incorrectamente a `"Denis Castro"` en lugar de `"Matias Castro"`.
+  - Causa raíz: La lógica anterior usaba sumatoria laxa de tokens donde compartir únicamente el apellido (`"Castro"`) otorgaba puntaje de coincidencia de token (+60) + bonificación de cobertura parcial (+100) + bonificación colombiana (+50), alcanzando 210 puntos y superando el umbral laxo de 30/40 puntos. El nombre de pila (`"Matias"` vs `"Denis"`) era completamente ignorado.
+  - Requerimiento: Dar prioridad estricta al nombre en el orden en que se ingresa ($Q_0 \rightarrow Q_1$). Si no se encuentran resultados en la búsqueda secuencial estricta, recurrir a búsqueda semántica de contactos.
+- **Solución Implementada**:
+  - **`ContactHelper.kt`**:
+    - **Regla Crítica de Seguridad para Consultas Compuestas**: Si la consulta tiene $\ge 2$ tokens (ej: `"Matias Castro"`), el primer token ($Q_0$, nombre de pila) DEBE coincidir con algún token del contacto (vía exacto, prefijo, alias semántico o Levenshtein $\le 1$). Si no coincide, el candidato recibe **0 puntos** y es descartado inmediatamente. Esto previene de raíz que `"Denis Castro"` se empareje para `"Matias Castro"`.
+    - **Tier 1 (Exacto)**: Coincidencia idéntica normalizada recibe 3000 puntos.
+    - **Tier 2 (Prefijo continuo)**: Si el contacto comienza exactamente con la cadena buscada (ej: `"Matias Castro Hijo"`), recibe 2000+ puntos con bonificación por concisión.
+    - **Tier 3 (Orden Secuencial Estricto con Alineación Codiciosa)**: Comprueba que todos los tokens de la consulta aparezcan en el contacto en orden estrictamente creciente ($Q_0 \rightarrow Q_1 \rightarrow \dots$). Si el primer token coincide al inicio del contacto ($C_0$), otorga 1500+ puntos. Si tiene prefijo de relación/título ($C_{>0}$), otorga 1200+ puntos.
+    - **Tier 4 (Fallback Semántico y Desordenado)**: Solo si la fase secuencial no halla coincidencia completa:
+      - Diccionario de alias y diminutivos comunes en español (`SPANISH_NICKNAMES`): `"mati"` $\leftrightarrow$ `"matias"`, `"dani"` $\leftrightarrow$ `"daniel"/"daniela"`, `"sebas"` $\leftrightarrow$ `"sebastian"`, `"santi"` $\leftrightarrow$ `"santiago"`, `"juanca"` $\leftrightarrow$ `"juan carlos"`, etc.
+      - Parentescos y relaciones familiares (`KINSHIP_ALIASES`): `"papa"` $\leftrightarrow$ `"padre"`, `"mama"` $\leftrightarrow$ `"madre"`, `"hijo"`, `"esposa"`, `"esposo"`, `"abuelo"`, etc.
+      - Tokens en orden invertido con 100% de cobertura (ej: `"Castro Matias"` para `"Matias Castro"`) reciben 850+ puntos.
+      - Búsqueda por un solo token (ej: `"Castro"`) sigue funcionando correctamente permitiendo búsqueda por apellido individual con puntaje $\ge 400$.
+    - **Alineación de Umbrales**:
+      - Se elevó el umbral de aceptación a 150 puntos en `findBestContactMatch`, `extractRecipientAndMessage`, `resolveWhatsAppChatDataId` y `resolveWhatsAppVoipDataId`.
+      - La bonificación por número colombiano se ajustó a +20 como desempate cualitativo sin alterar rangos.
+  - **`ContactHelperTest.kt`**:
+    - Se crearon pruebas unitarias exhaustivas:
+      - `testMatiasCastroQueryStrictlyRejectsDenisCastro()`: Denis Castro obtiene 0 puntos y queda estrictamente rechazado.
+      - `testSequentialOrderPriorityBeatsUnordered()`: Coincidencia secuencial ordenada supera a la desordenada.
+      - `testSingleTokenSurnameQueryMatchesContactWithSurname()`: Búsqueda de un solo token como `"Castro"` sigue encontrando contactos con ese apellido.
+      - `testSpanishNicknameAliasesResolveSemantically()`: Alias semántico `"mati"` resuelve a `"Matias Castro"`.
+      - `testSpanishKinshipAliasesResolveSemantically()`: Parentesco `"papa"` resuelve a `"Padre"`.
+- **Verificación**:
+  - Compilación y pruebas unitarias ejecutadas con `rtk ./gradlew testDebugUnitTest`: 100% exitosas (`BUILD SUCCESSFUL`).
+  - Grafo sincronizado mediante `rtk codegraph sync`.
+
+---
+
 ### [2026-09-11] — Temporizador Parametrizable de Auto-Bloqueo de Pantalla tras Acciones (Default 60s / 1 min)
 - **Contexto y Requerimiento**:
   - Al ejecutar acciones desde las gafas que despiertan la pantalla (Gemini, Gemini Live, Asistente de teléfono, Abrir aplicaciones, WhatsApp, Telegram, etc.), el dispositivo se encendía y desbloqueaba el keyguard, pero quedaba expuesto y encendido en el bolsillo dependiendo del timeout del sistema operativo.

@@ -285,3 +285,21 @@ Para delegación y automatización cotidiana con mínima fricción cognitiva:
 
 ### 10.5 Despacho Rápido de Ubicación GPS
 - Obtención inmediata de coordenadas del usuario y generación de URL de Google Maps despachada por WhatsApp o Telegram mediante `PhoneActionExecutor.sendLocationToContact(contact, app)` con encendido de pantalla asistido (`LockScreenHelper.wakeUpScreen`).
+
+### 10.6 Resolución Priorizada de Contactos y Fallback Semántico (`ContactHelper`)
+- **Regla Crítica de Seguridad para Consultas Compuestas (Protección Nombre de Pila)**:
+  - En consultas de voz de múltiples palabras (ej: `"Matias Castro"`), el primer token ($Q_0$) representa el nombre de pila.
+  - Si ningún token del contacto coincide con el primer token solicitado (mediante coincidencia exacta, prefijo, alias semántico o distancia Levenshtein $\le 1$), el candidato recibe un puntaje estricto de **0** y queda descartado de inmediato.
+  - Esto evita de raíz que contactos no solicitados que únicamente comparten el apellido (ej: `"Denis Castro"`) sean seleccionados indebidamente para enviar mensajes o realizar llamadas.
+- **Jerarquía de Búsqueda Secuencial (Fase 1 - Prioridad Máxima)**:
+  - **Tier 1 (Exacto - 3000 pts)**: Coincidencia textual idéntica tras normalización diacrítica y remoción de signos de puntuación.
+  - **Tier 2 (Prefijo Continuo - 2000+ pts)**: Contactos que inician exactamente con la frase buscada (ej: `"Matias Castro Hijo"`).
+  - **Tier 3 (Alineación Secuencial Estricta - 1200 a 1600 pts)**: Todos los tokens pedidos coinciden en orden secuencial estrictamente ascendente ($Q_0 \rightarrow Q_1 \rightarrow \dots$) dentro de los tokens del contacto.
+- **Fallback Semántico y Desordenado (Fase 2 - Solo si Fase 1 no halla coincidencia)**:
+  - **Alias y Diminutivos en Español (`SPANISH_NICKNAMES`)**: Mapeo semántico bidireccional (`"mati"` $\leftrightarrow$ `"matias"`, `"dani"` $\leftrightarrow$ `"daniel"/"daniela"`, `"sebas"` $\leftrightarrow$ `"sebastian"`, `"santi"` $\leftrightarrow$ `"santiago"`, `"juanca"` $\leftrightarrow$ `"juan carlos"`, `"pipe"` $\leftrightarrow$ `"felipe"`, `"pacho"` $\leftrightarrow$ `"francisco"`, etc.).
+  - **Parentescos y Relaciones Familiares (`KINSHIP_ALIASES`)**: Mapeo semántico (`"papa"` $\leftrightarrow$ `"padre"`, `"mama"` $\leftrightarrow$ `"madre"`, `"hijo"`, `"esposa"`, etc.).
+  - **Tokens Desordenados con Cobertura Total (850+ pts)**: Consultas con orden invertido (ej: `"Castro Matias"` para `"Matias Castro"`).
+  - **Consultas Monotoken**: Permite la búsqueda legítima por apellido exclusivo (ej: `"Castro"`) con puntajes $\ge 400$.
+- **Umbral de Calificación Seguro**:
+  - Calificación mínima fijada en $\ge 150$ puntos para evitar emparejamientos por ruido fonético en `findBestContactMatch`, `extractRecipientAndMessage`, `resolveWhatsAppChatDataId` y `resolveWhatsAppVoipDataId`.
+

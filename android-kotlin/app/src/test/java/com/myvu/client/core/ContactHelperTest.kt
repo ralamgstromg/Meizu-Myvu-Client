@@ -62,9 +62,80 @@ class ContactHelperTest {
         val exactScore = ContactHelper.calculateScore(query, exactContact)
         val compoundScore = ContactHelper.calculateScore(query, compoundContact)
 
-        assertEquals(2000, exactScore)
-        assertTrue("Exact match (2000) should be higher than compound match ($compoundScore)", exactScore > compoundScore)
+        assertEquals(3000, exactScore)
+        assertTrue("Exact match (3000) should be higher than compound match ($compoundScore)", exactScore > compoundScore)
         assertTrue("Compound match should still be very strong (> 800)", compoundScore > 800)
+    }
+
+    @Test
+    fun testMatiasCastroQueryStrictlyRejectsDenisCastro() {
+        val query = "matias castro"
+        val wrongContact = "Denis Castro"
+        val exactContact = "Matias Castro"
+        val compoundContact = "Matias Castro hijo"
+
+        val wrongScore = ContactHelper.calculateScore(query, wrongContact)
+        val exactScore = ContactHelper.calculateScore(query, exactContact)
+        val compoundScore = ContactHelper.calculateScore(query, compoundContact)
+
+        assertEquals("Denis Castro MUST have 0 score because given name 'matias' completely mismatches", 0, wrongScore)
+        assertEquals(3000, exactScore)
+        assertTrue("Compound match must be >= 2000", compoundScore >= 2000)
+    }
+
+    @Test
+    fun testSequentialOrderPriorityBeatsUnordered() {
+        val query = "matias castro"
+        val orderedContact = "Matias David Castro"
+        val unorderedContact = "Castro Matias"
+
+        val orderedScore = ContactHelper.calculateScore(query, orderedContact)
+        val unorderedScore = ContactHelper.calculateScore(query, unorderedContact)
+
+        assertTrue("Ordered score ($orderedScore) must exceed 1200", orderedScore >= 1200)
+        assertTrue("Ordered score ($orderedScore) must beat unordered ($unorderedScore)", orderedScore > unorderedScore)
+    }
+
+    @Test
+    fun testSingleTokenSurnameQueryMatchesContactWithSurname() {
+        val query = "Castro"
+        val surnameContact = "Denis Castro"
+        val prefixContact = "Castro Hermanos"
+        val unrelatedContact = "Carlos Gomez"
+
+        val surnameScore = ContactHelper.calculateScore(query, surnameContact)
+        val prefixScore = ContactHelper.calculateScore(query, prefixContact)
+        val unrelatedScore = ContactHelper.calculateScore(query, unrelatedContact)
+
+        assertTrue("Surname match should have valid score (>= 400)", surnameScore >= 400)
+        assertTrue("Prefix match should have high score (>= 2000)", prefixScore >= 2000)
+        assertEquals("Unrelated contact must have 0 score", 0, unrelatedScore)
+    }
+
+    @Test
+    fun testSpanishNicknameAliasesResolveSemantically() {
+        val query = "mati castro"
+        val targetContact = "Matias Castro"
+        val wrongContact = "Denis Castro"
+
+        val targetScore = ContactHelper.calculateScore(query, targetContact)
+        val wrongScore = ContactHelper.calculateScore(query, wrongContact)
+
+        assertTrue("Semantic nickname 'mati' -> 'matias' should yield score >= 1200", targetScore >= 1200)
+        assertEquals("Denis Castro must be rejected with 0 score", 0, wrongScore)
+    }
+
+    @Test
+    fun testSpanishKinshipAliasesResolveSemantically() {
+        val query = "papa"
+        val targetContact = "Padre"
+        val unrelatedContact = "Carlos Gomez"
+
+        val targetScore = ContactHelper.calculateScore(query, targetContact)
+        val unrelatedScore = ContactHelper.calculateScore(query, unrelatedContact)
+
+        assertTrue("Kinship 'papa' -> 'padre' should yield valid score (>= 400)", targetScore >= 400)
+        assertEquals("Unrelated contact must have 0 score", 0, unrelatedScore)
     }
 
     @Test

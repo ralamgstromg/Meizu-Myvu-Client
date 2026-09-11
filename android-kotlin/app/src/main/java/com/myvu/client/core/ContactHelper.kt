@@ -44,6 +44,105 @@ object ContactHelper {
         val message: String
     )
 
+    val SPANISH_NICKNAMES: Map<String, List<String>> = mapOf(
+        "mati" to listOf("matias", "mateo"),
+        "matias" to listOf("mati"),
+        "mateo" to listOf("mati"),
+        "dani" to listOf("daniel", "daniela"),
+        "daniel" to listOf("dani"),
+        "daniela" to listOf("dani"),
+        "sebas" to listOf("sebastian"),
+        "sebastian" to listOf("sebas"),
+        "santi" to listOf("santiago"),
+        "santiago" to listOf("santi"),
+        "nico" to listOf("nicolas"),
+        "nicolas" to listOf("nico"),
+        "alex" to listOf("alejandro", "alejandra"),
+        "ale" to listOf("alejandro", "alejandra"),
+        "alejandro" to listOf("alex", "ale"),
+        "alejandra" to listOf("alex", "ale"),
+        "cami" to listOf("camilo", "camila"),
+        "camilo" to listOf("cami"),
+        "camila" to listOf("cami"),
+        "vale" to listOf("valeria", "valentina"),
+        "valeria" to listOf("vale"),
+        "valentina" to listOf("vale"),
+        "juanca" to listOf("juan carlos"),
+        "juan carlos" to listOf("juanca"),
+        "juanpa" to listOf("juan pablo"),
+        "juan pablo" to listOf("juanpa"),
+        "pacho" to listOf("francisco", "pancho"),
+        "pancho" to listOf("francisco", "pacho"),
+        "francisco" to listOf("pacho", "pancho"),
+        "pipe" to listOf("felipe"),
+        "felipe" to listOf("pipe"),
+        "memo" to listOf("guillermo"),
+        "guillermo" to listOf("memo"),
+        "nacho" to listOf("ignacio"),
+        "ignacio" to listOf("nacho"),
+        "beto" to listOf("alberto", "roberto"),
+        "alberto" to listOf("beto"),
+        "roberto" to listOf("beto"),
+        "pepe" to listOf("jose"),
+        "chepe" to listOf("jose"),
+        "jose" to listOf("pepe", "chepe"),
+        "toño" to listOf("antonio"),
+        "antonio" to listOf("toño"),
+        "lalo" to listOf("eduardo"),
+        "eduardo" to listOf("lalo"),
+        "chucho" to listOf("jesus"),
+        "jesus" to listOf("chucho"),
+        "gabi" to listOf("gabriel", "gabriela"),
+        "gabriel" to listOf("gabi"),
+        "gabriela" to listOf("gabi"),
+        "sofi" to listOf("sofia"),
+        "sofia" to listOf("sofi"),
+        "cata" to listOf("catalina"),
+        "catalina" to listOf("cata"),
+        "caro" to listOf("carolina", "carito"),
+        "carito" to listOf("carolina", "caro"),
+        "carolina" to listOf("caro", "carito"),
+        "mafe" to listOf("maria fernanda"),
+        "fer" to listOf("fernando", "fernanda"),
+        "fernando" to listOf("fer"),
+        "fernanda" to listOf("fer"),
+        "rafa" to listOf("rafael"),
+        "rafael" to listOf("rafa"),
+        "javi" to listOf("javier"),
+        "javier" to listOf("javi"),
+        "manu" to listOf("manuel", "manuela"),
+        "manuel" to listOf("manu"),
+        "manuela" to listOf("manu"),
+        "cris" to listOf("cristian", "cristina"),
+        "cristian" to listOf("cris"),
+        "cristina" to listOf("cris"),
+        "lau" to listOf("laura"),
+        "laura" to listOf("lau"),
+        "andy" to listOf("andres"),
+        "andres" to listOf("andy")
+    )
+
+    val KINSHIP_ALIASES: Map<String, List<String>> = mapOf(
+        "papa" to listOf("padre", "papi", "pa"),
+        "padre" to listOf("papa", "papi"),
+        "papi" to listOf("papa", "padre"),
+        "mama" to listOf("madre", "mami", "ma"),
+        "madre" to listOf("mama", "mami"),
+        "mami" to listOf("mama", "madre"),
+        "hijo" to listOf("hijo", "mi hijo"),
+        "hija" to listOf("hija", "mi hija"),
+        "esposa" to listOf("esposa", "mujer", "amor", "mi amor"),
+        "esposo" to listOf("esposo", "marido", "amor", "mi amor"),
+        "abuelo" to listOf("abuelo", "abue"),
+        "abuela" to listOf("abuela", "abue"),
+        "hermano" to listOf("hermano", "mono"),
+        "hermana" to listOf("hermana", "mona"),
+        "tio" to listOf("tio"),
+        "tia" to listOf("tia"),
+        "primo" to listOf("primo"),
+        "prima" to listOf("prima")
+    )
+
     fun cleanText(text: String): String {
         val nfd = Normalizer.normalize(text, Normalizer.Form.NFD)
         val withoutDiacritics = nfd.replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
@@ -58,92 +157,170 @@ object ContactHelper {
         return cleanText(text).split(Regex("\\s+")).filter { it.length >= 2 }
     }
 
+    /**
+     * Evaluates similarity between two individual tokens (Exact, Prefix, Semantic Nickname/Kinship, or Levenshtein).
+     * Returns score between 0 and 100.
+     */
+    fun tokenMatchScore(sToken: String, cToken: String): Int {
+        if (sToken == cToken) return 100
+        if (cToken.startsWith(sToken)) return 85
+        if (sToken.startsWith(cToken)) return 75
+
+        // Semantic Nickname lookup
+        val nickAliases = SPANISH_NICKNAMES[sToken]
+        if (nickAliases != null && nickAliases.contains(cToken)) return 80
+        val reverseNick = SPANISH_NICKNAMES[cToken]
+        if (reverseNick != null && reverseNick.contains(sToken)) return 80
+
+        // Semantic Kinship lookup
+        val kinshipAliases = KINSHIP_ALIASES[sToken]
+        if (kinshipAliases != null && kinshipAliases.contains(cToken)) return 80
+        val reverseKin = KINSHIP_ALIASES[cToken]
+        if (reverseKin != null && reverseKin.contains(sToken)) return 80
+
+        // Fuzzy Levenshtein
+        val dist = levenshteinDistance(sToken, cToken)
+        val maxLen = maxOf(sToken.length, cToken.length)
+        if (maxLen >= 4 && dist <= 1) return 70
+        if (maxLen >= 6 && dist <= 2) return 50
+
+        return 0
+    }
+
+    /**
+     * Multi-tiered contact score:
+     * 1. Priority 1 (Sequential Order): The contact matches tokens in the exact order entered, anchored on the primary given name.
+     * 2. Safety Protection: If the query has multiple tokens (e.g. "Matias Castro"), candidates whose given name completely mismatches
+     *    (e.g. "Denis Castro") are strictly rejected with score 0.
+     * 3. Priority 2 (Semantic / Unordered Fallback): Only if no strict sequential match exists, semantic aliases and unordered permutations.
+     */
     fun calculateScore(searchQuery: String, contactName: String): Int {
         val cleanSearch = cleanText(searchQuery)
         val cleanContact = cleanText(contactName)
         if (cleanSearch.isEmpty() || cleanContact.isEmpty()) return 0
 
-        // 1. Coincidencia idéntica total
-        if (cleanSearch == cleanContact) return 2000
+        // 1. Tier 1: Coincidencia idéntica total
+        if (cleanSearch == cleanContact) return 3000
+
+        // 2. Tier 2: Coincidencia de Prefijo Continuo Exacto
+        if (cleanContact.startsWith(cleanSearch)) {
+            val remainder = cleanContact.removePrefix(cleanSearch).trim()
+            val brevityBonus = maxOf(0, 100 - remainder.length * 2)
+            return 2000 + brevityBonus
+        }
 
         val sTokens = extractTokens(searchQuery)
         val cTokens = extractTokens(contactName)
         if (sTokens.isEmpty() || cTokens.isEmpty()) return 0
 
-        var score = 0
-
-        // 2. Coincidencia de Prefijo o Subcadena continua
-        if (cleanContact.startsWith(cleanSearch)) {
-            score += 500
-        } else if (cleanContact.contains(cleanSearch)) {
-            score += 250
+        // 3. Regla Crítica de Seguridad para Consultas Compuestas (>= 2 palabras):
+        // En consultas como "Matias Castro", el primer token es el nombre de pila ("Matias").
+        // Si NINGÚN token del contacto coincide con el primer token pedido, se rechaza de inmediato (0 puntos).
+        // Esto evita catastróficamente emparejar "Denis Castro" cuando el usuario pidió "Matias Castro".
+        if (sTokens.size >= 2) {
+            val primaryTokenMatches = cTokens.any { tokenMatchScore(sTokens[0], it) > 0 }
+            if (!primaryTokenMatches) {
+                return 0
+            }
         }
 
-        // 3. Emparejamiento de Tokens y Tasa de Cobertura de la Consulta (Subset Containment)
-        var matchedSTokens = 0
-        val matchedContactIndices = mutableListOf<Int>()
+        // 4. Búsqueda de Coincidencia Secuencial en Orden Estricto (Greedy Forward Alignment)
+        var currentCIdx = 0
+        var sequentialMatches = 0
+        var sequentialScoreSum = 0
+        val matchedCIndices = mutableListOf<Int>()
 
         for (sToken in sTokens) {
-            var bestTokenScore = 0
-            var matchedCIdx = -1
+            var bestScore = 0
+            var bestIdx = -1
+            for (cIdx in currentCIdx until cTokens.size) {
+                val tScore = tokenMatchScore(sToken, cTokens[cIdx])
+                if (tScore > bestScore) {
+                    bestScore = tScore
+                    bestIdx = cIdx
+                }
+            }
+            if (bestScore > 0 && bestIdx >= 0) {
+                sequentialMatches++
+                sequentialScoreSum += bestScore
+                matchedCIndices.add(bestIdx)
+                currentCIdx = bestIdx + 1
+            }
+        }
+
+        // Si todos los tokens de la consulta coinciden en orden secuencial estricto:
+        if (sequentialMatches == sTokens.size) {
+            val firstMatchedIdx = matchedCIndices[0]
+            val extraTokensPenalty = maxOf(0, cTokens.size - sTokens.size) * 15
+
+            return if (firstMatchedIdx == 0) {
+                // Tier 3A: Orden secuencial anclado en el primer token del contacto (ej: "Matías David Castro" para "Matias Castro")
+                maxOf(1200, 1500 + sequentialScoreSum - extraTokensPenalty)
+            } else {
+                // Tier 3B: Orden secuencial con prefijo de relación/título (ej: "Hijo Matías Castro" o "Dr Matías Castro")
+                maxOf(1000, 1200 + sequentialScoreSum - (firstMatchedIdx * 30) - extraTokensPenalty)
+            }
+        }
+
+        // 5. Caso de Consulta de Un Solo Token (ej: "Castro" o "Matias")
+        if (sTokens.size == 1) {
+            val singleToken = sTokens[0]
+            var maxTokenScore = 0
+            var matchedIdx = -1
 
             for ((cIdx, cToken) in cTokens.withIndex()) {
-                if (sToken == cToken) {
-                    if (bestTokenScore < 60) {
-                        bestTokenScore = 60
-                        matchedCIdx = cIdx
-                    }
-                } else if (cToken.startsWith(sToken) || sToken.startsWith(cToken)) {
-                    if (bestTokenScore < 35) {
-                        bestTokenScore = 35
-                        matchedCIdx = cIdx
-                    }
+                val tScore = tokenMatchScore(singleToken, cToken)
+                if (tScore > maxTokenScore) {
+                    maxTokenScore = tScore
+                    matchedIdx = cIdx
+                }
+            }
+
+            if (maxTokenScore > 0) {
+                return if (matchedIdx == 0) {
+                    800 + maxTokenScore // Primer nombre coincide
                 } else {
-                    val dist = levenshteinDistance(sToken, cToken)
-                    val maxLen = maxOf(sToken.length, cToken.length)
-                    if (maxLen >= 4 && dist <= 2) {
-                        val levScore = 30 - (dist * 10)
-                        if (levScore > bestTokenScore) {
-                            bestTokenScore = levScore
-                            matchedCIdx = cIdx
-                        }
-                    }
+                    400 + maxTokenScore // Apellido u otro token coincide (ej: "Castro" -> "Denis Castro")
                 }
             }
+            return 0
+        }
 
-            if (bestTokenScore > 0) {
-                matchedSTokens++
-                score += bestTokenScore
-                if (matchedCIdx >= 0) {
-                    matchedContactIndices.add(matchedCIdx)
+        // 6. Fase 2: Fallback Semántico y Coincidencias Desordenadas (cuando no hubo coincidencia secuencial completa)
+        var unorderedMatches = 0
+        var unorderedScoreSum = 0
+        val usedCIndices = mutableSetOf<Int>()
+
+        for (sToken in sTokens) {
+            var bestScore = 0
+            var bestIdx = -1
+            for ((cIdx, cToken) in cTokens.withIndex()) {
+                if (cIdx in usedCIndices) continue
+                val tScore = tokenMatchScore(sToken, cToken)
+                if (tScore > bestScore) {
+                    bestScore = tScore
+                    bestIdx = cIdx
                 }
             }
-        }
-
-        // Bonificación por cobertura de consulta: si TODOS los tokens pedidos están en el contacto
-        if (matchedSTokens == sTokens.size) {
-            score += 350 // Subset Containment total (ej: "matias castro" dentro de "matias castro hijo")
-        } else if (matchedSTokens > 0) {
-            score += (matchedSTokens * 200) / sTokens.size
-        }
-
-        // Bonificación por preservación de orden secuencial
-        var inOrder = true
-        for (i in 0 until matchedContactIndices.size - 1) {
-            if (matchedContactIndices[i] >= matchedContactIndices[i + 1]) {
-                inOrder = false
-                break
+            if (bestScore > 0 && bestIdx >= 0) {
+                unorderedMatches++
+                unorderedScoreSum += bestScore
+                usedCIndices.add(bestIdx)
             }
         }
-        if (inOrder && matchedContactIndices.size > 1) {
-            score += 80
+
+        // Si TODOS los tokens están presentes pero en orden invertido (ej: "Castro Matias" -> "Matias Castro")
+        if (unorderedMatches == sTokens.size) {
+            val extraTokensPenalty = maxOf(0, cTokens.size - sTokens.size) * 15
+            return maxOf(700, 850 + unorderedScoreSum - extraTokensPenalty)
         }
 
-        // Penalización muy leve por palabras excesivas en el contacto para desempatar al más conciso
-        val extraWords = maxOf(0, cTokens.size - sTokens.size)
-        score -= minOf(40, extraWords * 5)
+        // Coincidencia parcial donde el primer token sí coincidió (ej: "Matias Castro" -> "Matias" o "Matias Ortiz")
+        if (unorderedMatches > 0 && tokenMatchScore(sTokens[0], cTokens[0]) > 0) {
+            return 250 + (unorderedScoreSum / sTokens.size)
+        }
 
-        return maxOf(0, score)
+        return 0
     }
 
     fun cleanPunctuation(text: String): String {
@@ -192,29 +369,29 @@ object ContactHelper {
                         var score = calculateScore(cleanTarget, contactName)
 
                         // Prefer Colombian numbers (+57) when the query doesn't specify a country.
-                        // This avoids picking international duplicates over local contacts.
+                        // This avoids picking international duplicates over local contacts as a mild tie-breaker.
                         val cleanDigits = contactNumber.replace(Regex("[^0-9]"), "")
                         val isColombian = cleanDigits.startsWith("57") && cleanDigits.length == 12 ||
                                 contactNumber.trimStart().startsWith("+57")
-                        if (isColombian && score >= 30) score += 50
+                        if (isColombian && score >= 150) score += 20
 
-                        if (score >= 2000) {
+                        if (score >= 3000) {
                             LogBus.log("ContactHelper -> Exact match '$contactName' ($contactNumber, score: $score)")
                             return ContactMatch(contactNumber, contactName, score, true)
                         }
 
-                        if (score > bestScore && score >= 30) {
+                        if (score > bestScore && score >= 150) {
                             bestScore = score
                             bestNumber = contactNumber
                             bestName = contactName
-                            bestIsExact = false
+                            bestIsExact = (score >= 2000)
                         }
                     }
                 }
             }
 
             if (bestNumber != null && bestName != null) {
-                LogBus.log("ContactHelper -> Best fuzzy match '$cleanTarget' -> '$bestName' ($bestNumber, score: $bestScore)")
+                LogBus.log("ContactHelper -> Best contact match '$cleanTarget' -> '$bestName' ($bestNumber, score: $bestScore)")
                 return ContactMatch(bestNumber, bestName, bestScore, bestIsExact)
             }
         } catch (e: Exception) {
@@ -336,7 +513,7 @@ object ContactHelper {
             val candRecipient = cleanPunctuation(periodParts[0])
             val candMsg = periodParts[1].trim()
             val match = findBestContactMatch(context, candRecipient)
-            if (match != null && match.score >= 35) {
+            if (match != null && match.score >= 150) {
                 return ParsedMessageAction(candRecipient, match.number, match.displayName, candMsg)
             }
         }
@@ -348,7 +525,7 @@ object ContactHelper {
             val candRecipient = cleanPunctuation(gramMatch.groupValues[1])
             val candMsg = gramMatch.groupValues[4].trim()
             val match = findBestContactMatch(context, candRecipient)
-            if (match != null && match.score >= 35) {
+            if (match != null && match.score >= 150) {
                 return ParsedMessageAction(candRecipient, match.number, match.displayName, candMsg)
             } else {
                 val resolved = resolveContactPhone(context, candRecipient)
@@ -362,7 +539,7 @@ object ContactHelper {
             val candRecipient = cleanPunctuation(commaParts[0])
             val candMsg = commaParts[1].trim()
             val match = findBestContactMatch(context, candRecipient)
-            if (match != null && match.score >= 40) {
+            if (match != null && match.score >= 150) {
                 return ParsedMessageAction(candRecipient, match.number, match.displayName, candMsg)
             }
         }
@@ -375,7 +552,7 @@ object ContactHelper {
         for (i in 1..minOf(4, tokens.size)) {
             val candidate = cleanPunctuation(tokens.take(i).joinToString(" "))
             val match = findBestContactMatch(context, candidate)
-            if (match != null && match.score >= 35) {
+            if (match != null && match.score >= 150) {
                 if (bestMatch == null || match.score > bestMatch.score || (match.score == bestMatch.score && i > bestTokenCount)) {
                     bestMatch = match
                     bestTokenCount = i
@@ -456,7 +633,7 @@ object ContactHelper {
                         bestId = id
                     }
                 }
-                if (bestScore >= 35) {
+                if (bestScore >= 150) {
                     return bestId
                 }
             }
@@ -523,7 +700,7 @@ object ContactHelper {
                         bestId = id
                     }
                 }
-                if (bestScore >= 35) return bestId
+                if (bestScore >= 150) return bestId
             }
         } catch (e: Exception) {
             LogBus.warn("ContactHelper: resolveWhatsAppChatDataId error: ${e.message}")
