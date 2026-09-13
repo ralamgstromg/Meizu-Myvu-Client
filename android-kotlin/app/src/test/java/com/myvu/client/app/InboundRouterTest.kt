@@ -155,6 +155,36 @@ class InboundRouterTest {
     }
 
     @Test
+    fun getDeviceInfoFiresBatteryListener() {
+        val levels = ArrayList<Int>()
+        router.setBatteryUpdateListener(object : InboundRouter.BatteryUpdateListener {
+            override fun onBatteryUpdated(battery: Int, isCharging: Boolean) {
+                levels.add(battery)
+            }
+        })
+
+        router.handle("{\"action\":\"get_device_info\",\"data\":{\"battery\":88,\"isCharging\":false}}")
+
+        assertEquals(1, levels.size)
+        assertEquals(88, levels[0])
+    }
+
+    @Test
+    fun zeroPercentBatteryIsAcceptedAsValidBoundary() {
+        val levels = ArrayList<Int>()
+        router.setBatteryUpdateListener(object : InboundRouter.BatteryUpdateListener {
+            override fun onBatteryUpdated(battery: Int, isCharging: Boolean) {
+                levels.add(battery)
+            }
+        })
+
+        router.handle("{\"action\":\"sync_glass_battery_info\",\"battery\":0,\"isCharging\":true}")
+
+        assertEquals(1, levels.size)
+        assertEquals(0, levels[0])
+    }
+
+    @Test
     fun malformedBodiesDoNotThrow() {
         router.handle("")
         router.handle("no json here at all")

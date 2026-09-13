@@ -30,6 +30,7 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.textfield.TextInputEditText
 import com.myvu.client.R
 import com.myvu.client.ai.VoiceNoteRecorder
+import com.myvu.client.core.EdgeToEdgeHelper
 import com.myvu.client.core.setMarkdown
 import com.myvu.client.database.Note
 import com.myvu.client.database.NoteRepository
@@ -75,10 +76,9 @@ class NotesActivity : AppCompatActivity() {
         setContentView(R.layout.activity_notes)
 
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbarNotes)
-        com.myvu.client.core.EdgeToEdgeHelper.setupEdgeToEdge(this, toolbar)
         val navigateToDashboard = {
             if (isTaskRoot) {
-                val intent = Intent(this, ConnectActivity::class.java)
+                val intent = Intent(this, com.myvu.client.ui.chat.ChatActivity::class.java)
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 startActivity(intent)
             }
@@ -86,6 +86,9 @@ class NotesActivity : AppCompatActivity() {
         }
         toolbar.setNavigationOnClickListener { navigateToDashboard() }
         findViewById<View?>(R.id.btnNotesDrawer)?.setOnClickListener { navigateToDashboard() }
+        findViewById<View?>(R.id.btnNotesDevices)?.setOnClickListener {
+            DeviceManagementBottomSheet.show(supportFragmentManager)
+        }
 
         noteRepo = NoteRepository(this)
         reminderRepo = ReminderRepository(this)
@@ -112,6 +115,15 @@ class NotesActivity : AppCompatActivity() {
         setupSearchAndFilter()
         setupActions()
         setupSpeedDialFab()
+
+        val fabCluster = findViewById<View>(R.id.fabCluster)
+        EdgeToEdgeHelper.setupEdgeToEdge(
+            activity = this,
+            topBar = toolbar,
+            bottomBar = fabCluster,
+            scrollContents = listOf(rvNotes, rvReminders)
+        )
+
         loadData()
         updateGlassesBatteryBadge()
 

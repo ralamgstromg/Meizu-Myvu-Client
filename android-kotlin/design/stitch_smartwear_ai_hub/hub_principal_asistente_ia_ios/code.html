@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Companion Hub - Control Wearables &amp; Chat IA</title>
+<!-- Google Fonts: Inter & Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "ios-bg": "#F2F2F7",
+            "ios-card": "#FFFFFF",
+            "ios-card-secondary": "#F8F8FA",
+            "ios-label": "#1C1C1E",
+            "ios-secondary": "#8E8E93",
+            "ios-tertiary": "#C7C7CC",
+            "ios-blue": "#007AFF",
+            "ios-green": "#34C759",
+            "ios-bubble-ai": "#E9E9EB",
+            "ios-separator": "#E5E5EA",
+            "ios-border": "rgba(60, 60, 67, 0.12)"
+          },
+          fontFamily: {
+            sans: [
+              "-apple-system",
+              "BlinkMacSystemFont",
+              "SF Pro Text",
+              "SF Pro Display",
+              "Inter",
+              "Helvetica Neue",
+              "sans-serif"
+            ]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-none {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    body {
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-ios-bg text-ios-label font-sans min-h-screen flex flex-col selection:bg-ios-blue selection:text-white">
+<!-- ========================================== -->
+<!-- iOS STATUS BAR & NAVIGATION BAR            -->
+<!-- ========================================== -->
+<header class="sticky top-0 z-40 bg-ios-bg/85 backdrop-blur-xl border-b border-black/[0.08] transition-colors">
+<!-- Top System Indicators (Mock iPhone Header) -->
+<div class="flex items-center justify-between px-6 pt-3 pb-1 text-xs font-semibold text-ios-label tracking-tight select-none">
+<span>9:41</span>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] leading-none" data-icon="signal_cellular_alt">signal_cellular_alt</span>
+<span class="material-symbols-outlined text-[15px] leading-none" data-icon="wifi">wifi</span>
+<div class="flex items-center gap-0.5 ml-0.5 border border-black/50 rounded-[4px] px-1 py-[1px] text-[10px] leading-none font-bold">
+<span>98%</span>
+<div class="w-1.5 h-2 bg-ios-green rounded-[1px]"></div>
+</div>
+</div>
+</div>
+<!-- Main Navigation Bar -->
+<div class="flex items-center justify-between px-4 pb-2.5 pt-1">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-ios-blue/10 flex items-center justify-center text-ios-blue">
+<span class="material-symbols-outlined text-[20px]" data-icon="graphic_eq">graphic_eq</span>
+</div>
+<h1 class="text-[20px] font-bold tracking-tight text-ios-label">Companion Hub</h1>
+</div>
+<div class="flex items-center gap-2.5">
+<!-- Battery status chip -->
+<div class="flex items-center gap-1 bg-white border border-black/[0.06] shadow-xs px-2.5 py-1 rounded-full text-xs font-medium text-ios-label">
+<span class="w-2 h-2 rounded-full bg-ios-green"></span>
+<span class="text-[11px] font-semibold tracking-tight text-ios-secondary">Sincronizado</span>
+</div>
+<!-- iOS Avatar Profile -->
+<div class="relative">
+<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-ios-blue to-blue-400 text-white font-semibold text-xs flex items-center justify-center shadow-xs">
+            AL
+          </div>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-ios-green rounded-full border-2 border-white"></span>
+</div>
+</div>
+</div>
+</header>
+<!-- ========================================== -->
+<!-- MAIN CONTENT CONTAINER                    -->
+<!-- ========================================== -->
+<main class="flex-1 flex flex-col max-w-xl mx-auto w-full px-4 pt-3 pb-32">
+<!-- ========================================== -->
+<!-- WEARABLES CAROUSEL (iOS Widgets)          -->
+<!-- ========================================== -->
+<section class="mb-4">
+<div class="flex items-center justify-between px-1 mb-2">
+<div class="flex items-center gap-2">
+<h2 class="text-[15px] font-semibold text-ios-label tracking-tight">Dispositivos Conectados</h2>
+<span class="inline-block w-2 h-2 rounded-full bg-ios-green animate-pulse"></span>
+</div>
+<span class="text-[13px] font-normal text-ios-secondary">3 Sincronizados</span>
+</div>
+<!-- Horizontal Scroll Cards -->
+<div class="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-none -mx-4 px-4">
+<!-- CARD 1: Gafas AR -->
+<article class="flex-shrink-0 w-64 bg-ios-card rounded-2xl p-3.5 border border-black/[0.06] shadow-sm flex flex-col justify-between active:scale-[0.99] transition-transform">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-10 h-10 rounded-xl bg-blue-50 text-ios-blue flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]" data-icon="eyeglasses">eyeglasses</span>
+</div>
+<div>
+<h3 class="text-[15px] font-semibold text-ios-label leading-tight">Gafas AR</h3>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-ios-green"></span>
+<span class="text-[12px] text-ios-secondary">Conectadas</span>
+</div>
+</div>
+</div>
+<!-- Battery Pill -->
+<div class="flex items-center gap-1 bg-ios-bg px-2 py-0.5 rounded-full text-[11px] font-semibold text-ios-label">
+<span class="material-symbols-outlined text-[13px] text-ios-green" data-icon="battery_5_bar">battery_5_bar</span>
+<span>84%</span>
+</div>
+</div>
+<div class="mt-3 pt-2.5 border-t border-ios-separator flex items-center justify-between">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-ios-blue text-[11px] font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-ios-blue animate-ping"></span>
+              HUD Activo
+            </span>
+<span class="text-[11px] text-ios-secondary font-medium tracking-tight">60 fps · MicroOLED</span>
+</div>
+</article>
+<!-- CARD 2: Auriculares Pro -->
+<article class="flex-shrink-0 w-64 bg-ios-card rounded-2xl p-3.5 border border-black/[0.06] shadow-sm flex flex-col justify-between active:scale-[0.99] transition-transform">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]" data-icon="headphones">headphones</span>
+</div>
+<div>
+<h3 class="text-[15px] font-semibold text-ios-label leading-tight">Auriculares Pro</h3>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-ios-green"></span>
+<span class="text-[12px] text-ios-secondary">Conectados</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-ios-bg px-2 py-0.5 rounded-full text-[11px] font-semibold text-ios-label">
+<span class="material-symbols-outlined text-[13px] text-ios-green" data-icon="battery_full">battery_full</span>
+<span>92%</span>
+</div>
+</div>
+<div class="mt-3 pt-2.5 border-t border-ios-separator flex items-center justify-between">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[11px] font-medium">
+<span class="material-symbols-outlined text-[13px]" data-icon="noise_aware">noise_aware</span>
+              Cancelación de Ruido ON
+            </span>
+<span class="text-[11px] text-ios-secondary font-medium tracking-tight">Spatial LDAC</span>
+</div>
+</article>
+<!-- CARD 3: Smartwatch Ultra -->
+<article class="flex-shrink-0 w-64 bg-ios-card rounded-2xl p-3.5 border border-black/[0.06] shadow-sm flex flex-col justify-between active:scale-[0.99] transition-transform">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-10 h-10 rounded-xl bg-emerald-50 text-ios-green flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]" data-icon="watch">watch</span>
+</div>
+<div>
+<h3 class="text-[15px] font-semibold text-ios-label leading-tight">Smartwatch Ultra</h3>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-ios-green"></span>
+<span class="text-[12px] text-ios-secondary">Conectado</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-ios-bg px-2 py-0.5 rounded-full text-[11px] font-semibold text-ios-label">
+<span class="material-symbols-outlined text-[13px] text-ios-secondary" data-icon="battery_4_bar">battery_4_bar</span>
+<span>68%</span>
+</div>
+</div>
+<div class="mt-3 pt-2.5 border-t border-ios-separator flex items-center justify-between">
+<div class="flex items-center gap-1 text-red-500 text-[11px] font-semibold">
+<span class="material-symbols-outlined text-[14px]" data-icon="favorite">favorite</span>
+<span>72 bpm</span>
+</div>
+<span class="text-[11px] text-ios-secondary font-medium tracking-tight">SpO2 99%</span>
+</div>
+</article>
+<!-- CARD 4: Pair New Device Action -->
+<button aria-label="Emparejar nuevo dispositivo" class="flex-shrink-0 w-32 h-[122px] rounded-2xl border-2 border-dashed border-ios-tertiary bg-white/60 hover:bg-white flex flex-col items-center justify-center gap-1.5 text-ios-secondary hover:text-ios-blue transition-all active:scale-95">
+<div class="w-8 h-8 rounded-full bg-ios-bg flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+</div>
+<span class="text-[12px] font-medium">Emparejar</span>
+</button>
+</div>
+</section>
+<!-- ========================================== -->
+<!-- iMESSAGE STYLE CONVERSATION STREAM         -->
+<!-- ========================================== -->
+<section class="flex-1 flex flex-col justify-between bg-ios-card rounded-3xl p-4 border border-black/[0.05] shadow-sm">
+<!-- Messages List -->
+<div class="space-y-4 overflow-y-auto pr-1 max-h-[380px] scrollbar-none">
+<!-- Assistant Message 1 -->
+<div class="flex items-end gap-2 max-w-[85%]">
+<div class="w-7 h-7 rounded-full bg-ios-blue/10 text-ios-blue flex items-center justify-center flex-shrink-0 mb-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="neurology">neurology</span>
+</div>
+<div class="space-y-1">
+<div class="flex items-center gap-2 pl-1">
+<span class="text-[11px] font-semibold text-ios-secondary">Companion AI</span>
+<span class="text-[11px] text-ios-secondary">10:42</span>
+</div>
+<div class="bg-ios-bubble-ai text-ios-label rounded-[20px] rounded-bl-md px-4 py-2.5 text-[15px] leading-snug shadow-2xs">
+              Buenos días, Alejandro. Todos tus dispositivos están calibrados. ¿En qué nos enfocamos hoy para tu presentación de arquitectura?
+            </div>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex items-end justify-end gap-2 ml-auto max-w-[85%]">
+<div class="space-y-1 text-right">
+<div class="flex items-center justify-end gap-2 pr-1">
+<span class="text-[11px] text-ios-secondary">10:43</span>
+<span class="text-[11px] font-semibold text-ios-secondary">Tú</span>
+</div>
+<div class="bg-ios-blue text-white rounded-[20px] rounded-br-md px-4 py-2.5 text-[15px] leading-snug text-left shadow-2xs">
+              Inicia modo orador: sincroniza las notas clave en el visor de mis Gafas AR y aísla el ruido exterior en mis auriculares.
+            </div>
+</div>
+</div>
+<!-- Assistant Response with Executed Hardware Actions -->
+<div class="flex items-end gap-2 max-w-[92%]">
+<div class="w-7 h-7 rounded-full bg-ios-blue/10 text-ios-blue flex items-center justify-center flex-shrink-0 mb-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="neurology">neurology</span>
+</div>
+<div class="space-y-2 w-full">
+<div class="flex items-center gap-2 pl-1">
+<span class="text-[11px] font-semibold text-ios-secondary">Companion AI</span>
+<span class="text-[11px] text-ios-secondary">10:43</span>
+</div>
+<!-- Inset Grouped Action Cells (Apple HIG Style) -->
+<div class="bg-ios-bg rounded-2xl border border-black/[0.05] overflow-hidden divide-y divide-ios-separator">
+<!-- Action 1 -->
+<div class="p-3 flex items-center justify-between gap-2.5">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-xl bg-white text-ios-blue border border-black/[0.04] flex items-center justify-center flex-shrink-0 shadow-2xs">
+<span class="material-symbols-outlined text-[18px]" data-icon="eyeglasses">eyeglasses</span>
+</div>
+<div class="min-w-0">
+<p class="text-[13px] font-semibold text-ios-label truncate">Acción ejecutada: Teleprompter sincronizado en Gafas AR</p>
+<p class="text-[11px] text-ios-secondary truncate">Velocidad: 130 ppm · Contraste HUD fijado a 85%</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-ios-green text-[20px] flex-shrink-0" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<!-- Action 2 -->
+<div class="p-3 flex items-center justify-between gap-2.5">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-xl bg-white text-indigo-600 border border-black/[0.04] flex items-center justify-center flex-shrink-0 shadow-2xs">
+<span class="material-symbols-outlined text-[18px]" data-icon="spatial_audio_off">spatial_audio_off</span>
+</div>
+<div class="min-w-0">
+<p class="text-[13px] font-semibold text-ios-label truncate">Audio espacial calibrado</p>
+<p class="text-[11px] text-ios-secondary truncate">Supresión activa de ruido adaptativo: -32 dB ambiente</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-ios-green text-[20px] flex-shrink-0" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<!-- Follow-up Bubble -->
+<div class="bg-ios-bubble-ai text-ios-label rounded-[20px] rounded-bl-md px-4 py-2.5 text-[15px] leading-snug">
+              El flujo de diapositivas está listo en tu campo de visión izquierdo. Di "Siguiente" o realiza un toque doble en la patilla para avanzar.
+            </div>
+</div>
+</div>
+</div>
+<!-- ========================================== -->
+<!-- QUICK SHORTCUT PILLS & NATIVE INPUT BAR   -->
+<!-- ========================================== -->
+<div class="mt-3 pt-3 border-t border-ios-separator space-y-2.5">
+<!-- Filter/Quick Actions Horizontal Scroll -->
+<div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-50 text-ios-blue text-[12px] font-semibold border border-ios-blue/20 active:scale-95 transition-transform flex-shrink-0">
+<span class="material-symbols-outlined text-[14px]" data-icon="sticky_note_2">sticky_note_2</span>
+            Teleprompter
+          </button>
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-ios-bg text-ios-label text-[12px] font-medium border border-black/[0.04] hover:bg-ios-separator active:scale-95 transition-transform flex-shrink-0">
+<span class="material-symbols-outlined text-[14px] text-ios-secondary" data-icon="translate">translate</span>
+            Traducir
+          </button>
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-ios-bg text-ios-label text-[12px] font-medium border border-black/[0.04] hover:bg-ios-separator active:scale-95 transition-transform flex-shrink-0">
+<span class="material-symbols-outlined text-[14px] text-ios-secondary" data-icon="mic">mic</span>
+            Grabar Nota
+          </button>
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-ios-bg text-ios-label text-[12px] font-medium border border-black/[0.04] hover:bg-ios-separator active:scale-95 transition-transform flex-shrink-0">
+<span class="material-symbols-outlined text-[14px] text-ios-secondary" data-icon="summarize">summarize</span>
+            Resumir día
+          </button>
+</div>
+<!-- iOS Message Bar -->
+<div class="flex items-center gap-2 bg-ios-bg rounded-full p-1 pl-2 border border-black/[0.06] focus-within:border-ios-blue focus-within:ring-2 focus-within:ring-ios-blue/20 transition-all">
+<button aria-label="Adjuntar archivo o contexto" class="w-8 h-8 rounded-full bg-white text-ios-secondary hover:text-ios-blue flex items-center justify-center shadow-2xs active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+</button>
+<input class="w-full bg-transparent border-0 text-ios-label placeholder:text-ios-secondary text-[15px] focus:ring-0 px-1 py-1" placeholder="Pregunta o comanda a tus dispositivos..." type="text"/>
+<!-- Wearable Direct Dictation Mic -->
+<button aria-label="Comando por voz wearable" class="p-1.5 text-ios-secondary hover:text-ios-blue active:scale-95 transition-colors" title="Voz directa a dispositivos">
+<span class="material-symbols-outlined text-[20px]" data-icon="mic">mic</span>
+</button>
+<!-- iOS Blue Send Button -->
+<button aria-label="Enviar mensaje" class="w-8 h-8 rounded-full bg-ios-blue text-white flex items-center justify-center active:scale-95 shadow-xs hover:bg-blue-600 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_upward">arrow_upward</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- ========================================== -->
+<!-- NATIVE iOS TRANSLUCENT TAB BAR            -->
+<!-- ========================================== -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-xl border-t border-black/[0.12] pb-6 pt-1.5 px-3">
+<div class="max-w-md mx-auto flex items-center justify-around">
+<!-- Tab 1: Hub (Active) -->
+<a class="flex flex-col items-center justify-center text-ios-blue gap-0.5 active:scale-95 transition-transform" href="#hub">
+<span class="material-symbols-outlined text-[24px]" data-icon="home" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="text-[10px] font-semibold tracking-tight">Hub</span>
+</a>
+<!-- Tab 2: Dispositivos -->
+<a class="flex flex-col items-center justify-center text-ios-secondary hover:text-ios-blue gap-0.5 active:scale-95 transition-colors" href="#devices">
+<span class="material-symbols-outlined text-[24px]" data-icon="devices">devices</span>
+<span class="text-[10px] font-medium tracking-tight">Dispositivos</span>
+</a>
+<!-- Tab 3: AR Studio -->
+<a class="flex flex-col items-center justify-center text-ios-secondary hover:text-ios-blue gap-0.5 active:scale-95 transition-colors" href="#ar-studio">
+<span class="material-symbols-outlined text-[24px]" data-icon="eyeglasses">eyeglasses</span>
+<span class="text-[10px] font-medium tracking-tight">AR Studio</span>
+</a>
+<!-- Tab 4: Traducir -->
+<a class="flex flex-col items-center justify-center text-ios-secondary hover:text-ios-blue gap-0.5 active:scale-95 transition-colors" href="#translate">
+<span class="material-symbols-outlined text-[24px]" data-icon="translate">translate</span>
+<span class="text-[10px] font-medium tracking-tight">Traducir</span>
+</a>
+<!-- Tab 5: Notas -->
+<a class="flex flex-col items-center justify-center text-ios-secondary hover:text-ios-blue gap-0.5 active:scale-95 transition-colors" href="#notes">
+<span class="material-symbols-outlined text-[24px]" data-icon="neurology">neurology</span>
+<span class="text-[10px] font-medium tracking-tight">Notas</span>
+</a>
+</div>
+<!-- iOS Home Indicator bar -->
+<div class="w-32 h-1 bg-black/20 rounded-full mx-auto mt-2"></div>
+</nav>
+</body></html>

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Notas &amp; Mapas - Companion Hub</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "ios-bg": "#F2F2F7",
+          "ios-card": "#FFFFFF",
+          "ios-subcard": "#F8F8FA",
+          "ios-blue": "#007AFF",
+          "ios-blue-light": "#EBF4FF",
+          "ios-indigo": "#5856D6",
+          "ios-teal": "#30B0C7",
+          "ios-green": "#34C759",
+          "ios-orange": "#FF9500",
+          "ios-gray-text": "#8E8E93",
+          "ios-secondary-text": "#6C6C70",
+          "ios-border": "#E5E5EA",
+          "ios-separator": "#C6C6C8",
+          "primary": "#007AFF"
+        },
+        "fontFamily": {
+          "headline": ["Manrope", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+          "body": ["Hanken Grotesk", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+        },
+        "boxShadow": {
+          "ios-card": "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)",
+          "ios-elevated": "0 8px 24px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.03)",
+          "ios-tab": "0 -0.5px 0.5px rgba(0, 0, 0, 0.15)"
+        }
+      },
+    },
+  }
+</script>
+<style>
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 20px;
+    line-height: 1;
+    display: inline-block;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+  }
+  .freeform-canvas {
+    background-color: #FAFAFC;
+    background-image: radial-gradient(#D1D1D6 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  .freeform-line {
+    stroke-dasharray: 4 4;
+    animation: flowPulse 18s linear infinite;
+  }
+  @keyframes flowPulse {
+    to { stroke-dashoffset: -80; }
+  }
+</style>
+</head>
+<body class="bg-ios-bg text-[#000000] font-body antialiased min-h-screen pb-36 selection:bg-ios-blue selection:text-white">
+<!-- iOS Navigation Bar (Large Title Transition Container) -->
+<header class="sticky top-0 z-40 bg-[#F2F2F7]/85 backdrop-blur-xl border-b border-ios-border/60 transition-all">
+<!-- Status bar spacer and mini top bar -->
+<div class="max-w-xl mx-auto px-4 pt-3 pb-2 flex items-center justify-between">
+<!-- Companion Hub connection telemetry -->
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-ios-blue/10 flex items-center justify-center text-ios-blue">
+<span class="material-symbols-outlined text-[18px]" data-icon="graphic_eq">graphic_eq</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[13px] font-headline font-semibold text-black tracking-tight leading-tight">Companion Hub</span>
+<span class="text-[11px] text-ios-green font-medium flex items-center gap-1 leading-tight">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-ios-green"></span>
+          Conexión Neural Activa
+        </span>
+</div>
+</div>
+<!-- Battery & AR telemetry -->
+<div class="flex items-center gap-2">
+<span class="text-[11px] font-semibold tracking-wider text-ios-gray-text px-2 py-0.5 rounded-md bg-black/5">AR+PRO</span>
+<div class="flex items-center text-ios-gray-text gap-0.5 font-medium text-[13px]">
+<span>98%</span>
+<span class="material-symbols-outlined text-[18px] text-ios-green" data-icon="battery_charging_full">battery_charging_full</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main iOS Container -->
+<main class="max-w-xl mx-auto px-4 pt-3 flex flex-col gap-6">
+<!-- iOS Large Title & Semantic Search -->
+<section class="flex flex-col gap-3">
+<div class="flex items-baseline justify-between pt-1">
+<div>
+<h1 class="text-[34px] leading-tight font-extrabold font-headline tracking-tight text-black">
+          Notas &amp; Mapas
+        </h1>
+<p class="text-[14px] text-ios-secondary-text mt-0.5">
+          Ingesta neuronal y síntesis conceptual en tiempo real desde tus periféricos.
+        </p>
+</div>
+<span class="text-[11px] font-bold text-ios-blue bg-ios-blue-light px-2.5 py-1 rounded-full whitespace-nowrap">
+        48 ÍTEMS
+      </span>
+</div>
+<!-- Apple Standard Search Bar -->
+<div class="relative w-full">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-ios-gray-text">
+<span class="material-symbols-outlined text-[20px]" data-icon="search">search</span>
+</div>
+<input class="w-full pl-9 pr-10 py-2 bg-[#E3E3E8] rounded-xl text-black text-[16px] placeholder:text-ios-gray-text border-none focus:outline-none focus:ring-2 focus:ring-ios-blue/40 transition-all font-body" placeholder="Buscar en conversaciones o notas de voz..." type="text"/>
+<div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+<button aria-label="Búsqueda por voz" class="text-ios-gray-text hover:text-ios-blue transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="mic">mic</span>
+</button>
+</div>
+</div>
+<!-- iOS Native Segmented Filter -->
+<div class="w-full p-0.5 bg-[#E3E3E8] rounded-xl flex items-center text-[13px] font-medium text-black">
+<button class="flex-1 py-1.5 px-3 rounded-[10px] bg-white text-black font-semibold shadow-sm transition-all text-center">
+        Todas
+      </button>
+<button class="flex-1 py-1.5 px-3 rounded-[10px] text-ios-secondary-text hover:text-black transition-all flex items-center justify-center gap-1 text-center">
+<span class="material-symbols-outlined text-[15px]" data-icon="schema">schema</span>
+<span>Mapas</span>
+</button>
+<button class="flex-1 py-1.5 px-3 rounded-[10px] text-ios-secondary-text hover:text-black transition-all flex items-center justify-center gap-1 text-center">
+<span class="material-symbols-outlined text-[15px]" data-icon="graphic_eq">graphic_eq</span>
+<span>Grabaciones</span>
+</button>
+</div>
+</section>
+<!-- Generative Mind Map Card (Freeform Inspired) -->
+<section class="flex flex-col gap-2">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-ios-blue text-[20px]" data-icon="hub">hub</span>
+<h2 class="text-[17px] font-bold font-headline text-black">Mapa Mental Generativo IA</h2>
+</div>
+<span class="text-[11px] font-semibold text-ios-teal bg-teal-50 px-2 py-0.5 rounded-full border border-teal-100">
+        SÍNTESIS VIVA • 12 MIN
+      </span>
+</div>
+<!-- Inset White Rounded-3xl Card -->
+<div class="w-full rounded-3xl bg-ios-card p-4 sm:p-5 shadow-ios-card border border-ios-border/80 overflow-hidden flex flex-col">
+<!-- Card Toolbar -->
+<div class="flex items-center justify-between pb-3 border-b border-ios-border/60">
+<div>
+<p class="text-[11px] font-bold uppercase tracking-wider text-ios-gray-text">Proyecto Transductor</p>
+<p class="text-[15px] font-bold font-headline text-black">Lanzamiento Hardware Q3 &amp; UX</p>
+</div>
+<div class="flex items-center gap-1.5">
+<button class="px-2.5 py-1 text-[12px] font-semibold rounded-lg bg-ios-bg text-black hover:bg-[#E5E5EA] transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px]" data-icon="zoom_in">zoom_in</span>
+            100%
+          </button>
+<button class="px-3 py-1 text-[12px] font-semibold rounded-lg bg-ios-blue text-white hover:bg-ios-blue/90 shadow-sm transition-all flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px]" data-icon="share">share</span>
+            Exportar
+          </button>
+</div>
+</div>
+<!-- Freeform Interactive Canvas Area -->
+<div class="relative w-full min-h-[290px] freeform-canvas rounded-2xl my-3 border border-ios-border/60 overflow-hidden flex items-center justify-center p-2">
+<!-- Connecting Curved Lines -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" fill="none" preserveaspectratio="xMidYMid meet" viewbox="0 0 500 280">
+<path class="freeform-line" d="M 250 140 C 180 140, 160 55, 95 55" stroke="#007AFF" stroke-opacity="0.6" stroke-width="1.75"></path>
+<path class="freeform-line" d="M 250 140 C 180 140, 160 225, 95 225" stroke="#30B0C7" stroke-opacity="0.6" stroke-width="1.75"></path>
+<path class="freeform-line" d="M 250 140 C 320 140, 340 55, 405 55" stroke="#5856D6" stroke-opacity="0.6" stroke-width="1.75"></path>
+<path class="freeform-line" d="M 250 140 C 320 140, 340 225, 405 225" stroke="#007AFF" stroke-opacity="0.6" stroke-width="1.75"></path>
+</svg>
+<!-- Node 1: Sensores EMG (Top-Left) -->
+<div class="absolute left-2 sm:left-4 top-3 flex items-center gap-2 p-2 bg-white/95 rounded-2xl shadow-sm border border-ios-blue/30 hover:border-ios-blue transition-all cursor-pointer">
+<div class="w-7 h-7 rounded-xl bg-blue-50 flex items-center justify-center text-ios-blue">
+<span class="material-symbols-outlined text-[16px]" data-icon="sensors">sensors</span>
+</div>
+<div>
+<p class="text-[12px] font-bold text-black leading-tight">Sensores EMG</p>
+<p class="text-[10px] text-ios-gray-text font-medium leading-tight">Latencia &lt;4ms</p>
+</div>
+</div>
+<!-- Node 2: Interfaz AR (Bottom-Left) -->
+<div class="absolute left-2 sm:left-4 bottom-3 flex items-center gap-2 p-2 bg-white/95 rounded-2xl shadow-sm border border-ios-teal/30 hover:border-ios-teal transition-all cursor-pointer">
+<div class="w-7 h-7 rounded-xl bg-teal-50 flex items-center justify-center text-ios-teal">
+<span class="material-symbols-outlined text-[16px]" data-icon="visibility">visibility</span>
+</div>
+<div>
+<p class="text-[12px] font-bold text-black leading-tight">Overlay Visual</p>
+<p class="text-[10px] text-ios-gray-text font-medium leading-tight">Frecuencia 90Hz</p>
+</div>
+</div>
+<!-- Center Hub Nucleus (Apple Freeform Master Capsule) -->
+<div class="relative z-10 flex flex-col items-center justify-center text-center p-3.5 px-4 bg-white rounded-3xl shadow-ios-elevated border-2 border-ios-blue max-w-[190px] cursor-pointer hover:scale-[1.02] transition-transform">
+<div class="w-9 h-9 rounded-2xl bg-ios-blue flex items-center justify-center text-white mb-1 shadow-sm">
+<span class="material-symbols-outlined text-[20px]" data-icon="neurology">neurology</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-wider text-ios-blue">Núcleo Conceptual</span>
+<span class="text-[13px] font-bold font-headline text-black leading-tight mt-0.5">Arquitectura Q3 Wearable</span>
+<span class="text-[10px] font-semibold text-ios-green mt-1">4 Sub-ramas activas</span>
+</div>
+<!-- Node 3: Audio Espacial (Top-Right) -->
+<div class="absolute right-2 sm:right-4 top-3 flex items-center gap-2 p-2 bg-white/95 rounded-2xl shadow-sm border border-ios-indigo/30 hover:border-ios-indigo transition-all cursor-pointer text-right">
+<div>
+<p class="text-[12px] font-bold text-black leading-tight">Audio Espacial</p>
+<p class="text-[10px] text-ios-gray-text font-medium leading-tight">Head-tracking</p>
+</div>
+<div class="w-7 h-7 rounded-xl bg-indigo-50 flex items-center justify-center text-ios-indigo">
+<span class="material-symbols-outlined text-[16px]" data-icon="spatial_audio_off">spatial_audio_off</span>
+</div>
+</div>
+<!-- Node 4: Protocolo Sincro (Bottom-Right) -->
+<div class="absolute right-2 sm:right-4 bottom-3 flex items-center gap-2 p-2 bg-white/95 rounded-2xl shadow-sm border border-ios-blue/30 hover:border-ios-blue transition-all cursor-pointer text-right">
+<div>
+<p class="text-[12px] font-bold text-black leading-tight">P2P Sincronía</p>
+<p class="text-[10px] text-ios-gray-text font-medium leading-tight">Ultra-Ancha</p>
+</div>
+<div class="w-7 h-7 rounded-xl bg-blue-50 flex items-center justify-center text-ios-blue">
+<span class="material-symbols-outlined text-[16px]" data-icon="sync_alt">sync_alt</span>
+</div>
+</div>
+</div>
+<!-- Freeform Card Footer -->
+<div class="flex items-center justify-between pt-1 text-[12px] text-ios-gray-text">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="touch_app">touch_app</span>
+          Toca los nodos para expandir detalles
+        </span>
+<button class="text-ios-blue font-semibold hover:underline flex items-center">
+          Ver mapa completo
+          <span class="material-symbols-outlined text-[14px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Notes & Meetings Section (Apple Notes Style Grouped) -->
+<section class="flex flex-col gap-3">
+<div class="flex items-baseline justify-between px-1">
+<h2 class="text-[20px] font-extrabold font-headline text-black tracking-tight">Notas y Reuniones</h2>
+<span class="text-[12px] text-ios-gray-text">Relevancia cognitiva</span>
+</div>
+<!-- Note Card 1: Voice Recording & Transcribe -->
+<article class="bg-ios-card rounded-2xl p-4 shadow-ios-card border border-ios-border/80 flex flex-col gap-3 transition-all hover:border-ios-border">
+<!-- Card Header -->
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-full bg-ios-blue-light text-ios-blue flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]" data-icon="graphic_eq">graphic_eq</span>
+</div>
+<div>
+<h3 class="text-[16px] font-bold font-headline text-black leading-tight">Idea para Algoritmo de Supresión</h3>
+<p class="text-[12px] text-ios-gray-text font-medium">Hoy, 10:42 AM</p>
+</div>
+</div>
+<!-- Hardware Badge -->
+<span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#EFEFF4] text-black flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-ios-gray-text" data-icon="headphones">headphones</span>
+          Auriculares Pro
+        </span>
+</div>
+<!-- iOS Audio Player Scrub Bar & Waveform -->
+<div class="bg-ios-subcard p-3 rounded-xl border border-ios-border/60 flex items-center gap-3">
+<button aria-label="Reproducir Nota" class="w-8 h-8 rounded-full bg-ios-blue text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="play_arrow">play_arrow</span>
+</button>
+<!-- Apple style waveform bars -->
+<div class="flex-1 flex items-center gap-[3px] h-6 px-1">
+<span class="w-[3px] bg-ios-blue h-3 rounded-full"></span>
+<span class="w-[3px] bg-ios-blue h-5 rounded-full"></span>
+<span class="w-[3px] bg-ios-blue h-2.5 rounded-full"></span>
+<span class="w-[3px] bg-ios-blue h-6 rounded-full"></span>
+<span class="w-[3px] bg-ios-blue h-4 rounded-full"></span>
+<span class="w-[3px] bg-ios-blue h-3.5 rounded-full"></span>
+<span class="w-[3px] bg-ios-blue/40 h-5 rounded-full"></span>
+<span class="w-[3px] bg-ios-blue/40 h-2.5 rounded-full"></span>
+<span class="w-[3px] bg-ios-separator h-4 rounded-full"></span>
+<span class="w-[3px] bg-ios-separator h-2 rounded-full"></span>
+<span class="w-[3px] bg-ios-separator h-3 rounded-full"></span>
+<span class="w-[3px] bg-ios-separator h-1.5 rounded-full"></span>
+</div>
+<span class="text-[12px] font-semibold text-ios-blue font-mono">02:14</span>
+</div>
+<!-- Transcription Quote Box -->
+<div class="bg-ios-subcard px-3 py-2 rounded-xl border-l-2 border-ios-blue">
+<p class="text-[13px] text-ios-secondary-text italic leading-relaxed">
+          "...ajustar la cancelación activa adaptativa cuando los sensores del auricular detecten viento superior a 15 km/h para evitar artefactos en la sintetización..."
+        </p>
+</div>
+<!-- Card Tags & Link -->
+<div class="flex items-center justify-between pt-1 border-t border-ios-border/60">
+<div class="flex items-center gap-1.5">
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-ios-blue-light text-ios-blue flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]" data-icon="auto_awesome">auto_awesome</span>
+            IA Summary
+          </span>
+<span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#EFEFF4] text-ios-secondary-text">DSP</span>
+<span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#EFEFF4] text-ios-secondary-text">Acústica</span>
+</div>
+<button aria-label="Abrir detalles de la nota" class="text-ios-gray-text hover:text-ios-blue p-1 transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward_ios">arrow_forward_ios</span>
+</button>
+</div>
+</article>
+<!-- Note Card 2: AI Meeting Summary & Checklist -->
+<article class="bg-ios-card rounded-2xl p-4 shadow-ios-card border border-ios-border/80 flex flex-col gap-3 transition-all hover:border-ios-border">
+<!-- Card Header -->
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-full bg-indigo-50 text-ios-indigo flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]" data-icon="groups">groups</span>
+</div>
+<div>
+<h3 class="text-[16px] font-bold font-headline text-black leading-tight">Sincronización Sprint Hardware</h3>
+<p class="text-[12px] text-ios-gray-text font-medium">Ayer, 16:30 PM • 45 min</p>
+</div>
+</div>
+<!-- Hardware Badge -->
+<span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#EFEFF4] text-black flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-ios-gray-text" data-icon="eyeglasses">eyeglasses</span>
+          Gafas AR
+        </span>
+</div>
+<!-- AI Summary Callout Box -->
+<div class="bg-ios-subcard p-3 rounded-xl border border-ios-border/60">
+<div class="flex items-center gap-1 text-[11px] font-bold text-ios-indigo mb-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="auto_awesome">auto_awesome</span>
+          RESUMEN EJECUTIVO IA
+        </div>
+<p class="text-[13px] text-ios-secondary-text leading-relaxed">
+          Se aprobó el prototipo de montura ligera en aleación de magnesio y se recalibró el módulo de proyección óptica para reducir la disipación térmica.
+        </p>
+</div>
+<!-- Action Items with Native Circular Checkboxes -->
+<div class="flex flex-col gap-2 mt-0.5">
+<div class="flex items-center justify-between text-[11px] font-bold tracking-wider uppercase text-ios-gray-text px-0.5">
+<span>Acciones Detectadas</span>
+<span class="text-ios-green font-semibold lowercase">2 de 3 hechas</span>
+</div>
+<!-- Checklist Item 1 -->
+<div class="flex items-center gap-2.5 p-2 rounded-xl bg-ios-subcard border border-ios-border/40">
+<div class="w-5 h-5 rounded-full bg-ios-blue text-white flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[14px]" data-icon="check">check</span>
+</div>
+<span class="text-[13px] text-ios-gray-text line-through font-normal">Enviar informe térmico de la montura a ingeniería</span>
+</div>
+<!-- Checklist Item 2 -->
+<div class="flex items-center gap-2.5 p-2 rounded-xl bg-ios-subcard border border-ios-border/40">
+<div class="w-5 h-5 rounded-full bg-ios-blue text-white flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[14px]" data-icon="check">check</span>
+</div>
+<span class="text-[13px] text-ios-gray-text line-through font-normal">Validar firmware 2.4 con SDK de audio 3D</span>
+</div>
+<!-- Checklist Item 3 (Unchecked) -->
+<div class="flex items-center gap-2.5 p-2 rounded-xl bg-white border border-ios-blue/40 shadow-xs">
+<div class="w-5 h-5 rounded-full border-2 border-ios-blue shrink-0"></div>
+<span class="text-[13px] text-black font-medium">Revisión de patentes de telemetría biométrica</span>
+</div>
+</div>
+<!-- Card Footer -->
+<div class="flex items-center justify-between pt-1 border-t border-ios-border/60">
+<div class="flex items-center gap-1.5">
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-green-50 text-ios-green border border-green-200">Reunión Clave</span>
+<span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#EFEFF4] text-ios-secondary-text">3 Participantes</span>
+</div>
+<button aria-label="Abrir acta de reunión" class="text-ios-gray-text hover:text-ios-blue p-1 transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward_ios">arrow_forward_ios</span>
+</button>
+</div>
+</article>
+</section>
+<!-- Background Continuous Transcription Card -->
+<section class="bg-ios-card rounded-2xl p-4 shadow-ios-card border border-ios-border/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+<div class="flex items-center gap-3 w-full sm:w-auto">
+<div class="w-11 h-11 rounded-2xl bg-ios-blue/10 flex items-center justify-center text-ios-blue shrink-0">
+<span class="material-symbols-outlined text-[24px]" data-icon="mic_double">mic_double</span>
+</div>
+<div>
+<h4 class="text-[15px] font-bold font-headline text-black leading-tight">Transcripción Continua</h4>
+<p class="text-[12px] text-ios-secondary-text mt-0.5">Tus Gafas AR y Auriculares Pro detectan notas al decir "Guardar idea".</p>
+</div>
+</div>
+<button class="w-full sm:w-auto px-4 py-2 rounded-xl bg-ios-subcard hover:bg-[#E5E5EA] text-black text-[13px] font-semibold border border-ios-border/80 transition-colors whitespace-nowrap shadow-xs">
+      Configurar Gatillos
+    </button>
+</section>
+</main>
+<!-- iOS Floating Action Button (+) -->
+<aside class="fixed bottom-24 right-5 z-40">
+<button aria-label="Crear nueva nota inteligente" class="flex items-center justify-center w-14 h-14 rounded-full bg-ios-blue text-white shadow-ios-elevated hover:bg-ios-blue/90 active:scale-95 transition-all duration-150">
+<span class="material-symbols-outlined text-[30px] font-bold" data-icon="add">add</span>
+</button>
+</aside>
+<!-- Native iOS Translucent Bottom Tab Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 pt-2 pb-6 bg-[#F8F8FA]/85 backdrop-blur-2xl border-t border-ios-border/80 shadow-ios-tab">
+<!-- Tab 1: Hub -->
+<a class="flex flex-col items-center justify-center text-ios-gray-text hover:text-black gap-0.5 transition-colors flex-1 py-1" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="home">home</span>
+<span class="text-[10px] font-medium">Hub</span>
+</a>
+<!-- Tab 2: Devices -->
+<a class="flex flex-col items-center justify-center text-ios-gray-text hover:text-black gap-0.5 transition-colors flex-1 py-1" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="devices">devices</span>
+<span class="text-[10px] font-medium">Devices</span>
+</a>
+<!-- Tab 3: AR Studio -->
+<a class="flex flex-col items-center justify-center text-ios-gray-text hover:text-black gap-0.5 transition-colors flex-1 py-1" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="eyeglasses">eyeglasses</span>
+<span class="text-[10px] font-medium">AR Studio</span>
+</a>
+<!-- Tab 4: Translate -->
+<a class="flex flex-col items-center justify-center text-ios-gray-text hover:text-black gap-0.5 transition-colors flex-1 py-1" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="translate">translate</span>
+<span class="text-[10px] font-medium">Translate</span>
+</a>
+<!-- Tab 5: Notas (Active State) -->
+<a class="flex flex-col items-center justify-center text-ios-blue gap-0.5 flex-1 py-1" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="neurology" style="font-variation-settings: 'FILL' 1;">neurology</span>
+<span class="text-[10px] font-bold">Notas</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="10dp" />
+            <solid android:color="@color/ios_card_secondary" />
+            <stroke
+                android:width="0.5dp"
+                android:color="@color/ios_separator" />
+        </shape>
+    </item>
+    <item
+        android:width="16dp"
+        android:height="16dp"
+        android:gravity="end|center_vertical"
+        android:end="12dp"
+        android:right="12dp"
+        android:drawable="@drawable/ic_ios_chevron_down" />
+</layer-list>

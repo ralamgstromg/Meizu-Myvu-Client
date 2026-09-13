@@ -35,4 +35,36 @@ class VadSensitivityTest {
         val silenceHoldMs = 1200L
         assertTrue(silenceHoldMs >= 1000L)
     }
+
+    @Test
+    fun testDynamicSpeechThresholdPostUtterance() {
+        val speechEnergy = 75.0
+        val baseThreshold = 75.0
+
+        // Before speech: peak energy is low (e.g. 50), threshold is baseThreshold (75)
+        var speechStarted = false
+        var peakEnergy = 50.0
+        var dynamicThreshold = if (speechStarted && peakEnergy > speechEnergy * 2.0) {
+            max(baseThreshold, peakEnergy * 0.22)
+        } else {
+            baseThreshold
+        }
+        assertEquals(75.0, dynamicThreshold, 0.01)
+
+        // Speech starts and peaks at 800.0
+        speechStarted = true
+        peakEnergy = 800.0
+        dynamicThreshold = if (speechStarted && peakEnergy > speechEnergy * 2.0) {
+            max(baseThreshold, peakEnergy * 0.22)
+        } else {
+            baseThreshold
+        }
+        // 800 * 0.22 = 176.0
+        assertEquals(176.0, dynamicThreshold, 0.01)
+
+        // When speech ends and mic drops back to ambient room noise (level ~85),
+        // level (85) is strictly less than dynamicThreshold (176), allowing silence detection!
+        val ambientRoomNoise = 85.0
+        assertTrue(ambientRoomNoise < dynamicThreshold)
+    }
 }

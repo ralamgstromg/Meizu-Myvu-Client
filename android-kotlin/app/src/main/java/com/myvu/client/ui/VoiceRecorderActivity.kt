@@ -64,6 +64,15 @@ class VoiceRecorderActivity : AppCompatActivity() {
             setupSearchAndFilters()
             setupPlayerManager()
             setupFab()
+
+            val category = intent.getStringExtra("CATEGORY")
+            if (category == VoiceRecording.CATEGORY_MEETING) {
+                chipGroupCategories.check(R.id.chipCatMeeting)
+                currentCategoryFilter = VoiceRecording.CATEGORY_MEETING
+            }
+            if (intent.getBooleanExtra("AUTO_START_RECORDING", false)) {
+                fabRecord.post { fabRecord.performClick() }
+            }
         } catch (e: Throwable) {
             LogBus.error("VoiceRecorderActivity: Fatal error in onCreate", e)
             Toast.makeText(this, "Error al iniciar Grabadora de Voz: ${e.message}", Toast.LENGTH_LONG).show()
@@ -91,6 +100,9 @@ class VoiceRecorderActivity : AppCompatActivity() {
         fabRecord = findViewById(R.id.fabStartRecording)
 
         toolbar.setNavigationOnClickListener { finish() }
+        findViewById<View?>(R.id.btnRecorderDevices)?.setOnClickListener {
+            DeviceManagementBottomSheet.show(supportFragmentManager)
+        }
         findViewById<View>(R.id.btnQuickAiAction)?.setOnClickListener {
             Toast.makeText(this, "🤖 Grabadora Inteligente con Transcripción, Resumen y Mapas Mentales", Toast.LENGTH_SHORT).show()
         }

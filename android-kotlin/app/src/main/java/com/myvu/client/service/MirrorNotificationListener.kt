@@ -17,6 +17,11 @@ import com.myvu.client.core.GlassesConfig
 import com.myvu.client.core.LogBus
 import com.myvu.client.core.Prefs
 import java.lang.ref.WeakReference
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 /**
@@ -31,6 +36,7 @@ import org.json.JSONObject
  */
 class MirrorNotificationListener : NotificationListenerService() {
 
+    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val notificationFilter = NotificationFilter()
     private val dismissHandler = Handler(Looper.getMainLooper())
     private val pendingDismisses = java.util.concurrent.ConcurrentHashMap<String, Runnable>()
@@ -66,6 +72,11 @@ class MirrorNotificationListener : NotificationListenerService() {
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
         _instance = null
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
@@ -116,51 +127,79 @@ class MirrorNotificationListener : NotificationListenerService() {
             return
         }
 
-        val connection = MyvuService.activeConnection()
-        if (connection == null) {
-            LogBus.warn("not mirroring ${appLabel(pkg)}: not connected to the glasses")
-            return
-        }
+        // Route notifications according to each connected device's configuration:
+        // - Visual (HUD): Shown on Smart Glasses if visual notifications are enabled for the glasses.
+        // - Audio (TTS): Spoken aloud if any active connected device has audio/TTS notifications enabled.
+        serviceScope.launch {
+            try {
+                val db = com.myvu.client.database.AppDatabase.getInstance(this@MirrorNotificationListener)
+                val dao = db.bluetoothDeviceDao()
+                val connectedDevices = dao.getConnectedDevices()
+                val activeDevices = if (connectedDevices.isNotEmpty()) connectedDevices else listOfNotNull(dao.getActiveConnectedDevice())
 
-        if (!connection.isRelayConnected()) {
-            connection.wakeRelay()
-            LogBus.warn("app relay is DOWN -- attempting reconnect to deliver notification from ${appLabel(pkg)}")
-        }
-
-        try {
-            // Smart text formatting / truncation for lens display (max 120 chars)
-            val displayTitle = if (TextUtils.isEmpty(title)) appLabel(pkg) else NotificationFilter.truncate(title)
-            val displayText = NotificationFilter.truncate(text ?: "")
-
-            // The id is derived from package + numeric id, NOT sbn.getKey().
-            // See Notifications.notificationId -- passing the platform key here
-            // made the glasses reboot on every mirrored notification.
-            val notifId = Notifications.notificationId(pkg, sbn.id)
-            val entry: JSONObject = Notifications.entry(
-                pkg,
-                sbn.id,
-                displayTitle,
-                displayText,
-                appLabel(pkg),
-                sbn.postTime,
-                false
-            )
-            connection.sendAction(Notifications.buildShow(entry))
-            LogBus.log("mirrored notification from ${appLabel(pkg)}: $displayTitle")
-
-            val durationSec = GlassesConfig.getNotificationDuration(this)
-            if (durationSec > 0) {
-                pendingDismisses.remove(notifId)?.let { dismissHandler.removeCallbacks(it) }
-                val runnable = Runnable {
-                    pendingDismisses.remove(notifId)
-                    val active = MyvuService.activeConnection()
-                    sendDismissSafely(active, notifId)
+                // 1. Audio handling (TTS Readout)
+                val audioDevice = activeDevices.firstOrNull { it.isAudioNotificationEnabled() }
+                if (audioDevice != null) {
+                    val app = appLabel(pkg)
+                    val ttsText = if (!title.isNullOrBlank() && !text.isNullOrBlank()) {
+                        "De $app: $title. $text"
+                    } else if (!title.isNullOrBlank()) {
+                        "De $app: $title"
+                    } else {
+                        "Notificación de $app: $text"
+                    }
+                    com.myvu.client.core.TextToSpeechHelper.init(this@MirrorNotificationListener)
+                    com.myvu.client.core.TextToSpeechHelper.speak(ttsText)
+                    LogBus.log("TTS read notification for [${audioDevice.name}] (mode=${audioDevice.notificationMode}) from $app: $ttsText")
                 }
-                pendingDismisses[notifId] = runnable
-                dismissHandler.postDelayed(runnable, durationSec * 1000L)
+
+                // 2. Visual handling (Glasses HUD Display)
+                val connection = MyvuService.activeConnection()
+                if (connection == null) {
+                    LogBus.trace("not mirroring ${appLabel(pkg)} to glasses: not connected to glasses")
+                    return@launch
+                }
+
+                val glassesDevice = activeDevices.find { it.deviceType == com.myvu.client.data.BluetoothDeviceType.SMART_GLASSES.name }
+                    ?: dao.getConnectedDeviceByType(com.myvu.client.data.BluetoothDeviceType.SMART_GLASSES.name)
+                    ?: dao.getAllDevices().find { it.deviceType == com.myvu.client.data.BluetoothDeviceType.SMART_GLASSES.name }
+
+                val shouldShowVisual = glassesDevice?.isVisualNotificationEnabled() ?: true
+                if (!shouldShowVisual) {
+                    LogBus.log("Smart glasses notification visual handling is disabled (${glassesDevice?.notificationMode}) -- skipping HUD mirror")
+                    return@launch
+                }
+
+                // Deliver formatted notification to glasses HUD
+                val displayTitle = if (TextUtils.isEmpty(title)) appLabel(pkg) else NotificationFilter.truncate(title)
+                val displayText = NotificationFilter.truncate(text ?: "")
+                val notifId = Notifications.notificationId(pkg, sbn.id)
+                val entry: JSONObject = Notifications.entry(
+                    pkg,
+                    sbn.id,
+                    displayTitle,
+                    displayText,
+                    appLabel(pkg),
+                    sbn.postTime,
+                    false
+                )
+                connection.sendAction(Notifications.buildShow(entry))
+                LogBus.log("mirrored notification to HUD from ${appLabel(pkg)}: $displayTitle")
+
+                val durationSec = GlassesConfig.getNotificationDuration(this@MirrorNotificationListener)
+                if (durationSec > 0) {
+                    pendingDismisses.remove(notifId)?.let { dismissHandler.removeCallbacks(it) }
+                    val runnable = Runnable {
+                        pendingDismisses.remove(notifId)
+                        val active = MyvuService.activeConnection()
+                        sendDismissSafely(active, notifId)
+                    }
+                    pendingDismisses[notifId] = runnable
+                    dismissHandler.postDelayed(runnable, durationSec * 1000L)
+                }
+            } catch (e: Exception) {
+                LogBus.error("could not process or mirror notification", e)
             }
-        } catch (e: Exception) {
-            LogBus.error("could not mirror a notification", e)
         }
     }
 

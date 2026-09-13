@@ -43,6 +43,9 @@ class WeatherSync(
         running = false
         conn.removeCallbacks(refreshTick)
         locationSource.stop()
+        try {
+            net.shutdownNow()
+        } catch (_: Exception) {}
     }
 
     private val refreshTick = Runnable { refresh() }

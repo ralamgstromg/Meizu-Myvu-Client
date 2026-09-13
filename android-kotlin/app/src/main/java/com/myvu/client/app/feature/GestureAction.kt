@@ -19,7 +19,9 @@ enum class GestureAction(
     WEATHER_SYNC("weather_sync", "Sincronizar Clima"),
     TOGGLE_MIRROR("toggle_mirror", "Alternar Notificaciones"),
     OPEN_TELEPROMPTER("open_teleprompter", "Abrir Teleprompter"),
-    ZEN_MODE("zen_mode", "Modo Zen / No Molestar");
+    ZEN_MODE("zen_mode", "Modo Zen / No Molestar"),
+    HUD_DASHBOARD("hud_dashboard", "Ver Dashboard / HUD de Gafas"),
+    VOICE_AGENT_AURA("voice_agent_aura", "Agente de Voz Aura (STT + API)");
 
     companion object {
         const val APP_PREFIX = "app:"
@@ -40,6 +42,8 @@ enum class GestureAction(
             val clean = id.trim().lowercase()
             return when (clean) {
                 "none" -> NONE
+                "hud_dashboard", "dashboard", "hud" -> HUD_DASHBOARD
+                "voice_agent_aura", "aura", "voice_agent", "stt_api" -> VOICE_AGENT_AURA
                 "gemini_live", "launch_gemini_live", "live" -> LAUNCH_GEMINI_LIVE
                 "launch_gemini", "gemini", "gemini_assistant" -> LAUNCH_GEMINI
                 "phone_assistant", "launch_phone_assistant", "google_assistant", "assistant" -> LAUNCH_PHONE_ASSISTANT

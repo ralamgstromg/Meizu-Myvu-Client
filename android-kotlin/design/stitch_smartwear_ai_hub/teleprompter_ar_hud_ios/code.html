@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>AR Studio &amp; Teleprompter Inteligente - Companion Hub</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&amp;family=SF+Pro+Text:wght@400;500;600&amp;family=SF+Mono:wght@400;500;600&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "ios-bg": "#F2F2F7",
+            "ios-card": "#FFFFFF",
+            "ios-secondary-bg": "#E5E5EA",
+            "ios-blue": "#007AFF",
+            "ios-cyan": "#32ADE6",
+            "ios-green": "#34C759",
+            "ios-gray": "#8E8E93",
+            "ios-gray-2": "#AEAEB2",
+            "ios-gray-3": "#C7C7CC",
+            "ios-gray-4": "#D1D1D6",
+            "ios-gray-5": "#E5E5EA",
+            "ios-gray-6": "#F2F2F7",
+            "ios-label": "#000000",
+            "ios-secondary-label": "#3C3C4399",
+            "ios-tertiary-label": "#3C3C434D",
+            "ios-separator": "#3C3C434A"
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', 'Inter', 'sans-serif'],
+            mono: ['"SF Mono"', 'ui-monospace', 'Menlo', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-fill {
+      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      appearance: none;
+      height: 24px;
+      width: 24px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.22);
+      border: 0.5px solid rgba(0,0,0,0.04);
+      cursor: pointer;
+    }
+    body {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+  </style>
+</head>
+<body class="bg-[#F2F2F7] text-black font-sans antialiased min-h-screen pb-36">
+<!-- iOS Status Bar & Navigation Header -->
+<header class="sticky top-0 z-40 bg-[#F2F2F7]/85 backdrop-blur-xl border-b border-[#3C3C43]/15 transition-all">
+<div class="max-w-md mx-auto px-4 pt-3 pb-2 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-[#007AFF]/10 flex items-center justify-center text-[#007AFF]">
+<span class="material-symbols-outlined text-[20px]">graphic_eq</span>
+</div>
+<span class="text-[17px] font-semibold tracking-tight text-black">Companion Hub</span>
+</div>
+<!-- Battery & Quick Script Pill -->
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1 bg-[#E5E5EA]/80 px-2.5 py-1 rounded-full text-[12px] font-medium text-[#3C3C43]/80">
+<span class="material-symbols-outlined text-[15px] text-[#34C759] material-symbols-fill">battery_charging_full</span>
+<span class="font-mono text-[11px] font-semibold text-black">94%</span>
+</div>
+<button class="w-8 h-8 rounded-full bg-[#E5E5EA] flex items-center justify-center text-[#007AFF] active:opacity-60 transition-opacity" title="Cargar nuevo guion">
+<span class="material-symbols-outlined text-[18px]">upload_file</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Scrollable Screen Content -->
+<main class="max-w-md mx-auto px-4 pt-3 space-y-4">
+<!-- Page Title & Connection Status -->
+<div class="space-y-1 pt-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#34C759]/12 text-[#248A3D] text-[12px] font-medium tracking-tight">
+<span class="w-2 h-2 rounded-full bg-[#34C759] animate-pulse"></span>
+          Gafas AR vinculadas - Proyección lista
+        </span>
+<span class="text-[11px] font-mono uppercase text-[#8E8E93] tracking-wide">HUD v2.4</span>
+</div>
+<h1 class="text-[28px] font-bold tracking-tight text-black pt-1">
+        AR Studio &amp; Teleprompter
+      </h1>
+</div>
+<!-- Guion en cola - Inset Selector Banner -->
+<div class="bg-white rounded-2xl p-3.5 shadow-sm border border-black/[0.04] flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-xl bg-[#007AFF]/10 flex items-center justify-center text-[#007AFF]">
+<span class="material-symbols-outlined text-[20px]">article</span>
+</div>
+<div>
+<p class="text-[11px] uppercase tracking-wider font-semibold text-[#8E8E93]">Guion en cola</p>
+<p class="text-[15px] font-semibold text-black leading-snug">Apertura Magistral AR</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-[#8E8E93] text-[20px]">unfold_more</span>
+</div>
+<!-- Teleprompter HUD Simulator (Apple Vision / iOS Optical Viewfinder) -->
+<div class="relative rounded-3xl bg-[#0F172A] text-white p-4 sm:p-5 shadow-xl border border-white/10 overflow-hidden flex flex-col justify-between min-h-[400px]">
+<!-- Subtle optical grid and glass highlight -->
+<div class="absolute inset-0 pointer-events-none bg-[radial-gradient(#38BDF8_1px,transparent_1px)] [background-size:20px_20px] opacity-[0.08]"></div>
+<div class="absolute -top-16 -right-16 w-48 h-48 bg-[#007AFF]/20 rounded-full blur-3xl pointer-events-none"></div>
+<!-- Top Telemetry Bar -->
+<div class="relative z-10 flex items-center justify-between pb-3 border-b border-white/10 text-[11px] font-mono text-slate-300">
+<div class="flex items-center gap-1.5 text-[#34C759]">
+<span class="material-symbols-outlined text-[14px]">visibility</span>
+<span class="tracking-tight font-medium">MONÓCULO DERECHO (82% NITIDEZ)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-md bg-white/10 text-[#38BDF8] font-semibold text-[10px] tracking-wide">
+            WPM 142
+          </span>
+<span class="w-2 h-2 rounded-full bg-[#34C759] animate-ping"></span>
+</div>
+</div>
+<!-- Center Projection Surface (Clean High-Contrast HIG Optical Typography) -->
+<div class="relative z-10 my-auto py-3 space-y-3">
+<!-- Prior Context Line -->
+<p class="text-[13px] text-slate-400/50 leading-relaxed font-normal">
+          ...la nueva era de interfaces espaciales no requiere pantallas físicas aisladas.
+        </p>
+<!-- Active Read Highlight Block (Frosted Lens Inset) -->
+<div class="p-3.5 rounded-2xl bg-white/[0.08] backdrop-blur-md border border-white/15 shadow-inner">
+<p class="text-[20px] font-medium leading-snug tracking-tight text-white">
+<span class="text-[#38BDF8] font-semibold drop-shadow-sm">
+              "El valor fundamental de esta tecnología
+            </span>
+<span class="text-white drop-shadow-sm">
+              radica en amplificar la cognición humana en tiempo real,"
+            </span>
+<span class="text-slate-300/80 font-normal text-[17px]">
+              permitiendo proyectar ideas complejas con naturalidad absoluta y sin desviar la mirada del público.
+            </span>
+</p>
+<!-- Voice Synchronization Indicator -->
+<div class="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px]">
+<div class="flex items-center gap-1.5 text-[#38BDF8]">
+<span class="material-symbols-outlined text-[15px]">mic</span>
+<span class="font-mono">Sincronía activa: "de esta tecnología..."</span>
+</div>
+<!-- Waveform simulation -->
+<div class="flex items-center gap-1 h-3">
+<div class="w-1 bg-[#38BDF8] h-2 rounded-full"></div>
+<div class="w-1 bg-[#34C759] h-3 rounded-full animate-pulse"></div>
+<div class="w-1 bg-[#38BDF8] h-1.5 rounded-full"></div>
+<div class="w-1 bg-[#38BDF8] h-3.5 rounded-full"></div>
+<div class="w-1 bg-[#34C759] h-2 rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Next Line Cue -->
+<p class="text-[13px] text-slate-400/60 leading-relaxed">
+          Marcador 02: Presentación del sensor biométrico y arquitectura de latencia ultrabaja...
+        </p>
+</div>
+<!-- Bottom HUD Status Bar -->
+<div class="relative z-10 flex items-center justify-between pt-3 border-t border-white/10 text-[11px] font-mono text-slate-400">
+<span class="text-slate-300">LÍNEA 14 / 68 (21%)</span>
+<div class="flex items-center gap-1 text-[#38BDF8]">
+<span class="material-symbols-outlined text-[14px]">watch</span>
+<span>Gestos Watch: Activos (Doble Toque)</span>
+</div>
+</div>
+</div>
+<!-- Speed Control: Authentic iOS Segmented Control & Card -->
+<div class="bg-white rounded-2xl p-4 shadow-sm border border-black/[0.04] space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-[#007AFF]">speed</span>
+<h2 class="text-[16px] font-semibold text-black">Control de Velocidad Inteligente</h2>
+</div>
+<span class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#007AFF]/10 text-[#007AFF]">
+          Modo IA Recomendado
+        </span>
+</div>
+<!-- iOS Segmented Control -->
+<div class="bg-[#E5E5EA] p-1 rounded-xl flex items-center gap-1 text-[13px] font-medium">
+<button class="flex-1 py-1.5 rounded-[9px] bg-white text-black font-semibold shadow-sm text-center transition-all flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-[#007AFF] material-symbols-fill">auto_awesome</span>
+<span>Voz IA</span>
+</button>
+<button class="flex-1 py-1.5 rounded-[9px] text-[#3C3C43]/70 hover:text-black text-center transition-all flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[15px]">timer</span>
+<span>Fijo 140 WPM</span>
+</button>
+<button class="flex-1 py-1.5 rounded-[9px] text-[#3C3C43]/70 hover:text-black text-center transition-all flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[15px]">touch_app</span>
+<span>Pausa Gestual</span>
+</button>
+</div>
+<p class="text-[12px] text-[#8E8E93] px-1">
+        Se adapta automáticamente a tu cadencia vocal natural y pausas al hablar.
+      </p>
+</div>
+<!-- AI Optimization Card -->
+<div class="bg-white rounded-2xl p-4 shadow-sm border border-black/[0.04] space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-[#007AFF]">neurology</span>
+<h3 class="text-[16px] font-semibold text-black">Optimización IA</h3>
+</div>
+<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#34C759]/12 text-[#248A3D]">
+          -65% carga visual
+        </span>
+</div>
+<p class="text-[13px] text-[#3C3C43]/80 leading-snug">
+        Adapta la densidad textual para evitar fatiga ocular y saturación en el prisma de tus gafas.
+      </p>
+<!-- Apple Action Button: AI Summarize -->
+<button class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#007AFF]/10 active:bg-[#007AFF]/20 text-[#007AFF] font-semibold text-[14px] transition-colors">
+<span class="material-symbols-outlined text-[18px]">format_list_bulleted</span>
+<span>Resumir en viñetas clave</span>
+</button>
+<!-- AI Summary Content Block -->
+<div class="p-3 bg-[#F2F2F7] rounded-xl space-y-2 border border-black/[0.03]">
+<div class="flex items-center gap-1 text-[12px] font-semibold text-[#007AFF]">
+<span class="material-symbols-outlined text-[15px]">bolt</span>
+<span>Modo Viñetas Esenciales</span>
+</div>
+<ul class="text-[13px] text-black space-y-1.5 pl-1">
+<li class="flex items-start gap-2">
+<span class="text-[#007AFF] text-base leading-none">•</span>
+<span>Innovación no invasiva en campo de visión</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="text-[#007AFF] text-base leading-none">•</span>
+<span>Sincronización por ritmo vocal sin botones</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="text-[#007AFF] text-base leading-none">•</span>
+<span>Latencia perceptual &lt; 18ms</span>
+</li>
+</ul>
+</div>
+</div>
+<!-- HUD Visual Parameters Card -->
+<div class="bg-white rounded-2xl p-4 shadow-sm border border-black/[0.04] space-y-4">
+<div class="flex items-center justify-between pb-2 border-b border-black/[0.06]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-[#8E8E93]">tune</span>
+<h3 class="text-[16px] font-semibold text-black">Parámetros del HUD</h3>
+</div>
+<span class="text-[12px] text-[#8E8E93]">Calibrado</span>
+</div>
+<!-- Segmented Eye Position Selector -->
+<div class="space-y-1.5">
+<label class="text-[12px] font-medium text-[#8E8E93]">Posición del visor AR</label>
+<div class="bg-[#E5E5EA] p-1 rounded-xl flex items-center gap-1 text-[13px] font-medium">
+<button class="flex-1 py-1.5 rounded-[9px] bg-white text-black font-semibold shadow-sm flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-[#007AFF]">visibility</span>
+<span>Ojo Derecho</span>
+</button>
+<button class="flex-1 py-1.5 rounded-[9px] text-[#3C3C43]/70 hover:text-black flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">visibility_off</span>
+<span>Ojo Izquierdo</span>
+</button>
+</div>
+</div>
+<!-- Text Size Slider -->
+<div class="space-y-1.5">
+<div class="flex justify-between items-center text-[12px]">
+<span class="text-[#8E8E93]">Tamaño de fuente AR</span>
+<span class="text-[#007AFF] font-mono font-medium">Mediano (22pt HUD)</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-[12px] font-bold text-[#8E8E93]">A</span>
+<input class="w-full h-1.5 bg-[#E5E5EA] rounded-full appearance-none accent-[#007AFF] cursor-pointer" max="32" min="14" type="range" value="22"/>
+<span class="text-[18px] font-bold text-[#8E8E93]">A</span>
+</div>
+</div>
+<!-- Contrast Opacity Slider -->
+<div class="space-y-1.5">
+<div class="flex justify-between items-center text-[12px]">
+<span class="text-[#8E8E93]">Opacidad fondo HUD (Contraste)</span>
+<span class="text-[#34C759] font-mono font-medium">45%</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-[11px] text-[#8E8E93]">10%</span>
+<input class="w-full h-1.5 bg-[#E5E5EA] rounded-full appearance-none accent-[#34C759] cursor-pointer" max="80" min="10" type="range" value="45"/>
+<span class="text-[11px] text-[#8E8E93]">80%</span>
+</div>
+</div>
+<!-- Chrominance Color Selector -->
+<div class="flex items-center justify-between pt-1">
+<span class="text-[12px] text-[#8E8E93]">Crominancia HUD</span>
+<div class="flex items-center gap-3">
+<button class="w-6 h-6 rounded-full bg-[#32ADE6] ring-2 ring-[#007AFF] ring-offset-2" title="Cian Cósmico"></button>
+<button class="w-6 h-6 rounded-full bg-[#34C759] opacity-60 hover:opacity-100 transition-opacity" title="Verde Táctico"></button>
+<button class="w-6 h-6 rounded-full bg-slate-300 opacity-60 hover:opacity-100 transition-opacity" title="Monocromo Puro"></button>
+</div>
+</div>
+</div>
+<!-- Session Readout & Quick Bookmark Strip -->
+<div class="bg-white rounded-2xl p-4 shadow-sm border border-black/[0.04] space-y-4">
+<!-- Session Telemetry Counter -->
+<div class="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+<div>
+<p class="text-[11px] font-medium uppercase text-[#8E8E93]">Tiempo de sesión</p>
+<p class="text-[20px] font-bold font-mono text-black">
+            04:18 <span class="text-[13px] font-normal text-[#8E8E93]">/ 15:00</span>
+</p>
+</div>
+<div class="h-8 w-[1px] bg-black/[0.08]"></div>
+<div class="text-right">
+<p class="text-[11px] font-medium uppercase text-[#8E8E93]">Cadencia Promedio</p>
+<p class="text-[20px] font-bold font-mono text-[#34C759]">
+            138 <span class="text-[13px] font-normal text-[#8E8E93]">pal/min</span>
+</p>
+</div>
+</div>
+<!-- Action Buttons: Prominent Apple iOS System Buttons -->
+<div class="space-y-2.5">
+<button class="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-[#007AFF] text-white text-[16px] font-semibold shadow-md active:bg-[#0062CC] active:scale-[0.99] transition-all">
+<span class="material-symbols-outlined text-[22px] material-symbols-fill">play_arrow</span>
+<span>Iniciar Proyección AR</span>
+</button>
+<div class="grid grid-cols-2 gap-2">
+<button class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#E5E5EA] text-black text-[14px] font-medium active:bg-[#D1D1D6] transition-colors">
+<span class="material-symbols-outlined text-[18px]">pause</span>
+<span>Pausar</span>
+</button>
+<button class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#E5E5EA] text-[#FF3B30] text-[14px] font-medium active:bg-[#D1D1D6] transition-colors">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+<span>Reiniciar</span>
+</button>
+</div>
+</div>
+<!-- Quick Bookmarks Horizontal Flow -->
+<div class="pt-2 border-t border-black/[0.06] space-y-2">
+<div class="flex items-center justify-between text-[11px] font-semibold uppercase text-[#8E8E93]">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-[#007AFF]">bookmark</span>
+            Marcadores
+          </span>
+<button class="text-[#007AFF] lowercase text-[12px] font-medium flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">add</span> Añadir marca
+          </button>
+</div>
+<div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+<button class="px-3 py-1.5 rounded-full bg-[#007AFF] text-white text-[12px] font-medium whitespace-nowrap shadow-sm">
+            01 Intro &amp; Saludo
+          </button>
+<button class="px-3 py-1.5 rounded-full bg-[#E5E5EA] text-black text-[12px] font-medium whitespace-nowrap hover:bg-[#D1D1D6] transition-colors">
+            02 Tesis Central (Activo)
+          </button>
+<button class="px-3 py-1.5 rounded-full bg-[#E5E5EA] text-black text-[12px] font-medium whitespace-nowrap hover:bg-[#D1D1D6] transition-colors">
+            03 Demo en Directo
+          </button>
+<button class="px-3 py-1.5 rounded-full bg-[#E5E5EA] text-black text-[12px] font-medium whitespace-nowrap hover:bg-[#D1D1D6] transition-colors">
+            04 Conclusiones &amp; Q&amp;A
+          </button>
+</div>
+</div>
+</div>
+</main>
+<!-- Native iOS Translucent Tab Bar -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-xl border-t border-[#3C3C43]/15 pb-6 pt-2">
+<div class="max-w-md mx-auto flex items-center justify-around px-2">
+<!-- Tab 1: Hub -->
+<a class="flex flex-col items-center justify-center text-[#8E8E93] hover:text-[#007AFF] transition-colors py-0.5" href="#">
+<span class="material-symbols-outlined text-[24px]">home</span>
+<span class="text-[10px] font-medium mt-0.5">Hub</span>
+</a>
+<!-- Tab 2: Devices -->
+<a class="flex flex-col items-center justify-center text-[#8E8E93] hover:text-[#007AFF] transition-colors py-0.5" href="#">
+<span class="material-symbols-outlined text-[24px]">devices</span>
+<span class="text-[10px] font-medium mt-0.5">Devices</span>
+</a>
+<!-- Tab 3: AR Studio (Active) -->
+<a aria-current="page" class="flex flex-col items-center justify-center text-[#007AFF] py-0.5" href="#">
+<span class="material-symbols-outlined text-[24px] material-symbols-fill">eyeglasses</span>
+<span class="text-[10px] font-semibold mt-0.5">AR Studio</span>
+</a>
+<!-- Tab 4: Translate -->
+<a class="flex flex-col items-center justify-center text-[#8E8E93] hover:text-[#007AFF] transition-colors py-0.5" href="#">
+<span class="material-symbols-outlined text-[24px]">translate</span>
+<span class="text-[10px] font-medium mt-0.5">Translate</span>
+</a>
+<!-- Tab 5: Notes -->
+<a class="flex flex-col items-center justify-center text-[#8E8E93] hover:text-[#007AFF] transition-colors py-0.5" href="#">
+<span class="material-symbols-outlined text-[24px]">edit_note</span>
+<span class="text-[10px] font-medium mt-0.5">Notes</span>
+</a>
+</div>
+</nav>
+</body></html>

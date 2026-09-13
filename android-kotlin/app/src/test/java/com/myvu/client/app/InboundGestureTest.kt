@@ -229,9 +229,9 @@ class InboundGestureTest {
                 "{\"_event_type_\":\"action_x\",\"_event_name_\":\"key_event\",\"_event_attr_value_\":{\"key_code\":\"210\",\"down_or_up\":1,\"key_event_sender\":4}}," + // Phonepad Tap (sender 4)
                 "{\"_event_type_\":\"action_x\",\"_event_name_\":\"key_event\",\"_event_attr_value_\":{\"key_code\":\"211\",\"down_or_up\":1,\"key_event_sender\":4}}," + // Phonepad Double Tap (sender 4)
                 "{\"_event_type_\":\"action_x\",\"_event_name_\":\"key_event\",\"_event_attr_value_\":{\"key_code\":\"212\",\"down_or_up\":1,\"key_event_sender\":4}}," + // Phonepad Long Press (sender 4)
-                "{\"_event_type_\":\"action_x\",\"_event_name_\":\"key_event\",\"_event_attr_value_\":{\"key_code\":\"200\",\"down_or_up\":1,\"key_event_sender\":2}}," + // Temple Tap (sender 2)
+                "{\"_event_type_\":\"action_x\",\"_event_name_\":\"key_event\",\"_event_attr_value_\":{\"key_code\":\"200\",\"down_or_up\":1,\"key_event_sender\":3}}," + // Generic Tap (sender 3)
                 "{\"_event_type_\":\"action_x\",\"_event_name_\":\"key_event\",\"_event_attr_value_\":{\"key_code\":\"201\",\"down_or_up\":1,\"key_event_sender\":2}}," + // Temple Swipe Forward (sender 2)
-                "{\"_event_type_\":\"action_x\",\"_event_name_\":\"key_event\",\"_event_attr_value_\":{\"key_code\":\"202\",\"down_or_up\":1,\"key_event_sender\":2}}," + // Temple Double Tap (sender 2)
+                "{\"_event_type_\":\"action_x\",\"_event_name_\":\"key_event\",\"_event_attr_value_\":{\"key_code\":\"202\",\"down_or_up\":1,\"key_event_sender\":2}}," + // Action Button Click (sender 2)
                 "{\"_event_type_\":\"action_x\",\"_event_name_\":\"key_event\",\"_event_attr_value_\":{\"key_code\":\"237\",\"down_or_up\":1,\"key_event_sender\":2}}," + // Temple Swipe Backward (sender 2)
                 "{\"_event_type_\":\"action_x\",\"_event_name_\":\"key_event\",\"_event_attr_value_\":{\"key_code\":\"210\",\"down_or_up\":0,\"key_event_sender\":1}}" +  // Release keyup - ignored
                 "]}}"
@@ -258,7 +258,7 @@ class InboundGestureTest {
         assertEquals(200, receivedGestures[8].code)
         assertEquals(GlassGesture.SWIPE_FORWARD, receivedGestures[9].gesture)
         assertEquals(201, receivedGestures[9].code)
-        assertEquals(GlassGesture.DOUBLE_TAP, receivedGestures[10].gesture)
+        assertEquals(GlassGesture.ACTION_BUTTON, receivedGestures[10].gesture)
         assertEquals(202, receivedGestures[10].code)
         assertEquals(GlassGesture.SWIPE_BACKWARD, receivedGestures[11].gesture)
         assertEquals(237, receivedGestures[11].code)
@@ -366,5 +366,42 @@ class InboundGestureTest {
 
         assertEquals(1, receivedGestures.size)
         assertEquals(GlassGesture.DOUBLE_TAP, receivedGestures[0].gesture)
+    }
+
+    @Test
+    fun consolidatesTouchDown200AndTap210ToSingleTapWithoutSynthesizingDoubleTap() {
+        val json = "{\"action\":\"event_tracking\",\"data\":{\"action\":\"sync_glass_event\",\"value\":[" +
+                "{\"_action_value_\":\"key_event\",\"_event_attr_value_\":{\"down_or_up\":\"1\",\"key_code\":\"200\",\"key_event_sender\":1,\"key_event_time\":1789075058000},\"_event_id_\":\"key_event\"}," +
+                "{\"_action_value_\":\"key_event\",\"_event_attr_value_\":{\"down_or_up\":\"1\",\"key_code\":\"210\",\"key_event_sender\":1,\"key_event_time\":1789075058080},\"_event_id_\":\"key_event\"}" +
+                "]}}"
+        router.handle(json)
+
+        assertEquals(1, receivedGestures.size)
+        assertEquals(GlassGesture.TAP, receivedGestures[0].gesture)
+        assertEquals(210, receivedGestures[0].code)
+    }
+
+    @Test
+    fun decodesActionButtonCode230AsActionButton() {
+        val json = "{\"action\":\"event_tracking\",\"data\":{\"action\":\"sync_glass_event\",\"value\":[" +
+                "{\"_action_value_\":\"key_event\",\"_event_attr_value_\":{\"down_or_up\":\"1\",\"key_code\":\"230\",\"key_event_sender\":4,\"key_event_time\":1789075058000},\"_event_id_\":\"key_event\"}" +
+                "]}}"
+        router.handle(json)
+
+        assertEquals(1, receivedGestures.size)
+        assertEquals(GlassGesture.ACTION_BUTTON, receivedGestures[0].gesture)
+        assertEquals(230, receivedGestures[0].code)
+    }
+
+    @Test
+    fun decodesActionButtonCode231AsActionButton() {
+        val json = "{\"action\":\"event_tracking\",\"data\":{\"action\":\"sync_glass_event\",\"value\":[" +
+                "{\"_action_value_\":\"key_event\",\"_event_attr_value_\":{\"down_or_up\":\"1\",\"key_code\":\"231\",\"key_event_sender\":4,\"key_event_time\":1789075058000},\"_event_id_\":\"key_event\"}" +
+                "]}}"
+        router.handle(json)
+
+        assertEquals(1, receivedGestures.size)
+        assertEquals(GlassGesture.ACTION_BUTTON, receivedGestures[0].gesture)
+        assertEquals(231, receivedGestures[0].code)
     }
 }

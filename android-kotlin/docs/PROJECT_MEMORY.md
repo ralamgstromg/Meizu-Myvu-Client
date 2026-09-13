@@ -35,7 +35,550 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
 | **Habilidades (Skills)** | `com.myvu.client.skills` | Motor modular de skills (`SkillManager`, `BaseSkillHandler`) con 30 manifiestos en `assets/skills/built-in/`. |
 | **Persistencia** | `com.myvu.client.database` / `data` | Base de datos Room (`AppDatabase`, `NoteRepository`, `ReminderRepository`). |
 | **Inteligencia Artificial** | `com.myvu.client.ai` | Inferencia privada/local mediante `LocalAiClient` (LiteLLM/OpenAI compatible), streaming Gemini Live y cliente en la nube `GeminiClient`. |
-| **Interfaz de Usuario** | `com.myvu.client.ui` | Vistas Material 3 (`ConnectActivity`, `NotesActivity`, `ChatActivity`, `SettingsActivity`, etc.). |
+| **Interfaz de Usuario** | `com.myvu.client.ui` | Vistas Material 3 & Apple Cupertino HIG (`ConnectActivity`, `ActivityLogActivity`, `NotesActivity`, `ChatActivity`, `GlassesSettingsActivity`, `HeadphoneSettingsActivity`, `SettingsActivity`). |
+
+### [2026-09-12] — Corrección del Botón Físico de Montura (Google Assistant No Deseado con 1 Pulsación) y Optimización de Telemetría
+- **Requerimiento del Usuario**:
+  - Al presionar el botón físico de la montura de las gafas Meizu MYVU 1 sola vez, aún se seguía activando el asistente de Google en el celular.
+  - Validar el archivo de log `/home/rcastro/Descargas/myvu_client_log.txt` y proponer un plan de mejora integral.
+- **Diagnóstico y Análisis Forense en el Log**:
+  1. **Clasificación Errónea de Keycode 202 en `GlassGesture.kt`**:
+     - En el log oficial (`21:43:14.095` y `21:43:20.191`), al presionar 1 vez el botón físico de la montura, las gafas emiten:
+       `{"key_code": "200", "down_or_up": 1, "key_event_sender": 2}`
+       `{"key_code": "202", "down_or_up": 1, "key_event_sender": 2}`
+     - En `GlassGesture.kt`, el código `202` estaba registrado en `fromCode()` como `DOUBLE_TAP`.
+     - En la configuración activa del usuario (`Prefs.touchpadDoubleTapAction`), el doble toque estaba asignado a `phone_assistant` (`LAUNCH_PHONE_ASSISTANT`).
+     - Consecuencia: La app interpretaba la pulsación física simple de montura (`202`) como un doble toque de la patilla táctil capacitiva, ejecutando `TouchGestureManager.launchPhoneAssistant()` y abriendo Google Assistant.
+  2. **Doble Disparo por Falta de Consolidación Down (200) ante 202**:
+     - En `InboundRouter.dispatchGestureBatch()`, el evento `200` (Down) sólo se eliminaba si `210` o `230` estaban presentes. Como llegó `202`, no se eliminó `200`, ejecutando primero `202` (Google Assistant) y 36ms después `200` (Tap).
+  3. **Despertar Innecesario de RFCOMM en Notificaciones**:
+     - `MirrorNotificationListener.kt` ejecutaba `connection.wakeRelay()` cada vez que llegaba una notificación para el HUD, forzando la reconexión del socket SPP RFCOMM cuando las gafas querían suspender su radio para ahorrar batería, ignorando que las notificaciones viajan fluidamente por BLE.
+- **Implementación y Solución**:
+  1. **`GlassGesture.kt`**:
+     - Se retiró el código `202` de `DOUBLE_TAP`.
+     - Se asignó `202` a `GlassGesture.ACTION_BUTTON` (junto con `230` y `231`).
+  2. **`TouchGestureManager.kt`**:
+     - `rawCode == 202` se incluye inequívocamente en `isPhysicalButton` y en la condición de pulsación corta (`rawCode == 230 || rawCode == 202`), ejecutando `executor.executeHudDashboard()` (mostrar HUD nativo de las gafas) y protegiendo el pipeline contra la apertura accidental de asistentes de terceros.
+  3. **`InboundRouter.kt`**:
+     - En `dispatchGestureBatch()`, se añadió `other.actionValue == 202` al filtro de consolidación de `withoutDownUpNoise`, eliminando `200` (Down) y `203` (Up) como ruido de contacto mecánico cuando `202` está presente en el mismo lote.
+  4. **`MirrorNotificationListener.kt`**:
+     - Se eliminó la llamada a `connection.wakeRelay()`, preservando el reposo profundo de la radio SPP de las gafas durante la recepción continua de notificaciones BLE.
+- **Verificación**:
+  - Pruebas unitarias actualizadas (`InboundGestureTest.kt` y `PhysicalActionButtonConflictTest.kt`), verificando que `202` resuelve a `ACTION_BUTTON`, consolida `200` y ejecuta únicamente `HUD_DASHBOARD`.
+  - 100% de la suite de pruebas unitarias pasando (`BUILD SUCCESSFUL in 10s`), compilación limpia de APK.
+
+### [2026-09-12] — Corrección de Insets Edge-to-Edge y Ajuste Cupertino en Notas y Logs
+- **Requerimiento del Usuario**:
+  - Las pantallas de "Notas de IA y Tareas" y "Logs y Actividad" aparecían visualmente corridas o desfasadas en la parte superior o inferior.
+  - Corregir el desplazamiento aplicando las directrices de diseño de Apple (iOS Human Interface Guidelines).
+- **Diagnóstico y Causas Raíz Técnicas**:
+  1. **`ActivityLogActivity`**:
+     - Omisión de `EdgeToEdgeHelper.setupEdgeToEdge()`.
+     - En Android 14/15 con tema transparente de sistema, la barra de navegación superior (56dp fijos) quedaba montada debajo del recorte de pantalla (notch), reloj e iconos de estado.
+     - `rvActivityLogs` no recibía insets inferiores, quedando los últimos registros tapados por la píldora de navegación por gestos del sistema.
+  2. **`NotesActivity`**:
+     - `toolbarNotes` tenía altura rígida de `56dp`. Al sumarse insets superiores de barra de estado (+ ~36-48dp), el espacio interno quedaba aplastado en ~16dp, cortando y deformando iconos y título.
+     - El Speed Dial FAB flotante (`fabCluster`) tenía margen estático de 16dp y no estaba registrado en `setupEdgeToEdge`, superponiéndose directamente sobre la barra de navegación del sistema.
+     - Las listas de notas y recordatorios no sincronizaban sus insets inferiores con la barra de navegación del sistema.
+- **Implementación y Solución**:
+  1. **`EdgeToEdgeHelper.kt`**:
+     - Se añadió soporte para `scrollContents: List<View>? = null` en `setupEdgeToEdge()`, permitiendo actualizar múltiples vistas de scroll (como `rvNotes` y `rvReminders`) con insets inferiores dinámicos sin pisar listeners.
+  2. **`activity_log.xml` y `ActivityLogActivity.kt`**:
+     - Identificador `topBarLog` asignado a la barra de navegación Cupertino con `layout_height="wrap_content"` y `minHeight="56dp"`.
+     - Invocación de `EdgeToEdgeHelper.setupEdgeToEdge(this, topBar = findViewById(R.id.topBarLog), scrollContent = rvLogs)`.
+  3. **`activity_notes.xml` y `NotesActivity.kt`**:
+     - En `toolbarNotes`, cambio de altura a `wrap_content` con `minHeight="56dp"`.
+     - Contenedor flotante del FAB etiquetado como `@+id/fabCluster` y vinculado a `bottomBar` en `setupEdgeToEdge()`, asegurando margen dinámico seguro sobre la píldora de navegación.
+     - Vinculación simultánea de `rvNotes` y `rvReminders` en `scrollContents` para garantizar scroll completo y limpio.
+- **Verificación**:
+  - Compilación limpia del proyecto (`assembleDebug`) y paso del 100% de la suite de pruebas unitarias (`BUILD SUCCESSFUL in 16s`).
+
+### [2026-09-12] — Alineación de UI, Adopción del Patrón Apple (iOS HIG) y Diagnóstico Visual de Logs
+- **Requerimiento del Usuario**:
+  - Validar y ajustar todas las interfaces (UI) con deformaciones, cortes de texto o desalineaciones.
+  - Mejorar la interfaz de logs para identificar visualmente con facilidad errores, advertencias y fallos por dispositivo.
+  - Implementar de mejor forma el patrón de diseño de interfaces de Apple (iOS 18 Human Interface Guidelines).
+  - Elaborar un plan detallado previo a la implementación y registrar en memoria viva.
+- **Diagnóstico y Problemas Resueltos**:
+  1. **Diagnóstico Visual y Experiencia en Activity Log (`activity_log.xml`, `item_activity_log.xml`)**:
+     - *Antes*: Fondo negro fijo (`obsidian_bg`), sin alerta visual de fallas (solo texto pequeño "ERROR"), sin indicadores rápidos de estado, iconos cyberpunk discordantes (`ic_arrow_back_cyber`, etc.).
+     - *Ahora*:
+       - Paleta semántica dinámica iOS Day/Night (`ios_system_bg`, `ios_card_bg`, `ios_red_tint`, `ios_orange_tint`, `ios_blue_tint`, `ios_purple_tint`).
+       - Tarjetas de error con borde rojo brillante (`#FF3B30`), fondo tintado suave (`#1AFF3B30`) e icono distintivo `ic_ios_error`.
+       - Tarjetas de advertencia con borde ámbar (`#FF9500`), fondo tintado suave e icono `ic_ios_warning`.
+       - Píldoras de métricas de salud en cabecera: `[Todos: N]`, `[🚨 Errores: X]`, `[⚠️ Avisos: Y]`, `[👓 Gafas: Z]`, `[🎧 Audio: W]`. Al tocar una píldora se filtra la lista de inmediato.
+       - Badges squircle distintivos por origen de hardware (`[👓 Gafas MYVU]` en azul, `[🎧 Audio BT]` en púrpura, `[📱 App/Sistema]` en gris).
+       - Traza de error colapsable: botón interactivo `"Ver detalles del error ⌄"` para expandir stack traces completos sin saturar la vista.
+       - Iconos Apple auténticos: `ic_ios_back`, `ic_ios_share`, `ic_ios_delete`, `ic_ios_info`.
+  2. **Estandarización de Selectores y Spinners Estilo Cupertino (`bg_ios_spinner.xml`, `bg_spinner_container.xml`)**:
+     - *Antes*: `<Spinner>` usaba fondo plano sin icono de chevron a la derecha, pareciendo cajas de texto inactivas.
+     - *Ahora*: Se introdujo un `layer-list` con tarjeta redondeada (`10dp`), fondo secundario suave y glifo de chevron desplegable `ic_ios_chevron_down` alineado a la derecha. Aplicado en `GlassesSettingsActivity` y `HeadphoneSettingsActivity`.
+  3. **Corrección de Deformaciones y Fondos Inconsistentes**:
+     - *`activity_notes.xml` y `activity_settings.xml`*: Reemplazado fondo fijo negro por `ios_system_bg`, títulos y navegación actualizados a glifos iOS.
+     - *`activity_glasses_settings.xml`*: Añadidos iconos de sol mínimo (`ic_brightness_low`) y sol máximo (`ic_brightness_high`) inline con el slider de brillo HUD estilo iOS Control Center.
+     - *`view_dashboard.xml` y `activity_connect.xml`*: Normalizadas alturas táctiles a 48dp/52dp con `insetTop="0dp"` e `insetBottom="0dp"`, evitando recorte o deformación de botones al usar escalado de fuentes de accesibilidad. Botón "Conectar" en azul iOS y "Desconexión Total" en tarjeta secundaria con texto rojo.
+  4. **Pruebas y Verificación**:
+     - `LogBusTest.kt`: Añadida prueba `testErrorAndWarningEntriesWithThrowable` verificando captura de niveles de error, mensajes y objetos Throwable.
+     - 100% de la suite de pruebas pasando (`BUILD SUCCESSFUL in 11s`), compilación de APK limpia.
+
+### [2026-09-12] — Solución al Drenaje Crítico de Batería por Bucle RFCOMM, Latencia de Notificaciones, Spam de Ajustes y Optimización VAD
+- **Requerimiento del Usuario**:
+  - Analizar `/home/rcastro/Descargas/myvu_client_log.txt`.
+  - Diagnosticar y corregir problemas de rendimiento, cuellos de botella y drenaje severo de batería en gafas y teléfono.
+  - Corregir retrasos en entrega de notificaciones y timeouts de audio VAD.
+  - Actualizar el plan de pruebas para ser exhaustivo y prevenir regresiones.
+- **Diagnóstico de Causas Raíz según Logs (`myvu_client_log.txt`)**:
+  1. **Drenaje Severo de Batería (Bucle RFCOMM SPP)**:
+     - Cada 2.5 - 3.5 segundos exactos se abría un socket RFCOMM y se ejecutaba el handshake criptográfico ECDH completo.
+     - Las gafas cerraban el socket (`CMD_SPP_SERVER_REQUEST_STATE_CLOSE`) para entrar en reposo profundo (Flyme XR apaga el servidor SPP si no hay tareas pesadas como Nav HUD).
+     - La app interpretaba esto como una pérdida de enlace accidental e invocaba `supervisor?.onRelayLost()`.
+     - En `RelaySupervisor.kt`, cuando la conexión abría por 50ms, `check()` reseteaba prematuramente `attempt = 0`, haciendo que `onRelayLost()` siempre agendara un reintento a los 2 segundos (`calculateBackoffDelay(0) = 2000ms`), resultando en `attempt 1/6` perpetuo.
+     - Telemetría de las gafas (`suspend_stats`): tiempo de suspensión de solo 1.6s a 2.8s antes de ser despertadas a la fuerza por la radio Bluetooth. Caída de batería de 1% en apenas 75 segundos (~48% por hora).
+  2. **Retraso de 9 Segundos en Notificaciones**:
+     - En `ConnectionManager.kt`, si el relay no estaba conectado pero la UUID de sesión existía (`canConnectRelay() == true`), el método `sendActionNow` encolaba artificialmente las notificaciones esperando que conectara el relay RFCOMM, en lugar de despacharlas inmediatamente por el canal BLE ya listo y autenticado.
+  3. **Spam de Ajustes (`code: 2`) y Duplicación de Mensajes de Hardware**:
+     - En `ConnectionManager.kt`, cada reconexión del relay disparaba un callback retrasado para reenviar `AiProtocol.assistantConfig` (`code: 2`), a pesar de que BLE ya había aplicado todos los ajustes.
+     - En `GlassesSettingsActivity.kt`, el guardado ejecutaba `GlassesConfig.setBrightness()` (que despachaba al hardware por reflexión) y justo después llamaba directamente a `activeConn?.setBrightness()`, duplicando `set_volume`, `set_standby_position`, `set_screen_off_time`.
+  4. **Latencia Excesiva de Audio VAD (Grabación de 19.3s ante consulta de 2s)**:
+     - En `AiConversation.kt`, el umbral de silencio estático (`75.0`) quedaba por debajo del nivel de ruido ambiente del micrófono de las gafas Meizu MYVU con ganancia digital (~75-95 RMS).
+     - Al no adaptar el umbral de silencio respecto al pico de habla (`peakEnergy`), `level >= speechThreshold` era siempre verdadero sobre ruido de fondo, cancelando la detección de silencio y forzando a la app a grabar hasta el límite forzado de 20 segundos (`utteranceCap`).
+- **Implementación Técnica y Solución Aplicada**:
+  1. **Control Inteligente de Servidor SPP en `RelaySupervisor.kt` y `ConnectionManager.kt`**:
+     - Implementado `onSppServerClosed()` en `RelaySupervisor`. Si las gafas cierran el servidor SPP, el supervisor entra en modo suspendido de ultra bajo consumo y desactiva reintentos de conexión.
+     - Añadido umbral de estabilidad `STABLE_RELAY_THRESHOLD_MS = 30000L`: solo se resetea `attempt = 0` si el relay se mantuvo conectado y estable por al menos 30 segundos continuos. Desconexiones rápidas respetan el backoff exponencial (2s -> 4s -> 8s -> 16s -> 32s -> 60s).
+     - En `ConnectionManager`, incorporado estado `sppServerOpen`. Cuando llega `CMD_SPP_SERVER_REQUEST_STATE_CLOSE`, se marca falso y se notifica a `onSppServerClosed()`. Solo se reactiva (`wake()`) si las gafas envían `CMD_SPP_SERVER_REQUEST_CONNECT` (71), `CMD_SPP_SERVER_REQUEST_STATE_OPEN`, nuevo `UUID_SYNC`, o si una función solicita explícitamente el relay (`wakeRelay()`).
+  2. **Entrega Inmediata de Notificaciones sin Bloqueo por Relay**:
+     - Removida la retención forzada en cola de notificaciones en `ConnectionManager.kt`.
+     - Si el relay RFCOMM no está activo (`transport == null`), las notificaciones se emiten de inmediato sobre BLE (`bleSession`), reduciendo la latencia de 9000ms a <50ms.
+  3. **Limpieza de Ráfagas y Ajustes Duplicados**:
+     - Removidas llamadas duplicadas de hardware en `GlassesSettingsActivity.kt` (`activeConn?.setBrightness`, `setVolume`, etc.), conservando el despacho unificado y seguro de `GlassesConfig`.
+     - Eliminado el despacho repetido de `AiProtocol.assistantConfig` al enlazar el relay RFCOMM si BLE ya sincronizó los ajustes.
+  4. **VAD Adaptativo Dinámico y Watchdog de Silencio en `AiConversation.kt`**:
+     - Implementado `dynamicSpeechThreshold = max(speechThreshold, peakEnergy * 0.22)` activo una vez detectada voz. Al callar el usuario, el ruido ambiente cae por debajo del umbral dinámico de forma inmediata.
+     - Incorporado `silenceWatchdog` periódico (cada 200ms) que detecta y corta el turno de audio tras `SILENCE_HOLD_MS = 1200ms` de silencio post-voz, evitando esperar al tope de 20s.
+  5. **Ampliación del Plan de Pruebas**:
+     - `RelaySupervisorTest.kt`: añadido `testSppServerClosedSuspendsSupervisor` y `testStableRelayThresholdConstant`.
+     - `ConnectionManagerTest.kt`: añadido `testSppServerOpenStateAndRelayRequirements` y `testNotificationDirectBleDeliveryWhenRelayDown`.
+     - `VadSensitivityTest.kt`: añadido `testDynamicSpeechThresholdPostUtterance`.
+     - `SettingsGestureConfigTest.kt`: bombeo de looper en verificación de persistencia Room.
+  - **Resultado**: 307 pruebas unitarias pasando con 100% de éxito, `assembleDebug` completado sin errores.
+
+### [2026-09-12] — Reparación del Ciclo Conexión/Desconexión de las Gafas y Botón de Desconexión Total
+- **Requerimiento del Usuario**:
+  - Investigar `/home/rcastro/Descargas/myvu_client_log.txt`: las gafas quedan en un ciclo continuo de conexión/desconexión y no permiten ser utilizadas.
+  - Implementar un botón de **desconexión total**, sin importar el tipo de dispositivo (gafas, auriculares, wearables), que inactive por completo todos los servicios y recursos de la app.
+- **Diagnóstico de Causas Raíz según Logs (`myvu_client_log.txt`)**:
+  1. **Fallo Crítico de Integridad de Esquema Room (`IllegalStateException`)**:
+     - En la sesión previa se añadieron campos a `BluetoothDeviceEntity` (`activeListeningEnabled`), pero la versión de `AppDatabase` permaneció en `4`.
+     - En el log real del usuario se registraba:
+       `Room cannot verify the data integrity. Looks like you've changed schema but forgot to update the version number. Expected identity hash: 56b9b8288dccce96b84121e4119b55a5, found: 8b3b2fae764430338a9dc01c6f7d51a1`
+     - Toda escritura de batería y sincronización de dispositivos fallaba, corrompiendo la persistencia de estado.
+  2. **Doble `InitBurst` y Bucle de Despertar de Pantalla**:
+     - Al conectar BLE, se enviaban los 27 paquetes de `InitBurst` al launcher de las gafas.
+     - Segundos después, al establecerse el relay RFCOMM, `ConnectionManager.sendInitBurst()` volvía a retransmitir indiscriminadamente los 27 mensajes por RFCOMM.
+     - Esto forzaba a Flyme XR a reiniciar el launcher de las gafas, encender la pantalla (`screen_status: 1`), aplicar el timeout de 5 segundos, apagar la pantalla (`screen_status: 0`), lo cual suspendía RFCOMM, haciendo que `RelaySupervisor` reconectara y repitiera el ciclo infinitamente.
+  3. **Falta de Desconexión Total Unificada**:
+     - La desconexión previa era parcial: no marcaba en Room los dispositivos como desconectados, no cancelaba sensores de paso (`HealthService`), no liberaba `MediaSession`, y sólo estaba disponible si se abría el Dashboard.
+- **Implementación Técnica y Solución Aplicada**:
+  1. **Actualización de Versión de Base de Datos Room (`AppDatabase.kt`)**:
+     - Se incrementó `version = 5` con `fallbackToDestructiveMigration(dropAllTables = true)`. La tabla `bluetooth_devices` se regenera limpiamente con todos los nuevos campos sin excepciones de hash.
+  2. **Supresión de Doble `InitBurst` en RFCOMM (`ConnectionManager.kt`)**:
+     - En `ConnectionManager.handleAbilityReply()`: si `bleSession.ready` ya ejecutó el `InitBurst`, el relay RFCOMM omite el reenvío de los 27 paquetes y activa directamente la sesión (`onSessionReady`), evitando el reinicio cíclico del visor y el parpadeo de pantalla.
+     - `connectAudioProfiles()` se aisló para ejecutarse una sola vez por conexión física, evitando renegociaciones de perfil de audio clásico.
+  3. **Creación del Helper Universal `TotalDisconnectHelper`**:
+     - Ubicado en `com.myvu.client.core.TotalDisconnectHelper`.
+     - Deshabilita permanentemente la reconexión automática (`Prefs.setAutoReconnectEnabled(context, false)`).
+     - Cancela el watchdog periódico de 15 minutos (`ServiceWatchdogReceiver.cancelWatchdog(context)`).
+     - Libera de inmediato cualquier canal de audio SCO abierto (`TouchGestureManager.releaseBluetoothSco(context)`).
+     - Inactiva sensores de movimiento (`HealthService.getInstance(context).unregisterHardwareSensor()`).
+     - Detiene escaneos y marca en Room todos los dispositivos como `isConnected = false` (`BluetoothDeviceDao.markAllDisconnected()`, `BluetoothDeviceManager.markAllDevicesDisconnected()`).
+     - Envía `MyvuService.ACTION_STOP`, liberando `MediaSession`, apagando la notificación persistente y llamando a `stopSelf()`.
+  4. **Puntos de Acceso en la Interfaz de Usuario**:
+     - **Dashboard (`view_dashboard.xml`)**: Botón prominente "Desconexión Total".
+     - **Menú Lateral (`menu_navigation_drawer.xml`)**: Opción "Desconexión Total (Inactivar Todo)" accesible desde cualquier pantalla.
+     - **Panel de Dispositivos (`bottom_sheet_devices.xml` / `DeviceManagementBottomSheet.kt`)**: Botón "Desconexión Total (Inactivar Todo)" con estilo de alerta visual.
+  5. **Verificación Automatizada**:
+     - Pruebas añadidas en `TotalDisconnectHelperTest.kt`: integridad de esquema DB v5, deshabilitación de auto-reconexión, y desmarcado simultáneo de todos los dispositivos conectados.
+     - Pruebas unitarias completas pasando exitosamente y APK compilada sin advertencias de recursos.
+
+### [2026-09-11] — Deshabilitación de Escucha Activa por Defecto y Toggle Individual por Dispositivo
+- **Requerimiento del Usuario**:
+  - Deshabilitar la escucha activa / diálogo continuo en todos los dispositivos por defecto (ahorro de batería y privacidad).
+  - Permitir activar y desactivar la escucha activa individualmente por cada dispositivo conectado (gafas, auriculares, wearables).
+- **Diagnóstico y Causas Raíz**:
+  1. La escucha activa / diálogo continuo (`isContinuousDialogueEnable` en protocolo de firmware FlymeAR) estaba asociada previamente a un flag global en `Prefs` (`continuous_dialogue_enabled`). No había granularidad por dispositivo en la base de datos Room (`BluetoothDeviceEntity`).
+  2. `HeadphoneSettingsActivity` carecía por completo de control UI para diálogo continuo / escucha activa.
+  3. `GlassesSettingsActivity` leía y escribía de las preferencias globales `Prefs` en vez de almacenar y respetar el estado individual de la entidad del dispositivo en Room.
+  4. Los consumidores principales (`ConnectionManager` en `sendActionNow(AiProtocol.assistantConfig(...))` y `AiConversation.kt` en `begin()` / `textMode`) leían directamente del flag global de `Prefs`, aplicando la misma configuración indiscriminadamente a cualquier dispositivo conectado.
+- **Implementación Técnica y Solución Aplicada**:
+  1. **`BluetoothDeviceEntity.kt`**:
+     - Agregado campo `val activeListeningEnabled: Boolean = false` con valor por defecto `false` garantizando que todo nuevo dispositivo tenga la escucha continua desactivada.
+  2. **`HeadphoneSettingsActivity.kt` y `activity_headphone_settings.xml`**:
+     - Agregado switch `switchActiveListening` (`MaterialSwitch`) en la tarjeta "Voz y Asistencia en Auriculares" con leyenda explicativa ("Mantiene la escucha activa tras hablar. Desactivado ahorra batería").
+     - `loadDevice()` enlaza el estado desde `device.activeListeningEnabled` (default `false`).
+     - `saveSettings()` persiste el valor en la entidad Room (`activeListeningEnabled = switchActiveListening.isChecked`).
+  3. **`GlassesSettingsActivity.kt`**:
+     - `loadDevice()` carga `swContinuousDialogue.isChecked` desde `currentDevice?.activeListeningEnabled ?: false`.
+     - `saveSettings()` persiste `activeListeningEnabled = contDialogue` en la entidad Room y la actualiza a través de `BluetoothDeviceManager.updateGlassesGestures()`, manteniendo sincronización dual con `Prefs` para retrocompatibilidad.
+  4. **`BluetoothDeviceManager.kt`**:
+     - Agregadas funciones `isActiveListeningEnabled(): Boolean` (suspend) y `isActiveListeningEnabledBlocking(): Boolean` (síncrona/bloqueante para handlers/runnables) que evalúan la entidad activa conectada en Room y respetan su flag individual.
+     - Parámetro `activeListening: Boolean? = null` incorporado en `updateDeviceGestures` y `updateGlassesGestures`.
+  5. **`ConnectionManager.kt` y `AiConversation.kt`**:
+     - Actualizadas invocaciones de `AiProtocol.assistantConfig(...)` para consumir `BluetoothDeviceManager.getInstance(context).isActiveListeningEnabledBlocking()`.
+  6. **Pruebas Automatizadas (`SettingsGestureConfigTest.kt`)**:
+     - `testActiveListeningDisabledByDefaultOnAllDevices`: valida que toda entidad nace con `activeListeningEnabled = false` y que el manager reporta falso.
+     - `testHeadphoneSettingsActiveListeningToggleIndependentFromGlasses`: verifica que activar la escucha en auriculares no altera ni activa la escucha en las gafas.
+     - `testGlassesSettingsActiveListeningTogglePersistsPerDevice`: verifica que alternar el switch en la pantalla de ajustes de gafas persiste en Room y se lee fielmente.
+  - **Resultado**: 287 pruebas pasando con éxito en Robolectric, compilación y empaquetado (`assembleDebug`) exitosos.
+
+### [2026-09-11] — Validación de Ajustes de Auriculares/Wearables y Protección Integral contra Fugas de Conexiones y Batería
+- **Requerimiento del Usuario**:
+  - Validar que las configuraciones de otros dispositivos (auriculares, wearables Bluetooth) se lean y guarden de forma correcta.
+  - Verificar y garantizar que no queden abiertas conexiones ni recursos que drenen la batería de los dispositivos (gafas, auriculares) y del móvil (radio Bluetooth, CPU, SoC, hilos huérfanos).
+- **Diagnóstico y Causas Raíz**:
+  1. **Sobrescritura Accidental y Aislamiento Roto**: En `HeadphoneSettingsActivity.kt` y `HeadphoneGestureManager.kt`, cuando no se suministraba MAC, se invocaba `dao.getActiveConnectedDevice()`. Si las gafas MYVU estaban conectadas, este método devolvía las gafas en lugar de auriculares, provocando que la configuración de los audífonos sobrescribiera la entidad de los lentes o que los toques de los auriculares ejecutaran acciones de los lentes.
+  2. **Sobrescritura de MAC en Fallback**: En `HeadphoneSettingsActivity.loadDevice()`, cuando el dispositivo no existía aún en base de datos, `targetMac` se reemplazaba incondicionalmente por `"HEADPHONES-DEFAULT"`, ignorando la MAC real pasada en el Intent (`EXTRA_MAC`).
+  3. **Descarte Silencioso en `BluetoothDeviceManager.updateDeviceGestures`**: Si `dao.getDevice(mac)` devolvía null, el método abortaba con `return` sin persistir nada en Room.
+  4. **Fuga Indefinida de Bluetooth SCO**: En `TouchGestureManager.kt`, cuando `isLive == true` (modo Gemini Live), el canal SCO (`startBluetoothSco`) se mantenía abierto de forma continua sin ningún temporizador de seguridad. Si el usuario bloqueaba el teléfono o abandonaba la conversación, el canal SCO continuaba abierto permanentemente, impidiendo que el chip Bluetooth y el micrófono entraran en suspensión de bajo consumo.
+  5. **Escaneo de Búsqueda Bluetooth sin Límite de Tiempo**: En `BluetoothDeviceManager.kt`, `startScanning()` iniciaba `startDiscovery()` sin un temporizador de seguridad que garantizara su detención. En `DeviceManagementBottomSheet`, el diálogo solo ocultaba el progress bar tras 8 segundos sin detener la búsqueda, y no detenía el escaneo en `onDestroyView` ni en `onDismiss`.
+  6. **Falta de Desconexión de Recursos ante Apagado de Pantalla**: No existía receptor en el servicio foreground `MyvuService` para liberar canales de audio o cancelar búsquedas activas cuando la pantalla del teléfono se apagaba o bloqueaba (`ACTION_SCREEN_OFF`).
+  7. **Hilos No Finalizados en `WeatherSync`**: `WeatherSync.stop()` no apagaba su `ExecutorService` (`net`), dejando hilos de red ociosos.
+- **Implementación Técnica y Solución Aplicada**:
+  1. **`HeadphoneSettingsActivity.kt`**:
+     - `loadDevice()` blindado: busca estrictamente entidades de tipo `HEADPHONES` o `GENERIC`, descartando completamente las gafas (`SMART_GLASSES`).
+     - Respeta la MAC del intent (`targetMac`) y si no existe en Room, busca dispositivos de audio emparejados en el sistema Android antes de usar fallback.
+     - Inicializa los spinners con defaults coherentes (`tap1 = MEDIA_PLAY_PAUSE`, `tap2 = LAUNCH_GEMINI`, `tap3 = LAUNCH_PHONE_ASSISTANT`, `longPress = CREATE_AI_NOTE`, `notificationMode = AUDIO_ONLY`).
+     - `saveSettings()` garantiza persistencia directa en Room DB con `dao.insertOrUpdate`, actualiza `currentDevice` y refresca `BluetoothDeviceManager`.
+  2. **`HeadphoneGestureManager.kt`**:
+     - Creado `getActiveHeadphone()` que filtra únicamente dispositivos de tipo `HEADPHONES` o `GENERIC`, previniendo colisiones con los keycodes de las gafas inteligentes.
+  3. **`BluetoothDeviceManager.kt`**:
+     - `updateDeviceGestures()` ahora crea e inserta automáticamente una nueva entidad `BluetoothDeviceEntity` si no existía en Room, garantizando cero pérdida de configuración.
+     - Añadido `scanHandler` con temporizador de seguridad automático `SCAN_TIMEOUT_MS = 12000L` a `startScanning()`. `stopScanning()` y `ACTION_DISCOVERY_FINISHED` cancelan cualquier temporizador pendiente y cancelan la búsqueda Bluetooth.
+  4. **`DeviceManagementBottomSheet.kt`**:
+     - Añadida detención activa `devManager.stopScanning()` al terminar los 8s, en `onDestroyView()` y en `onDismiss()`.
+  5. **`TouchGestureManager.kt`**:
+     - Incorporado temporizador de seguridad `GEMINI_LIVE_MAX_SCO_DURATION_MS = 5 * 60 * 1000L` (5 minutos máximos de conversación continua) para el canal SCO en modo Live, impidiendo drenajes residuales si el usuario olvida la sesión.
+     - `releaseBluetoothSco()` cancela todos los callbacks pendientes de `audioHandler`.
+     - Invocación de `releaseBluetoothSco` integrada en `ConnectionManager.teardown()`, `ConnectionManager.stop()` y `LockScreenHelper.lockDevice()`.
+  6. **`MyvuService.kt`**:
+     - Registrado receptor dinámico `screenOffReceiver` para `Intent.ACTION_SCREEN_OFF`. Ante el apagado o bloqueo de la pantalla, libera inmediatamente cualquier canal Bluetooth SCO activo y detiene escaneos de búsqueda Bluetooth.
+     - Limpieza y desregistro garantizados en `onDestroy()`.
+  7. **`WeatherSync.kt`**:
+     - Invocado `net.shutdownNow()` en `WeatherSync.stop()` para destruir hilos residuales.
+  8. **Pruebas y Verificación**:
+     - Nuevos tests en `SettingsGestureConfigTest.kt`: `testHeadphoneSettingsReopenReflectsSavedParameters()`, `testHeadphoneSettingsDoesNotOverwriteGlasses()`, y `testBluetoothDeviceManagerUpdateDeviceGesturesCreatesNewIfAbsent()`.
+     - 284 tests unitarios aprobados (100% verde en `./gradlew testDebugUnitTest`).
+     - `./gradlew assembleDebug` completado exitosamente.
+
+### [2026-09-11] — Corrección Integral de Guardado y Lectura de Configuraciones de Lentes AR y Persistencia en Room
+- **Requerimiento del Usuario**:
+  - Al presionar el botón "Guardar" en la configuración de los lentes AR (`GlassesSettingsActivity`), los cambios no se estaban guardando ni reflejando al volver a entrar a la actividad. Se requirió que se lean y guarden todos los cambios de parametrización (Brillo, Volumen, Posición FOV, Tiempo de pantalla activa, Modo de notificación, Asistente, Diálogo continuo, Wakeup por voz, Micrófono SCO para Gemini, y todos los gestos táctiles y botón de acción).
+- **Diagnóstico y Causas Raíz**:
+  1. **Referencia Huérfana `currentDevice` en `loadDevice()`**: En `GlassesSettingsActivity.loadDevice()`, se consultaba la entidad desde Room (`val dev = dao.getDevice(targetMac)`), pero jamás se asignaba a la variable de instancia `currentDevice = dev`. Como consecuencia, `currentDevice` permanecía perpetuamente en `null`. Al abrir o recargar, cualquier lectura de `currentDevice?.tap1Action` o `currentDevice?.notificationMode` devolvía `null` y forzaba a los spinners y selectores a resetearse a sus valores por defecto ("NONE" o "BOTH").
+  2. **MAC Destino Vacía (`""`) al Abrir desde Pantallas Secundarias**: Cuando `GlassesSettingsActivity` se abría desde `SettingsActivity` o sin pasar `EXTRA_MAC` explícito, `targetMac` iniciaba como `""`. Al presionar Guardar, `BluetoothDeviceManager.updateGlassesGestures` intentaba hacer `dao.getDevice("")` que resultaba nulo, y el método abortaba silenciosamente sin crear ni actualizar la entidad en la base de datos Room.
+  3. **Desajuste de Nombres de Acciones en `CommonDeviceActions`**: Los IDs serializados en base de datos o preferencias contenían alias históricos o nombres en minúsculas (ej. `"phone_assistant"`, `"ai_assistant"`, `"gemini_live"`). `CommonDeviceActions.getIndexForAction` solo comparaba igualdad de strings con `action.name` en mayúsculas (`"LAUNCH_PHONE_ASSISTANT"`), haciendo que las acciones guardadas no coincidieran y los spinners cayeran por fallback al índice 0 ("NONE").
+  4. **Falta de Despacho de Hardware en Vivo**: Al guardar, los parámetros de hardware (brillo, volumen, posición de pantalla en reposo, timeout de apagado de pantalla y enrutamiento táctil) no se enviaban a la conexión activa `MyvuService.activeConnection()`.
+- **Implementación Técnica y Solución**:
+  1. **`GlassesSettingsActivity.kt`**:
+     - `loadDevice()` corregido para asignar inmediatamente `currentDevice = dev` y resolver `targetMac` desde `Prefs.targetMac(this)` o el primer dispositivo de tipo `GLASSES` si venía vacío.
+     - Carga bidireccional integral: inicializa todos los spinners de gestos (`spnTap1`, `spnTap2`, `spnTap3`, `spnLongPress`, `spnSwipeFwd`, `spnSwipeBack`), el botón de acción (`spnActionButton`) y el modo de notificación (`spnNotificationMode`) usando el valor de `currentDevice` o fallback a `GlassesConfig`/`Prefs`.
+     - Sliders de hardware (`seekBrightness`, `seekVolume`, `seekStandbyPosition`) y switches (`switchContinuousDialog`, `switchVoiceWakeup`, `switchGeminiScoMic`, `switchKeepScreenActive`) inicializados fielmente desde Room o `GlassesConfig`.
+     - `saveSettings()` enriquecido para:
+       * Actualizar `GlassesConfig` y `Prefs`.
+       * Enviar comandos directos de hardware mediante `MyvuService.activeConnection()` (`setBrightness`, `setVolume`, `setStandbyPosition`, `setScreenOffTime`, `setMusicTpControl`, `assistantConfig`).
+       * Persistir inmediatamente en Room DB (`BluetoothDeviceDao`) actualizando o insertando la entidad `BluetoothDeviceEntity`.
+       * Actualizar `currentDevice` con el nuevo estado guardado.
+  2. **`CommonDeviceActions.kt`**:
+     - `getIndexForAction(actionId: String?)` actualizado para resolver sinónimos e identificadores heredados mediante `GestureAction.fromId(actionId)`. Mapea de forma transparente identificadores como `"phone_assistant"`, `"ai_assistant"`, `"gemini_live"` a sus respectivas constantes `LAUNCH_PHONE_ASSISTANT`, `AI_ASSISTANT`, etc., seleccionando la posición correcta del spinner.
+  3. **`BluetoothDeviceManager.kt`**:
+     - `updateGlassesGestures` mejorado: si la entidad para `resolvedMac` no existe en Room, ahora crea e inserta automáticamente una nueva entidad `BluetoothDeviceEntity` con `deviceType = GLASSES`, garantizando que nunca se descarte una operación de guardado.
+  4. **Lanzadores de Actividad (`ChatActivity.kt` & `SettingsActivity.kt`)**:
+     - Actualizados para incluir siempre `Prefs.targetMac(this)` en el intent `EXTRA_MAC` al iniciar `GlassesSettingsActivity`.
+  5. **Pruebas y Verificación**:
+     - Nuevos tests en `SettingsGestureConfigTest.kt`: `testFullReopenReflectsSavedParameters()` y `testSavingWithoutIntentMacFallsBackAndPersists()`, validando el ciclo completo de guardar y reabrir la actividad sin pérdida de parámetros.
+     - Pruebas unitarias (`./gradlew testDebugUnitTest`): 281 tests aprobados. Compilación de APK (`./gradlew assembleDebug`) exitosa.
+
+### [2026-09-11] — Indicadores de Batería Reales y Sincronización en Vivo para Dispositivos Conectados
+- **Requerimiento del Usuario**:
+  - Validar y corregir los indicadores de batería de los dispositivos conectados (gafas MYVU, auriculares Bluetooth y wearables), dado que no se estaban actualizando con los valores reales.
+- **Diagnóstico y Causas Raíz**:
+  1. **Persistencia Huérfana en Room**: `BluetoothDeviceDao.updateBatteryLevel` estaba declarada pero nunca se invocaba en ningún lugar de la aplicación.
+  2. **Filtrado Incompleto en `InboundRouter`**: La extracción de batería solo revisaba si `action.contains("battery")`, perdiendo respuestas clave como `get_device_info` o `device_info` provenientes del firmware de las gafas MYVU. Además, descartaba `0%` porque validaba `battery in 1..100` en lugar de `0..100`.
+  3. **Desconexión con el Gestor de Dispositivos**: `ConnectionManager.updateGlassesBattery` guardaba la batería solo en un StateFlow en memoria (`glassesInfoVal`), sin propagarla al `BluetoothDeviceManager` ni persistirla en la base de datos Room.
+  4. **Falta de Receptores de Batería Bluetooth del Sistema Android**: `BluetoothDeviceManager` no registraba `ACTION_BATTERY_LEVEL_CHANGED` (`android.bluetooth.device.action.BATTERY_LEVEL_CHANGED`) ni eventos HFP de auriculares AT `+IPHONEACCEV` (`android.bluetooth.headset.action.VENDOR_SPECIFIC_HEADSET_EVENT`).
+  5. **Falta de Consulta por Reflexión**: No se invocaba el método oculto de Android `BluetoothDevice.getBatteryLevel()` al emparejar, conectar o refrescar dispositivos.
+  6. **Valores Falsos / Hardcodeados en la UI**: `ChatActivity` utilizaba `"${glasses.batteryLevel ?: 85}%"` y `"${headphones.batteryLevel ?: 92}%"`, y `GlassesSettingsActivity` mostraba `85%` como fallback, en lugar de mostrar datos en vivo o `"--"`. `HeadphoneSettingsActivity` ni siquiera mostraba la batería en su cabecera.
+- **Implementación y Solución Aplicada**:
+  1. **`InboundRouter.kt`**:
+     - `checkBatteryUpdate` ampliado para capturar acciones `get_device_info`, `device_info`, `sync_glass_battery_info`, `get_air_glass_info`.
+     - Soporte para campos JSON `battery` y `capacity` en la raíz o en objetos anidados `data` o `value`.
+     - Rango de validación corregido a `0..100` (soporta batería agotada al 0%).
+  2. **`ConnectionManager.kt`**:
+     - Al recibir eventos de batería o en `onSessionReady`, actualiza `BluetoothDeviceManager.getInstance(context).updateGlassesBatteryLevel(target, battery)`.
+  3. **`BluetoothDeviceManager.kt`**:
+     - Registrado `ACTION_BATTERY_LEVEL_CHANGED` y `VENDOR_SPECIFIC_HEADSET_EVENT` en el `BroadcastReceiver`.
+     - Implementado `readDeviceBattery(bDevice)` mediante reflexión en `device.javaClass.getMethod("getBatteryLevel")`.
+     - Implementado `parseAppleBatteryArgs(args)` en el companion object para decodificar tramas HFP de audífonos (AirPods, Galaxy Buds, etc.).
+     - Implementado `updateGlassesBatteryLevel(mac, battery)` y `handleDeviceBatteryChanged(mac, battery)`.
+     - Implementado `refreshAllDeviceBatteries()` para consultar todos los dispositivos enlazados y las gafas activas en `ConnectionManager`.
+     - Actualizado `syncPairedDevices()` y `handleDeviceConnectionChanged()` para leer y persistir la batería inmediatamente al conectar.
+  4. **Interfaces de Usuario**:
+     - `ChatActivity.kt`: Eliminados los fallbacks ficticios `85%` y `92%`. Ahora muestra el nivel real o `"--"`. Añadido `refreshAllDeviceBatteries()` en `onResume()`.
+     - `GlassesSettingsActivity.kt`: Sustituido `85%` fijo por nivel dinámico o `"--"`. Refresco en `onResume()`.
+     - `activity_headphone_settings.xml` y `HeadphoneSettingsActivity.kt`: Añadido `txtHeadphoneBattery` con icono en el banner de cabecera, actualizándose en tiempo real y en `onResume()`.
+     - `DeviceManagementBottomSheet.kt`: Los ítems de la lista de dispositivos ahora muestran el porcentaje de batería real cuando está disponible (ej. `"● Conectado • 80% • Notif: HUD + TTS"`).
+  5. **Pruebas y Verificación**:
+     - Añadidos tests unitarios en `BluetoothDeviceManagerTest.kt` (`testParseAppleBatteryArgs`, `testBluetoothDeviceEntityBatteryField`).
+     - Añadidos tests unitarios en `InboundRouterTest.kt` (`getDeviceInfoFiresBatteryListener`, `zeroPercentBatteryIsAcceptedAsValidBoundary`).
+     - `rtk ./gradlew testDebugUnitTest` y `rtk ./gradlew assembleDebug` exitosos (100% verde).
+
+### [2026-09-11] — Manejo Granular de Notificaciones por Dispositivo: Visual (HUD), Sonora (TTS), Ambos o Desactivado
+- **Requerimiento del Usuario**:
+  - Permitir configurar de forma independiente para cada dispositivo Bluetooth (Gafas MYVU, Auriculares, Wearables) cómo se procesan las notificaciones entrantes:
+    1. **Visuales (HUD)**: Mostrar en pantalla/visor microLED de los lentes AR.
+    2. **Sonoras (TTS)**: Leer en voz alta por Text-To-Speech hacia altavoces o audífonos.
+    3. **Ambos**: Visualización simultánea en HUD y lectura por voz TTS.
+    4. **Desactivadas**: Silenciar completamente las notificaciones para ese dispositivo.
+- **Implementación Técnica**:
+  1. **Modelo de Datos Room (`BluetoothDeviceEntity.kt` & `AppDatabase.kt`)**:
+     - Creado enum `DeviceNotificationMode`: `BOTH`, `VISUAL_ONLY`, `AUDIO_ONLY`, `NONE`, con descripciones y métodos auxiliares `isVisualNotificationEnabled()` y `isAudioNotificationEnabled()`.
+     - Añadido campo `val notificationMode: String = DeviceNotificationMode.BOTH.name` a `BluetoothDeviceEntity`.
+     - Incrementada la base de datos Room a `version = 4`.
+  2. **Acceso y Gestión (`BluetoothDeviceDao.kt` & `BluetoothDeviceManager.kt`)**:
+     - Agregada consulta `@Query("SELECT * FROM bluetooth_devices WHERE isConnected = 1") suspend fun getConnectedDevices(): List<BluetoothDeviceEntity>`.
+     - Métodos de actualización `updateGlassesGestures(...)`, `updateHeadphoneSettings(...)` y `updateDeviceNotificationMode(...)` actualizados para persistir `notificationMode`.
+  3. **Enrutamiento Inteligente en `MirrorNotificationListener.kt`**:
+     - Al recibir una notificación válida (respetando la lista blanca de apps elegidas por el usuario):
+       - **Ruta Sonora (TTS)**: Verifica si entre los dispositivos conectados activos (`getConnectedDevices()`) alguno tiene habilitado el canal sonoro (`isAudioNotificationEnabled()`). Si es afirmativo, sintetiza por voz *"De [App]: [Título]. [Texto]"* mediante `TextToSpeechHelper`.
+       - **Ruta Visual (HUD)**: Verifica si las gafas inteligentes conectadas tienen habilitado el canal visual (`isVisualNotificationEnabled()`). Si el usuario configuró las gafas como `AUDIO_ONLY` o `NONE`, se omite el envío de paquetes TLV/JSON al microLED de los lentes, evitando distracciones visuales innecesarias.
+  4. **Interfaces de Usuario (`GlassesSettingsActivity.kt`, `HeadphoneSettingsActivity.kt`, `DeviceManagementBottomSheet.kt`)**:
+     - En `activity_glasses_settings.xml` y `GlassesSettingsActivity.kt`: Tarjeta dedicada *"MANEJO DE NOTIFICACIONES"* con spinner interactivo que muestra las 4 opciones (`Ambas`, `Solo Visual HUD`, `Solo Sonora TTS`, `Desactivadas`) y texto explicativo dinámico.
+     - En `activity_headphone_settings.xml` y `HeadphoneSettingsActivity.kt`: Selector de manejo de notificaciones sincronizado con el interruptor de lectura automática y compatibilidad total.
+     - En `DeviceManagementBottomSheet.kt`: Los ítems de la lista de dispositivos muestran el badge de su modo de notificación (`HUD + TTS`, `HUD`, `TTS`, `Mudo`).
+  5. **Pruebas Unitarias**:
+     - `BluetoothDeviceManagerTest.kt`: Pruebas añadidas `testDeviceNotificationModes()` y `testDeviceNotificationModeEnumHelpers()`, verificando la lógica de filtrado y resolución de enrutamiento. 100% de tests unitarios superados. Compilación exitosa en 1s.
+
+### [2026-09-11] — Corrección de Alineación de Interfaces, Insets de Gestos, Píldoras Recortadas y Soporte Completo de Modo Claro
+- **Contexto y Diagnóstico**:
+  - El usuario reportó con captura de pantalla que la interfaz presentaba elementos corridos, textos e iconos recortados (cabecera comprimida, subtítulo cortado a la mitad, píldoras con texto desplazado, barra inferior colisionando con la barra de gestos de Android) y que "no soporta el modo claro".
+  - **Causas Raíz Identificadas**:
+    1. **Fallo en Modo Claro**: `AndroidManifest.xml` contenía `android:configChanges="...|uiMode"`. Debido a esto, al alternar el modo con `AppCompatDelegate.setDefaultNightMode`, Android NO recreaba las actividades, impidiendo la recarga de la paleta diurna/nocturna. Adicionalmente, faltaba `recreate()` explícito en el toggle.
+    2. **Colisión de la Barra de Gestos del Sistema (Insets de Navegación)**: `EdgeToEdgeHelper.setupEdgeToEdge` aplicaba `insets.bottom` como margen inferior a la barra de entrada de mensajes (`bottomBar`), en lugar de aplicarlo como padding a la barra inferior de 5 pestañas (`cupertinoTabBar`). Por tanto, la barra blanca de gestos de Android se superponía sobre las etiquetas "AR HUD", "Hub", "Equipos", "Traducir", "Notas".
+    3. **Cabecera Sobrecargada y Recortada**: `topBar` tenía altura fija de 48dp con 6 elementos horizontales saturando los 360-390dp de pantalla, provocando que "Companion Hub" se quebrara en 2 líneas y el subtítulo "Sincronizado" quedara rebanado verticalmente.
+    4. **Recorte en Píldoras de Acciones Rápidas**: Los `MaterialButton` en `scrollAiQuickBar` y `scrollQuickSkills` tenían alturas de 30-32dp sin `android:insetTop="0dp"`, `android:insetBottom="0dp"`, ni `android:minHeight="0dp"`, provocando que los insets internos por defecto de Material 3 recortaran el texto por abajo.
+- **Ajustes y Solución Aplicada**:
+  1. **Manifiesto y Ciclo de Vida de Tema (`AndroidManifest.xml`)**:
+     - Removido `|uiMode` de `android:configChanges` en todas las actividades (`ChatActivity`, `SettingsActivity`, `ConnectActivity`, etc.), permitiendo que el sistema recree automáticamente las pantallas e infle los recursos semánticos correspondientes (`values` vs `values-night`).
+     - En `ChatActivity.kt` y `SettingsActivity.kt`: invocación explícita de `recreate()` al alternar tema para transición visual instantánea.
+  2. **Controlador EdgeToEdge (`EdgeToEdgeHelper.kt`)**:
+     - Añadido soporte para `navTabBar: View? = null`.
+     - Si existe una barra de navegación inferior (`cupertinoTabBar`), `insets.bottom` se aplica como padding inferior a esta, elevando iconos y textos por encima de la barra de gestos del sistema. La barra de mensajes superior (`bottomBar`) ya no sufre márgenes desalineados.
+     - Sincronización precisa de `isAppearanceLightStatusBars` e `isAppearanceLightNavigationBars` consultando `Prefs.themeMode()` para garantizar iconos oscuros en fondo claro e iconos claros en fondo oscuro.
+  3. **Desahogo y Rediseño de Cabecera (`activity_chat.xml`)**:
+     - `topBar` configurada con `layout_height="wrap_content"`, `minHeight="52dp"`, `singleLine="true"` y `ellipsize="end"` para título y estado, y botones de 36dp x 36dp con márgenes simétricos. `btnDevices` restringido con `maxWidth="100dp"`, `singleLine` y `ellipsize` para nunca empujar los controles vecinos.
+  4. **Corrección de Insets y Alineación de Píldoras**:
+     - Incorporados `android:insetTop="0dp"`, `android:insetBottom="0dp"`, `android:minHeight="0dp"`, `android:paddingVertical="0dp"` y `android:gravity="center"` en `btnQuickAiNotes`, `btnQuickRecordMeeting`, `btnQuickDailyBriefing`, `btnQuickTasks`, `btnQuickDevicesShortcut`, `btnAllSkills`, `btnSave` de ambas pantallas de dispositivos y `btnConfigureDevice`.
+     - Ampliadas las tarjetas de wearables en el carrusel a `205dp` con `singleLine="true"` para evitar colisiones entre el estado y el porcentaje de batería.
+  5. **Barra Inferior Cupertino (`cupertinoTabBar`)**:
+     - `layout_height="wrap_content"`, `minHeight="54dp"`, con padding vertical que absorbe los insets de navegación sin solapamientos.
+- **Verificación**:
+  - `rtk ./gradlew testDebugUnitTest`: BUILD SUCCESSFUL.
+  - `rtk ./gradlew assembleDebug`: BUILD SUCCESSFUL.
+  - Grafo sincronizado con `rtk codegraph sync`.
+
+### [2026-09-11] — Corrección del Botón de Acción HUD en Gafas MYVU, Agente de Voz Aura (STT+API) en Auriculares y Lectura TTS de Notificaciones
+- **Contexto y Diagnóstico**:
+  - **Problema 1 (Gafas MYVU - Botón de Acción)**: Al presionar 1 vez el botón de acción físico de los lentes, a veces se abría Gemini en el teléfono, impidiendo consultar el dashboard/HUD nativo de las gafas.
+    - *Causa Raíz*: El firmware de las gafas Meizu MYVU emite dos eventos de contacto mecánico (`code 200` touch down y `code 210` tap confirmado, o `code 203` release) separados por 30-150ms. `InboundRouter` y `TouchGestureManager` interpretaban esta ráfaga como un `DOUBLE_TAP` (debido a ventanas de síntesis de 30L..800L y 1100L respectivamente). Dado que `DOUBLE_TAP` tenía como acción predeterminada `launch_gemini`, un solo toque corto abría Gemini y bloqueaba el HUD. Además, el código 230 (botón de acción tap) no estaba mapeado en `GlassGesture`.
+  - **Problema 2 (Auriculares Bluetooth - Configuración de Agente STT+API)**: Los auriculares debían permitir configurar en sus gestos si el usuario desea invocar el agente de voz vía STT+API (Aura) o las demás acciones externas (Gemini, Gemini Live, Asistente de teléfono, etc.).
+    - *Causa Raíz*: No existía la acción `VOICE_AGENT_AURA` en `CommonDeviceActions` ni su manejo en `HeadphoneGestureManager`.
+  - **Problema 3 (Auriculares Activos - Lectura de Notificaciones por TTS)**: Si un auricular Bluetooth está activo/conectado, las notificaciones entrantes permitidas deben leerse con el motor TTS y reproducirse en los auriculares.
+    - *Causa Raíz*: `MirrorNotificationListener` retornaba anticipadamente si las gafas no estaban conectadas y no contaba con integración TTS para leer notificaciones hacia auriculares Bluetooth.
+- **Solución Implementada**:
+  1. **Aislamiento y Debounce del Botón de Acción y Toque Simple en Gafas**:
+     - En `GlassGesture.kt`: Mapeado el código 230 como `TAP` (pulsación corta del botón de acción) y asegurado 231 como `LONG_PRESS`.
+     - En `InboundRouter.kt`:
+       - Añadida consolidación de eventos: cuando `210` o `230` (tap confirmado) está presente en el lote, se filtran automáticamente los eventos de ruido `200` (down) y `203` (up) del mismo emisor/toque para que no se sinteticen en un falso doble toque.
+       - Rango de síntesis humana de `DOUBLE_TAP` calibrado a `180L..500L` (descartando rebotes mecánicos menores a 180ms).
+     - En `TouchGestureManager.kt`:
+       - Definidas las acciones `ACTION_HUD_DASHBOARD` (`"hud_dashboard"`) y `ACTION_VOICE_AGENT_AURA` (`"voice_agent_aura"`).
+       - En `handleGesture`: cuando la acción es `NONE` o `HUD_DASHBOARD`, se despacha a `executor.executeHudDashboard()` / `executeNone()` sin activar debounce parasitario, permitiendo que el HUD nativo de las gafas permanezca visible sin interferencia del teléfono.
+       - Ventana de doble toque ajustada a `DOUBLE_TAP_MIN_INTERVAL_MS = 180L` y `DOUBLE_TAP_MAX_INTERVAL_MS = 500L`.
+     - En `ConnectionManager.kt` y `GlassesEventHandler.kt`:
+       - Implementado `executeHudDashboard()` y `executeVoiceAgentAura()`.
+       - En `inbound.setAiTriggerListener`: al recibir el disparador por hardware de pulsación larga (`code: 3`), se respeta la configuración de `Prefs.glassesActionButtonAction` (`VOICE_AI_FIXED` por defecto llama a `ai().onTrigger(code)`, o lanza Gemini si el usuario lo configuró explícitamente).
+     - En `GlassesSettingsActivity.kt`:
+       - Mapeado el selector del botón de acción con etiquetas explícitas que aclaran que el toque simple abre el HUD nativo y la pulsación larga invoca al agente de IA configurado.
+       - Carga y sincronización correcta de la selección inicial en `loadDevice()` mediante `Prefs.glassesActionButtonAction`.
+  2. **Acción de Agente de Voz Aura (STT + API) en Auriculares**:
+     - En `CommonDeviceActions.kt`: Agregadas las acciones `VOICE_AGENT_AURA` ("Agente de Voz Aura (STT + API)") y `HUD_DASHBOARD` ("Ver Dashboard / HUD de Gafas").
+     - En `HeadphoneGestureManager.kt`:
+       - Al dispararse `VOICE_AGENT_AURA`, notifica con TTS breve ("Te escucho") y lanza `ChatActivity` con el flag `EXTRA_AUTO_START_STT = true`.
+     - En `ChatActivity.kt`:
+       - Añadido `EXTRA_AUTO_START_STT`. Si se recibe al crear la actividad o mediante `onNewIntent`, activa automáticamente el reconocimiento de voz por hardware/micrófono (`launchVoiceStt()`) y activa `speakNextResponse = true`.
+       - Al completarse la respuesta del modelo o de la habilidad en `sendUserQuery`, si `speakNextResponse` está activo, reproduce la respuesta directamente en los auriculares a través de `TextToSpeechHelper.speak(responseText)`.
+  3. **Lectura Automática de Notificaciones en Auriculares Vía TTS**:
+     - En `MirrorNotificationListener.kt`:
+       - Añadido `serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())` con cancelación en `onDestroy()`.
+       - Antes de comprobar la conexión a las gafas, consulta si existe un auricular Bluetooth conectado (`BluetoothDeviceType.HEADPHONES`) y con `autoReadNotifications` o `ttsEnabled` habilitado.
+       - Si está activo, sintetiza mediante `TextToSpeechHelper.speak("De $appName: $title. $text")`, reproduciéndose por A2DP en los auriculares.
+       - El reenvío visual hacia el HUD de las gafas se mantiene de forma independiente cuando las gafas están vinculadas y conectadas.
+- **Verificación**:
+  - `InboundGestureTest.kt`: Incorporadas pruebas unitarias `consolidatesTouchDown200AndTap210ToSingleTapWithoutSynthesizingDoubleTap` y `decodesActionButtonCode230AsTap`.
+  - Todas las pruebas unitarias pasaron exitosamente (`BUILD SUCCESSFUL`).
+  - Compilación de depuración validada (`rtk ./gradlew assembleDebug` exitoso).
+  - Grafo sincronizado con `rtk codegraph sync`.
+
+---
+
+
+### [2026-09-11] — Interfaces Específicas de Configuración por Dispositivo y Catálogo Unificado de Acciones Comunes
+- **Contexto y Requerimiento**:
+  - El usuario especificó que las configuraciones del sistema (modelos de IA, STT, TTS, clima, backups, perfil) deben mantenerse generales/globales, pero se deben proporcionar **interfaces de configuración propias y diferenciadas por tipo de dispositivo** para personalizar capacidades de hardware individuales:
+    - **Gafas AR (Meizu MYVU)**: botón de acción físico en la montura, gestos del touch de las patas de los lentes (toque simple, doble toque, triple toque, deslizamiento hacia adelante, deslizamiento hacia atrás, pulsación larga) y brillo/pantalla HUD MicroOLED.
+    - **Auriculares Bluetooth**: gestos de 1, 2 o 3 toques, pulsación larga, síntesis de voz (TTS) y lectura automática de notificaciones.
+    - **Dispositivos Genéricos / Wearables**: configuración básica de botones y notificaciones.
+  - Las acciones a realizar deben ser **comunes y transversales** a todos los dispositivos (lanzar apps, Gemini, Gemini Live, Asistente de teléfono, notas de voz IA, lectura de notificaciones, resumen diario, teleprompter, controles multimedia, etc.).
+- **Arquitectura y Cambios Realizados**:
+  1. **Catálogo Unificado de Acciones (`CommonDeviceActions.kt`)**:
+     - Creado en `com.myvu.client.data.CommonDeviceActions`.
+     - 13 acciones universales tipadas con IDs normalizados, etiquetas legibles y descripción: `MEDIA_PLAY_PAUSE`, `MEDIA_NEXT`, `MEDIA_PREV`, `LAUNCH_GEMINI`, `LAUNCH_GEMINI_LIVE`, `LAUNCH_PHONE_ASSISTANT`, `CREATE_AI_NOTE`, `READ_UNREAD_NOTIFICATIONS`, `DAILY_BRIEFING`, `SYNC_WEATHER`, `OPEN_TELEPROMPTER`, `QUICK_RECORD_MEETING`, `NONE`.
+     - Métodos helper para Spinners y selectores: `getLabels()`, `getActionId(index)`, `getIndexForAction(actionId)`.
+  2. **Ampliación de Modelo y Base de Datos (`BluetoothDeviceEntity.kt` y `AppDatabase.kt`)**:
+     - Añadidos campos a `BluetoothDeviceEntity`: `swipeForwardAction`, `swipeBackwardAction`, `actionButtonAction`, `hudBrightness`.
+     - `AppDatabase`: migración a versión 3 con `fallbackToDestructiveMigration(dropAllTables = true)`.
+     - `BluetoothDeviceManager.kt`: agregado método `updateGlassesGestures(mac, tap, doubleTap, tripleTap, swipeForward, swipeBackward, longPress, actionButton, hudBrightness)` que persiste tanto en Room como en `Prefs` (`touchpadTapAction`, `touchpadSwipeForwardAction`, etc.) garantizando sincronización en tiempo real con `TouchGestureManager`.
+  3. **Nueva Pantalla de Ajustes de Gafas AR (`GlassesSettingsActivity.kt` y `activity_glasses_settings.xml`)**:
+     - Diseño iOS Cupertino Grouped Cards:
+       - Cabecera y tarjeta de estado de las gafas Meizu MYVU AR.
+       - Sección **Patas Táctiles (Touchpad Lateral)**: Toque Simple, Doble Toque, Triple Toque, Deslizar Adelante, Deslizar Atrás, Pulsación Larga (mapeadas a `CommonDeviceActions`).
+       - Sección **Botón de Acción (Montura)**: Selector de asistente/modo de voz.
+       - Sección **Pantalla HUD MicroOLED**: Slider de brillo (0% a 100%) y botón directo para abrir el Trackpad virtual.
+     - Registro en `AndroidManifest.xml`.
+  4. **Refactorización de Pantalla de Auriculares (`HeadphoneSettingsActivity.kt`)**:
+     - Migrado del array local hardcodeado al catálogo unificado `CommonDeviceActions`.
+     - Selectores para 1 toque, 2 toques, 3 toques, pulsación prolongada, interruptores de TTS y lectura automática.
+  5. **Navegación y Enrutamiento Contextual**:
+     - `DeviceManagementBottomSheet.kt`: Al pulsar "Configurar", si es `SMART_GLASSES` abre `GlassesSettingsActivity`; si es `HEADPHONES` u otro abre `HeadphoneSettingsActivity`.
+     - `ChatActivity.kt`: El widget de Gafas AR en el carrusel abre `GlassesSettingsActivity`; el widget de Auriculares abre `HeadphoneSettingsActivity`.
+     - `SettingsActivity.kt` y `activity_settings.xml`: Añadida tarjeta iOS agrupada *"Dispositivos & Gestos Específicos"* antes de los proveedores de IA, con accesos directos a la configuración de Gafas AR, Auriculares y Administrador de Dispositivos.
+- **Verificación**:
+  - `rtk ./gradlew testDebugUnitTest`: BUILD SUCCESSFUL (todas las pruebas pasan).
+  - `rtk ./gradlew assembleDebug`: BUILD SUCCESSFUL (APK generado sin advertencias críticas).
+  - `rtk codegraph sync`: Sincronizado.
+
+---
+
+### [2026-09-11] — Rediseño Integral UI Estilo iOS Cupertino Pro Native, Modo Claro/Oscuro y Nuevo Icono de Identidad
+- **Contexto y Requerimiento**:
+  - El usuario solicitó el rediseño completo de la interfaz de usuario siguiendo los prototipos y especificaciones de `@design/stitch_smartwear_ai_hub` (diseño estilo iOS Human Interface Guidelines / Cupertino Pro Native).
+  - Nuevo icono de aplicación moderno y acorde a la nueva función como hub inteligente y agente de wearables universales.
+  - Soporte completo y dinámico para conmutar entre Modo Claro y Modo Oscuro, manteniendo total coherencia visual y contraste en todas las pantallas.
+  - Plan de migración detallado previo a la ejecución (`docs/superpowers/plans/2026-09-11-ios-cupertino-redesign-and-theme-migration-plan.md`).
+- **Arquitectura y Cambios Aplicados**:
+  1. **Sistema de Color Semántico Dual (`colors.xml` y `values-night/colors.xml`)**:
+     - Definidos tokens semánticos iOS: `ios_system_bg` (`#F2F2F7` Claro / `#000000` Oscuro), `ios_card_bg` (`#FFFFFF` Claro / `#1C1C1E` Oscuro), `ios_card_secondary` (`#F8F8FA` Claro / `#2C2C2E` Oscuro), `ios_label` (`#1C1C1E` / `#FFFFFF`), `ios_secondary_label` (`#8E8E93`), `ios_separator` (`#E5E5EA` / `#38383A`), `ios_border`, `ios_blue` (`#007AFF` / `#0A84FF`), `ios_indigo` (`#5856D6` / `#5E5CE6`), `ios_green` (`#34C759` / `#30D158`), `ios_bubble_ai` (`#E9E9EB` / `#26252A`), `ios_bubble_user` (`#007AFF` / `#0A84FF`), `ios_nav_bg`, `ios_pill_bg`, etc.
+     - Mapeados tokens legados (`obsidian_bg`, `obsidian_container`, etc.) a los nuevos colores semánticos para retrocompatibilidad total sin roturas en pantallas secundarias.
+  2. **Motor de Temas Dinámico en `Prefs.kt` y `MyApp.kt`**:
+     - Constantes y métodos `themeMode()`, `setThemeMode()`, `applyTheme()` en `Prefs.kt`. Soporte de `THEME_MODE_SYSTEM`, `THEME_MODE_LIGHT`, `THEME_MODE_DARK`.
+     - Aplicación inmediata vía `AppCompatDelegate.setDefaultNightMode()` al inicio de la app en `MyApp.onCreate()` y en tiempo real al seleccionar tema.
+     - Botón de alternancia rápida en el encabezado de `ChatActivity` (`btnThemeToggle`) y selector de 3 opciones (Automático, Claro, Oscuro) en `SettingsActivity`.
+     - Ajuste en `EdgeToEdgeHelper.kt` para que `isAppearanceLightStatusBars` e `isAppearanceLightNavigationBars` se adapten dinámicamente al modo claro u oscuro, garantizando legibilidad de iconos de estado del sistema.
+  3. **Nueva Identidad Gráfica y Launcher Icon (`ic_launcher_hub`)**:
+     - Creados recursos vectoriales y adaptativos: `ic_launcher_hub.xml`, `ic_launcher_hub_background.xml` (gradiente continuo Cupertino `#007AFF` a `#5856D6`) e `ic_launcher_hub_foreground.xml` (gafas holográficas AR HUD, ondas de sonido de auriculares, estrella neural de IA central de 4 puntas y telemetría de wearable).
+     - Actualizado `AndroidManifest.xml` con `android:icon="@drawable/ic_launcher_hub"` y `android:roundIcon="@drawable/ic_launcher_hub"`.
+  4. **Drawables Base Estilo iOS**:
+     - `bg_ios_card.xml`: Squircle continuo de 16dp con borde sutil.
+     - `bg_ios_card_secondary.xml`: Radio de 12dp para contenedores internos.
+     - `bg_ios_pill.xml` y `bg_ios_pill_active.xml`: Radio total 999dp para filtros y botones de acción rápida.
+     - `bg_ios_bubble_user.xml` y `bg_ios_bubble_ai.xml`: Burbujas redondeadas estilo iMessage con esquinas diferenciadas de 18dp/4dp.
+     - `bg_ios_input_bar.xml`: Barra de entrada de texto estilo iOS Messages.
+     - `bg_ios_circle_button.xml`: Botones circulares para acciones directas y envío.
+  5. **Rediseño de Pantallas Principales (Companion Hub & Chat)**:
+     - `activity_chat.xml` & `ChatActivity.kt`:
+       - Top bar translúcida con logo, sincronización, selector de tema y acceso a ajustes.
+       - **Carrusel Horizontal de Dispositivos Activos (iOS Widgets)**: Tarjeta interactiva de Gafas AR (estado, batería, HUD MicroOLED), Auriculares Pro (estado, batería, gestos) y botón de emparejar nuevo equipo. Conexión reactiva vía `getAllDevicesFlow()` de Room.
+       - **iMessage Conversation Stream**: Burbujas asimétricas, avatar de IA, texto nítido en modo claro y oscuro, y previsualización de multimedia.
+       - **Pills de Acción Rápida**: Teleprompter, Notas IA, Grabar Nota, Resumir Día, Tareas.
+       - **Cupertino 5-Tab Bottom Bar**: Hub, Dispositivos, AR HUD, Traducir, Notas.
+     - `item_chat_message.xml` y `ChatSidebarBottomSheet.kt`: Adaptados para soportar el renderizado visual iMessage.
+     - `item_note.xml`, `item_reminder.xml`, `bg_chip_badge.xml`: Adaptados a radios squircles de 16dp y paletas semánticas iOS.
+- **Verificación**:
+  - Compilación y ejecución exitosa de pruebas unitarias (`./gradlew testDebugUnitTest`: 34 tasks exitosas).
+  - Compilación exitosa de APK de depuración (`./gradlew assembleDebug`: BUILD SUCCESSFUL).
+
+---
+
+### [2026-09-11] — Acceso Rápido a Funcionalidades de IA y Menú Lateral (Sidebar Navigation Drawer)
+- **Contexto y Requerimiento**:
+  - El usuario solicitó ajustar la interfaz de usuario para poder acceder a las funcionalidades de IA de manera rápida (como Notas de IA, Grabación de Reuniones, Resumen del Día, etc.) y habilitar el menú de la barra lateral (Sidebar Navigation Drawer) para acceder rápidamente a todas las funciones disponibles desde la pantalla principal (`ChatActivity`).
+- **Solución Implementada**:
+  - **Menú de Navegación Lateral (`menu/menu_navigation_drawer.xml`)**:
+    - Se reordenaron y ampliaron los destinos del drawer:
+      - `nav_chat_sidebar`: Chat IA Aura (Principal)
+      - `nav_notes`: Notas de IA y Tareas
+      - `nav_voice_recorder`: Grabadora de Voz & Reuniones
+      - `nav_devices`: Dispositivos Bluetooth (Gafas, Auriculares)
+      - `nav_dashboard`: Gafas AR (Dashboard)
+      - `nav_ai_config`: Ajustes de IA y Perfil
+      - `nav_trackpad`: Control Trackpad
+      - `nav_notifications`: Filtro de Notificaciones
+      - `nav_logs`: Logs y Telemetría
+  - **Integración de DrawerLayout y Botón Hamburguesa en `ChatActivity` (`activity_chat.xml` y `ChatActivity.kt`)**:
+    - Se convirtió la raíz de `activity_chat.xml` en un `DrawerLayout` (`chatDrawerLayout`).
+    - En `topBar`, se reemplazó el botón de retroceso por `btnNavigationDrawer` usando el vector `@drawable/ic_menu_hamburger` con tinte `@color/cyber_teal`.
+    - Se incorporó `NavigationView` (`chatNavigationView`) con cabecera dinámica que muestra el estado y nombre del dispositivo Bluetooth activo.
+    - Se configuró el cierre automático del drawer con el botón atrás (`OnBackPressedCallback`).
+    - Se conectó `setNavigationItemSelectedListener` para abrir directamente cada actividad (`NotesActivity`, `VoiceRecorderActivity`, `ConnectActivity`, `SettingsActivity`, `TrackpadActivity`, `NotificationAppsActivity`, `DeviceManagementBottomSheet`).
+  - **Barra de Acceso Rápido de IA (`scrollAiQuickBar`)**:
+    - Se situó una barra horizontal prominente de botones tonales Material 3 justo debajo de la cabecera:
+      - `btnQuickAiNotes` ("📝 Notas IA"): Abre de inmediato la libreta de notas con IA.
+      - `btnQuickRecordMeeting` ("🎙️ Grabar Reunión"): Abre `VoiceRecorderActivity` con la categoría "Reunión" preseleccionada y activación inmediata de grabación en vivo.
+      - `btnQuickDailyBriefing` ("☀️ Mi Día"): Genera el briefing ejecutivo del día, lo sintetiza por voz (`TextToSpeechHelper`) y lo publica en el chat con formato Markdown.
+      - `btnQuickTasks` ("✅ Mis Tareas"): Abre `NotesActivity` enfocado en la pestaña de recordatorios y pendientes.
+      - `btnQuickDevicesShortcut` ("🎧 Dispositivos"): Abre la hoja modal de gestión Bluetooth.
+  - **`VoiceRecorderActivity.kt`**:
+    - Se añadió soporte en `onCreate` para los extras `CATEGORY = "MEETING"` y `AUTO_START_RECORDING = true` para iniciar la grabación de reuniones sin clics adicionales.
+  - **`ConnectActivity.kt`**:
+    - Se actualizó el listener del drawer para soportar la opción `nav_devices` abriendo `DeviceManagementBottomSheet`.
+- **Verificación**:
+  - Pruebas unitarias: `./gradlew testDebugUnitTest` 100% exitosas (`BUILD SUCCESSFUL`).
+  - Compilación APK: `./gradlew assembleDebug` exitoso (`BUILD SUCCESSFUL`).
+  - Sincronización de grafo de código: `rtk codegraph sync` completada.
+
+---
+
+### [2026-09-11] — Plataforma Universal de Agente IA para Todo Tipo de Dispositivos Bluetooth (Gafas, Auriculares, Wearables)
+- **Contexto y Requerimiento**:
+  - Transformar la aplicación Android Meizu Myvu Client en una plataforma universal de Agente IA para cualquier dispositivo Bluetooth: Gafas inteligentes AR (MYVU), Auriculares / Audífonos Bluetooth (TWS / Diadema / In-ear) y Dispositivos Wearables Genéricos.
+  - Requisitos clave:
+    1. Detección y adición dinámica de dispositivos Bluetooth emparejados y en escaneo.
+    2. Configuraciones aisladas e independientes por dispositivo según su tipo (`SMART_GLASSES`, `HEADPHONES`, `GENERIC`).
+    3. Todas las capacidades de IA (notas con IA, transcripción, comandos, llamadas, WhatsApp, Gemini, Gemini Live, Asistente de teléfono, 30 habilidades modulares) disponibles para todos los dispositivos.
+    4. Configuración completa de gestos táctiles de auriculares (1 toque, 2 toques, 3 toques, pulsación larga) asignables a acciones de IA, multimedia o lectura de notificaciones.
+    5. Ajuste de UI para soportar selección y administración multi-dispositivo (`DeviceManagementBottomSheet`).
+    6. Centralidad del Chat: `ChatActivity` pasa a ser la pantalla principal (`LAUNCHER`) de la app, con acceso directo a la gestión de dispositivos en la cabecera.
+- **Solución Implementada**:
+  - **Base de Datos y Persistencia**:
+    - `BluetoothDeviceEntity.kt`: Entidad Room con campos `macAddress` (PK), `name`, `deviceType`, `isConnected`, `isActiveDevice`, `tap1Action`, `tap2Action`, `tap3Action`, `longPressAction`, `ttsEnabled`, `autoReadNotifications`, `lastSeen`.
+    - `BluetoothDeviceDao.kt`: Consultas de dispositivos emparejados, activos y por tipo.
+    - `AppDatabase.kt`: Actualizado a versión 2 incorporando `BluetoothDeviceEntity` y `bluetoothDeviceDao()`.
+  - **Gestor Universal Bluetooth**:
+    - `BluetoothDeviceManager.kt`: Singleton centralizado para sincronización de dispositivos emparejados, escaneo BLE/Clásico (`startDiscovery`), clasificación heurística basada en nombres (`myvu`, `airpods`, `buds`, `freebuds`, `wh-1000xm`, etc.) y `BluetoothClass` (`AUDIO_VIDEO_*`, `WEARABLE_*`).
+  - **Motor de Gestos y Feedback de Audio para Auriculares**:
+    - `HeadphoneGestureManager.kt`: Evaluador de toques mediante pulsaciones consecutivas de `KEYCODE_HEADSETHOOK` y `KEYCODE_MEDIA_PLAY_PAUSE` (1 toque, 2 toques, 3 toques, pulsación larga), despachando Gemini, Gemini Live, Asistente del Teléfono, Notas de voz con IA, Resumen del día (Briefing) y lectura TTS de notificaciones.
+    - `TextToSpeechHelper.kt`: Motor nativo TTS en español (`es-CO`/`es-ES`) con enrutamiento dinámico al canal de audio Bluetooth.
+    - `MyvuService.kt`: Enrutamiento inteligente en `setupMediaSession`: si las gafas no están en estado `READY`, los eventos de botones multimedia se canalizan a `HeadphoneGestureManager`.
+  - **Interfaz de Usuario Multi-Dispositivo**:
+    - `ChatActivity`: Configurada como actividad de inicio principal (`MAIN`/`LAUNCHER`) en `AndroidManifest.xml`.
+    - `DeviceManagementBottomSheet.kt`: Hoja modal inferior estilo Obsidian que lista los dispositivos emparejados, permite escanear nuevos dispositivos, alternar el dispositivo activo y abrir la configuración específica según el tipo.
+    - `HeadphoneSettingsActivity.kt`: Interfaz dedicada para configurar gestos táctiles (1, 2, 3 toques y long press), habilitar TTS y lectura automática de notificaciones para audífonos.
+    - Botón universal "Dispositivos" (`btnDevices`) incorporado en las cabeceras de `ChatActivity`, `ConnectActivity`, `SettingsActivity`, `NotesActivity` y `VoiceRecorderActivity`.
+  - **Pruebas y Verificación**:
+    - `BluetoothDeviceManagerTest.kt`: Pruebas unitarias de clasificación automática de dispositivos (`SMART_GLASSES`, `HEADPHONES`, `GENERIC`).
+    - Compilación completa y pruebas unitarias exitosas (`BUILD SUCCESSFUL`, exit code 0).
+    - APK generado con éxito (`assembleDebug`).
+    - Sincronización del grafo de código (`codegraph sync`).
 
 ---
 
@@ -1289,3 +1832,160 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
 - **Verificación**:
   - Tests unitarios (`./gradlew testDebugUnitTest`): **BUILD SUCCESSFUL** (259 tests passing, 0 failures).
   - Ensamblado (`./gradlew assembleDebug`): **BUILD SUCCESSFUL in 961ms**.
+
+### [2026-09-11] — Corrección de Brillo HUD y Migración Integral de Parámetros Exclusivos a Configuración de Gafas
+- **Plan**: `docs/superpowers/plans/2026-09-11-migrate-glasses-settings-and-fix-brightness-plan.md`
+- **Problema Reportado**:
+  1. El parámetro de brillo de pantalla en la configuración de las gafas AR no se estaba aplicando físicamente ni guardando al presionar "Guardar".
+  2. En los ajustes generales (`SettingsActivity` / `activity_settings.xml`) aún permanecían parámetros que son exclusivos del hardware de las gafas AR (Brillo, Volumen, Posición Standby del HUD, Tiempo de pantalla activa, Duración de notificaciones HUD, Modo de respuesta IA, Escucha continua y Wake word).
+- **Causa Raíz**:
+  1. En `GlassesSettingsActivity`, el slider de brillo tenía un rango erróneo de 10 a 100 (porcentaje) y solo persistía en la base de datos Room (`hudBrightness`), sin invocar `GlassesConfig.setBrightness(this, value)` ni emitir el comando Flyme XR `set_brightness`.
+  2. El firmware de las gafas Meizu Myvu espera niveles discretos del 1 al 5 (`{"action":"system_settings","sub_action":"set_brightness","brightness":N}`). Valores mayores a 5 o la ausencia de IPC eran ignorados por el hardware.
+  3. Parámetros de hardware de las gafas se encontraban dispersos en `SettingsActivity`, causando duplicidad y confusión frente a la configuración por dispositivo.
+- **Solución Implementada**:
+  1. **Corrección de Brillo HUD**:
+     - `activity_glasses_settings.xml`: `sliderHudBrightness` reconfigurado con `valueFrom="1"`, `valueTo="5"`, `stepSize="1"`.
+     - `GlassesSettingsActivity.kt`: Al mover el slider y al presionar "Guardar", se invoca directamente `GlassesConfig.setBrightness(this, brightness)`, el cual envía `SystemSettings.setBrightness(level)` a las gafas y actualiza Room DB (`hudBrightness = brightness * 20`).
+  2. **Migración Integral a `GlassesSettingsActivity` y `activity_glasses_settings.xml`**:
+     - *Pantalla y Audio*: Brillo HUD (1..5), Volumen de altavoces (0..15), Posición Standby de la pantalla (Centro, Superior, Inferior, Lateral 0..3), Tiempo de pantalla activa (3..60s), Duración de notificaciones en visor HUD (1..30s).
+     - *Modo de Respuesta de IA*: Toggle group con 3 opciones (Solo voz, Solo pantalla HUD, Voz y HUD).
+     - *Escucha y Micrófono*: Switches para Diálogo continuo (`swContinuousDialogue`), Activación por voz / Wake word (`swVoiceWakeup`) con envío en vivo de `AiProtocol.assistantConfig`, y Enrutamiento forzado de micrófono SCO para Gemini (`swForceGeminiSco`).
+  3. **Limpieza Completa de Ajustes Generales (`SettingsActivity`)**:
+     - Eliminadas tarjetas de Modo de Respuesta IA, Escucha y Ahorro de Batería, Pantalla y Audio de Gafas, y duración de notificaciones HUD en `activity_settings.xml`.
+     - Removidos métodos y oyentes huérfanos (`configureResponseMode`, `configureListeningSettings`, `wireGlassesSettings`, `wireTouchpad`, etc.) en `SettingsActivity.kt`.
+     - `SettingsActivity` queda dedicado estrictamente a configuraciones globales (Proveedores y endpoints de IA/STT/TTS, Temas, Clima, Copias de seguridad en la nube, Perfil, Logs y Bloqueo automático del móvil tras acciones).
+  4. **Pruebas y Verificación**:
+     - Adaptado `SettingsGestureConfigTest.kt` para inicializar y validar completamente `GlassesSettingsActivity`, sus componentes de UI, persistencia de `GlassesConfig`, `Prefs` y base de datos Room.
+     - Pruebas unitarias (`./gradlew testDebugUnitTest`): **BUILD SUCCESSFUL** (100% pasando).
+     - Compilación de APK (`./gradlew assembleDebug`): **BUILD SUCCESSFUL**.
+
+---
+
+### [2026-09-12] — Interruptor Maestro de Servicios en Segundo Plano y Garantía de IA Standalone
+- **Plan**: `docs/superpowers/plans/2026-09-12-service-toggle-and-standalone-ai-guarantee-plan.md`
+- **Problema y Requerimiento**:
+  1. La aplicación podía generar ciclos de reconexión automática en bucle o mantener servicios en segundo plano encendidos consumiendo batería innecesariamente cuando el usuario no deseaba usar los dispositivos. Se solicitó un botón/switch que permita activar o desactivar los servicios según sea el caso para evitar consumo de recursos (por ejemplo, reintentos automáticos de reconexión a dispositivos Bluetooth).
+  2. Garantizar que las funcionalidades de IA (Chat, Notas, Resúmenes del día/Briefing, Grabadora y Tareas) se puedan utilizar 100% de forma autónoma (standalone) sin requerir ningún dispositivo Bluetooth conectado.
+- **Solución Implementada**:
+  1. **Interruptor Maestro de Servicios y Desconexión Total**:
+     - `TotalDisconnectHelper.kt`: Controlador centralizado que:
+       - Pone `Prefs.setAutoReconnectEnabled(context, false)`.
+       - Cancela alarmas de watchdog (`ServiceWatchdogReceiver.cancelWatchdog(context)`).
+       - Libera canales de audio Bluetooth SCO (`TouchGestureManager.releaseBluetoothSco(context)`).
+       - Desregistra sensores de salud y podómetro (`HealthService.unregisterHardwareSensor()`).
+       - Detiene escaneos y marca en Room DB todos los dispositivos como desconectados (`BluetoothDeviceManager.markAllDevicesDisconnected()`).
+       - Detiene el servicio en primer plano `MyvuService` (`ACTION_STOP`).
+     - `view_dashboard.xml` y `ConnectActivity.kt`: Añadido switch Material 3 `swMasterService` ("Servicios en Segundo Plano") en `cardStatus`. Al apagarlo, desactiva la reconexión y ejecuta la desconexión total; al encenderlo, reanuda la reconexión y levanta el servicio.
+     - `activity_settings.xml` y `SettingsActivity.kt`: Añadida tarjeta "Servicios en Segundo Plano & Energía" con `swSettingsMasterService` y botón de "Desconexión Total (Inactivar Todo)".
+     - `ChatActivity.kt` y `menu/menu_navigation_drawer.xml`: Opción `nav_total_disconnect` incorporada en el menú lateral para ejecutar desconexión total con un toque.
+  2. **Garantía de IA Standalone**:
+     - `view_dashboard.xml`: Añadido botón de acceso directo a Chat IA Aura (`btnOpenAiChat`) junto al botón de voz para entrar al asistente sin requerir gafas conectadas.
+     - `DailyBriefingService.kt`: Manejo seguro de ausencia de dispositivos Bluetooth (la lectura de batería de gafas se omite elegantemente sin lanzar excepciones si no hay conexión activa), proveyendo el resumen completo (saludo, hora, clima, calendario, notas, notificaciones) mediante el motor TTS local.
+     - Verificado que `ChatActivity`, `NotesActivity` y `VoiceRecorderActivity` funcionan de manera completamente desacoplada mediante llamadas HTTP a LLMs, base de datos local Room y micrófono nativo de Android.
+     - Creada suite de pruebas unitarias `StandaloneAiAndServiceToggleTest.kt` (Robolectric SDK 34) validando:
+       - Alternancia correcta del estado de reconexión/servicios con `Prefs.setAutoReconnectEnabled` y `TotalDisconnectHelper.performTotalDisconnect`.
+       - Generación exitosa y sin fallos de `DailyBriefingService.generateBriefingText()` sin dispositivos conectados.
+       - Creación y recuperación en Room DB de Notas y Recordatorios en modo standalone.
+     - `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (todas las pruebas pasando).
+     - `./gradlew assembleDebug`: **BUILD SUCCESSFUL**.
+     - Grafo de código sincronizado (`codegraph sync`).
+
+---
+
+### [2026-09-12] — Resolución de Conflicto y Doble Acción entre Botón Físico de Montura y Patilla Táctil
+- **Plan**: `docs/superpowers/plans/2026-09-12-fix-physical-action-button-and-temple-conflict-plan.md`
+- **Problema y Requerimiento**:
+  - Al presionar el botón físico de acción de las gafas inteligentes Meizu Myvu AR, el sistema ejecutaba dos acciones consecutivas (ej. lanzar Gemini o Aura por el botón físico y seguidamente disparar una acción de patilla táctil, como doble toque o pulsación larga).
+  - Se confundían eventos de hardware del botón de la montura con interacciones de la patilla capacitiva táctil.
+- **Causa Raíz Descubierta**:
+  1. **Despacho Concurrente Dual del Firmware Flyme XR**:
+     - Al presionar el botón físico, el firmware de las gafas envía simultáneamente un paquete de activación IA (`com.upuphone.ai.assistant`, `code: 3`) y uno o más paquetes de telemetría de eventos de teclas (`action: sync_glass_event`, con `key_code: 231`, `230`, `212` o `210`).
+     - `InboundRouter.checkAiTrigger()` procesaba el paquete `code: 3` y ejecutaba la acción del botón de acción (`Prefs.glassesActionButtonAction`, ej. Gemini o Aura).
+     - Paralelamente, `InboundRouter.checkGestureTracking()` procesaba el evento de tecla y lo enviaba sin discriminación a `TouchGestureManager.handleGesture()`.
+  2. **Colisión en `GlassGesture.kt`**:
+     - El keycode `230` (botón de acción corto) estaba asignado a `GlassGesture.TAP`. El acumulador de software lo agrupaba con otros toques y sintetizaba un falso `DOUBLE_TAP`.
+     - El keycode `231` (botón de acción largo / `KEYCODE_VOICE_ASSIST`) estaba asignado a `GlassGesture.LONG_PRESS`, disparando la acción de patilla larga (`Prefs.touchpadLongPressAction`) en vez de la acción configurada para el botón físico (`Prefs.glassesActionButtonAction`).
+     - `GlassGesture.fromCode(3)` mapeaba `3` a `TRIPLE_TAP`, confundiendo el trigger de IA con un triple toque de patilla.
+  3. **Falta de Ventana de Supresión Temporal**:
+     - No existía un mecanismo para que `InboundRouter` o `TouchGestureManager` suprimieran eventos táctiles de patilla generados mecánicamente por la deformación o proximidad de la mano al sujetar la montura para oprimir el botón físico.
+- **Solución Implementada**:
+  1. **Desacoplamiento Estricto en `GlassGesture.kt`**:
+     - Creada nueva entrada de enum: `ACTION_BUTTON(230, "action_button", "Botón de Acción")`.
+     - `fromCode(230)` y `fromCode(231)` devuelven `ACTION_BUTTON`.
+     - `fromCode(3)` devuelve `ACTION_BUTTON` a menos que el nombre contenga explícitamente `"triple"`.
+     - Las cadenas `"assist"`, `"action_button"`, `"action_btn"` mapean a `ACTION_BUTTON`.
+  2. **Ventana de Supresión en `TouchGestureManager.kt`**:
+     - Añadida constante `PHYSICAL_BUTTON_SUPPRESSION_MS = 1200L` y variables atómicas de tiempo `lastPhysicalButtonTime` y `lastPhysicalKeyEventTime`.
+     - En `handleGesture()`: Si un gesto proviene de las patillas táctiles y transcurrieron menos de 1200ms desde una pulsación del botón físico (`(now - lastPhysicalButtonTime) in 0 until PHYSICAL_BUTTON_SUPPRESSION_MS`), se descarta de inmediato con log de auditoría.
+     - Manejo explícito de botón físico (`isPhysicalButton`):
+       - Keycode `230`: Ejecuta exclusivamente `executeHudDashboard()`, restablece el acumulador de toques (`accumulatedTapCount = 0`, `lastTapTime = 0L`) y registra la marca de tiempo, impidiendo cualquier síntesis de doble toque.
+       - Keycode `231`: Ejecuta directamente la acción mapeada para el botón físico (`Prefs.glassesActionButtonAction(context)`: Gemini, Gemini Live, Asistente de teléfono o Aura), sin pasar jamás por los mapeos de patilla táctil.
+     - Método `notifyPhysicalButtonPressed(context)` para notificar a `TouchGestureManager` desde eventos externos (ej. trigger de IA `code: 3`).
+  3. **Deduplicación Bidireccional en `ConnectionManager.kt`, `GlassesEventHandler.kt` e `InboundRouter.kt`**:
+     - En `InboundRouter.checkAiTrigger()`: Al llegar `code == 3`, invoca `TouchGestureManager.notifyPhysicalButtonPressed(null)` para abrir la ventana de supresión de 1200ms contra eventos parásitos de patilla.
+     - En `ConnectionManager` y `GlassesEventHandler`: Si llega un trigger `code: 3` dentro de los 500ms posteriores a un `key_event` físico (`lastPhysicalKeyEventTime`), se descarta como duplicado para evitar disparar 2 veces el asistente.
+     - En `InboundRouter.dispatchGestureBatch()`: Añadido `ACTION_BUTTON` con máxima prioridad (`0`) en la jerarquía de resolución de eventos simultáneos.
+  4. **Pruebas y Verificación**:
+     - Actualizados tests en `InboundGestureTest.kt` para validar que `key_code: 230` y `key_code: 231` decodifican como `GlassGesture.ACTION_BUTTON`.
+     - Añadidos tests unitarios en `TouchGestureManagerTest.kt`:
+       - `actionButtonCode230ExecutesHudDashboardAndDoesNotSynthesizeTap()`
+       - `physicalButtonPressedSuppressesSubsequentTempleGestures()`
+       - `templeGesturesWorkAfterSuppressionWindowExpires()`
+     - Creada suite dedicada `PhysicalActionButtonConflictTest.kt` validando la supresión de eventos de patilla tras trigger de IA, ejecución limpia de HUD Dashboard en código 230 y funcionamiento normal de patilla fuera de la ventana de supresión.
+     - `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (300 pruebas unitarias pasando).
+     - `./gradlew assembleDebug`: **BUILD SUCCESSFUL**.
+     - Sincronizado `codegraph sync`.
+
+---
+
+### [2026-09-12] — Sistema Unificado e Independiente de Activity Log y Remoción de UI Vieja
+- **Plan**: `docs/superpowers/plans/2026-09-12-unified-activity-log-system-plan.md`
+- **Requerimiento y Problema**:
+  - El visor de registros ("Activity log") estaba confinado como pestaña secundaria en el `TabLayout` de `ConnectActivity`, acoplado exclusivamente a las gafas MYVU.
+  - No permitía ver eventos de otros dispositivos (auriculares y dispositivos Bluetooth vinculados, actividades del sistema telefónico, ejecuciones de IA Aura/Gemini).
+  - Carecía de interfaz independiente, switch maestro accesible para activar/pausar el logging en caliente, filtros en tiempo real, búsqueda y exportación avanzada.
+  - Al pulsar "Logs y Actividad" desde el menú lateral de otras pantallas como `ChatActivity`, el intent intentaba alternar pestañas en `ConnectActivity`.
+- **Solución Implementada**:
+  1. **Modelo de Registro Estructurado en `LogBus.kt`**:
+     - Creado enum `DeviceSource`: `ALL` ("Todos"), `GLASSES` ("Gafas MYVU"), `BLUETOOTH` ("Dispositivos BT / Auriculares"), `PHONE` ("Teléfono / Sistema") y `AI` ("Asistente IA").
+     - Creado data class `LogEntry`: `id`, `timestamp`, `source: DeviceSource`, `level: Int`, `tag: String`, `message: String`, `throwable: Throwable?`, `deviceName: String?` y `formattedLine: String`.
+     - Buffer circular estructurado `ENTRIES: Deque<LogEntry>` (capacidad 2000) coexistiendo de manera transparente con `BUFFER: Deque<String>` y `history()` para 100% de retrocompatibilidad.
+     - Añadido `entryFlow: SharedFlow<LogEntry>` y listener `EntryListener`.
+     - Inferencia inteligente de origen (`inferDeviceSource`) analizando tags y contenido cuando se llama a `LogBus.log()`, `warn()` o `error()`.
+     - Helpers dedicados por origen: `LogBus.glasses()`, `LogBus.bluetooth(msg, deviceName)`, `LogBus.phone()`, `LogBus.ai()`.
+     - Control maestro `isEnabled` reactivo y método `clear()` que vacía tanto strings como records estructurados.
+  2. **Nueva Pantalla Independiente `ActivityLogActivity`**:
+     - Nueva actividad `ActivityLogActivity.kt` y layout `activity_log.xml` con diseño Obsidian / Cyber Teal.
+     - Switch maestro de monitoreo (`swActivityLogging`): sincronizado con `Prefs.setLoggingEnabled()` y `LogBus.isEnabled`.
+     - Barra de búsqueda en vivo con `etLogSearch` para filtrado instantáneo por texto, tag o dispositivo.
+     - Chips de filtro horizontal: `[Todos]`, `[👓 Gafas MYVU]`, `[🎧 Dispositivos BT]`, `[📱 Teléfono / App]`, `[🤖 Asistente IA]`, `[⚠️ Solo Errores]`.
+     - Chip de auto-scroll conmutable (`chipAutoScroll`).
+     - Botón de compartir logs con generación de archivo seguro `myvu_activity_log.txt` via `FileProvider` con fallback a texto plano.
+     - Botón de limpiar logs con diálogo de confirmación Material (`MaterialAlertDialogBuilder`).
+     - `RecyclerView` con `item_activity_log.xml`: badges de fuente coloreados, nivel (INFO/WARN/ERROR), hora con milisegundos, mensaje monoespaciado y stack traces expandibles si hay error.
+     - Soporte para copiar al portapapeles en long-press.
+     - Vista vacía contextual (`layoutEmptyLogs`) con estado reactivo según búsqueda, filtros o si el logging está pausado.
+  3. **Remoción de la Interfaz Vieja de `ConnectActivity`**:
+     - En `activity_connect.xml`:
+       - Eliminado `TabLayout` (pestañas "Controls" y "Log").
+       - Eliminado contenedor `pageLog` y sus vistas (`rvLog`, `btnShareLog`, `btnClearLog`).
+       - `pageControls` (`NestedScrollView`) pasa a ser la vista principal directa bajo la barra superior.
+       - Añadido botón `btnOpenActivityLog` con icono `@android:drawable/ic_menu_info_details` en la barra superior para acceso directo.
+     - En `ConnectActivity.kt`:
+       - Removida la implementación de `LogBus.Listener`.
+       - Removidas variables `rvLog`, `logAdapter`.
+       - Removidos métodos obsoletos `wireTabs()`, `crossFade()`, `shareLog()`, `onLine()`, `logAtBottom()`, `scrollToBottom()`.
+       - Conectado `btnOpenActivityLog` hacia `ActivityLogActivity`.
+       - Eliminada clase obsoleta `LogAdapter.kt`.
+  4. **Navegación Global y Ajustes**:
+     - En `ConnectActivity.kt` y `ChatActivity.kt`: `R.id.nav_logs` en el navigation drawer ahora abre directamente `ActivityLogActivity`.
+     - En `SettingsActivity.kt`: añadido botón `btnOpenActivityLog` ("Abrir Registro de Actividad Unificado") bajo la sección de logging.
+     - Registrada `ActivityLogActivity` en `AndroidManifest.xml`.
+  5. **Pruebas y Verificación**:
+     - Pruebas unitarias en `LogBusTest.kt`:
+       - `testStructuredLogEntriesAndSourceInference()`
+       - `testEntryListenerReceivesStructuredEntries()`
+     - `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (302 pruebas pasando).
+     - `./gradlew assembleDebug`: **BUILD SUCCESSFUL**.
+     - `codegraph sync`: Sincronizado.
+

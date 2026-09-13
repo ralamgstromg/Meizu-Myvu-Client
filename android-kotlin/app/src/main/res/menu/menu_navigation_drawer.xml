@@ -2,25 +2,29 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/nav_dashboard"
-            android:icon="@drawable/ic_glasses"
-            android:title="Dashboard" />
-        <item
             android:id="@+id/nav_chat_sidebar"
             android:icon="@android:drawable/ic_menu_send"
-            android:title="Chat IA con Historial" />
-        <item
-            android:id="@+id/nav_ai_config"
-            android:icon="@drawable/ic_settings"
-            android:title="Ajustes de IA" />
+            android:title="Chat IA Aura (Principal)" />
         <item
             android:id="@+id/nav_notes"
             android:icon="@android:drawable/ic_menu_edit"
-            android:title="Notas y Recordatorios" />
+            android:title="Notas de IA y Tareas" />
         <item
             android:id="@+id/nav_voice_recorder"
             android:icon="@drawable/ic_mic"
-            android:title="Grabadora de Voz IA" />
+            android:title="Grabadora de Voz &amp; Reuniones" />
+        <item
+            android:id="@+id/nav_devices"
+            android:icon="@drawable/ic_bluetooth_device"
+            android:title="Dispositivos Bluetooth" />
+        <item
+            android:id="@+id/nav_dashboard"
+            android:icon="@drawable/ic_glasses"
+            android:title="Gafas AR (Dashboard)" />
+        <item
+            android:id="@+id/nav_ai_config"
+            android:icon="@drawable/ic_settings"
+            android:title="Ajustes de IA y Perfil" />
         <item
             android:id="@+id/nav_trackpad"
             android:icon="@drawable/ic_trackpad"
@@ -33,5 +37,9 @@
             android:id="@+id/nav_logs"
             android:icon="@android:drawable/ic_menu_info_details"
             android:title="Logs y Actividad" />
+        <item
+            android:id="@+id/nav_total_disconnect"
+            android:icon="@android:drawable/ic_lock_power_off"
+            android:title="Desconexión Total (Inactivar Todo)" />
     </group>
 </menu>

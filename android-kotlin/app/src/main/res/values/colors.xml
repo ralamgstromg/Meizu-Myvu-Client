@@ -1,43 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Kinetic Obsidian Palette -->
-    <color name="obsidian_bg">#121416</color>
-    <color name="obsidian_surface_dim">#121416</color>
-    <color name="obsidian_surface_bright">#37393B</color>
-    <color name="obsidian_container_lowest">#0C0E10</color>
-    <color name="obsidian_container_low">#1A1C1E</color>
-    <color name="obsidian_container">#1E2022</color>
-    <color name="obsidian_container_high">#282A2C</color>
-    <color name="obsidian_container_highest">#333537</color>
+    <!-- iOS Cupertino Pro Native Semantic Palette (Light Mode Default) -->
+    <color name="ios_system_bg">#F2F2F7</color>
+    <color name="ios_card_bg">#FFFFFF</color>
+    <color name="ios_card_secondary">#F8F8FA</color>
+    <color name="ios_surface">#FFFFFF</color>
+    <color name="ios_label">#1C1C1E</color>
+    <color name="ios_secondary_label">#8E8E93</color>
+    <color name="ios_tertiary_label">#C7C7CC</color>
+    <color name="ios_separator">#E5E5EA</color>
+    <color name="ios_border">#1E000000</color>
 
-    <color name="cyber_teal">#00F0FF</color>
-    <color name="cyber_teal_dim">#00DBE9</color>
-    <color name="cyber_teal_light">#DBFCFF</color>
-    <color name="on_cyber_teal">#00363A</color>
-    <color name="on_cyber_teal_container">#006970</color>
+    <color name="ios_blue">#007AFF</color>
+    <color name="ios_indigo">#5856D6</color>
+    <color name="ios_purple">#AF52DE</color>
+    <color name="ios_green">#34C759</color>
+    <color name="ios_orange">#FF9500</color>
+    <color name="ios_red">#FF3B30</color>
 
-    <color name="on_surface_obsidian">#E2E2E5</color>
-    <color name="on_surface_variant_obsidian">#B9CACB</color>
-    <color name="outline_obsidian">#849495</color>
-    <color name="outline_variant_obsidian">#3B494B</color>
+    <color name="ios_red_tint">#1AFF3B30</color>
+    <color name="ios_red_border">#80FF3B30</color>
+    <color name="ios_orange_tint">#1AFF9500</color>
+    <color name="ios_orange_border">#80FF9500</color>
+    <color name="ios_blue_tint">#1A007AFF</color>
+    <color name="ios_green_tint">#1A34C759</color>
+    <color name="ios_purple_tint">#1AAF52DE</color>
 
-    <!-- Legacy alias compatibility mapping -->
-    <color name="brand">#00F0FF</color>
-    <color name="brand_dark">#00DBE9</color>
-    <color name="brand_light">#DBFCFF</color>
-    <color name="brand_container">#1E2022</color>
-    <color name="on_brand_container">#E2E2E5</color>
+    <color name="ios_bubble_ai">#E9E9EB</color>
+    <color name="ios_bubble_user">#007AFF</color>
+    <color name="ios_nav_bg">#F2F2F7</color>
+    <color name="ios_nav_surface">#FFFFFF</color>
+    <color name="ios_pill_bg">#FFFFFF</color>
+    <color name="ios_pill_stroke">#E5E5EA</color>
+    <color name="ios_pill_active_bg">#EBF3FF</color>
+    <color name="ios_pill_active_stroke">#B3D4FF</color>
 
-    <color name="bg_dark">#121416</color>
-    <color name="surface_dark">#1A1C1E</color>
-    <color name="surface_dark_high">#282A2C</color>
-    <color name="on_surface_dark">#E2E2E5</color>
-    <color name="on_surface_variant_dark">#B9CACB</color>
-    <color name="outline_dark">#3B494B</color>
+    <!-- Legacy Alias Compatibility Mapping (Pointed to iOS Semantic Tokens) -->
+    <color name="obsidian_bg">@color/ios_system_bg</color>
+    <color name="obsidian_surface_dim">@color/ios_system_bg</color>
+    <color name="obsidian_surface_bright">@color/ios_card_bg</color>
+    <color name="obsidian_container_lowest">@color/ios_system_bg</color>
+    <color name="obsidian_container_low">@color/ios_card_bg</color>
+    <color name="obsidian_container">@color/ios_card_bg</color>
+    <color name="obsidian_container_high">@color/ios_card_secondary</color>
+    <color name="obsidian_container_highest">@color/ios_separator</color>
 
-    <color name="state_idle">#849495</color>
-    <color name="state_connecting">#00F0FF</color>
-    <color name="state_ready">#2ECC71</color>
-    <color name="state_failed">#FFB4AB</color>
-    <color name="cyber_neon_red">#FF5252</color>
+    <color name="cyber_teal">@color/ios_blue</color>
+    <color name="cyber_teal_dim">@color/ios_indigo</color>
+    <color name="cyber_teal_light">@color/ios_pill_active_bg</color>
+    <color name="on_cyber_teal">#FFFFFF</color>
+    <color name="on_cyber_teal_container">@color/ios_blue</color>
+
+    <color name="on_surface_obsidian">@color/ios_label</color>
+    <color name="on_surface_variant_obsidian">@color/ios_secondary_label</color>
+    <color name="outline_obsidian">@color/ios_secondary_label</color>
+    <color name="outline_variant_obsidian">@color/ios_separator</color>
+    <color name="obsidian_border">@color/ios_separator</color>
+    <color name="obsidian_card">@color/ios_card_bg</color>
+
+    <color name="brand">@color/ios_blue</color>
+    <color name="brand_dark">@color/ios_indigo</color>
+    <color name="brand_light">@color/ios_pill_active_bg</color>
+    <color name="brand_container">@color/ios_card_bg</color>
+    <color name="on_brand_container">@color/ios_label</color>
+
+    <color name="bg_dark">@color/ios_system_bg</color>
+    <color name="surface_dark">@color/ios_card_bg</color>
+    <color name="surface_dark_high">@color/ios_card_secondary</color>
+    <color name="on_surface_dark">@color/ios_label</color>
+    <color name="on_surface_variant_dark">@color/ios_secondary_label</color>
+    <color name="outline_dark">@color/ios_separator</color>
+
+    <color name="state_idle">@color/ios_secondary_label</color>
+    <color name="state_connecting">@color/ios_blue</color>
+    <color name="state_ready">@color/ios_green</color>
+    <color name="state_failed">@color/ios_red</color>
+    <color name="cyber_neon_red">@color/ios_red</color>
 </resources>

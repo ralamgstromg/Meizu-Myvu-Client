@@ -132,6 +132,7 @@ object LockScreenHelper {
      */
     fun lockDevice(context: Context): Boolean {
         cancelScheduledReLock()
+        com.myvu.client.app.feature.TouchGestureManager.releaseBluetoothSco(context)
         val accessibilityService = com.myvu.client.service.AutoSendAccessibilityService.activeInstance
         if (accessibilityService != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val locked = accessibilityService.performGlobalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)

@@ -8,17 +8,20 @@ import com.myvu.client.data.ChatMessage
 import com.myvu.client.data.ChatSession
 import com.myvu.client.data.UserProfile
 import com.myvu.client.data.ChatDao
+import com.myvu.client.data.BluetoothDeviceEntity
+import com.myvu.client.data.BluetoothDeviceDao
 
 /**
- * Room database that holds chat history and user profile.
+ * Room database that holds chat history, user profile, and registered Bluetooth devices.
  */
 @Database(
-    entities = [ChatMessage::class, ChatSession::class, UserProfile::class],
-    version = 1,
+    entities = [ChatMessage::class, ChatSession::class, UserProfile::class, BluetoothDeviceEntity::class],
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun chatDao(): ChatDao
+    abstract fun bluetoothDeviceDao(): BluetoothDeviceDao
 
     companion object {
         @Volatile

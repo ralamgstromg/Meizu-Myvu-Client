@@ -3,23 +3,24 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/obsidian_bg">
+    android:background="@color/ios_system_bg">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- Top Bar -->
+        <!-- Top Bar estilo iOS -->
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarNotes"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/obsidian_bg"
+            android:minHeight="56dp"
+            android:background="@color/ios_system_bg"
             app:navigationIcon="@drawable/ic_menu_hamburger"
-            app:navigationIconTint="@color/cyber_teal"
+            app:navigationIconTint="@color/ios_blue"
             app:title="Notas y Recordatorios"
-            app:titleTextColor="@color/on_surface_obsidian">
+            app:titleTextColor="@color/ios_label">
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -36,14 +37,23 @@
                     android:layout_height="40dp"
                     android:contentDescription="Navigation Menu"
                     app:icon="@drawable/ic_menu_hamburger"
-                    app:iconTint="@color/cyber_teal" />
+                    app:iconTint="@color/ios_blue" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnNotesDevices"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:contentDescription="Dispositivos Bluetooth"
+                    app:icon="@drawable/ic_bluetooth_device"
+                    app:iconTint="@color/ios_blue" />
 
                 <LinearLayout
                     android:id="@+id/layNotesGlassesBattery"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_chip_badge"
+                    android:background="@drawable/bg_ios_pill"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingHorizontal="8dp"
@@ -54,7 +64,7 @@
                         android:layout_height="16dp"
                         android:contentDescription="Glasses Battery Status"
                         android:src="@drawable/ic_battery"
-                        app:tint="@color/cyber_teal" />
+                        app:tint="@color/ios_green" />
 
                     <TextView
                         android:id="@+id/txtNotesGlassesBattery"
@@ -62,12 +72,17 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
                         android:text="--"
-                        android:textColor="@color/on_surface_obsidian"
+                        android:textColor="@color/ios_label"
                         android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.appbar.MaterialToolbar>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/ios_separator" />
 
         <!-- Search Bar -->
         <com.google.android.material.textfield.TextInputLayout
@@ -79,12 +94,12 @@
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
             android:hint="Buscar por título, contenido o #tags..."
-            app:boxCornerRadiusBottomEnd="16dp"
-            app:boxCornerRadiusBottomStart="16dp"
-            app:boxCornerRadiusTopEnd="16dp"
-            app:boxCornerRadiusTopStart="16dp"
+            app:boxCornerRadiusBottomEnd="14dp"
+            app:boxCornerRadiusBottomStart="14dp"
+            app:boxCornerRadiusTopEnd="14dp"
+            app:boxCornerRadiusTopStart="14dp"
             app:startIconDrawable="@drawable/ic_search"
-            app:startIconTint="@color/cyber_teal">
+            app:startIconTint="@color/ios_secondary_label">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/txtSearchNotes"
@@ -93,7 +108,7 @@
                 android:importantForAutofill="no"
                 android:inputType="text"
                 android:maxLines="1"
-                android:textColor="@color/on_surface_obsidian" />
+                android:textColor="@color/ios_label" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Filter Chips -->
@@ -109,6 +124,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 app:selectionRequired="true"
+                app:singleLine="true"
                 app:singleSelection="true">
 
                 <com.google.android.material.chip.Chip
@@ -118,8 +134,7 @@
                     android:layout_height="wrap_content"
                     android:checked="true"
                     android:text="Todos"
-                    android:textColor="@color/on_surface_obsidian"
-                    app:chipBackgroundColor="@color/obsidian_container" />
+                    android:textSize="12sp" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipFilterText"
@@ -127,8 +142,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Texto"
-                    android:textColor="@color/on_surface_obsidian"
-                    app:chipBackgroundColor="@color/obsidian_container" />
+                    android:textSize="12sp" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipFilterVoice"
@@ -136,8 +150,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Voz"
-                    android:textColor="@color/on_surface_obsidian"
-                    app:chipBackgroundColor="@color/obsidian_container" />
+                    android:textSize="12sp" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipFilterReminders"
@@ -145,8 +158,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Recordatorios"
-                    android:textColor="@color/on_surface_obsidian"
-                    app:chipBackgroundColor="@color/obsidian_container" />
+                    android:textSize="12sp" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipFilterPending"
@@ -154,25 +166,24 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Pendientes"
-                    android:textColor="@color/on_surface_obsidian"
-                    app:chipBackgroundColor="@color/obsidian_container" />
+                    android:textSize="12sp" />
 
             </com.google.android.material.chip.ChipGroup>
         </HorizontalScrollView>
 
-        <!-- Tabs -->
+        <!-- Tabs estilo iOS Segmented Control -->
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabsNotes"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="@color/obsidian_bg"
+            android:layout_height="44dp"
+            android:background="@color/ios_system_bg"
             app:tabGravity="fill"
-            app:tabIndicatorColor="@color/cyber_teal"
-            app:tabIndicatorHeight="3dp"
+            app:tabIndicatorColor="@color/ios_blue"
+            app:tabIndicatorHeight="2.5dp"
             app:tabMode="fixed"
-            app:tabRippleColor="#2000F0FF"
-            app:tabSelectedTextColor="@color/cyber_teal"
-            app:tabTextColor="@color/on_surface_variant_obsidian">
+            app:tabRippleColor="#1A007AFF"
+            app:tabSelectedTextColor="@color/ios_blue"
+            app:tabTextColor="@color/ios_secondary_label">
 
             <com.google.android.material.tabs.TabItem
                 android:layout_width="wrap_content"
@@ -184,6 +195,11 @@
                 android:layout_height="wrap_content"
                 android:text="Recordatorios" />
         </com.google.android.material.tabs.TabLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/ios_separator" />
 
         <!-- Content Container -->
         <FrameLayout
@@ -220,7 +236,7 @@
                             android:layout_height="wrap_content"
                             android:importantForAutofill="no"
                             android:maxLines="3"
-                            android:textColor="@color/on_surface_obsidian" />
+                            android:textColor="@color/ios_label" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.button.MaterialButton
@@ -229,10 +245,10 @@
                         android:layout_height="48dp"
                         android:layout_marginStart="8dp"
                         android:text="Guardar"
-                        android:textColor="@color/on_cyber_teal"
+                        android:textColor="#FFFFFF"
                         android:textStyle="bold"
-                        app:backgroundTint="@color/cyber_teal"
-                        app:cornerRadius="16dp" />
+                        app:backgroundTint="@color/ios_blue"
+                        app:cornerRadius="14dp" />
                 </LinearLayout>
 
                 <androidx.recyclerview.widget.RecyclerView
@@ -272,7 +288,7 @@
                             android:layout_height="wrap_content"
                             android:importantForAutofill="no"
                             android:maxLines="3"
-                            android:textColor="@color/on_surface_obsidian" />
+                            android:textColor="@color/ios_label" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <LinearLayout
@@ -288,9 +304,9 @@
                             android:layout_height="48dp"
                             android:layout_weight="1"
                             android:text="Seleccionar Hora"
-                            android:textColor="@color/cyber_teal"
-                            app:cornerRadius="16dp"
-                            app:strokeColor="@color/outline_variant_obsidian" />
+                            android:textColor="@color/ios_blue"
+                            app:cornerRadius="14dp"
+                            app:strokeColor="@color/ios_separator" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnAddReminder"
@@ -298,10 +314,10 @@
                             android:layout_height="48dp"
                             android:layout_marginStart="8dp"
                             android:text="Programar"
-                            android:textColor="@color/on_cyber_teal"
+                            android:textColor="#FFFFFF"
                             android:textStyle="bold"
-                            app:backgroundTint="@color/cyber_teal"
-                            app:cornerRadius="16dp" />
+                            app:backgroundTint="@color/ios_blue"
+                            app:cornerRadius="14dp" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -317,8 +333,9 @@
         </FrameLayout>
     </LinearLayout>
 
-    <!-- Speed Dial FAB Cluster -->
+    <!-- Speed Dial FAB Cluster estilo Apple -->
     <LinearLayout
+        android:id="@+id/fabCluster"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
@@ -343,12 +360,12 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 android:text="Nuevo Texto"
-                android:textColor="@color/on_surface_obsidian"
-                app:backgroundTint="@color/obsidian_container"
-                app:cornerRadius="24dp"
+                android:textColor="@color/ios_label"
+                app:backgroundTint="@color/ios_card_bg"
+                app:cornerRadius="20dp"
                 app:icon="@drawable/ic_note"
-                app:iconTint="@color/cyber_teal"
-                app:strokeColor="@color/cyber_teal"
+                app:iconTint="@color/ios_blue"
+                app:strokeColor="@color/ios_separator"
                 app:strokeWidth="1dp" />
 
             <!-- Sub-button 2: New Voice Note -->
@@ -358,12 +375,12 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 android:text="Grabar Voz"
-                android:textColor="@color/on_surface_obsidian"
-                app:backgroundTint="@color/obsidian_container"
-                app:cornerRadius="24dp"
+                android:textColor="@color/ios_label"
+                app:backgroundTint="@color/ios_card_bg"
+                app:cornerRadius="20dp"
                 app:icon="@drawable/ic_mic"
-                app:iconTint="@color/cyber_teal"
-                app:strokeColor="@color/cyber_teal"
+                app:iconTint="@color/ios_blue"
+                app:strokeColor="@color/ios_separator"
                 app:strokeWidth="1dp" />
 
             <!-- Sub-button 3: New Reminder -->
@@ -372,12 +389,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Añadir Recordatorio"
-                android:textColor="@color/on_surface_obsidian"
-                app:backgroundTint="@color/obsidian_container"
-                app:cornerRadius="24dp"
+                android:textColor="@color/ios_label"
+                app:backgroundTint="@color/ios_card_bg"
+                app:cornerRadius="20dp"
                 app:icon="@drawable/ic_add_alarm"
-                app:iconTint="@color/cyber_teal"
-                app:strokeColor="@color/cyber_teal"
+                app:iconTint="@color/ios_blue"
+                app:strokeColor="@color/ios_separator"
                 app:strokeWidth="1dp" />
 
         </LinearLayout>
@@ -388,9 +405,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:contentDescription="Menu acciones"
-            app:backgroundTint="@color/cyber_teal"
+            app:backgroundTint="@color/ios_blue"
             app:srcCompat="@drawable/ic_add"
-            app:tint="@color/on_cyber_teal" />
+            app:tint="#FFFFFF" />
 
     </LinearLayout>
 

@@ -31,6 +31,8 @@ object TouchGestureManager {
     const val ACTION_TOGGLE_MIRROR: String = "toggle_mirror"
     const val ACTION_OPEN_TELEPROMPTER: String = "open_teleprompter"
     const val ACTION_ZEN_MODE: String = "zen_mode"
+    const val ACTION_HUD_DASHBOARD: String = "hud_dashboard"
+    const val ACTION_VOICE_AGENT_AURA: String = "voice_agent_aura"
 
     fun interface ActionExecutor {
         fun executeAiAssistant(code: Int)
@@ -45,6 +47,8 @@ object TouchGestureManager {
         fun executeMediaPrevious() { }
         fun executeOpenTeleprompter() { }
         fun executeZenMode() { }
+        fun executeHudDashboard() { executeNone() }
+        fun executeVoiceAgentAura() { executeAiAssistant(3) }
         fun executeNone() { }
     }
 
@@ -53,6 +57,17 @@ object TouchGestureManager {
     private const val DOUBLE_TAP_MAX_INTERVAL_MS = 1100L
     private const val TRIPLE_TAP_MAX_INTERVAL_MS = 1350L
     private const val GEMINI_SCO_CAPTURE_WINDOW_MS = 8500L
+    private const val GEMINI_LIVE_MAX_SCO_DURATION_MS = 5 * 60 * 1000L // 5 minutes max safety window
+    const val PHYSICAL_BUTTON_SUPPRESSION_MS = 1200L
+
+    @JvmStatic
+    var lastPhysicalButtonTime: Long = 0L
+        internal set
+
+    @JvmStatic
+    var lastPhysicalKeyEventTime: Long = 0L
+        internal set
+
     private var lastTriggerTime = 0L
     private var lastTapTime = 0L
     private var lastTapEventTime = -1L
@@ -65,7 +80,20 @@ object TouchGestureManager {
     private var scoReleaseRunnable: Runnable? = null
 
     @JvmStatic
+    fun notifyPhysicalButtonPressed(context: Context?) {
+        val now = timeProvider()
+        lastPhysicalButtonTime = now
+        lastTriggerTime = now
+        accumulatedTapCount = 0
+        lastTapTime = 0L
+        lastTapEventTime = -1L
+        LogBus.log("TouchGestureManager: Physical button press registered. Suppressing temple touch gestures for ${PHYSICAL_BUTTON_SUPPRESSION_MS}ms")
+    }
+
+    @JvmStatic
     fun releaseBluetoothSco(context: Context) {
+        audioHandler.removeCallbacksAndMessages(null)
+        scoReleaseRunnable = null
         try {
             val am = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -94,6 +122,8 @@ object TouchGestureManager {
         lastTriggerTime = 0L
         lastTapTime = 0L
         lastTapEventTime = -1L
+        lastPhysicalButtonTime = 0L
+        lastPhysicalKeyEventTime = 0L
         accumulatedTapCount = 0
         timeProvider = { System.currentTimeMillis() }
     }
@@ -108,6 +138,7 @@ object TouchGestureManager {
                 GlassGesture.SWIPE_FORWARD -> GestureAction.MEDIA_NEXT.id
                 GlassGesture.SWIPE_BACKWARD -> GestureAction.MEDIA_PREV.id
                 GlassGesture.LONG_PRESS -> GestureAction.LAUNCH_LOCAL_AI.id
+                GlassGesture.ACTION_BUTTON -> GestureAction.HUD_DASHBOARD.id
                 GlassGesture.UNKNOWN -> GestureAction.NONE.id
             }
         }
@@ -118,6 +149,7 @@ object TouchGestureManager {
             GlassGesture.SWIPE_FORWARD -> Prefs.touchpadSwipeForwardAction(context)
             GlassGesture.SWIPE_BACKWARD -> Prefs.touchpadSwipeBackwardAction(context)
             GlassGesture.LONG_PRESS -> Prefs.touchpadLongPressAction(context)
+            GlassGesture.ACTION_BUTTON -> GestureAction.HUD_DASHBOARD.id
             GlassGesture.UNKNOWN -> GestureAction.NONE.id
         }
     }
@@ -140,6 +172,40 @@ object TouchGestureManager {
         if (executor == null || gesture == GlassGesture.UNKNOWN) return
 
         val now = timeProvider()
+
+        val isPhysicalButton = gesture == GlassGesture.ACTION_BUTTON || rawCode == 230 || rawCode == 231 || rawCode == 202
+
+        // 1. If physical button was recently pressed, suppress concurrent temple gestures
+        if (!isPhysicalButton && lastPhysicalButtonTime > 0L && (now - lastPhysicalButtonTime) in 0 until PHYSICAL_BUTTON_SUPPRESSION_MS) {
+            LogBus.log("Touchpad gesture ignored ($gesture, code=$rawCode) -- suppressed by recent physical button press (${now - lastPhysicalButtonTime}ms ago)")
+            return
+        }
+
+        // 2. Physical Action Button direct handling (codes 202, 230, 231, or ACTION_BUTTON)
+        if (isPhysicalButton) {
+            accumulatedTapCount = 0
+            lastTapTime = 0L
+            lastTapEventTime = -1L
+            lastPhysicalButtonTime = now
+            lastPhysicalKeyEventTime = now
+            lastTriggerTime = now
+
+            if (rawCode == 230 || rawCode == 202 || (gesture == GlassGesture.ACTION_BUTTON && rawCode != 231)) {
+                LogBus.log("Physical action button short press (code=$rawCode) -> HUD Dashboard")
+                executor.executeHudDashboard()
+            } else {
+                // rawCode 231 or Action Button Long Press
+                LogBus.log("Physical action button long press (code=$rawCode) -> executing action button mapping")
+                val actionBtnMapping = if (context != null) Prefs.glassesActionButtonAction(context) else "VOICE_AI_FIXED"
+                when (actionBtnMapping) {
+                    "LAUNCH_GEMINI" -> executor.executeGeminiAssistant()
+                    "LAUNCH_GEMINI_LIVE" -> executor.executeGeminiLive()
+                    "LAUNCH_PHONE_ASSISTANT" -> executor.executePhoneAssistant()
+                    else -> executor.executeVoiceAgentAura()
+                }
+            }
+            return
+        }
 
         // Software double-tap and triple-tap detection:
         // Flyme XR glasses frequently send consecutive TAP events (code 210 / 200)
@@ -196,10 +262,14 @@ object TouchGestureManager {
         val rawActionId = getRawActionIdForGesture(context, gesture)
         val action = GestureAction.fromId(rawActionId)
 
-        // If action is NONE, do not trigger debounce so legitimate subsequent gestures are not swallowed
-        if (action == GestureAction.NONE) {
-            LogBus.log("Touchpad gesture received ($gesture, code=$rawCode) -> Action: none (NONE)")
-            executor.executeNone()
+        // If action is NONE or HUD_DASHBOARD, do not trigger debounce so legitimate subsequent gestures are not swallowed
+        if (action == GestureAction.NONE || action == GestureAction.HUD_DASHBOARD) {
+            LogBus.log("Touchpad gesture received ($gesture, code=$rawCode) -> Action: ${action.id}")
+            if (action == GestureAction.HUD_DASHBOARD) {
+                executor.executeHudDashboard()
+            } else {
+                executor.executeNone()
+            }
             return
         }
 
@@ -236,6 +306,8 @@ object TouchGestureManager {
 
         when (action) {
             GestureAction.NONE -> executor.executeNone()
+            GestureAction.HUD_DASHBOARD -> executor.executeHudDashboard()
+            GestureAction.VOICE_AGENT_AURA -> executor.executeVoiceAgentAura()
             GestureAction.LAUNCH_GEMINI -> executor.executeGeminiAssistant()
             GestureAction.LAUNCH_GEMINI_LIVE -> executor.executeGeminiLive()
             GestureAction.LAUNCH_PHONE_ASSISTANT -> executor.executePhoneAssistant()
@@ -338,7 +410,13 @@ object TouchGestureManager {
                     scoReleaseRunnable = release
                     audioHandler.postDelayed(release, GEMINI_SCO_CAPTURE_WINDOW_MS)
                 } else {
-                    LogBus.log("Gemini Live active: Bluetooth SCO communication channel kept open continuously for conversation")
+                    LogBus.log("Gemini Live active: Bluetooth SCO communication channel active (safety watchdog 5m)")
+                    val safetyRelease = Runnable {
+                        LogBus.log("Gemini Live: Safety timeout reached (5m); releasing Bluetooth SCO channel to preserve battery")
+                        releaseBluetoothSco(appContext)
+                    }
+                    scoReleaseRunnable = safetyRelease
+                    audioHandler.postDelayed(safetyRelease, GEMINI_LIVE_MAX_SCO_DURATION_MS)
                 }
             } catch (e: Exception) {
                 LogBus.warn("Could not route Bluetooth SCO for Gemini: ${e.message}")

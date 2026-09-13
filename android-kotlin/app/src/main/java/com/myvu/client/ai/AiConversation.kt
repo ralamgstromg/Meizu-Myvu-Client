@@ -118,6 +118,19 @@ class AiConversation(
         LogBus.log("AI: utterance hit the length cap")
         endUtterance()
     }
+    private val silenceWatchdog = object : Runnable {
+        override fun run() {
+            if (!active || !decoding) return
+            val now = System.currentTimeMillis()
+            if (speechStarted && lastSpeechAt > 0 && (now - lastSpeechAt > SILENCE_HOLD_MS)) {
+                LogBus.log("AI: silence detected post-utterance ($SILENCE_HOLD_MS ms)")
+                decoding = false
+                endUtterance(forceGlassesAudio = true)
+                return
+            }
+            main.postDelayed(this, 200L)
+        }
+    }
 
     fun isActive(): Boolean = active
 
@@ -206,7 +219,13 @@ class AiConversation(
             )
         }
 
-        if (level >= speechThreshold) {
+        val dynamicSpeechThreshold = if (speechStarted && peakEnergy > SPEECH_ENERGY * 2.0) {
+            Math.max(speechThreshold, peakEnergy * 0.22)
+        } else {
+            speechThreshold
+        }
+
+        if (level >= dynamicSpeechThreshold) {
             lastSpeechAt = System.currentTimeMillis()
             if (!speechStarted) {
                 speechStarted = true
@@ -234,7 +253,7 @@ class AiConversation(
         stopRequested = false
         textMode = false
         turnCount = 0
-        send(AiProtocol.assistantConfig(Prefs.voiceWakeupEnabled(context), Prefs.continuousDialogueEnabled(context)))
+        send(AiProtocol.assistantConfig(Prefs.voiceWakeupEnabled(context), com.myvu.client.service.BluetoothDeviceManager.getInstance(context).isActiveListeningEnabledBlocking()))
         prepareTts()
         startListening(if (triggerCode == AiProtocol.CODE_START_VR_REQ) "button" else "wake word")
     }
@@ -297,6 +316,8 @@ class AiConversation(
         main.postDelayed(silenceTimeout, NO_SPEECH_TIMEOUT_MS)
         main.removeCallbacks(utteranceCap)
         main.postDelayed(utteranceCap, MAX_UTTERANCE_MS)
+        main.removeCallbacks(silenceWatchdog)
+        main.postDelayed(silenceWatchdog, 200L)
     }
 
     private fun endUtterance(forceGlassesAudio: Boolean = false) {
@@ -311,6 +332,7 @@ class AiConversation(
         if (!active || !mic.isCapturing()) return
         main.removeCallbacks(silenceTimeout)
         main.removeCallbacks(utteranceCap)
+        main.removeCallbacks(silenceWatchdog)
         mic.stop()
         decoding = false
 
@@ -742,7 +764,7 @@ class AiConversation(
             stopRequested = false
             textMode = true
             turnCount = 0
-            send(AiProtocol.assistantConfig(Prefs.voiceWakeupEnabled(context), Prefs.continuousDialogueEnabled(context)))
+            send(AiProtocol.assistantConfig(Prefs.voiceWakeupEnabled(context), com.myvu.client.service.BluetoothDeviceManager.getInstance(context).isActiveListeningEnabledBlocking()))
             prepareTts()
             sessionId = UUID.randomUUID().toString()
 
@@ -790,6 +812,7 @@ class AiConversation(
             try { decoder.stop() } catch (_: Exception) {}
             main.removeCallbacks(silenceTimeout)
             main.removeCallbacks(utteranceCap)
+            main.removeCallbacks(silenceWatchdog)
             send(AiProtocol.vrState(AiProtocol.VR_CLOSE))
             LogBus.trace("AI conversation ended")
         }
@@ -805,6 +828,7 @@ class AiConversation(
         try { decoder.stop() } catch (_: Exception) {}
         main.removeCallbacks(silenceTimeout)
         main.removeCallbacks(utteranceCap)
+        main.removeCallbacks(silenceWatchdog)
     }
 
     fun stop() {

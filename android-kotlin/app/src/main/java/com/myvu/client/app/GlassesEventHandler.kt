@@ -42,7 +42,30 @@ class GlassesEventHandler(
                 delegate.pageClosed()
                 return@setAiTriggerListener
             }
+
+            val ctx = this@GlassesEventHandler.context
+            if (code == 3) {
+                val elapsedSinceKey = System.currentTimeMillis() - TouchGestureManager.lastPhysicalKeyEventTime
+                if (TouchGestureManager.lastPhysicalKeyEventTime > 0L && elapsedSinceKey in 0..500L) {
+                    LogBus.log("Suppressing duplicate AI trigger (code: 3) within ${elapsedSinceKey}ms of physical button key event")
+                    return@setAiTriggerListener
+                }
+                TouchGestureManager.notifyPhysicalButtonPressed(ctx)
+            }
+
             delegate.wakeRelay()
+            val actionBtnMapping = if (ctx != null) Prefs.glassesActionButtonAction(ctx) else "VOICE_AI_FIXED"
+            if (code == 3 && actionBtnMapping == "LAUNCH_GEMINI") {
+                if (ctx != null) TouchGestureManager.launchGeminiAssistant(ctx, isLive = false)
+                return@setAiTriggerListener
+            } else if (code == 3 && actionBtnMapping == "LAUNCH_GEMINI_LIVE") {
+                if (ctx != null) TouchGestureManager.launchGeminiAssistant(ctx, isLive = true)
+                return@setAiTriggerListener
+            } else if (code == 3 && actionBtnMapping == "LAUNCH_PHONE_ASSISTANT") {
+                if (ctx != null) TouchGestureManager.launchPhoneAssistant(ctx)
+                return@setAiTriggerListener
+            }
+
             delegate.triggerAi(code)
         }
 
@@ -63,6 +86,14 @@ class GlassesEventHandler(
         return object : TouchGestureManager.ActionExecutor {
             override fun executeAiAssistant(code: Int) {
                 delegate.triggerAi(code)
+            }
+
+            override fun executeHudDashboard() {
+                // Let native HUD display
+            }
+
+            override fun executeVoiceAgentAura() {
+                delegate.triggerAi(3)
             }
 
             override fun executeGeminiAssistant() {

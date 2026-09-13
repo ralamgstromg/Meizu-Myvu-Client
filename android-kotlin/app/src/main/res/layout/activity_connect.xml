@@ -5,7 +5,7 @@
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/obsidian_bg">
+    android:background="@color/ios_system_bg">
 
     <!-- Main screen layout container -->
     <FrameLayout
@@ -36,83 +36,63 @@
                     android:layout_marginEnd="12dp"
                     android:contentDescription="Navigation Drawer"
                     app:icon="@drawable/ic_menu_hamburger"
-                    app:iconTint="@color/on_surface_obsidian" />
+                    app:iconTint="@color/ios_label" />
 
                 <LinearLayout
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
                     android:layout_height="wrap_content"
-                    android:text="MYVU"
-                    android:textColor="@color/cyber_teal"
-                    android:textSize="26sp"
-                    android:textStyle="bold"
-                    android:letterSpacing="0.08" />
+                    android:orientation="vertical">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="AR GLASSES CLIENT"
-                    android:fontFamily="monospace"
-                    android:textSize="11sp"
-                    android:letterSpacing="0.1"
-                    android:textColor="@color/on_surface_variant_obsidian" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="MYVU"
+                        android:textColor="@color/ios_blue"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.06" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="AR GLASSES CLIENT"
+                        android:fontFamily="monospace"
+                        android:textSize="11sp"
+                        android:letterSpacing="0.1"
+                        android:textColor="@color/ios_secondary_label" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOpenActivityLog"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:contentDescription="Registro de Actividad"
+                    app:icon="@drawable/ic_ios_info"
+                    app:iconTint="@color/ios_blue" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSettings"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:contentDescription="Settings"
+                    app:icon="@drawable/ic_settings"
+                    app:iconTint="@color/ios_label" />
             </LinearLayout>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSettings"
-                style="@style/Widget.Material3.Button.IconButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:contentDescription="Settings"
-                app:icon="@drawable/ic_settings"
-                app:iconTint="@color/on_surface_obsidian" />
-        </LinearLayout>
-
-        <!-- ===== Navigation Tabs ===== -->
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tabs"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="@color/obsidian_bg"
-            app:tabMode="fixed"
-            app:tabGravity="fill"
-            app:tabIndicatorColor="@color/cyber_teal"
-            app:tabIndicatorHeight="3dp"
-            app:tabSelectedTextColor="@color/cyber_teal"
-            app:tabTextColor="@color/on_surface_variant_obsidian"
-            app:tabRippleColor="#2000F0FF">
-
-            <com.google.android.material.tabs.TabItem
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Controls" />
-
-            <com.google.android.material.tabs.TabItem
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Log" />
-        </com.google.android.material.tabs.TabLayout>
-
-        <FrameLayout
+        <!-- ============================ CONTROLS PAGE ============================ -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/pageControls"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            android:fillViewport="true">
 
-            <!-- ============================ CONTROLS PAGE ============================ -->
-            <androidx.core.widget.NestedScrollView
-                android:id="@+id/pageControls"
+            <LinearLayout
+                android:id="@+id/content"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:fillViewport="true">
-
-                <LinearLayout
-                    android:id="@+id/content"
-                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:paddingHorizontal="16dp"
@@ -603,61 +583,6 @@
                     </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
             </androidx.core.widget.NestedScrollView>
-
-            <!-- ============================ LOG PAGE ============================ -->
-            <LinearLayout
-                android:id="@+id/pageLog"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingTop="12dp"
-                android:paddingBottom="16dp"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        style="@style/CardTitle.Myvu"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:text="Activity log" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnShareLog"
-                        style="@style/Widget.Material3.Button.TextButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/cyber_teal"
-                        android:text="Share" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnClearLog"
-                        style="@style/Widget.Material3.Button.TextButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/cyber_teal"
-                        android:text="Clear" />
-                </LinearLayout>
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvLog"
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:layout_marginTop="8dp"
-                    android:background="@color/obsidian_container_low"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="8dp"
-                    android:clipToPadding="false"
-                    android:scrollbars="vertical" />
-            </LinearLayout>
-        </FrameLayout>
     </LinearLayout>
 
     <!-- ============================ PAIRING OVERLAY ============================ -->

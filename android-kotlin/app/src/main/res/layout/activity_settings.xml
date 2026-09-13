@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/obsidian_bg"
+    android:background="@color/ios_system_bg"
     android:fitsSystemWindows="true">
 
     <!-- ===== Top bar ===== -->
@@ -22,16 +22,16 @@
             android:layout_height="48dp"
             android:contentDescription="Navigation Menu"
             app:icon="@drawable/ic_menu_hamburger"
-            app:iconTint="@color/cyber_teal" />
+            app:iconTint="@color/ios_blue" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSettingsBack"
             style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/cyber_teal"
+            android:textColor="@color/ios_blue"
             app:cornerRadius="16dp"
-            android:text="‹ Back" />
+            android:text="‹ Volver" />
 
         <TextView
             style="@style/CardTitle.Myvu"
@@ -39,12 +39,17 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:textSize="20sp"
-            android:text="Settings" />
+            android:textSize="18sp"
+            android:text="Ajustes" />
 
-        <Space
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSettingsDevices"
+            style="@style/Widget.Material3.Button.IconButton"
             android:layout_width="48dp"
-            android:layout_height="1dp" />
+            android:layout_height="48dp"
+            android:contentDescription="Dispositivos Bluetooth"
+            app:icon="@drawable/ic_bluetooth_device"
+            app:iconTint="@color/ios_blue" />
     </LinearLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -59,6 +64,208 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
+
+            <!-- ===== Control de Servicios y Batería ===== -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Card.Myvu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/CardTitle.Myvu"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Servicios en Segundo Plano &amp; Energía" />
+
+                    <TextView
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Desactiva los procesos en segundo plano y reintentos automáticos para evitar consumo de batería cuando no uses tus dispositivos." />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="12dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Servicios y Reconexión Automática"
+                                android:textColor="@color/on_surface_obsidian"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Mantiene la escucha y conexión con gafas/auriculares."
+                                android:textColor="@color/on_surface_variant_obsidian"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/swSettingsMasterService"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSettingsTotalDisconnect"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:layout_marginTop="10dp"
+                        android:text="Desconexión Total (Inactivar Todo)"
+                        android:textColor="@color/ios_red"
+                        app:cornerRadius="12dp"
+                        app:icon="@android:drawable/ic_lock_power_off"
+                        app:iconTint="@color/ios_red"
+                        app:strokeColor="@color/obsidian_border" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== Apariencia y Tema (iOS Cupertino) ===== -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Card.Myvu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/CardTitle.Myvu"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Apariencia (iOS Cupertino)" />
+
+                    <TextView
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Selecciona el estilo visual. La experiencia se adapta automáticamente a todas las pantallas." />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnThemeSystem"
+                            style="@style/Button.Myvu.Outlined"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="4dp"
+                            android:textSize="11sp"
+                            android:text="Automático" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnThemeLight"
+                            style="@style/Button.Myvu.Outlined"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="4dp"
+                            android:textSize="11sp"
+                            android:text="☀️ Claro" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnThemeDark"
+                            style="@style/Button.Myvu.Outlined"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:textSize="11sp"
+                            android:text="🌙 Oscuro" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== Dispositivos & Gestos Específicos (iOS Grouped Card) ===== -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Card.Myvu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/CardTitle.Myvu"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Dispositivos &amp; Gestos Específicos" />
+
+                    <TextView
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Personaliza las capacidades de hardware por cada dispositivo: touch de patas AR, botón de acción, toques en auriculares y síntesis de voz." />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="12dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnOpenGlassesSettings"
+                            style="@style/Button.Myvu.Outlined"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="start|center_vertical"
+                            app:icon="@drawable/ic_glasses"
+                            app:iconTint="@color/cyber_teal"
+                            android:text="Gafas AR (Meizu MYVU) — Patas &amp; HUD" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnOpenHeadphoneSettings"
+                            style="@style/Button.Myvu.Outlined"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:gravity="start|center_vertical"
+                            app:icon="@drawable/ic_headphones"
+                            app:iconTint="@color/cyber_teal"
+                            android:text="Auriculares Bluetooth — 1, 2, 3 Toques" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnOpenDeviceManager"
+                            style="@style/Button.Myvu.Outlined"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:gravity="start|center_vertical"
+                            app:icon="@drawable/ic_bluetooth_device"
+                            app:iconTint="@color/cyber_teal"
+                            android:text="Gestionar y Vincular Dispositivos" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- ===== AI provider ===== -->
             <com.google.android.material.card.MaterialCardView
@@ -223,130 +430,6 @@
                         android:textSize="13sp"
                         android:textColor="@color/on_surface_obsidian"
                         android:text="Permitir certificados SSL autofirmados (HTTPS)" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- ===== AI response mode ===== -->
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Card.Myvu"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/CardTitle.Myvu"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="AI response" />
-
-                    <TextView
-                        style="@style/Label.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Choose whether AI answers use voice, glasses display, or both." />
-
-                    <com.google.android.material.button.MaterialButtonToggleGroup
-                        android:id="@+id/btnAiResponseModeGroup"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        app:singleSelection="true"
-                        app:selectionRequired="true">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnAiResponseVoice"
-                            style="@style/Button.Myvu.Outlined"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:textSize="11sp"
-                            android:text="Solo voz" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnAiResponseVisual"
-                            style="@style/Button.Myvu.Outlined"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:textSize="11sp"
-                            android:text="Solo pantalla" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnAiResponseBoth"
-                            style="@style/Button.Myvu.Outlined"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:textSize="11sp"
-                            android:text="Voz y pantalla" />
-                    </com.google.android.material.button.MaterialButtonToggleGroup>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- ===== Voice Listening & Battery Optimization ===== -->
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Card.Myvu"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/CardTitle.Myvu"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Escucha y Ahorro de Batería" />
-
-                    <TextView
-                        style="@style/Label.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Controla los modos de escucha del asistente en las gafas. Mantenerlos desactivados maximiza la duración de batería." />
-
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/swContinuousDialogue"
-                        style="@style/Switch.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:textSize="13sp"
-                        android:textColor="@color/on_surface_obsidian"
-                        android:text="Escucha activa continua" />
-
-                    <TextView
-                        style="@style/Label.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:textSize="11sp"
-                        android:text="Mantiene el micrófono abierto tras responder para diálogo continuado sin tocar la patilla. Aumenta el consumo de batería." />
-
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/swVoiceWakeup"
-                        style="@style/Switch.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:textSize="13sp"
-                        android:textColor="@color/on_surface_obsidian"
-                        android:text="Activación por voz (Wake word)" />
-
-                    <TextView
-                        style="@style/Label.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:textSize="11sp"
-                        android:text="Despierta al asistente por comando de voz en segundo plano. Aumenta el consumo de batería." />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -706,104 +789,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- ===== Glasses Settings (Brightness & Volume) ===== -->
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Card.Myvu"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/CardTitle.Myvu"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Glasses display &amp; audio" />
-
-                    <TextView
-                        style="@style/Label.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Default levels applied when connected. Changes take effect immediately." />
-
-                    <TextView
-                        android:id="@+id/lblBrightness"
-                        style="@style/Label.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="Display brightness: 3 (Default: 3)" />
-
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/sliderBrightness"
-                        style="@style/Slider.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:valueFrom="1"
-                        android:valueTo="5"
-                        android:stepSize="1"
-                        android:value="3" />
-
-                    <TextView
-                        android:id="@+id/lblVolume"
-                        style="@style/Label.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Glasses volume: 11 (Default: 11)" />
-
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/sliderVolume"
-                        style="@style/Slider.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:valueFrom="0"
-                        android:valueTo="15"
-                        android:stepSize="1"
-                        android:value="11" />
-
-                    <TextView
-                        android:id="@+id/lblStandbyPos"
-                        style="@style/Label.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Widget FOV position: 0 (Default: 0)" />
-
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/sliderStandbyPos"
-                        style="@style/Slider.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:valueFrom="0"
-                        android:valueTo="3"
-                        android:stepSize="1"
-                        android:value="0" />
-
-                    <TextView
-                        android:id="@+id/lblScreenOff"
-                        style="@style/Label.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Screen active time: 10s (Default: 10s)" />
-
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/sliderScreenOff"
-                        style="@style/Slider.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:valueFrom="3"
-                        android:valueTo="60"
-                        android:stepSize="1"
-                        android:value="10" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
             <!-- ===== Notification mirroring ===== -->
             <com.google.android.material.card.MaterialCardView
                 style="@style/Card.Myvu"
@@ -841,24 +826,6 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:text="Choose which apps may send notifications to the glasses. Nothing is mirrored until you pick some — notifications can carry one-time codes and private messages." />
-
-                    <TextView
-                        android:id="@+id/lblNotifDuration"
-                        style="@style/Label.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="Notification display time: 5s (Default: 5s)" />
-
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/sliderNotifDuration"
-                        style="@style/Slider.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:valueFrom="1"
-                        android:valueTo="30"
-                        android:stepSize="1"
-                        android:value="5" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnPickApps"
@@ -984,10 +951,23 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:text="Enable or completely disable application logging and on-screen log buffer." />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnOpenActivityLog"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        app:cornerRadius="12dp"
+                        app:strokeColor="@color/obsidian_border"
+                        android:textColor="@color/cyber_teal"
+                        app:icon="@android:drawable/ic_menu_info_details"
+                        app:iconTint="@color/cyber_teal"
+                        android:text="Abrir Registro de Actividad Unificado" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- ===== Touchpad / Button Gesture Mapping ===== -->
+            <!-- ===== Bloqueo Automático tras Acciones ===== -->
             <com.google.android.material.card.MaterialCardView
                 style="@style/Card.Myvu"
                 android:layout_width="match_parent"
@@ -1002,171 +982,14 @@
                         style="@style/CardTitle.Myvu"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Gestos de la Patilla Táctil (Touchpad)" />
+                        android:text="Bloqueo Automático tras Acciones" />
 
-                    <TextView
-                        style="@style/Label.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:layout_marginBottom="12dp"
-                        android:text="Personaliza la acción disparada por cada gesto físico sobre el sensor táctil de las gafas:" />
-
-                    <!-- 1. Toque Simple -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/layTouchpadTap"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:hint="Toque Simple (Tap)"
-                        app:boxBackgroundColor="@color/obsidian_container_high"
-                        app:boxStrokeColor="@color/input_box_stroke"
-                        app:hintTextColor="@color/cyber_teal"
-                        android:textColorHint="@color/on_surface_variant_obsidian">
-
-                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                            android:id="@+id/actTouchpadTap"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="none"
-                            android:textColor="@color/on_surface_obsidian"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <!-- 2. Doble Toque -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/layTouchpadDoubleTap"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:hint="Doble Toque (Double Tap)"
-                        app:boxBackgroundColor="@color/obsidian_container_high"
-                        app:boxStrokeColor="@color/input_box_stroke"
-                        app:hintTextColor="@color/cyber_teal"
-                        android:textColorHint="@color/on_surface_variant_obsidian">
-
-                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                            android:id="@+id/actTouchpadDoubleTap"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="none"
-                            android:textColor="@color/on_surface_obsidian"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <!-- 3. Triple Toque -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/layTouchpadTripleTap"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:hint="Triple Toque (Triple Tap)"
-                        app:boxBackgroundColor="@color/obsidian_container_high"
-                        app:boxStrokeColor="@color/input_box_stroke"
-                        app:hintTextColor="@color/cyber_teal"
-                        android:textColorHint="@color/on_surface_variant_obsidian">
-
-                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                            android:id="@+id/actTouchpadTripleTap"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="none"
-                            android:textColor="@color/on_surface_obsidian"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <!-- 4. Deslizar Adelante -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/layTouchpadSwipeForward"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:hint="Deslizar Adelante (Swipe Forward)"
-                        app:boxBackgroundColor="@color/obsidian_container_high"
-                        app:boxStrokeColor="@color/input_box_stroke"
-                        app:hintTextColor="@color/cyber_teal"
-                        android:textColorHint="@color/on_surface_variant_obsidian">
-
-                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                            android:id="@+id/actTouchpadSwipeForward"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="none"
-                            android:textColor="@color/on_surface_obsidian"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <!-- 5. Deslizar Atrás -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/layTouchpadSwipeBackward"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:hint="Deslizar Atrás (Swipe Backward)"
-                        app:boxBackgroundColor="@color/obsidian_container_high"
-                        app:boxStrokeColor="@color/input_box_stroke"
-                        app:hintTextColor="@color/cyber_teal"
-                        android:textColorHint="@color/on_surface_variant_obsidian">
-
-                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                            android:id="@+id/actTouchpadSwipeBackward"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="none"
-                            android:textColor="@color/on_surface_obsidian"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <!-- 6. Pulsación Larga -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/layTouchpadLongPress"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Pulsación Larga (Long Press)"
-                        app:boxBackgroundColor="@color/obsidian_container_high"
-                        app:boxStrokeColor="@color/input_box_stroke"
-                        app:hintTextColor="@color/cyber_teal"
-                        android:textColorHint="@color/on_surface_variant_obsidian">
-
-                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                            android:id="@+id/actTouchpadLongPress"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="none"
-                            android:textColor="@color/on_surface_obsidian"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <!-- Switch Enrutamiento SCO Gemini -->
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/swForceGeminiSco"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="Forzar micrófono SCO para Gemini"
-                        android:textColor="@color/on_surface_obsidian"
-                        android:textSize="14sp" />
-
-                    <TextView
-                        style="@style/Label.Myvu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Desactivado (Recomendado): Mantiene el enlace SPP estable sin reiniciar la conexión al usar Gemini. Actívalo solo si tu celular no reconoce la voz de las gafas." />
-
-                    <!-- Tiempo para volver a bloquear pantalla tras acciones -->
                     <TextView
                         android:id="@+id/lblScreenReLockTimeout"
                         style="@style/Label.Myvu"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
+                        android:layout_marginTop="8dp"
                         android:text="Tiempo para volver a bloquear: 60s (1 min)" />
 
                     <com.google.android.material.slider.Slider
@@ -1185,7 +1008,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="1dp"
                         android:textSize="12sp"
-                        android:text="Apaga y bloquea automáticamente la pantalla tras ejecutar acciones desde las gafas para ahorrar batería y evitar toques accidentales en el bolsillo." />
+                        android:text="Apaga y bloquea automáticamente la pantalla tras ejecutar acciones desde periféricos para ahorrar batería y evitar toques accidentales." />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

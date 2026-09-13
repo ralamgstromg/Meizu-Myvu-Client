@@ -5,10 +5,10 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
     app:cardBackgroundColor="@color/obsidian_container"
-    app:cardCornerRadius="28dp"
+    app:cardCornerRadius="16dp"
     app:cardElevation="0dp"
     app:strokeColor="@color/outline_variant_obsidian"
-    app:strokeWidth="1dp">
+    app:strokeWidth="0.5dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -28,12 +28,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_chip_badge"
-                android:fontFamily="monospace"
-                android:letterSpacing="0.05"
-                android:paddingHorizontal="8dp"
+                android:letterSpacing="0.02"
+                android:paddingHorizontal="10dp"
                 android:paddingVertical="3dp"
                 android:text="[TEXTO]"
-                android:textColor="#E7D0FF"
+                android:textColor="@color/ios_indigo"
                 android:textSize="11sp"
                 android:textStyle="bold" />
 

@@ -24,6 +24,8 @@ class TouchGestureManagerTest {
         var mediaPrevCalled = false
         var openTeleprompterCalled = false
         var zenModeCalled = false
+        var hudDashboardCalled = false
+        var voiceAgentAuraCalled = false
         var noneCalled = false
 
         override fun executeAiAssistant(code: Int) {
@@ -72,6 +74,14 @@ class TouchGestureManagerTest {
 
         override fun executeZenMode() {
             zenModeCalled = true
+        }
+
+        override fun executeHudDashboard() {
+            hudDashboardCalled = true
+        }
+
+        override fun executeVoiceAgentAura() {
+            voiceAgentAuraCalled = true
         }
 
         override fun executeNone() {
@@ -386,6 +396,60 @@ class TouchGestureManagerTest {
     fun lockScreenHelperReLockMethodsAreSafe() {
         // Must handle cancellation and locking without throwing exceptions
         com.myvu.client.core.LockScreenHelper.cancelScheduledReLock()
+    }
+
+    @Test
+    fun actionButtonCode230ExecutesHudDashboardAndDoesNotSynthesizeTap() {
+        var simulatedTime = 1000L
+        TouchGestureManager.timeProvider = { simulatedTime }
+
+        // Code 230 arrives: physical action button press
+        TouchGestureManager.handleGesture(null, GlassGesture.ACTION_BUTTON, 230, executor)
+        assertTrue(executor.hudDashboardCalled)
+        assertFalse(executor.noneCalled)
+        assertFalse(executor.geminiAssistantCalled)
+
+        // If a temple tap arrives 200ms later, it must be suppressed by physical button suppression window
+        val secondExecutor = MockActionExecutor()
+        simulatedTime = 1200L
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 210, secondExecutor)
+        assertFalse(secondExecutor.geminiAssistantCalled)
+        assertFalse(secondExecutor.noneCalled)
+    }
+
+    @Test
+    fun physicalButtonPressedSuppressesSubsequentTempleGestures() {
+        var simulatedTime = 1000L
+        TouchGestureManager.timeProvider = { simulatedTime }
+
+        // External notification of physical button pressed (e.g. from AI trigger code 3)
+        TouchGestureManager.notifyPhysicalButtonPressed(null)
+
+        // Temple tap arrives 300ms later: MUST BE SUPPRESSED!
+        simulatedTime = 1300L
+        TouchGestureManager.handleGesture(null, GlassGesture.TAP, 210, executor)
+        assertFalse(executor.geminiAssistantCalled)
+        assertFalse(executor.noneCalled)
+
+        // Temple double tap arrives 600ms later: MUST BE SUPPRESSED!
+        val secondExecutor = MockActionExecutor()
+        simulatedTime = 1600L
+        TouchGestureManager.handleGesture(null, GlassGesture.DOUBLE_TAP, 212, secondExecutor)
+        assertFalse(secondExecutor.geminiAssistantCalled)
+        assertFalse(secondExecutor.phoneAssistantCalled)
+    }
+
+    @Test
+    fun templeGesturesWorkAfterSuppressionWindowExpires() {
+        var simulatedTime = 1000L
+        TouchGestureManager.timeProvider = { simulatedTime }
+
+        TouchGestureManager.notifyPhysicalButtonPressed(null)
+
+        // Temple gesture arrives 1300ms later (> 1200ms suppression window)
+        simulatedTime = 2300L
+        TouchGestureManager.handleGesture(null, GlassGesture.DOUBLE_TAP, 212, executor)
+        assertTrue(executor.geminiAssistantCalled)
     }
 }
 

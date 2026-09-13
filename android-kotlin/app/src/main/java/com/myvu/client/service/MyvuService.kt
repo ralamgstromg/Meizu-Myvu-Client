@@ -5,7 +5,10 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.media.session.MediaSession
 import android.os.Binder
@@ -14,6 +17,7 @@ import android.os.IBinder
 import com.myvu.client.app.feature.GlassGesture
 import com.myvu.client.core.LogBus
 import com.myvu.client.core.Prefs
+import com.myvu.client.core.TextToSpeechHelper
 import com.myvu.client.ui.ConnectActivity
 
 /**
@@ -27,6 +31,19 @@ class MyvuService : Service(), ConnectionManager.Listener {
 
     private var connection: ConnectionManager? = null
     private var mediaSession: MediaSession? = null
+    private var screenOffReceiverRegistered = false
+
+    private val screenOffReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_SCREEN_OFF) {
+                LogBus.log("MyvuService -> Screen off detected: releasing Bluetooth SCO audio and stopping scans")
+                com.myvu.client.app.feature.TouchGestureManager.releaseBluetoothSco(this@MyvuService)
+                try {
+                    BluetoothDeviceManager.getInstance(this@MyvuService).stopScanning()
+                } catch (_: Exception) {}
+            }
+        }
+    }
 
     inner class LocalBinder : Binder() {
         fun getService(): MyvuService = this@MyvuService
@@ -41,15 +58,37 @@ class MyvuService : Service(), ConnectionManager.Listener {
         connection = ConnectionManager(this, this)
         active = connection
         setupMediaSession()
+        TextToSpeechHelper.init(this)
+        BluetoothDeviceManager.getInstance(this)
         AutoSendAccessibilityService.checkAndRestoreOrNotify(this)
+        try {
+            registerReceiver(screenOffReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
+            screenOffReceiverRegistered = true
+        } catch (e: Exception) {
+            LogBus.warn("MyvuService -> Failed to register screenOffReceiver: ${e.message}")
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action
 
         if (ACTION_STOP == action) {
+            LogBus.log("MyvuService -> Received ACTION_STOP: performing total disconnection and full service inactivation")
             Prefs.setAutoReconnectEnabled(this, false)
             ServiceWatchdogReceiver.cancelWatchdog(this)
+            com.myvu.client.app.feature.TouchGestureManager.releaseBluetoothSco(this)
+            try {
+                BluetoothDeviceManager.getInstance(this).stopScanning()
+                BluetoothDeviceManager.getInstance(this).markAllDevicesDisconnectedBlocking()
+            } catch (_: Exception) {}
+            try {
+                com.myvu.client.health.HealthService.getInstance(this).unregisterHardwareSensor()
+            } catch (_: Exception) {}
+            try {
+                mediaSession?.isActive = false
+                mediaSession?.release()
+            } catch (_: Throwable) {}
+            mediaSession = null
             connection?.stop()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 stopForeground(STOP_FOREGROUND_REMOVE)
@@ -199,6 +238,13 @@ class MyvuService : Service(), ConnectionManager.Listener {
                     }
 
                     LogBus.log("Bluetooth media key event received: keyCode=${event.keyCode}")
+
+                    // If glasses are not connected, route directly to HeadphoneGestureManager for Bluetooth earbuds/headphones
+                    if (connection?.state != ConnectionState.READY) {
+                        val handled = HeadphoneGestureManager.getInstance(this@MyvuService)
+                            .onHeadsetButtonEvent(event.keyCode, event.action)
+                        if (handled) return true
+                    }
                     when (event.keyCode) {
                         android.view.KeyEvent.KEYCODE_HEADSETHOOK,
                         android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
@@ -279,6 +325,14 @@ class MyvuService : Service(), ConnectionManager.Listener {
 
     override fun onDestroy() {
         LogBus.log("service stopping")
+        if (screenOffReceiverRegistered) {
+            try { unregisterReceiver(screenOffReceiver) } catch (_: Exception) {}
+            screenOffReceiverRegistered = false
+        }
+        com.myvu.client.app.feature.TouchGestureManager.releaseBluetoothSco(this)
+        try {
+            BluetoothDeviceManager.getInstance(this).stopScanning()
+        } catch (_: Exception) {}
         try {
             mediaSession?.isActive = false
             mediaSession?.release()

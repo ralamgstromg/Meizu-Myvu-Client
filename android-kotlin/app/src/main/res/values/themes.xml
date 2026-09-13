@@ -1,78 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Base iOS Cupertino Pro Native DayNight Theme -->
     <style name="Theme.Myvu" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/cyber_teal</item>
-        <item name="colorOnPrimary">@color/on_cyber_teal</item>
-        <item name="colorPrimaryContainer">@color/obsidian_container</item>
-        <item name="colorOnPrimaryContainer">@color/on_cyber_teal_container</item>
+        <item name="colorPrimary">@color/ios_blue</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">@color/ios_pill_active_bg</item>
+        <item name="colorOnPrimaryContainer">@color/ios_blue</item>
 
-        <item name="android:colorBackground">@color/obsidian_bg</item>
-        <item name="colorSurface">@color/obsidian_container_low</item>
-        <item name="colorOnSurface">@color/on_surface_obsidian</item>
-        <item name="colorOnSurfaceVariant">@color/on_surface_variant_obsidian</item>
-        <item name="colorOutline">@color/outline_variant_obsidian</item>
+        <item name="colorSecondary">@color/ios_indigo</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorTertiary">@color/ios_green</item>
+        <item name="colorOnTertiary">#FFFFFF</item>
 
-        <item name="android:statusBarColor">@color/obsidian_bg</item>
-        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
+        <item name="android:colorBackground">@color/ios_system_bg</item>
+        <item name="colorSurface">@color/ios_card_bg</item>
+        <item name="colorOnSurface">@color/ios_label</item>
+        <item name="colorOnSurfaceVariant">@color/ios_secondary_label</item>
+        <item name="colorOutline">@color/ios_separator</item>
+        <item name="colorOutlineVariant">@color/ios_border</item>
+
+        <item name="android:statusBarColor">@color/ios_system_bg</item>
+        <item name="android:navigationBarColor">@color/ios_system_bg</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
     </style>
 
-    <!-- Filled card used for every feature section. -->
+    <!-- iOS 16dp Squircle Inset Grouped Card -->
     <style name="Card.Myvu" parent="Widget.Material3.CardView.Filled">
-        <item name="cardCornerRadius">28dp</item>
+        <item name="cardCornerRadius">16dp</item>
         <item name="cardElevation">0dp</item>
-        <item name="contentPadding">18dp</item>
-        <item name="cardBackgroundColor">@color/obsidian_container_low</item>
-        <item name="strokeColor">@color/outline_variant_obsidian</item>
+        <item name="contentPadding">16dp</item>
+        <item name="cardBackgroundColor">@color/ios_card_bg</item>
+        <item name="strokeColor">@color/ios_border</item>
         <item name="strokeWidth">1dp</item>
         <item name="android:layout_marginBottom">12dp</item>
     </style>
 
+    <!-- iOS Typography Styles -->
     <style name="CardTitle.Myvu" parent="TextAppearance.Material3.TitleMedium">
         <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">0.01</item>
-        <item name="android:textColor">@color/on_surface_obsidian</item>
+        <item name="android:textColor">@color/ios_label</item>
     </style>
 
     <style name="Label.Myvu" parent="TextAppearance.Material3.BodyMedium">
-        <item name="android:textColor">@color/on_surface_variant_obsidian</item>
+        <item name="android:textColor">@color/ios_secondary_label</item>
     </style>
 
     <style name="Input.Myvu" parent="Widget.Material3.TextInputLayout.OutlinedBox">
-        <item name="boxCornerRadiusTopStart">16dp</item>
-        <item name="boxCornerRadiusTopEnd">16dp</item>
-        <item name="boxCornerRadiusBottomStart">16dp</item>
-        <item name="boxCornerRadiusBottomEnd">16dp</item>
-        <item name="boxBackgroundColor">@color/obsidian_container_high</item>
-        <item name="boxStrokeColor">@color/input_box_stroke</item>
-        <item name="hintTextColor">@color/cyber_teal</item>
-        <item name="android:textColorHint">@color/on_surface_variant_obsidian</item>
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
+        <item name="boxBackgroundColor">@color/ios_card_secondary</item>
+        <item name="boxStrokeColor">@color/ios_blue</item>
+        <item name="hintTextColor">@color/ios_blue</item>
+        <item name="android:textColorHint">@color/ios_secondary_label</item>
     </style>
 
     <style name="Button.Myvu" parent="Widget.Material3.Button">
-        <item name="cornerRadius">16dp</item>
-        <item name="backgroundTint">@color/cyber_teal</item>
-        <item name="android:textColor">@color/on_cyber_teal</item>
-        <item name="iconTint">@color/on_cyber_teal</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="backgroundTint">@color/ios_blue</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="iconTint">#FFFFFF</item>
     </style>
 
     <style name="Button.Myvu.Outlined" parent="Widget.Material3.Button.OutlinedButton">
-        <item name="cornerRadius">16dp</item>
-        <item name="strokeColor">@color/outline_variant_obsidian</item>
-        <item name="android:textColor">@color/on_surface_obsidian</item>
-        <item name="rippleColor">#3300F0FF</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="strokeColor">@color/ios_border</item>
+        <item name="android:textColor">@color/ios_label</item>
+        <item name="rippleColor">#1A007AFF</item>
     </style>
 
+    <!-- iOS Style UISwitch -->
     <style name="Switch.Myvu" parent="Widget.Material3.CompoundButton.MaterialSwitch">
         <item name="thumbTint">@color/switch_thumb_tint</item>
         <item name="trackTint">@color/switch_track_tint</item>
     </style>
 
     <style name="Slider.Myvu" parent="Widget.Material3.Slider">
-        <item name="thumbColor">@color/cyber_teal</item>
-        <item name="trackColorActive">@color/cyber_teal</item>
-        <item name="trackColorInactive">@color/obsidian_container_highest</item>
-        <item name="haloColor">#3300F0FF</item>
+        <item name="thumbColor">@color/ios_blue</item>
+        <item name="trackColorActive">@color/ios_blue</item>
+        <item name="trackColorInactive">@color/ios_separator</item>
+        <item name="haloColor">#1A007AFF</item>
     </style>
 
     <style name="Theme.Myvu.Translucent" parent="Theme.Material3.DayNight.NoActionBar">

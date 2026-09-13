@@ -7,6 +7,7 @@ import com.myvu.client.skills.SkillRegistry
 class MyApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        com.myvu.client.core.Prefs.applyTheme(this)
         CrashReporter.install(this)
         SkillRegistry.initialize(this)
         com.myvu.client.health.HealthService.getInstance(this)

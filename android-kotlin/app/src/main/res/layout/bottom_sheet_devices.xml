@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_bottom_sheet_obsidian"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Handle drag indicator -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_sheet_handle" />
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingBottom="12dp">
+
+        <ImageView
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:src="@drawable/ic_bluetooth_device"
+            app:tint="@color/cyber_teal"
+            android:contentDescription="Dispositivos" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:text="Dispositivos Bluetooth"
+            android:textColor="@color/on_surface_obsidian"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/btnCloseSheet"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_arrow_back_cyber"
+            app:tint="@color/on_surface_variant_obsidian"
+            android:rotation="270"
+            android:contentDescription="Cerrar" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:text="Dispositivos Vinculados y Activos"
+        android:textColor="@color/on_surface_variant_obsidian"
+        android:textSize="13sp" />
+
+    <!-- List of registered devices -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvDevicesList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxHeight="320dp"
+        android:clipToPadding="false" />
+
+    <ProgressBar
+        android:id="@+id/progressScanDevices"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:indeterminate="true"
+        android:visibility="gone"
+        android:layout_marginVertical="8dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="12dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnScanNewDevices"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="8dp"
+            android:text="+ Buscar Nuevos Dispositivos"
+            android:textColor="@color/cyber_teal"
+            app:cornerRadius="12dp"
+            app:icon="@drawable/ic_bluetooth_device"
+            app:iconTint="@color/cyber_teal" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAdvancedGlasses"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:text="Conexión Gafas MYVU (HUD Avanzado)"
+            android:textColor="@color/on_surface_obsidian"
+            app:cornerRadius="12dp"
+            app:icon="@drawable/ic_glasses"
+            app:iconTint="@color/cyber_teal"
+            app:strokeColor="@color/obsidian_border" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnTotalDisconnectAll"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="8dp"
+            android:text="Desconexión Total (Inactivar Todo)"
+            android:textColor="@color/ios_red"
+            app:cornerRadius="12dp"
+            app:icon="@android:drawable/ic_lock_power_off"
+            app:iconTint="@color/ios_red"
+            app:strokeColor="@color/obsidian_border" />
+    </LinearLayout>
+</LinearLayout>

@@ -93,8 +93,10 @@
         style="@style/Card.Myvu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardBackgroundColor="@color/obsidian_container_low"
-        app:cardCornerRadius="28dp">
+        app:cardBackgroundColor="@color/ios_card_bg"
+        app:cardCornerRadius="20dp"
+        app:strokeColor="@color/ios_separator"
+        app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -121,14 +123,14 @@
                     android:layout_weight="1"
                     android:text="Disconnected"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:textColor="@color/on_surface_obsidian"
+                    android:textColor="@color/ios_label"
                     android:textStyle="bold" />
 
                 <ProgressBar
                     android:id="@+id/progress"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
-                    android:indeterminateTint="@color/cyber_teal"
+                    android:indeterminateTint="@color/ios_blue"
                     android:visibility="gone" />
             </LinearLayout>
 
@@ -139,18 +141,67 @@
                 android:layout_marginTop="4dp"
                 android:layout_marginStart="26dp"
                 android:textAppearance="?attr/textAppearanceBodySmall"
-                android:textColor="@color/on_surface_variant_obsidian"
+                android:textColor="@color/ios_secondary_label"
                 android:visibility="gone" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Input.Myvu"
+            <!-- Master Background Service & Auto-Reconnect Toggle -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="6dp"
+                android:background="@drawable/bg_ios_card_secondary"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="12dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Servicios en Segundo Plano"
+                        android:textColor="@color/ios_label"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Reconexión y escaneo Bluetooth. Desactiva para ahorrar batería."
+                        android:textColor="@color/ios_secondary_label"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/swMasterService"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true" />
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layMac"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                app:boxCornerRadiusBottomEnd="14dp"
+                app:boxCornerRadiusBottomStart="14dp"
+                app:boxCornerRadiusTopEnd="14dp"
+                app:boxCornerRadiusTopStart="14dp"
+                app:boxStrokeColor="@color/ios_blue"
+                app:boxStrokeWidth="1.2dp"
+                app:hintTextColor="@color/ios_blue"
                 app:helperTextEnabled="true"
-                app:helperText="Leave blank to auto-search"
-                app:helperTextTextColor="@color/on_surface_variant_obsidian"
-                android:hint="Glasses MAC address">
+                app:helperText="Dejar vacío para búsqueda automática"
+                app:helperTextTextColor="@color/ios_secondary_label"
+                android:hint="Dirección MAC de las Gafas">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/txtMac"
@@ -158,7 +209,7 @@
                     android:layout_height="wrap_content"
                     android:inputType="textCapCharacters"
                     android:importantForAutofill="no"
-                    android:textColor="@color/on_surface_obsidian"
+                    android:textColor="@color/ios_label"
                     android:maxLines="1" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -174,11 +225,13 @@
                     android:layout_height="48dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="6dp"
-                    app:cornerRadius="16dp"
-                    app:backgroundTint="@color/cyber_teal"
-                    android:textColor="@color/on_cyber_teal"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    app:cornerRadius="14dp"
+                    app:backgroundTint="@color/ios_blue"
+                    android:textColor="#FFFFFF"
                     android:textStyle="bold"
-                    android:text="Connect" />
+                    android:text="Conectar" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnDisconnect"
@@ -186,11 +239,14 @@
                     android:layout_height="48dp"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
-                    app:cornerRadius="16dp"
-                    app:backgroundTint="@color/obsidian_container_high"
-                    android:textColor="@color/cyber_teal"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    app:cornerRadius="14dp"
+                    app:backgroundTint="@color/ios_card_secondary"
+                    android:textColor="@color/ios_red"
                     android:textStyle="bold"
-                    android:text="Disconnect" />
+                    android:text="Desconexión Total"
+                    android:textSize="12sp" />
             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
@@ -199,12 +255,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:layout_marginTop="8dp"
-                app:cornerRadius="16dp"
-                app:strokeColor="@color/outline_variant_obsidian"
-                android:textColor="@color/on_surface_obsidian"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:cornerRadius="14dp"
+                app:strokeColor="@color/ios_separator"
+                android:textColor="@color/ios_label"
                 app:icon="@drawable/ic_trackpad"
-                app:iconTint="@color/cyber_teal"
-                android:text="Open trackpad" />
+                app:iconTint="@color/ios_blue"
+                android:text="Control Trackpad Remoto" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnNotes"
@@ -212,30 +270,60 @@
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:layout_marginTop="8dp"
-                app:cornerRadius="16dp"
-                app:strokeColor="@color/outline_variant_obsidian"
-                android:textColor="@color/on_surface_obsidian"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:cornerRadius="14dp"
+                app:strokeColor="@color/ios_separator"
+                android:textColor="@color/ios_label"
                 android:text="Notas y Recordatorios" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- ==================== QUICK VOICE CONTROL BANNER ==================== -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnVoiceControl"
+    <!-- ==================== QUICK AI ACTION BUTTONS (ALWAYS READY STANDALONE) ==================== -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_marginBottom="12dp"
-        app:cornerRadius="20dp"
-        app:backgroundTint="@color/cyber_teal"
-        android:textColor="@color/on_cyber_teal"
-        android:textStyle="bold"
-        android:textSize="15sp"
-        android:letterSpacing="0.02"
-        app:icon="@drawable/ic_mic"
-        app:iconGravity="textStart"
-        app:iconPadding="10dp"
-        app:iconTint="@color/on_cyber_teal"
-        android:text="Inicializar Control por Voz" />
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnOpenAiChat"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:cornerRadius="16dp"
+            app:backgroundTint="@color/ios_blue"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            app:icon="@android:drawable/ic_menu_send"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp"
+            app:iconTint="#FFFFFF"
+            android:text="Chat IA Aura" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnVoiceControl"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:cornerRadius="16dp"
+            app:backgroundTint="@color/ios_card_secondary"
+            android:textColor="@color/ios_label"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            app:icon="@drawable/ic_mic"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp"
+            app:iconTint="@color/ios_blue"
+            android:text="Voz &amp; Notas" />
+    </LinearLayout>
 
     <!-- ==================== BENTO TELEMETRY STATS GRID ==================== -->
     <LinearLayout

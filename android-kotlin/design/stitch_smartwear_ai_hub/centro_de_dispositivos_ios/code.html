@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>Companion Hub - Dispositivos</title>
+<!-- Material Symbols Font -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Apple-like Typography: SF Pro style with Inter & System UI fallback -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-color: #F2F2F7;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 450, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      line-height: 1;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+    }
+    /* Native iOS UISwitch Style */
+    .ios-switch {
+      position: relative;
+      display: inline-block;
+      width: 51px;
+      height: 31px;
+    }
+    .ios-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .ios-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #E9E9EB;
+      transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 31px;
+    }
+    .ios-slider:before {
+      position: absolute;
+      content: "";
+      height: 27px;
+      width: 27px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.18), 0 0 1px rgba(0,0,0,0.15);
+    }
+    input:checked + .ios-slider {
+      background-color: #34C759;
+    }
+    input:checked + .ios-slider:before {
+      transform: translateX(20px);
+    }
+    /* iOS Native Range Slider */
+    input[type=range].ios-range {
+      -webkit-appearance: none;
+      width: 100%;
+      background: transparent;
+    }
+    input[type=range].ios-range:focus {
+      outline: none;
+    }
+    input[type=range].ios-range::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 6px;
+      cursor: pointer;
+      background: #E5E5EA;
+      border-radius: 999px;
+    }
+    input[type=range].ios-range::-webkit-slider-thumb {
+      height: 26px;
+      width: 26px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 0.5px 1px rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: -10px;
+    }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+</head>
+<body class="bg-[#F2F2F7] text-[#000000] antialiased min-h-screen pb-28">
+<!-- iOS Status Bar Simulation & Dynamic Island space (padding-top) -->
+<header class="sticky top-0 z-40 bg-[#F2F2F7]/85 backdrop-blur-xl border-b border-[#000000]/5 px-4 pt-3 pb-2.5 transition-all">
+<div class="max-w-xl mx-auto flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-[#007AFF]/10 flex items-center justify-center text-[#007AFF]">
+<span class="material-symbols-outlined text-[20px]" data-icon="graphic_eq">graphic_eq</span>
+</div>
+<span class="text-[17px] font-semibold tracking-tight text-[#1C1C1E]">Companion Hub</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#34C759]/10 text-[#34C759] text-[11px] font-semibold tracking-wide">
+<span class="w-1.5 h-1.5 rounded-full bg-[#34C759]"></span>
+          HUB SYNC
+        </span>
+<button aria-label="Batería General" class="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-[#8E8E93] active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px] text-[#34C759]" data-icon="battery_charging_full">battery_charging_full</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="max-w-xl mx-auto px-4 pt-4 flex flex-col gap-6">
+<!-- Large Title & Top Action Button -->
+<section class="flex items-end justify-between pt-1">
+<div>
+<p class="text-[12px] font-semibold tracking-wider text-[#007AFF] uppercase">Ecosistema Activo • 3 En Línea</p>
+<h1 class="text-[34px] font-bold text-[#1C1C1E] tracking-tight leading-none mt-0.5">Dispositivos</h1>
+</div>
+<button class="flex items-center gap-1.5 bg-[#007AFF] hover:bg-[#0071E3] active:scale-95 text-white text-[14px] font-semibold px-4 py-2 rounded-full shadow-sm transition-all duration-150" id="scanBtn">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+<span>Añadir</span>
+</button>
+</section>
+<!-- SECTION 1: Hardware Conectado (Inset Grouped Cards) -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="text-[13px] font-medium uppercase tracking-wider text-[#6C6C70]">Hardware Conectado</span>
+<span class="text-[11px] font-bold bg-[#E5E5EA] text-[#3A3A3C] px-2 py-0.5 rounded-full">3 VINCULADOS</span>
+</div>
+<span class="text-[12px] text-[#8E8E93]">Latencia: ~4ms (LE Audio)</span>
+</div>
+<!-- Device Card 1: Gafas AR Vision Pro -->
+<article class="bg-white rounded-2xl shadow-sm border border-[#E5E5EA] p-4 flex flex-col gap-3.5">
+<!-- Top row: Avatar + Name + Link status -->
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-xl bg-[#007AFF]/10 flex items-center justify-center text-[#007AFF]">
+<span class="material-symbols-outlined text-[26px]" data-icon="eyeglasses">eyeglasses</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h2 class="text-[17px] font-semibold text-[#1C1C1E]">Gafas AR Vision Pro</h2>
+</div>
+<p class="text-[13px] text-[#8E8E93]">Heads-Up Spatial Micro-OLED • Óptica Waveguide</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#34C759]/10 text-[#34C759]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#34C759]"></span>
+            WiFi / BLE
+          </span>
+</div>
+<!-- Battery & Link Status Bar -->
+<div class="flex items-center justify-between bg-[#F2F2F7] rounded-xl px-3 py-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#34C759] text-[20px]" data-icon="battery_horiz_075">battery_horiz_075</span>
+<span class="text-[14px] font-semibold text-[#1C1C1E]">84%</span>
+<span class="text-[12px] text-[#8E8E93]">~5h 40m restantes</span>
+</div>
+<button class="inline-flex items-center gap-1 text-[13px] font-semibold text-[#007AFF] active:opacity-60">
+<span class="material-symbols-outlined text-[16px]" data-icon="link">link</span>
+<span>Enlace Activo</span>
+</button>
+</div>
+<!-- Inset Sub-controls list (iOS Style) -->
+<div class="bg-[#F8F8FA] rounded-xl border border-[#E5E5EA]/60 divide-y divide-[#E5E5EA]">
+<!-- Control 1: Brillo HUD Slider -->
+<div class="p-3">
+<div class="flex justify-between items-center mb-1.5">
+<span class="text-[13px] font-medium text-[#1C1C1E] flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[17px] text-[#FF9500]" data-icon="brightness_medium">brightness_medium</span>
+                Brillo HUD Micro-OLED
+              </span>
+<span class="text-[13px] font-semibold text-[#007AFF]" id="brightness-val">78%</span>
+</div>
+<input class="ios-range" id="hud-brightness" max="100" min="0" oninput="document.getElementById('brightness-val').innerText = this.value + '%'" type="range" value="78"/>
+<div class="flex justify-between text-[11px] text-[#8E8E93] mt-1">
+<span>Auto-Adaptativo</span>
+<span>1200 Nits</span>
+</div>
+</div>
+<!-- Control 2: Segmented Control Modo Visualización -->
+<div class="p-3 flex flex-col gap-2">
+<span class="text-[13px] font-medium text-[#1C1C1E] flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[17px] text-[#007AFF]" data-icon="visibility">visibility</span>
+              Modo de Visualización
+            </span>
+<!-- iOS Segmented Control -->
+<div class="bg-[#E5E5EA] p-0.5 rounded-lg grid grid-cols-3 gap-0.5 text-center text-[13px] font-medium">
+<button class="py-1 rounded-md text-[#3A3A3C] hover:text-[#000000] transition-colors" onclick="setArMode(this)">Lectura</button>
+<button class="py-1 rounded-md bg-white text-[#000000] font-semibold shadow-sm transition-all" onclick="setArMode(this)">Navegación</button>
+<button class="py-1 rounded-md text-[#3A3A3C] hover:text-[#000000] transition-colors" onclick="setArMode(this)">Discreto</button>
+</div>
+<span class="text-[11px] text-[#8E8E93]">HUD activo con anclas espaciales</span>
+</div>
+<!-- Control 3: Captura Contextual UISwitch -->
+<div class="p-3 flex items-center justify-between">
+<div>
+<span class="text-[14px] font-medium text-[#1C1C1E] flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[17px] text-[#007AFF]" data-icon="photo_camera">photo_camera</span>
+                Captura Contextual
+              </span>
+<p class="text-[12px] text-[#8E8E93] mt-0.5">Reconocimiento multimodal IA • LED verificado</p>
+</div>
+<label class="ios-switch shrink-0">
+<input checked="" type="checkbox"/>
+<span class="ios-slider"></span>
+</label>
+</div>
+</div>
+</article>
+<!-- Device Card 2: Auriculares Sonic Pulse -->
+<article class="bg-white rounded-2xl shadow-sm border border-[#E5E5EA] p-4 flex flex-col gap-3.5">
+<!-- Top row: Avatar + Name + Status -->
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-xl bg-[#5856D6]/10 flex items-center justify-center text-[#5856D6]">
+<span class="material-symbols-outlined text-[26px]" data-icon="headphones">headphones</span>
+</div>
+<div>
+<h2 class="text-[17px] font-semibold text-[#1C1C1E]">Auriculares Sonic Pulse</h2>
+<p class="text-[13px] text-[#8E8E93]">Audio de alta fidelidad 96kHz/24bit • Micro-driver dual</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#34C759]/10 text-[#34C759]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#34C759]"></span>
+            Bluetooth 5.4
+          </span>
+</div>
+<!-- Triple Battery Group (Estuche, L, R) -->
+<div class="grid grid-cols-3 gap-2 bg-[#F2F2F7] p-2.5 rounded-xl text-center">
+<div class="bg-white rounded-lg p-2 shadow-xs border border-[#E5E5EA]/70 flex flex-col items-center">
+<span class="material-symbols-outlined text-[18px] text-[#8E8E93]" data-icon="inventory_2">inventory_2</span>
+<span class="text-[11px] text-[#8E8E93] mt-0.5">Estuche</span>
+<span class="text-[14px] font-semibold text-[#1C1C1E]">75%</span>
+</div>
+<div class="bg-white rounded-lg p-2 shadow-xs border border-[#E5E5EA]/70 flex flex-col items-center">
+<span class="text-[12px] font-bold text-[#5856D6]">L</span>
+<div class="flex items-center gap-0.5 text-[11px] text-[#34C759] mt-0.5">
+<span class="material-symbols-outlined text-[13px]" data-icon="battery_charging_full">battery_charging_full</span>
+<span>Carga</span>
+</div>
+<span class="text-[14px] font-semibold text-[#1C1C1E]">92%</span>
+</div>
+<div class="bg-white rounded-lg p-2 shadow-xs border border-[#E5E5EA]/70 flex flex-col items-center">
+<span class="text-[12px] font-bold text-[#5856D6]">R</span>
+<div class="flex items-center gap-0.5 text-[11px] text-[#34C759] mt-0.5">
+<span class="material-symbols-outlined text-[13px]" data-icon="battery_charging_full">battery_charging_full</span>
+<span>Carga</span>
+</div>
+<span class="text-[14px] font-semibold text-[#1C1C1E]">90%</span>
+</div>
+</div>
+<!-- Noise & Sound Modes -->
+<div class="bg-[#F8F8FA] rounded-xl border border-[#E5E5EA]/60 p-3 flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<span class="text-[13px] font-medium text-[#1C1C1E] flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[17px] text-[#5856D6]" data-icon="surround_sound">surround_sound</span>
+              Control de Ruido
+            </span>
+<span class="text-[11px] font-semibold text-[#34C759]">-38dB Silencio Puro</span>
+</div>
+<!-- 3-Button Segmented Selector -->
+<div class="grid grid-cols-3 gap-1.5 bg-[#E5E5EA] p-1 rounded-xl">
+<button class="audio-mode-btn flex flex-col items-center justify-center py-2 px-1 rounded-lg bg-white shadow-sm text-[#007AFF] font-medium transition-all">
+<span class="material-symbols-outlined text-[19px] mb-0.5" data-icon="noise_aware">noise_aware</span>
+<span class="text-[12px] font-semibold">ANC Activo</span>
+</button>
+<button class="audio-mode-btn flex flex-col items-center justify-center py-2 px-1 rounded-lg text-[#3A3A3C] hover:text-[#000000] font-medium transition-all">
+<span class="material-symbols-outlined text-[19px] mb-0.5" data-icon="hearing">hearing</span>
+<span class="text-[12px]">Transparencia</span>
+</button>
+<button class="audio-mode-btn flex flex-col items-center justify-center py-2 px-1 rounded-lg text-[#3A3A3C] hover:text-[#000000] font-medium transition-all">
+<span class="material-symbols-outlined text-[19px] mb-0.5" data-icon="spatial_audio">spatial_audio</span>
+<span class="text-[12px]">Audio Espacial</span>
+</button>
+</div>
+<!-- EQ Preset Pill -->
+<div class="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-[#E5E5EA]/70 mt-1">
+<div class="flex items-center gap-2.5">
+<div class="w-7 h-7 rounded-md bg-[#5856D6]/10 flex items-center justify-center text-[#5856D6]">
+<span class="material-symbols-outlined text-[16px]" data-icon="equalizer">equalizer</span>
+</div>
+<div>
+<div class="text-[13px] font-semibold text-[#1C1C1E]">Claridad Vocal &amp; Podcasts</div>
+<div class="text-[11px] text-[#8E8E93]">Perfil EQ calibrado por IA para tu canal</div>
+</div>
+</div>
+<button class="w-7 h-7 rounded-full bg-[#F2F2F7] flex items-center justify-center text-[#8E8E93] hover:text-[#007AFF] active:scale-95">
+<span class="material-symbols-outlined text-[16px]" data-icon="tune">tune</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Device Card 3: Smartwatch BioSync -->
+<article class="bg-white rounded-2xl shadow-sm border border-[#E5E5EA] p-4 flex flex-col gap-3.5">
+<!-- Top row: Avatar + Name + Status -->
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-xl bg-[#34C759]/10 flex items-center justify-center text-[#34C759]">
+<span class="material-symbols-outlined text-[26px]" data-icon="watch">watch</span>
+</div>
+<div>
+<h2 class="text-[17px] font-semibold text-[#1C1C1E]">Smartwatch BioSync</h2>
+<p class="text-[13px] text-[#8E8E93]">Sensor Fotopletismógrafo Continuo • Titanio</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#34C759]/10 text-[#34C759]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#34C759]"></span>
+            BLE Activo
+          </span>
+</div>
+<!-- Battery info + Sync Button -->
+<div class="flex items-center justify-between bg-[#F2F2F7] rounded-xl px-3 py-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#34C759] text-[20px]" data-icon="battery_charging_60">battery_charging_60</span>
+<span class="text-[14px] font-semibold text-[#1C1C1E]">68%</span>
+<span class="text-[12px] text-[#8E8E93]">~36h restantes</span>
+</div>
+<button class="inline-flex items-center gap-1 text-[13px] font-semibold text-[#007AFF] active:opacity-60">
+<span class="material-symbols-outlined text-[16px]" data-icon="sync">sync</span>
+<span>Sincronizar</span>
+</button>
+</div>
+<!-- Apple Health Style Telemetry Inset Rows -->
+<div class="bg-[#F8F8FA] rounded-xl border border-[#E5E5EA]/60 divide-y divide-[#E5E5EA]">
+<!-- Metric 1: Frecuencia Cardíaca -->
+<div class="p-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-[#FF3B30]/10 flex items-center justify-center text-[#FF3B30]">
+<span class="material-symbols-outlined text-[18px]" data-icon="favorite" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</div>
+<div>
+<span class="text-[13px] font-medium text-[#1C1C1E]">Frecuencia Cardíaca</span>
+<p class="text-[11px] text-[#8E8E93]">Sensor continuo • En reposo</p>
+</div>
+</div>
+<div class="text-right">
+<span class="text-[17px] font-semibold text-[#1C1C1E]">72</span>
+<span class="text-[12px] font-medium text-[#FF3B30]">PPM</span>
+</div>
+</div>
+<!-- Metric 2: Nivel de Estrés VFC -->
+<div class="p-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-[#007AFF]/10 flex items-center justify-center text-[#007AFF]">
+<span class="material-symbols-outlined text-[18px]" data-icon="psychology">psychology</span>
+</div>
+<div>
+<span class="text-[13px] font-medium text-[#1C1C1E]">Estrés VFC</span>
+<p class="text-[11px] text-[#8E8E93]">Calma óptima</p>
+</div>
+</div>
+<div class="text-right">
+<span class="text-[17px] font-semibold text-[#1C1C1E]">24</span>
+<span class="text-[12px] font-semibold text-[#34C759] ml-1">Bajo</span>
+</div>
+</div>
+<!-- Metric 3: Sueño Sincronizado -->
+<div class="p-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-[#AF52DE]/10 flex items-center justify-center text-[#AF52DE]">
+<span class="material-symbols-outlined text-[18px]" data-icon="bedtime" style="font-variation-settings: 'FILL' 1;">bedtime</span>
+</div>
+<div>
+<span class="text-[13px] font-medium text-[#1C1C1E]">Sueño Registrado</span>
+<p class="text-[11px] text-[#34C759] flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[12px]" data-icon="check_circle">check_circle</span>
+                  Sincronizado hoy
+                </p>
+</div>
+</div>
+<div class="text-right">
+<span class="text-[16px] font-semibold text-[#1C1C1E]">7h 45m</span>
+</div>
+</div>
+<!-- Metric 4: Háptica en Muñeca UISwitch -->
+<div class="p-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-[#FF9500]/10 flex items-center justify-center text-[#FF9500]">
+<span class="material-symbols-outlined text-[18px]" data-icon="vibration">vibration</span>
+</div>
+<div>
+<span class="text-[14px] font-medium text-[#1C1C1E]">Pulsos Hápticos</span>
+<p class="text-[11px] text-[#8E8E93]">Alertas sutiles en muñeca (Taptic LRA)</p>
+</div>
+</div>
+<label class="ios-switch shrink-0">
+<input checked="" type="checkbox"/>
+<span class="ios-slider"></span>
+</label>
+</div>
+</div>
+</article>
+</section>
+<!-- SECTION 2: Dispositivos Cercanos / Nuevos (iOS Grouped List) -->
+<section class="flex flex-col gap-2 mt-1">
+<div class="flex items-center justify-between px-1">
+<span class="text-[13px] font-medium uppercase tracking-wider text-[#6C6C70]">DISPOSITIVOS CERCANOS</span>
+<span class="text-[11px] font-semibold text-[#007AFF] bg-[#007AFF]/10 px-2 py-0.5 rounded-full">2 DETECTADOS</span>
+</div>
+<div class="bg-white rounded-2xl shadow-sm border border-[#E5E5EA] divide-y divide-[#E5E5EA] overflow-hidden">
+<!-- Dispositivo Cercano 1 -->
+<div class="p-3.5 flex items-center justify-between hover:bg-[#F9F9FB] transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-[#007AFF]/10 flex items-center justify-center text-[#007AFF]">
+<span class="material-symbols-outlined text-[20px]" data-icon="ring_volume">ring_volume</span>
+</div>
+<div>
+<div class="text-[15px] font-semibold text-[#1C1C1E]">Anillo Inteligente Helix Ring</div>
+<div class="text-[12px] text-[#8E8E93] flex items-center gap-1.5">
+<span>Señal excelente (-48 dBm)</span>
+<span>•</span>
+<span class="text-[#34C759] font-medium">Listo</span>
+</div>
+</div>
+</div>
+<button class="pair-btn bg-[#007AFF] hover:bg-[#0071E3] active:scale-95 text-white font-semibold text-[13px] px-3.5 py-1.5 rounded-full transition-all duration-150 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px]" data-icon="link">link</span>
+<span>Enlazar</span>
+</button>
+</div>
+<!-- Dispositivo Cercano 2 -->
+<div class="p-3.5 flex items-center justify-between hover:bg-[#F9F9FB] transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-[#5856D6]/10 flex items-center justify-center text-[#5856D6]">
+<span class="material-symbols-outlined text-[20px]" data-icon="nest_remote">nest_remote</span>
+</div>
+<div>
+<div class="text-[15px] font-semibold text-[#1C1C1E]">Puntero Gestual Spatial Wand</div>
+<div class="text-[12px] text-[#8E8E93] flex items-center gap-1.5">
+<span>Señal buena (-62 dBm)</span>
+<span>•</span>
+<span class="text-[#34C759] font-medium">Listo</span>
+</div>
+</div>
+</div>
+<button class="pair-btn bg-[#007AFF] hover:bg-[#0071E3] active:scale-95 text-white font-semibold text-[13px] px-3.5 py-1.5 rounded-full transition-all duration-150 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px]" data-icon="link">link</span>
+<span>Enlazar</span>
+</button>
+</div>
+</div>
+<p class="text-[12px] text-[#8E8E93] px-2">Listos para emparejamiento instantáneo mediante BLE Proximity y protocolo AR FastPair.</p>
+</section>
+</main>
+<!-- iOS Standard Bottom Tab Bar -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-2xl border-t border-[#000000]/10 pb-safe pt-1.5 px-3">
+<div class="max-w-md mx-auto flex justify-around items-center pb-1">
+<!-- Tab 1: Hub -->
+<a class="flex flex-col items-center justify-center text-[#8E8E93] hover:text-[#007AFF] transition-colors duration-150 active:scale-95 w-14" href="#hub">
+<span class="material-symbols-outlined text-[22px]" data-icon="home">home</span>
+<span class="text-[10px] font-medium tracking-tight mt-0.5">Hub</span>
+</a>
+<!-- Tab 2: Dispositivos (ACTIVE: iOS System Blue #007AFF) -->
+<a class="flex flex-col items-center justify-center text-[#007AFF] transition-colors duration-150 active:scale-95 w-14" href="#devices">
+<span class="material-symbols-outlined text-[22px]" data-icon="devices" style="font-variation-settings: 'FILL' 1;">devices</span>
+<span class="text-[10px] font-semibold tracking-tight mt-0.5">Dispositivos</span>
+</a>
+<!-- Tab 3: AR Studio -->
+<a class="flex flex-col items-center justify-center text-[#8E8E93] hover:text-[#007AFF] transition-colors duration-150 active:scale-95 w-14" href="#ar-studio">
+<span class="material-symbols-outlined text-[22px]" data-icon="eyeglasses">eyeglasses</span>
+<span class="text-[10px] font-medium tracking-tight mt-0.5">AR Studio</span>
+</a>
+<!-- Tab 4: Traducir -->
+<a class="flex flex-col items-center justify-center text-[#8E8E93] hover:text-[#007AFF] transition-colors duration-150 active:scale-95 w-14" href="#translate">
+<span class="material-symbols-outlined text-[22px]" data-icon="translate">translate</span>
+<span class="text-[10px] font-medium tracking-tight mt-0.5">Traducir</span>
+</a>
+<!-- Tab 5: Notas -->
+<a class="flex flex-col items-center justify-center text-[#8E8E93] hover:text-[#007AFF] transition-colors duration-150 active:scale-95 w-14" href="#notes">
+<span class="material-symbols-outlined text-[22px]" data-icon="neurology">neurology</span>
+<span class="text-[10px] font-medium tracking-tight mt-0.5">Notas</span>
+</a>
+</div>
+</nav>
+<!-- Interactive JavaScript logic preserved -->
+<script>
+    // Segmented control toggling
+    function setArMode(btn) {
+      const parent = btn.parentElement;
+      const buttons = parent.querySelectorAll('button');
+      buttons.forEach(b => {
+        b.className = 'py-1 rounded-md text-[#3A3A3C] hover:text-[#000000] transition-colors';
+      });
+      btn.className = 'py-1 rounded-md bg-white text-[#000000] font-semibold shadow-sm transition-all';
+    }
+
+    // Audio modes segmented switch
+    document.querySelectorAll('.audio-mode-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.audio-mode-btn').forEach(b => {
+          b.className = 'audio-mode-btn flex flex-col items-center justify-center py-2 px-1 rounded-lg text-[#3A3A3C] hover:text-[#000000] font-medium transition-all';
+          const title = b.querySelector('span:last-child');
+          if (title) title.className = 'text-[12px]';
+        });
+        button.className = 'audio-mode-btn flex flex-col items-center justify-center py-2 px-1 rounded-lg bg-white shadow-sm text-[#007AFF] font-medium transition-all';
+        const activeTitle = button.querySelector('span:last-child');
+        if (activeTitle) activeTitle.className = 'text-[12px] font-semibold';
+      });
+    });
+
+    // Pair buttons instant state change (Enlazar / Enlazado)
+    document.querySelectorAll('.pair-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        if (!this.classList.contains('paired')) {
+          this.innerHTML = '<span class="material-symbols-outlined text-[15px]" data-icon="check">check</span><span>Enlazado</span>';
+          this.className = 'pair-btn bg-[#34C759]/15 text-[#34C759] font-semibold text-[13px] px-3.5 py-1.5 rounded-full transition-all paired';
+        }
+      });
+    });
+
+    // Scan trigger effect
+    const scanBtn = document.getElementById('scanBtn');
+    if (scanBtn) {
+      scanBtn.addEventListener('click', () => {
+        scanBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin" data-icon="sync">sync</span><span>Buscando...</span>';
+        setTimeout(() => {
+          scanBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span><span>Añadir</span>';
+        }, 1800);
+      });
+    }
+  </script>
+</body></html>

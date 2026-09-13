@@ -2,6 +2,7 @@ package com.myvu.client.app
 
 import com.myvu.client.app.feature.ClockSync
 import com.myvu.client.app.feature.GlassGesture
+import com.myvu.client.app.feature.TouchGestureManager
 import com.myvu.client.app.feature.Weather
 import com.myvu.client.core.LogBus
 import org.json.JSONArray
@@ -128,6 +129,10 @@ class InboundRouter(private val sender: Sender) {
         val code = msg.optInt("code", -1)
         if (code != 3 && code != 7) return
 
+        if (code == 3) {
+            TouchGestureManager.notifyPhysicalButtonPressed(null)
+        }
+
         val payload = msg.optJSONObject("payload") ?: msg.optJSONObject("data")
         LogBus.log(
             "Hardware trigger: code=$code" +
@@ -139,27 +144,37 @@ class InboundRouter(private val sender: Sender) {
     private fun checkBatteryInfo(msg: JSONObject) {
         val listener = batteryListener ?: return
 
+        // 1. Direct top-level battery or capacity fields
+        if (msg.has("battery") || msg.has("capacity")) {
+            val b = if (msg.has("battery")) msg.optInt("battery", -1) else msg.optInt("capacity", -1)
+            if (b in 0..100) {
+                val isCharging = msg.optBoolean("is_charging", msg.optBoolean("isCharging", false))
+                listener.onBatteryUpdated(b, isCharging)
+                return
+            }
+        }
+
         val action = msg.optString("action")
 
-        // Ignore accessory/unicron battery if not connected or capacity is 0
+        // 2. Unicron accessory battery
         if (action == "unicron_battery") {
             val valObj = msg.optJSONObject("value")
             if (valObj != null && valObj.optBoolean("isConnect", false)) {
                 val cap = valObj.optInt("capacity", -1)
-                if (cap in 1..100) {
+                if (cap in 0..100) {
                     listener.onBatteryUpdated(cap, false)
                 }
             }
             return
         }
 
-        // 1. Action: sync_glass_battery_info
+        // 3. Action: sync_glass_battery_info
         if ("sync_glass_battery_info" == action) {
             parseValueBattery(msg.optString("value"))
             return
         }
 
-        // 2. Action: air_ota -> data -> action: get_air_glass_info
+        // 4. Action: air_ota -> data -> action: get_air_glass_info
         if ("air_ota" == action) {
             val data = msg.optJSONObject("data")
             if (data != null) {
@@ -168,23 +183,32 @@ class InboundRouter(private val sender: Sender) {
             return
         }
 
-        // 3. Top-level device_info
+        // 5. Top-level device_info
         val devInfo = msg.optJSONObject("device_info")
-        if (devInfo != null && devInfo.has("battery")) {
-            val battery = devInfo.optInt("battery", -1)
-            if (battery in 1..100) {
-                listener.onBatteryUpdated(battery, devInfo.optBoolean("is_charging", false))
+        if (devInfo != null && (devInfo.has("battery") || devInfo.has("capacity"))) {
+            val battery = if (devInfo.has("battery")) devInfo.optInt("battery", -1) else devInfo.optInt("capacity", -1)
+            if (battery in 0..100) {
+                listener.onBatteryUpdated(battery, devInfo.optBoolean("is_charging", devInfo.optBoolean("isCharging", false)))
             }
             return
         }
 
-        // 4. Action containing battery or get_device_info
-        if (action.contains("battery")) {
+        // 6. Action containing battery, device_info, or get_device_info
+        if (action.contains("battery") || action.contains("device_info") || action.contains("glass_info")) {
             val data = msg.optJSONObject("data")
-            if (data != null && data.has("battery")) {
-                val battery = data.optInt("battery", -1)
-                if (battery in 1..100) {
+            if (data != null && (data.has("battery") || data.has("capacity"))) {
+                val battery = if (data.has("battery")) data.optInt("battery", -1) else data.optInt("capacity", -1)
+                if (battery in 0..100) {
                     val isCharging = data.optBoolean("is_charging", data.optBoolean("isCharging", false))
+                    listener.onBatteryUpdated(battery, isCharging)
+                    return
+                }
+            }
+            val valueObj = msg.optJSONObject("value")
+            if (valueObj != null && (valueObj.has("battery") || valueObj.has("capacity"))) {
+                val battery = if (valueObj.has("battery")) valueObj.optInt("battery", -1) else valueObj.optInt("capacity", -1)
+                if (battery in 0..100) {
+                    val isCharging = valueObj.optBoolean("is_charging", valueObj.optBoolean("isCharging", false))
                     listener.onBatteryUpdated(battery, isCharging)
                     return
                 }
@@ -198,10 +222,10 @@ class InboundRouter(private val sender: Sender) {
         try {
             val valObj = JSONObject(valueJson)
             var battery = valObj.optInt("battery", -1)
-            if (battery <= 0 && valObj.has("capacity")) {
+            if (battery < 0 && valObj.has("capacity")) {
                 battery = valObj.optInt("capacity", -1)
             }
-            if (battery in 1..100) {
+            if (battery in 0..100) {
                 val isCharging = valObj.optBoolean("isCharging", valObj.optBoolean("is_charging", false))
                 batteryListener?.onBatteryUpdated(battery, isCharging)
             }
@@ -474,12 +498,18 @@ class InboundRouter(private val sender: Sender) {
             }
         }
 
-        // 2. Consolidate sender 2 (left temple) touch down (200) and touch up (203)
-        // If code 200 is present, code 203 in the same batch is release confirmation noise
-        val consolidated = if (deduplicated.any { it.actionValue == 200 }) {
-            deduplicated.filterNot { it.actionValue == 203 }
+        // 2. Consolidate touch down (200), click/tap (210/230/202), and touch up (203).
+        // If confirmed tap/action (210, 230, 202) is present, code 200 (down) and 203 (up) are touch phases of the same tap.
+        val withoutDownUpNoise = deduplicated.filterNot { item ->
+            (item.actionValue == 200 || item.actionValue == 203) && deduplicated.any { other ->
+                (other.actionValue == 210 || other.actionValue == 230 || other.actionValue == 202) &&
+                        (other.sender == 0 || item.sender == 0 || other.sender == item.sender)
+            }
+        }
+        val consolidated = if (withoutDownUpNoise.any { it.actionValue == 200 }) {
+            withoutDownUpNoise.filterNot { it.actionValue == 203 }
         } else {
-            deduplicated
+            withoutDownUpNoise
         }
 
         val isTapOrPress = { g: GlassGesture ->
@@ -525,9 +555,9 @@ class InboundRouter(private val sender: Sender) {
                 if (i + 2 < noSwipes.size && noSwipes[i + 1].gesture == GlassGesture.TAP && noSwipes[i + 2].gesture == GlassGesture.TAP) {
                     val tap2 = noSwipes[i + 1]
                     val tap3 = noSwipes[i + 2]
-                    val dt1 = if (current.eventTime != -1L && tap2.eventTime != -1L) Math.abs(tap2.eventTime - current.eventTime) else 100L
-                    val dt2 = if (tap2.eventTime != -1L && tap3.eventTime != -1L) Math.abs(tap3.eventTime - tap2.eventTime) else 100L
-                    if (dt1 in 30L..800L && dt2 in 30L..800L) {
+                    val dt1 = if (current.eventTime != -1L && tap2.eventTime != -1L) Math.abs(tap2.eventTime - current.eventTime) else 200L
+                    val dt2 = if (tap2.eventTime != -1L && tap3.eventTime != -1L) Math.abs(tap3.eventTime - tap2.eventTime) else 200L
+                    if (dt1 in 180L..500L && dt2 in 180L..500L) {
                         LogBus.log("Synthesized TRIPLE_TAP from batch containing 3 TAPs (${dt1}ms, ${dt2}ms apart)")
                         synthesized.add(
                             ParsedGesture(
@@ -548,9 +578,9 @@ class InboundRouter(private val sender: Sender) {
                     val dt = if (current.eventTime != -1L && next.eventTime != -1L) {
                         Math.abs(next.eventTime - current.eventTime)
                     } else {
-                        100L
+                        250L
                     }
-                    if (dt in 30L..800L) {
+                    if (dt in 180L..500L) {
                         LogBus.log("Synthesized DOUBLE_TAP from batch containing 2 TAPs (${dt}ms apart, sender=${current.sender})")
                         synthesized.add(
                             ParsedGesture(
@@ -570,16 +600,15 @@ class InboundRouter(private val sender: Sender) {
             i++
         }
 
-        val gesturePriority = { g: GlassGesture ->
-            when (g) {
-                GlassGesture.DOUBLE_TAP -> 1
-                GlassGesture.TRIPLE_TAP -> 2
-                GlassGesture.TAP -> 3
-                GlassGesture.LONG_PRESS -> 4
-                GlassGesture.SWIPE_FORWARD -> 5
-                GlassGesture.SWIPE_BACKWARD -> 6
-                GlassGesture.UNKNOWN -> 99
-            }
+        fun gesturePriority(g: GlassGesture): Int = when (g) {
+            GlassGesture.ACTION_BUTTON -> 0
+            GlassGesture.DOUBLE_TAP -> 1
+            GlassGesture.TRIPLE_TAP -> 2
+            GlassGesture.TAP -> 3
+            GlassGesture.LONG_PRESS -> 4
+            GlassGesture.SWIPE_FORWARD -> 5
+            GlassGesture.SWIPE_BACKWARD -> 6
+            GlassGesture.UNKNOWN -> 99
         }
 
         // Sort events with matching timestamps by priority, otherwise keep arrival order

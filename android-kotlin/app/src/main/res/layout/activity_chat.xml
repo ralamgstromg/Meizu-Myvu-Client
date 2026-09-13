@@ -1,306 +1,949 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/chatDrawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/obsidian_bg"
-    android:fitsSystemWindows="false"
-    android:paddingHorizontal="12dp">
+    android:background="@color/ios_system_bg"
+    android:fitsSystemWindows="false">
 
-    <!-- ===== Top Header Bar (topBar for EdgeToEdgeHelper) ===== -->
+    <!-- ===== Main Hub Layout ===== -->
     <LinearLayout
-        android:id="@+id/topBar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingTop="12dp"
-        android:paddingBottom="8dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/ios_system_bg">
 
-        <ImageButton
-            android:id="@+id/btnBackChat"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_arrow_back_cyber"
-            app:tint="@color/on_surface_obsidian"
-            android:contentDescription="Regresar" />
-
-        <ImageView
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:layout_marginStart="8dp"
-            android:src="@drawable/ic_glasses"
-            app:tint="@color/cyber_teal"
-            android:contentDescription="Chat IA" />
-
+        <!-- ===== iOS Frosted Top Navigation Bar ===== -->
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_weight="1"
+            android:id="@+id/topBar"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:orientation="vertical"
+            android:background="@color/ios_nav_bg"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="52dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/btnNavigationDrawer"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_menu_hamburger"
+                    app:tint="@color/ios_blue"
+                    android:contentDescription="Abrir menú lateral" />
+
+                <ImageView
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_marginStart="6dp"
+                    android:src="@drawable/ic_launcher_hub_foreground"
+                    android:background="@drawable/bg_ios_circle_button"
+                    android:backgroundTint="@color/ios_pill_active_bg"
+                    android:padding="3dp"
+                    app:tint="@color/ios_blue"
+                    android:contentDescription="Icono Companion Hub" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="4dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:singleLine="true"
+                        android:ellipsize="end"
+                        android:text="Companion Hub"
+                        android:textColor="@color/ios_label"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="2dp"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:layout_width="6dp"
+                            android:layout_height="6dp"
+                            android:background="@drawable/bg_ios_circle_button"
+                            android:backgroundTint="@color/ios_green" />
+
+                        <TextView
+                            android:id="@+id/txtTopSyncStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:singleLine="true"
+                            android:text="Sincronizado"
+                            android:textColor="@color/ios_secondary_label"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Light / Dark Mode Quick Switcher Button -->
+                <ImageButton
+                    android:id="@+id/btnThemeToggle"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:padding="6dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_ios_theme"
+                    app:tint="@color/ios_secondary_label"
+                    android:contentDescription="Cambiar tema claro/oscuro" />
+
+                <!-- Dispositivos Shortcut Button (Keeps legacy btnDevices ID) -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDevices"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:minHeight="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:layout_marginEnd="4dp"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="0dp"
+                    android:gravity="center"
+                    android:maxWidth="100dp"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:text="Equipos"
+                    android:textColor="@color/ios_blue"
+                    android:textSize="11sp"
+                    android:background="@drawable/bg_ios_pill_active"
+                    app:backgroundTint="@null"
+                    app:icon="@drawable/ic_bluetooth_device"
+                    app:iconTint="@color/ios_blue"
+                    app:iconSize="14dp"
+                    android:contentDescription="Dispositivos Bluetooth" />
+
+                <!-- Settings Button -->
+                <ImageButton
+                    android:id="@+id/btnChatSettings"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:padding="6dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_settings"
+                    app:tint="@color/ios_secondary_label"
+                    android:contentDescription="Ajustes" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Divider hairline -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/ios_separator" />
+
+        <!-- ===== Scrollable Content Area: Wearables Carousel + Actions + Chat ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- Wearables Carousel Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Aura • Chat IA &amp; Skills"
-                android:textColor="@color/on_surface_obsidian"
-                android:textSize="17sp"
-                android:textStyle="bold" />
+                android:orientation="vertical"
+                android:paddingTop="8dp"
+                android:paddingBottom="4dp">
 
-            <TextView
-                android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="16dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="DISPOSITIVOS ACTIVOS"
+                        android:textColor="@color/ios_secondary_label"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.04" />
+
+                    <TextView
+                        android:id="@+id/txtWearablesCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Wearable Agent"
+                        android:textColor="@color/ios_secondary_label"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <!-- Horizontal Carousel of Wearable Cards -->
+                <HorizontalScrollView
+                    android:id="@+id/scrollWearables"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none"
+                    android:overScrollMode="never"
+                    android:paddingVertical="6dp"
+                    android:paddingHorizontal="16dp"
+                    android:clipToPadding="false">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <!-- WIDGET 1: Gafas AR (MYVU) -->
+                        <LinearLayout
+                            android:id="@+id/cardWearableGlasses"
+                            android:layout_width="205dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:background="@drawable/bg_ios_card"
+                            android:padding="12dp"
+                            android:layout_marginEnd="10dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <ImageView
+                                    android:layout_width="32dp"
+                                    android:layout_height="32dp"
+                                    android:src="@drawable/ic_glasses"
+                                    android:background="@drawable/bg_ios_card_secondary"
+                                    android:padding="6dp"
+                                    app:tint="@color/ios_blue"
+                                    android:contentDescription="Gafas AR" />
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_weight="1"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8dp"
+                                    android:layout_marginEnd="4dp"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:singleLine="true"
+                                        android:text="Gafas AR"
+                                        android:textColor="@color/ios_label"
+                                        android:textSize="14sp"
+                                        android:textStyle="bold" />
+
+                                    <TextView
+                                        android:id="@+id/txtGlassesStatus"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:singleLine="true"
+                                        android:ellipsize="end"
+                                        android:text="Sincronizado"
+                                        android:textColor="@color/ios_secondary_label"
+                                        android:textSize="11sp" />
+                                </LinearLayout>
+
+                                <TextView
+                                    android:id="@+id/txtGlassesBattery"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="85%"
+                                    android:textColor="@color/ios_green"
+                                    android:textSize="11sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="0.5dp"
+                                android:background="@color/ios_separator"
+                                android:layout_marginVertical="8dp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:singleLine="true"
+                                android:text="HUD Activo • MicroOLED"
+                                android:textColor="@color/ios_blue"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- WIDGET 2: Auriculares Bluetooth -->
+                        <LinearLayout
+                            android:id="@+id/cardWearableHeadphones"
+                            android:layout_width="205dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:background="@drawable/bg_ios_card"
+                            android:padding="12dp"
+                            android:layout_marginEnd="10dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <ImageView
+                                    android:layout_width="32dp"
+                                    android:layout_height="32dp"
+                                    android:src="@drawable/ic_headphones"
+                                    android:background="@drawable/bg_ios_card_secondary"
+                                    android:padding="6dp"
+                                    app:tint="@color/ios_indigo"
+                                    android:contentDescription="Auriculares" />
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_weight="1"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8dp"
+                                    android:layout_marginEnd="4dp"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:singleLine="true"
+                                        android:text="Auriculares"
+                                        android:textColor="@color/ios_label"
+                                        android:textSize="14sp"
+                                        android:textStyle="bold" />
+
+                                    <TextView
+                                        android:id="@+id/txtHeadphonesStatus"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:singleLine="true"
+                                        android:ellipsize="end"
+                                        android:text="Conectados"
+                                        android:textColor="@color/ios_secondary_label"
+                                        android:textSize="11sp" />
+                                </LinearLayout>
+
+                                <TextView
+                                    android:id="@+id/txtHeadphonesBattery"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="92%"
+                                    android:textColor="@color/ios_green"
+                                    android:textSize="11sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="0.5dp"
+                                android:background="@color/ios_separator"
+                                android:layout_marginVertical="8dp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:singleLine="true"
+                                android:text="Gestos 1-3 toques activos"
+                                android:textColor="@color/ios_indigo"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- WIDGET 3: Botón Emparejar Nuevo Dispositivo -->
+                        <LinearLayout
+                            android:id="@+id/cardWearablePair"
+                            android:layout_width="120dp"
+                            android:layout_height="88dp"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:background="@drawable/bg_ios_pill"
+                            android:padding="8dp">
+
+                            <ImageView
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:src="@drawable/ic_add"
+                                android:background="@drawable/bg_ios_card_secondary"
+                                android:padding="6dp"
+                                app:tint="@color/ios_blue"
+                                android:contentDescription="Emparejar" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Emparejar"
+                                android:textColor="@color/ios_blue"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </HorizontalScrollView>
+            </LinearLayout>
+
+            <!-- ===== Quick Action Pills Bar ===== -->
+            <HorizontalScrollView
+                android:id="@+id/scrollAiQuickBar"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Asistente Virtual • Colombia (es-CO)"
-                android:textColor="@color/on_surface_variant_obsidian"
-                android:textSize="11sp" />
-        </LinearLayout>
+                android:scrollbars="none"
+                android:overScrollMode="never"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="4dp"
+                android:clipToPadding="false">
 
-        <ImageButton
-            android:id="@+id/btnChatSettings"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_settings"
-            app:tint="@color/cyber_teal"
-            android:contentDescription="Perfil y Ajustes" />
-    </LinearLayout>
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-    <!-- ===== Chat History List ===== -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvChatHistory"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:paddingVertical="4dp" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnQuickAiNotes"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:minHeight="0dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:layout_marginEnd="6dp"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="0dp"
+                        android:gravity="center"
+                        android:text="📝 Notas IA"
+                        android:textSize="12sp"
+                        android:textColor="@color/ios_label"
+                        android:background="@drawable/bg_ios_pill"
+                        app:backgroundTint="@null" />
 
-    <!-- Progress Indicator for processing -->
-    <ProgressBar
-        android:id="@+id/progressChat"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:indeterminate="true"
-        android:visibility="gone" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnQuickRecordMeeting"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:minHeight="0dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:layout_marginEnd="6dp"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="0dp"
+                        android:gravity="center"
+                        android:text="🎙️ Grabar Nota"
+                        android:textSize="12sp"
+                        android:textColor="@color/ios_label"
+                        android:background="@drawable/bg_ios_pill"
+                        app:backgroundTint="@null" />
 
-    <!-- ===== Attached Media Preview ===== -->
-    <LinearLayout
-        android:id="@+id/layImagePreview"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        android:background="@color/obsidian_container_low"
-        android:visibility="gone">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnQuickDailyBriefing"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:minHeight="0dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:layout_marginEnd="6dp"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="0dp"
+                        android:gravity="center"
+                        android:text="☀️ Resumir Día"
+                        android:textSize="12sp"
+                        android:textColor="@color/ios_blue"
+                        android:background="@drawable/bg_ios_pill_active"
+                        app:backgroundTint="@null" />
 
-        <ImageView
-            android:id="@+id/imgAttachedPreview"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:scaleType="centerCrop"
-            android:contentDescription="Imagen adjunta" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnQuickTasks"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:minHeight="0dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:layout_marginEnd="6dp"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="0dp"
+                        android:gravity="center"
+                        android:text="✅ Tareas"
+                        android:textSize="12sp"
+                        android:textColor="@color/ios_label"
+                        android:background="@drawable/bg_ios_pill"
+                        app:backgroundTint="@null" />
 
-        <TextView
-            android:id="@+id/txtImageAttachedLabel"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="Imagen adjunta para Aura"
-            android:textColor="@color/cyber_teal"
-            android:textSize="12sp" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnQuickDevicesShortcut"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:minHeight="0dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:layout_marginEnd="6dp"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="0dp"
+                        android:gravity="center"
+                        android:text="🎧 Ajustes Gestos"
+                        android:textSize="12sp"
+                        android:textColor="@color/ios_label"
+                        android:background="@drawable/bg_ios_pill"
+                        app:backgroundTint="@null" />
+                </LinearLayout>
+            </HorizontalScrollView>
 
-        <ImageButton
-            android:id="@+id/btnRemoveAttachedImage"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_delete"
-            app:tint="@color/on_surface_variant_obsidian"
-            android:contentDescription="Quitar imagen" />
-    </LinearLayout>
+            <!-- ===== Chat Stream Container (iMessage Inset Style) ===== -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="12dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="4dp"
+                android:background="@drawable/bg_ios_card"
+                android:padding="4dp">
 
-    <!-- ===== Quick Skills Toolbar ===== -->
-    <HorizontalScrollView
-        android:id="@+id/scrollQuickSkills"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:scrollbars="none"
-        android:paddingVertical="4dp"
-        android:overScrollMode="never">
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvChatHistory"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:paddingVertical="6dp" />
 
-        <LinearLayout
-            android:id="@+id/laySkillsContainer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+                <ProgressBar
+                    android:id="@+id/progressChat"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:indeterminate="true"
+                    android:visibility="gone" />
+            </FrameLayout>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAllSkills"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginEnd="6dp"
+            <!-- Attached Media Preview -->
+            <LinearLayout
+                android:id="@+id/layImagePreview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:background="@drawable/bg_ios_card_secondary"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/imgAttachedPreview"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="Imagen adjunta" />
+
+                <TextView
+                    android:id="@+id/txtImageAttachedLabel"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Imagen adjunta"
+                    android:textColor="@color/ios_blue"
+                    android:textSize="13sp" />
+
+                <ImageButton
+                    android:id="@+id/btnRemoveAttachedImage"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_delete"
+                    app:tint="@color/ios_secondary_label"
+                    android:contentDescription="Quitar imagen" />
+            </LinearLayout>
+
+            <!-- Skills Quick Bar (Chips) -->
+            <HorizontalScrollView
+                android:id="@+id/scrollQuickSkills"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="2dp"
+                android:overScrollMode="never">
+
+                <LinearLayout
+                    android:id="@+id/laySkillsContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAllSkills"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:minHeight="0dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:layout_marginEnd="6dp"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="0dp"
+                        android:gravity="center"
+                        android:textSize="12sp"
+                        android:text="⚡ Skills"
+                        android:textColor="#FFFFFF"
+                        android:background="@drawable/bg_ios_circle_button"
+                        app:backgroundTint="@color/ios_blue" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipCall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="4dp"
+                        android:text="📞 Llamar"
+                        android:textColor="@color/ios_label"
+                        app:chipBackgroundColor="@color/ios_card_secondary" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipWhatsapp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="4dp"
+                        android:text="💬 WhatsApp"
+                        android:textColor="@color/ios_label"
+                        app:chipBackgroundColor="@color/ios_card_secondary" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipEmail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="4dp"
+                        android:text="✉️ Email"
+                        android:textColor="@color/ios_label"
+                        app:chipBackgroundColor="@color/ios_card_secondary" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipTelegram"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="4dp"
+                        android:text="✈️ Telegram"
+                        android:textColor="@color/ios_label"
+                        app:chipBackgroundColor="@color/ios_card_secondary" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipGoogle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="4dp"
+                        android:text="🔍 Google"
+                        android:textColor="@color/ios_label"
+                        app:chipBackgroundColor="@color/ios_card_secondary" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipWiki"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="4dp"
+                        android:text="📖 Wiki"
+                        android:textColor="@color/ios_label"
+                        app:chipBackgroundColor="@color/ios_card_secondary" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipWeather"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="4dp"
+                        android:text="☀️ Clima"
+                        android:textColor="@color/ios_label"
+                        app:chipBackgroundColor="@color/ios_card_secondary" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipCurrency"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="4dp"
+                        android:text="💵 Divisas"
+                        android:textColor="@color/ios_label"
+                        app:chipBackgroundColor="@color/ios_card_secondary" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipNote"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="4dp"
+                        android:text="📝 Nota"
+                        android:textColor="@color/ios_label"
+                        app:chipBackgroundColor="@color/ios_card_secondary" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipReminder"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="4dp"
+                        android:text="⏰ Recordatorio"
+                        android:textColor="@color/ios_label"
+                        app:chipBackgroundColor="@color/ios_card_secondary" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipRecorder"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="4dp"
+                        android:text="🎙️ Grabar IA"
+                        android:textColor="@color/ios_label"
+                        app:chipBackgroundColor="@color/ios_card_secondary" />
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <!-- ===== iOS Style Input Message Bar ===== -->
+            <LinearLayout
+                android:id="@+id/bottomBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
                 android:paddingHorizontal="12dp"
-                android:textSize="12sp"
-                android:text="⚡ Skills"
-                app:backgroundTint="@color/cyber_teal"
-                android:textColor="@color/obsidian_bg" />
+                android:paddingVertical="6dp">
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipCall"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:text="📞 Llamar"
-                android:textColor="@color/on_surface_obsidian"
-                app:chipBackgroundColor="@color/obsidian_container_low" />
+                <!-- Native iOS Pill Message Container -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="44dp"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_ios_input_bar"
+                    android:paddingHorizontal="4dp"
+                    android:orientation="horizontal">
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipWhatsapp"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:text="💬 WhatsApp"
-                android:textColor="@color/on_surface_obsidian"
-                app:chipBackgroundColor="@color/obsidian_container_low" />
+                    <!-- Attach Media (+) -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAttachImage"
+                        style="@style/Widget.Material3.Button.IconButton"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        app:icon="@drawable/ic_add"
+                        app:iconTint="@color/ios_secondary_label"
+                        android:contentDescription="Adjuntar" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipEmail"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:text="✉️ Email"
-                android:textColor="@color/on_surface_obsidian"
-                app:chipBackgroundColor="@color/obsidian_container_low" />
+                    <!-- Input Edit Text -->
+                    <EditText
+                        android:id="@+id/edtChatMessage"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="match_parent"
+                        android:background="@null"
+                        android:hint="Comando o pregunta a Aura..."
+                        android:textColorHint="@color/ios_secondary_label"
+                        android:textColor="@color/ios_label"
+                        android:textSize="15sp"
+                        android:paddingHorizontal="8dp"
+                        android:inputType="textCapSentences"
+                        android:imeOptions="actionSend"
+                        android:maxLines="4" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipTelegram"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:text="✈️ Telegram"
-                android:textColor="@color/on_surface_obsidian"
-                app:chipBackgroundColor="@color/obsidian_container_low" />
+                    <!-- Mic Direct Dictation -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnVoiceMic"
+                        style="@style/Widget.Material3.Button.IconButton"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        app:icon="@drawable/ic_mic"
+                        app:iconTint="@color/ios_secondary_label"
+                        android:contentDescription="Dictar por voz" />
+                </LinearLayout>
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipGoogle"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:text="🔍 Google"
-                android:textColor="@color/on_surface_obsidian"
-                app:chipBackgroundColor="@color/obsidian_container_low" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipWiki"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:text="📖 Wiki"
-                android:textColor="@color/on_surface_obsidian"
-                app:chipBackgroundColor="@color/obsidian_container_low" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipWeather"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:text="☀️ Clima"
-                android:textColor="@color/on_surface_obsidian"
-                app:chipBackgroundColor="@color/obsidian_container_low" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipCurrency"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:text="💵 Divisas"
-                android:textColor="@color/on_surface_obsidian"
-                app:chipBackgroundColor="@color/obsidian_container_low" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipNote"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:text="📝 Nota"
-                android:textColor="@color/on_surface_obsidian"
-                app:chipBackgroundColor="@color/obsidian_container_low" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipReminder"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:text="⏰ Recordatorio"
-                android:textColor="@color/on_surface_obsidian"
-                app:chipBackgroundColor="@color/obsidian_container_low" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipRecorder"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:text="🎙️ Grabar IA"
-                android:textColor="@color/on_surface_obsidian"
-                app:chipBackgroundColor="@color/obsidian_container_low" />
+                <!-- iOS Blue Circular Send Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSendChat"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_ios_circle_button"
+                    app:backgroundTint="@color/ios_blue"
+                    app:icon="@drawable/ic_ios_send"
+                    app:iconTint="#FFFFFF"
+                    android:contentDescription="Enviar" />
+            </LinearLayout>
         </LinearLayout>
-    </HorizontalScrollView>
 
-    <!-- ===== Input Control Bar (bottomBar for EdgeToEdgeHelper) ===== -->
-    <LinearLayout
-        android:id="@+id/bottomBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingTop="4dp"
-        android:paddingBottom="12dp">
+        <!-- Hairline Divider above Tab Bar -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/ios_separator" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAttachImage"
-            style="@style/Widget.Material3.Button.IconButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            app:icon="@android:drawable/ic_menu_camera"
-            app:iconTint="@color/cyber_teal"
-            android:contentDescription="Adjuntar Imagen" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnVoiceMic"
-            style="@style/Widget.Material3.Button.IconButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            app:icon="@drawable/ic_mic"
-            app:iconTint="@color/cyber_teal"
-            android:contentDescription="Voz STT" />
-
-        <EditText
-            android:id="@+id/edtChatMessage"
-            style="@style/Input.Myvu"
-            android:layout_width="0dp"
-            android:layout_weight="1"
+        <!-- ===== Cupertino 5-Tab Bottom Navigation Bar ===== -->
+        <LinearLayout
+            android:id="@+id/cupertinoTabBar"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="4dp"
-            android:hint="Pregunta a Aura o usa un skill..."
-            android:inputType="textCapSentences"
-            android:imeOptions="actionSend"
-            android:maxLines="4" />
+            android:minHeight="54dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:background="@color/ios_nav_bg">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSendChat"
-            style="@style/Widget.Material3.Button.IconButton"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            app:icon="@android:drawable/ic_menu_send"
-            app:iconTint="@color/on_cyber_teal"
-            app:backgroundTint="@color/cyber_teal"
-            android:contentDescription="Enviar" />
+            <!-- Tab 1: Hub -->
+            <LinearLayout
+                android:id="@+id/tabHub"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_ios_hub"
+                    app:tint="@color/ios_blue"
+                    android:contentDescription="Hub" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Hub"
+                    android:textColor="@color/ios_blue"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Tab 2: Dispositivos -->
+            <LinearLayout
+                android:id="@+id/tabDevices"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_ios_devices"
+                    app:tint="@color/ios_secondary_label"
+                    android:contentDescription="Dispositivos" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Equipos"
+                    android:textColor="@color/ios_secondary_label"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- Tab 3: AR Studio -->
+            <LinearLayout
+                android:id="@+id/tabArStudio"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_glasses"
+                    app:tint="@color/ios_secondary_label"
+                    android:contentDescription="AR Studio" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="AR HUD"
+                    android:textColor="@color/ios_secondary_label"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- Tab 4: Traducir -->
+            <LinearLayout
+                android:id="@+id/tabTranslate"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_ios_translate"
+                    app:tint="@color/ios_secondary_label"
+                    android:contentDescription="Traducir" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Traducir"
+                    android:textColor="@color/ios_secondary_label"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- Tab 5: Notas -->
+            <LinearLayout
+                android:id="@+id/tabNotes"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_note"
+                    app:tint="@color/ios_secondary_label"
+                    android:contentDescription="Notas" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Notas"
+                    android:textColor="@color/ios_secondary_label"
+                    android:textSize="10sp" />
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+
+    <!-- ===== Navigation View (Sidebar Drawer) ===== -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/chatNavigationView"
+        android:layout_width="290dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="@color/ios_card_bg"
+        app:headerLayout="@layout/nav_header_drawer"
+        app:menu="@menu/menu_navigation_drawer"
+        app:itemIconTint="@color/ios_blue"
+        app:itemTextColor="@color/ios_label"
+        app:itemShapeInsetStart="12dp"
+        app:itemShapeInsetEnd="12dp" />
+
+</androidx.drawerlayout.widget.DrawerLayout>

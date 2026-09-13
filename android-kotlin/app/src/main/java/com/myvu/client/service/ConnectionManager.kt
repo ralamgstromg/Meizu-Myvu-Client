@@ -141,8 +141,11 @@ class ConnectionManager(
     private var rfSession: RelaySession? = null
     /** Learned over BLE; the address of the real app-relay channel. */
     private var sppUuidVal: String? = null
+    @Volatile
+    private var sppServerOpen: Boolean = false
 
     fun sppUuid(): String? = sppUuidVal
+    fun isSppServerOpen(): Boolean = sppServerOpen
 
     /** True from the moment we open the relay socket until its session is ready. */
     private var relayEstablishing = false
@@ -197,11 +200,33 @@ class ConnectionManager(
                 ai?.onPageClosed()
                 return@setAiTriggerListener
             }
+
+            if (code == 3) {
+                val elapsedSinceKey = System.currentTimeMillis() - TouchGestureManager.lastPhysicalKeyEventTime
+                if (TouchGestureManager.lastPhysicalKeyEventTime > 0L && elapsedSinceKey in 0..500L) {
+                    LogBus.log("Suppressing duplicate AI trigger (code: 3) within ${elapsedSinceKey}ms of physical button key event")
+                    return@setAiTriggerListener
+                }
+                TouchGestureManager.notifyPhysicalButtonPressed(this.context)
+            }
+
             // The glasses' mic audio only flows over the app relay. With
             // the relay down (its retry budget spent), a press listened to
             // nothing and timed out with "0 packets in" -- so treat the
             // press like the glasses asking for the relay back.
             supervisor?.wake()
+
+            val actionBtnMapping = Prefs.glassesActionButtonAction(this.context)
+            if (code == 3 && actionBtnMapping == "LAUNCH_GEMINI") {
+                TouchGestureManager.launchGeminiAssistant(this.context, isLive = false)
+                return@setAiTriggerListener
+            } else if (code == 3 && actionBtnMapping == "LAUNCH_GEMINI_LIVE") {
+                TouchGestureManager.launchGeminiAssistant(this.context, isLive = true)
+                return@setAiTriggerListener
+            } else if (code == 3 && actionBtnMapping == "LAUNCH_PHONE_ASSISTANT") {
+                TouchGestureManager.launchPhoneAssistant(this.context)
+                return@setAiTriggerListener
+            }
 
             ai().onTrigger(code)
         }
@@ -227,6 +252,14 @@ class ConnectionManager(
         return object : TouchGestureManager.ActionExecutor {
             override fun executeAiAssistant(code: Int) {
                 ai().onTrigger(code)
+            }
+
+            override fun executeHudDashboard() {
+                LogBus.log("HUD Dashboard action: letting glasses display native HUD dashboard")
+            }
+
+            override fun executeVoiceAgentAura() {
+                ai().onTrigger(3)
             }
 
             override fun executeGeminiAssistant() {
@@ -383,6 +416,12 @@ class ConnectionManager(
                 listener?.onStateChanged(state)
             }
         }
+        try {
+            val target = glassesInfoVal?.btMac?.takeIf { it.isNotBlank() } ?: com.myvu.client.core.Prefs.targetMac(context)
+            com.myvu.client.service.BluetoothDeviceManager.getInstance(context).updateGlassesBatteryLevel(target, battery)
+        } catch (e: Exception) {
+            LogBus.warn("ConnectionManager -> Could not propagate glasses battery to DB: ${e.message}")
+        }
     }
 
     fun start(mac: String) {
@@ -513,6 +552,8 @@ class ConnectionManager(
 
     private fun teardown() {
         scanner?.stop()
+        // Release any ongoing Bluetooth SCO audio channel
+        com.myvu.client.app.feature.TouchGestureManager.releaseBluetoothSco(context)
         // Fully release AI conversation (executor threads + TTS engine binding)
         ai?.shutdown()
         ai = null
@@ -530,6 +571,7 @@ class ConnectionManager(
         pairing?.cancel()
         pairing = null
         sppUuidVal = null
+        sppServerOpen = false
         // Bond keys are per-session; a new BLE bond derives fresh ones. Drop them
         // so a late profile-state event can't resend with a stale key.
         bondKey = null
@@ -666,19 +708,24 @@ class ConnectionManager(
             LinkCommands.CMD_SPP_SERVER_UUID_SYNC -> handleSppUuidSync(msg.data)
             LinkCommands.CMD_SPP_SERVER_REQUEST_CONNECT -> {
                 LogBus.trace("<- SPP_SERVER_REQUEST_CONNECT")
+                sppServerOpen = true
                 supervisor?.wake()
             }
             LinkCommands.CMD_SPP_SERVER_REQUEST_STATE_OPEN -> {
                 LogBus.trace("<- SPP server open")
+                sppServerOpen = true
                 supervisor?.wake()
             }
             LinkCommands.CMD_SPP_SERVER_REQUEST_STATE_CLOSE -> {
+                sppServerOpen = false
                 if (relayEstablishing) {
                     LogBus.trace("<- SPP server close (stale; relay still establishing)")
+                    closeRelay()
+                    supervisor?.onSppServerClosed()
                 } else {
                     LogBus.log("<- SPP server closed by the glasses -- dropping the relay")
                     closeRelay()
-                    supervisor?.onRelayLost()
+                    supervisor?.onSppServerClosed()
                 }
             }
             else -> {
@@ -708,6 +755,7 @@ class ConnectionManager(
             closeRelay()
         }
         sppUuidVal = uuid
+        sppServerOpen = true
         LogBus.log("<- SPP_SERVER_UUID_SYNC: uuid=$sppUuidVal")
         supervisor?.wake()
     }
@@ -778,11 +826,12 @@ class ConnectionManager(
     }
 
     fun wakeRelay() {
+        sppServerOpen = true
         conn.post { supervisor?.wake() }
     }
 
     override fun canConnectRelay(): Boolean {
-        return sppUuidVal != null && device != null && !relayEstablishing
+        return sppUuidVal != null && sppServerOpen && device != null && !relayEstablishing
     }
 
     override fun connectRelay() {
@@ -906,7 +955,15 @@ class ConnectionManager(
             LogBus.error("could not build AUTH_SUCCESS", e)
             return
         }
-        conn.postDelayed({ sendInitBurst(session, transport) }, 500)
+        if (transport != null && bleSession.ready) {
+            // BLE already executed the init burst and initialized the launcher.
+            // Replaying all 27 init frames over RFCOMM wakes the screen and triggers reconnect loops on Flyme XR.
+            session.ready = true
+            LogBus.log("app relay ready (init burst skipped — already completed on BLE)")
+            onSessionReady(transport)
+        } else {
+            conn.postDelayed({ sendInitBurst(session, transport) }, 500)
+        }
     }
 
     private fun handleRelayMessage(m: RelayMessage, session: RelaySession, transport: Transport?) {
@@ -1005,14 +1062,6 @@ class ConnectionManager(
         }
 
         for (p in toFlush) {
-            val isNotification = p.actionJson.contains("SHOW_NOTIFICATION")
-            if (isNotification && transport == null && (relayEstablishing || canConnectRelay())) {
-                // Keep notification queued until RFCOMM relay is ready without tight loop re-entry
-                if (pendingNotifications.size < 5) {
-                    pendingNotifications.add(p)
-                }
-                continue
-            }
             LogBus.log("flushing queued action/notification: ${truncate(p.actionJson, 80)}")
             sendActionNow(p.actionJson, p.targetPkg, p.sourcePkg)
         }
@@ -1025,23 +1074,10 @@ class ConnectionManager(
         val bleAlreadyApplied = bleSession.ready && transport != null
         if (!bleAlreadyApplied) {
             applyDefaults()
+            connectAudioProfiles()
         } else {
             LogBus.log("applyDefaults skipped on relay session — BLE already applied settings")
-            conn.postDelayed({
-                try {
-                    sendActionNow(
-                        AiProtocol.assistantConfig(
-                            Prefs.voiceWakeupEnabled(context),
-                            Prefs.continuousDialogueEnabled(context)
-                        ),
-                        AiProtocol.PKG,
-                        AiProtocol.PKG
-                    )
-                } catch (ignored: Exception) {
-                }
-            }, 300)
         }
-        connectAudioProfiles()
 
         if (transport == null) {
             if (supervisor == null) {
@@ -1116,7 +1152,7 @@ class ConnectionManager(
                 sendActionNow(
                     AiProtocol.assistantConfig(
                         Prefs.voiceWakeupEnabled(context),
-                        Prefs.continuousDialogueEnabled(context)
+                        BluetoothDeviceManager.getInstance(context).isActiveListeningEnabledBlocking()
                     ),
                     AiProtocol.PKG,
                     AiProtocol.PKG
@@ -1199,20 +1235,8 @@ class ConnectionManager(
         val session = activeSession()
         val transport = activeTransport()
 
-        val isNotification = actionJson.contains("SHOW_NOTIFICATION")
-        if (isNotification && transport == null) {
-            if (relayEstablishing || canConnectRelay()) {
-                if (pendingNotifications.size < 5) {
-                    pendingNotifications.add(PendingAction(actionJson, targetPkg, sourcePkg))
-                    LogBus.warn("app relay not ready -- queued notification for RFCOMM delivery")
-                }
-                wakeRelay()
-                return
-            }
-        }
-
         if (session == null || !session.ready) {
-            if (session != null || bleSession?.authConfirmed == true) {
+            if (session != null || bleSession.authConfirmed) {
                 if (pendingNotifications.size < 10) {
                     pendingNotifications.add(PendingAction(actionJson, targetPkg, sourcePkg))
                     LogBus.log("session establishing -- queued action for delivery once ready: ${truncate(actionJson, 80)}")

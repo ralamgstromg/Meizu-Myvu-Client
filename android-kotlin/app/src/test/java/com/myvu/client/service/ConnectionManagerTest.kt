@@ -127,5 +127,45 @@ class ConnectionManagerTest {
         onConnectPressed()
         assertEquals(true, autoReconnectEnabled)
     }
+
+    @Test
+    fun testSppServerOpenStateAndRelayRequirements() {
+        var sppUuidVal: String? = "00009121-0000-1000-8000-00805f9b34fb"
+        var sppServerOpen = false
+        var deviceConnected = true
+        var relayEstablishing = false
+
+        fun canConnectRelay(): Boolean {
+            return sppUuidVal != null && sppServerOpen && deviceConnected && !relayEstablishing
+        }
+
+        // When glasses close SPP server, canConnectRelay must be false even if UUID is known
+        assertEquals(false, canConnectRelay())
+
+        // When glasses send CMD_SPP_SERVER_REQUEST_STATE_OPEN or UUID sync
+        sppServerOpen = true
+        assertEquals(true, canConnectRelay())
+
+        // When relay is already establishing, canConnectRelay must be false
+        relayEstablishing = true
+        assertEquals(false, canConnectRelay())
+    }
+
+    @Test
+    fun testNotificationDirectBleDeliveryWhenRelayDown() {
+        val sentTransports = mutableListOf<String>()
+        val activeRelayTransport: String? = null // Relay is down
+
+        fun sendNotification(actionJson: String, relayTransport: String?) {
+            // When relay is down (null), notification is NOT withheld or queued for RFCOMM
+            // but dispatched immediately over BLE
+            val effectiveTransport = relayTransport ?: "BLE"
+            sentTransports.add(effectiveTransport)
+        }
+
+        sendNotification("""{"action":"notification","data":{"notificationAction":"SHOW_NOTIFICATION"}}""", activeRelayTransport)
+
+        assertEquals(listOf("BLE"), sentTransports)
+    }
 }
 

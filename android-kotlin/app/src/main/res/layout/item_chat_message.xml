@@ -1,32 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/layMessageRoot"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingVertical="6dp"
-    android:paddingHorizontal="4dp">
+    android:paddingVertical="4dp"
+    android:paddingHorizontal="8dp">
 
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardMessage"
+    <!-- Row with optional AI avatar and message bubble -->
+    <LinearLayout
+        android:id="@+id/layMessageRow"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:cardCornerRadius="14dp"
-        app:cardElevation="0dp"
-        app:strokeWidth="1dp"
-        app:strokeColor="@color/outline_variant_obsidian">
+        android:orientation="horizontal"
+        android:gravity="bottom">
+
+        <!-- AI Avatar Indicator -->
+        <ImageView
+            android:id="@+id/imgAiAvatar"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_marginEnd="6dp"
+            android:layout_marginBottom="2dp"
+            android:src="@drawable/ic_sparkle"
+            android:background="@drawable/bg_ios_circle_button"
+            android:backgroundTint="@color/ios_pill_active_bg"
+            android:padding="6dp"
+            app:tint="@color/ios_blue"
+            android:visibility="gone"
+            android:contentDescription="Companion AI" />
 
         <LinearLayout
+            android:id="@+id/bubbleContainer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:maxWidth="300dp"
             android:orientation="vertical"
+            android:background="@drawable/bg_ios_bubble_ai"
             android:paddingHorizontal="14dp"
-            android:paddingVertical="10dp">
+            android:paddingVertical="9dp">
 
             <ImageView
                 android:id="@+id/imgMessageAttached"
-                android:layout_width="160dp"
-                android:layout_height="120dp"
+                android:layout_width="200dp"
+                android:layout_height="140dp"
                 android:scaleType="centerCrop"
                 android:visibility="gone"
                 android:layout_marginBottom="6dp"
@@ -36,13 +54,14 @@
                 android:id="@+id/txtMessageContent"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/on_surface_obsidian"
-                android:textSize="14sp" />
+                android:textColor="@color/ios_label"
+                android:textSize="15sp"
+                android:lineSpacingExtra="2dp" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="3dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -50,18 +69,18 @@
                     android:id="@+id/txtMessageTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/on_surface_variant_obsidian"
+                    android:textColor="@color/ios_secondary_label"
                     android:textSize="10sp" />
 
                 <TextView
                     android:id="@+id/txtMessageSource"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:textColor="@color/cyber_teal"
+                    android:layout_marginStart="6dp"
+                    android:textColor="@color/ios_blue"
                     android:textSize="10sp"
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
 </LinearLayout>

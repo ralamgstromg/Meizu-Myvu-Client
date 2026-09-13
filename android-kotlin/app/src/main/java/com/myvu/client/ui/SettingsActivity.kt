@@ -42,6 +42,7 @@ import com.myvu.client.core.GlassesConfig
 import com.myvu.client.core.GoogleDriveSyncHelper
 import com.myvu.client.core.LogBus
 import com.myvu.client.core.Prefs
+import com.myvu.client.core.TotalDisconnectHelper
 import com.myvu.client.service.MyvuService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -131,14 +132,47 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_settings)
         bindViews()
         configureProviderSelectors()
+        configureThemeSelector()
         bindStoredValues()
-        configureResponseMode()
-        configureListeningSettings()
         configurePersistence()
         configureButtons()
         setupBackupRestoreUi()
         setupLockScreenSettings()
         configureAutoSendUi()
+    }
+
+    private fun configureThemeSelector() {
+        val btnThemeSystem: MaterialButton? = findViewById(R.id.btnThemeSystem)
+        val btnThemeLight: MaterialButton? = findViewById(R.id.btnThemeLight)
+        val btnThemeDark: MaterialButton? = findViewById(R.id.btnThemeDark)
+
+        fun updateButtons() {
+            val current = Prefs.themeMode(this)
+            btnThemeSystem?.strokeWidth = if (current == Prefs.THEME_MODE_SYSTEM) 3 else 1
+            btnThemeLight?.strokeWidth = if (current == Prefs.THEME_MODE_LIGHT) 3 else 1
+            btnThemeDark?.strokeWidth = if (current == Prefs.THEME_MODE_DARK) 3 else 1
+        }
+
+        updateButtons()
+
+        btnThemeSystem?.setOnClickListener {
+            Prefs.setThemeMode(this, Prefs.THEME_MODE_SYSTEM)
+            updateButtons()
+            Toast.makeText(this, "Tema automático (sigue el sistema)", Toast.LENGTH_SHORT).show()
+            recreate()
+        }
+        btnThemeLight?.setOnClickListener {
+            Prefs.setThemeMode(this, Prefs.THEME_MODE_LIGHT)
+            updateButtons()
+            Toast.makeText(this, "Modo Claro activado", Toast.LENGTH_SHORT).show()
+            recreate()
+        }
+        btnThemeDark?.setOnClickListener {
+            Prefs.setThemeMode(this, Prefs.THEME_MODE_DARK)
+            updateButtons()
+            Toast.makeText(this, "Modo Oscuro activado", Toast.LENGTH_SHORT).show()
+            recreate()
+        }
     }
 
 
@@ -239,60 +273,6 @@ class SettingsActivity : AppCompatActivity() {
         bindTtsFields()
     }
 
-    private fun configureResponseMode() {
-        val group: MaterialButtonToggleGroup? = findViewById(R.id.btnAiResponseModeGroup)
-        group ?: return
-        val mode = AiResponseMode.fromId(Prefs.aiResponseMode(this))
-        group.check(
-            when (mode) {
-                AiResponseMode.VOICE_ONLY -> R.id.btnAiResponseVoice
-                AiResponseMode.VISUAL_ONLY -> R.id.btnAiResponseVisual
-                AiResponseMode.VOICE_AND_VISUAL -> R.id.btnAiResponseBoth
-            }
-        )
-        group.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            val selected = when (checkedId) {
-                R.id.btnAiResponseVoice -> AiResponseMode.VOICE_ONLY
-                R.id.btnAiResponseVisual -> AiResponseMode.VISUAL_ONLY
-                else -> AiResponseMode.VOICE_AND_VISUAL
-            }
-            Prefs.setAiResponseMode(this, selected.id)
-        }
-    }
-
-    private fun configureListeningSettings() {
-        val swContinuousDialogue: MaterialSwitch? = findViewById(R.id.swContinuousDialogue)
-        swContinuousDialogue?.isChecked = Prefs.continuousDialogueEnabled(this)
-        swContinuousDialogue?.setOnCheckedChangeListener { _, isChecked ->
-            Prefs.setContinuousDialogueEnabled(this, isChecked)
-            pushAssistantConfigToGlasses()
-        }
-
-        val swVoiceWakeup: MaterialSwitch? = findViewById(R.id.swVoiceWakeup)
-        swVoiceWakeup?.isChecked = Prefs.voiceWakeupEnabled(this)
-        swVoiceWakeup?.setOnCheckedChangeListener { _, isChecked ->
-            Prefs.setVoiceWakeupEnabled(this, isChecked)
-            pushAssistantConfigToGlasses()
-        }
-    }
-
-    private fun pushAssistantConfigToGlasses() {
-        try {
-            val payload = com.myvu.client.app.feature.AiProtocol.assistantConfig(
-                Prefs.voiceWakeupEnabled(this),
-                Prefs.continuousDialogueEnabled(this)
-            )
-            com.myvu.client.service.MyvuService.activeConnection()?.sendAction(
-                payload,
-                com.myvu.client.app.feature.AiProtocol.PKG,
-                com.myvu.client.app.feature.AiProtocol.PKG
-            )
-        } catch (e: Exception) {
-            com.myvu.client.core.LogBus.error("Failed to push assistantConfig to glasses", e)
-        }
-    }
-
     private fun configurePersistence() {
         persist(txtApiKey) { value ->
             if (!bindingAi) Prefs.setAiApiKey(this, aiProvider.id, value)
@@ -332,15 +312,14 @@ class SettingsActivity : AppCompatActivity() {
     private fun configureButtons() {
         wireWeather()
         wireMirror()
-        wireGlassesSettings()
         wireLogging()
-        wireTouchpad()
+        wireAutoReLock()
         findViewById<View>(R.id.btnPickApps).setOnClickListener {
             startActivity(Intent(this, NotificationAppsActivity::class.java))
         }
         val navigateToDashboard = {
             if (isTaskRoot) {
-                val intent = Intent(this, ConnectActivity::class.java)
+                val intent = Intent(this, com.myvu.client.ui.chat.ChatActivity::class.java)
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 startActivity(intent)
             }
@@ -348,139 +327,53 @@ class SettingsActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.btnSettingsBack).setOnClickListener { navigateToDashboard() }
         findViewById<View?>(R.id.btnSettingsDrawer)?.setOnClickListener { navigateToDashboard() }
+        findViewById<View?>(R.id.btnOpenGlassesSettings)?.setOnClickListener {
+            val mac = Prefs.targetMac(this)
+            GlassesSettingsActivity.start(this, mac, "Gafas Meizu MYVU")
+        }
+        findViewById<View?>(R.id.btnOpenHeadphoneSettings)?.setOnClickListener {
+            HeadphoneSettingsActivity.start(this)
+        }
+        findViewById<View?>(R.id.btnOpenDeviceManager)?.setOnClickListener {
+            DeviceManagementBottomSheet.show(supportFragmentManager)
+        }
+        findViewById<View?>(R.id.btnSettingsDevices)?.setOnClickListener {
+            DeviceManagementBottomSheet.show(supportFragmentManager)
+        }
+        wireServiceMasterToggle()
     }
 
-    private fun showAppPickerDialog(onAppSelected: (pkg: String, label: String) -> Unit) {
-        val pm = packageManager
-        val launchable = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        val resolved = pm.queryIntentActivities(launchable, 0)
-        val appList = ArrayList<Pair<String, String>>()
-        val seen = HashSet<String>()
-        for (ri in resolved) {
-            val ai = ri.activityInfo?.applicationInfo ?: continue
-            if (seen.add(ai.packageName)) {
-                val label = pm.getApplicationLabel(ai).toString()
-                appList.add(ai.packageName to label)
-            }
-        }
-        appList.sortBy { it.second.lowercase() }
-        val names = appList.map { it.second }.toTypedArray()
+    private fun wireServiceMasterToggle() {
+        val swService: MaterialSwitch? = findViewById(R.id.swSettingsMasterService)
+        val btnTotalDisconnect: View? = findViewById(R.id.btnSettingsTotalDisconnect)
 
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-            .setTitle("Seleccionar Aplicación")
-            .setItems(names) { _, which ->
-                if (which in appList.indices) {
-                    val chosen = appList[which]
-                    onAppSelected(chosen.first, chosen.second)
+        swService?.isChecked = Prefs.autoReconnectEnabled(this)
+        swService?.setOnClickListener {
+            val isChecked = (it as MaterialSwitch).isChecked
+            if (isChecked) {
+                LogBus.log("Settings: Activando servicios en segundo plano y reconexión...")
+                Prefs.setAutoReconnectEnabled(this, true)
+                val intent = Intent(this, MyvuService::class.java).apply {
+                    action = MyvuService.ACTION_START
                 }
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
-
-    private fun resolveActionDisplayName(actionId: String): String {
-        return if (GestureAction.isAppAction(actionId)) {
-            val pkg = GestureAction.getAppPackage(actionId) ?: ""
-            try {
-                val pm = packageManager
-                val label = pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
-                "App: $label"
-            } catch (e: Exception) {
-                "App: $pkg"
-            }
-        } else {
-            GestureAction.fromId(actionId).displayName
-        }
-    }
-
-    private fun wireTouchpad() {
-        val actions = GestureAction.entries.toTypedArray()
-        val displayNames = actions.map { it.displayName }.toTypedArray()
-
-        fun syncMusicTp() {
-            Prefs.setMusicTouchPanelEnabled(this, true)
-            try {
-                MyvuService.activeConnection()?.sendAction(
-                    SystemSettings.setMusicTpControl(true)
-                )
-            } catch (e: Exception) {
-                LogBus.error("Failed to sync music tp control to glasses", e)
-            }
-        }
-
-        fun setupDropdown(
-            actId: Int,
-            getSavedActionId: () -> String,
-            saveActionId: (String) -> Unit
-        ) {
-            val act = findViewById<AutoCompleteTextView?>(actId) ?: return
-            val adapter = ArrayAdapter(
-                this,
-                android.R.layout.simple_dropdown_item_1line,
-                displayNames
-            )
-            act.setAdapter(adapter)
-
-            val currentRawId = getSavedActionId()
-            act.setText(resolveActionDisplayName(currentRawId), false)
-            act.setOnClickListener { act.showDropDown() }
-
-            act.setOnItemClickListener { _, _, position, _ ->
-                if (position in actions.indices) {
-                    val selected = actions[position]
-                    if (selected == GestureAction.LAUNCH_APP) {
-                        showAppPickerDialog { pkg, label ->
-                            val appActionId = GestureAction.makeAppActionId(pkg)
-                            saveActionId(appActionId)
-                            act.setText("App: $label", false)
-                            syncMusicTp()
-                        }
-                    } else {
-                        saveActionId(selected.id)
-                        act.setText(selected.displayName, false)
-                        syncMusicTp()
-                    }
+                startForegroundService(intent)
+                Toast.makeText(this, "Servicios en segundo plano activados", Toast.LENGTH_SHORT).show()
+            } else {
+                LogBus.log("Settings: Inactivando servicios en segundo plano...")
+                TotalDisconnectHelper.performTotalDisconnect(this) {
+                    swService.isChecked = false
                 }
             }
         }
 
-        setupDropdown(
-            R.id.actTouchpadTap,
-            { Prefs.touchpadTapAction(this) },
-            { Prefs.setTouchpadTapAction(this, it) }
-        )
-        setupDropdown(
-            R.id.actTouchpadDoubleTap,
-            { Prefs.touchpadDoubleTapAction(this) },
-            { Prefs.setTouchpadDoubleTapAction(this, it) }
-        )
-        setupDropdown(
-            R.id.actTouchpadTripleTap,
-            { Prefs.touchpadTripleTapAction(this) },
-            { Prefs.setTouchpadTripleTapAction(this, it) }
-        )
-        setupDropdown(
-            R.id.actTouchpadSwipeForward,
-            { Prefs.touchpadSwipeForwardAction(this) },
-            { Prefs.setTouchpadSwipeForwardAction(this, it) }
-        )
-        setupDropdown(
-            R.id.actTouchpadSwipeBackward,
-            { Prefs.touchpadSwipeBackwardAction(this) },
-            { Prefs.setTouchpadSwipeBackwardAction(this, it) }
-        )
-        setupDropdown(
-            R.id.actTouchpadLongPress,
-            { Prefs.touchpadLongPressAction(this) },
-            { Prefs.setTouchpadLongPressAction(this, it) }
-        )
-
-        val swForceGeminiSco: MaterialSwitch? = findViewById(R.id.swForceGeminiSco)
-        swForceGeminiSco?.isChecked = Prefs.isGeminiForceScoEnabled(this)
-        swForceGeminiSco?.setOnCheckedChangeListener { _, isChecked ->
-            Prefs.setGeminiForceScoEnabled(this, isChecked)
+        btnTotalDisconnect?.setOnClickListener {
+            TotalDisconnectHelper.performTotalDisconnect(this) {
+                swService?.isChecked = false
+            }
         }
+    }
 
+    private fun wireAutoReLock() {
         val sliderReLock: Slider? = findViewById(R.id.sliderScreenReLockTimeout)
         val lblReLock: TextView? = findViewById(R.id.lblScreenReLockTimeout)
         val currentReLockSeconds = Prefs.screenReLockTimeoutSeconds(this)
@@ -513,6 +406,9 @@ class SettingsActivity : AppCompatActivity() {
                 Prefs.setLoggingEnabled(this, checked)
             }
         }
+        findViewById<View>(R.id.btnOpenActivityLog)?.setOnClickListener {
+            startActivity(Intent(this, ActivityLogActivity::class.java))
+        }
     }
 
     private fun wireMirror() {
@@ -521,86 +417,6 @@ class SettingsActivity : AppCompatActivity() {
             sw.isChecked = Prefs.mirrorEnabled(this)
             sw.setOnCheckedChangeListener { _, checked ->
                 Prefs.setMirrorEnabled(this, checked)
-            }
-        }
-
-        val sliderNotifDuration: Slider? = findViewById(R.id.sliderNotifDuration)
-        val lblNotifDuration: TextView? = findViewById(R.id.lblNotifDuration)
-        val currentNotifDuration = GlassesConfig.getNotificationDuration(this)
-
-        if (sliderNotifDuration != null) {
-            sliderNotifDuration.value = currentNotifDuration.toFloat()
-            lblNotifDuration?.text = "Notification display time: ${currentNotifDuration}s (Default: 5s)"
-            sliderNotifDuration.addOnChangeListener { _, value, _ ->
-                val valInt = value.toInt()
-                GlassesConfig.setNotificationDuration(this, valInt)
-                lblNotifDuration?.text = "Notification display time: ${valInt}s (Default: 5s)"
-            }
-        }
-    }
-
-    private fun wireGlassesSettings() {
-        val sliderBrightness: Slider? = findViewById(R.id.sliderBrightness)
-        val sliderVolume: Slider? = findViewById(R.id.sliderVolume)
-        val lblBrightness: TextView? = findViewById(R.id.lblBrightness)
-        val lblVolume: TextView? = findViewById(R.id.lblVolume)
-
-        val currentBrightness = GlassesConfig.getBrightness(this)
-        val currentVolume = GlassesConfig.getVolume(this)
-
-        if (sliderBrightness != null) {
-            sliderBrightness.value = currentBrightness.toFloat()
-            lblBrightness?.text = "Display brightness: $currentBrightness (Default: 3)"
-            sliderBrightness.addOnChangeListener { _, value, _ ->
-                val valInt = value.toInt()
-                GlassesConfig.setBrightness(this, valInt)
-                lblBrightness?.text = "Display brightness: $valInt (Default: 3)"
-            }
-        }
-
-        if (sliderVolume != null) {
-            sliderVolume.value = currentVolume.toFloat()
-            lblVolume?.text = "Glasses volume: $currentVolume (Default: 11)"
-            sliderVolume.addOnChangeListener { _, value, _ ->
-                val valInt = value.toInt()
-                GlassesConfig.setVolume(this, valInt)
-                lblVolume?.text = "Glasses volume: $valInt (Default: 11)"
-            }
-        }
-
-        val sliderStandbyPos: Slider? = findViewById(R.id.sliderStandbyPos)
-        val lblStandbyPos: TextView? = findViewById(R.id.lblStandbyPos)
-        val currentStandbyPos = GlassesConfig.getStandbyPosition(this)
-
-        fun describePos(pos: Int): String = when (pos) {
-            0 -> "Centro (0)"
-            1 -> "Superior (1)"
-            2 -> "Inferior (2)"
-            3 -> "Lateral / Extremo (3)"
-            else -> "Posición: $pos"
-        }
-
-        if (sliderStandbyPos != null) {
-            sliderStandbyPos.value = currentStandbyPos.toFloat()
-            lblStandbyPos?.text = "Posición del Dashboard en Gafas (FOV): ${describePos(currentStandbyPos)}"
-            sliderStandbyPos.addOnChangeListener { _, value, _ ->
-                val valInt = value.toInt()
-                GlassesConfig.setStandbyPosition(this, valInt)
-                lblStandbyPos?.text = "Posición del Dashboard en Gafas (FOV): ${describePos(valInt)}"
-            }
-        }
-
-        val sliderScreenOff: Slider? = findViewById(R.id.sliderScreenOff)
-        val lblScreenOff: TextView? = findViewById(R.id.lblScreenOff)
-        val currentScreenOff = GlassesConfig.getScreenOffTime(this)
-
-        if (sliderScreenOff != null) {
-            sliderScreenOff.value = currentScreenOff.toFloat()
-            lblScreenOff?.text = "Screen active time: ${currentScreenOff}s (Default: 10s)"
-            sliderScreenOff.addOnChangeListener { _, value, _ ->
-                val valInt = value.toInt()
-                GlassesConfig.setScreenOffTime(this, valInt)
-                lblScreenOff?.text = "Screen active time: ${valInt}s (Default: 10s)"
             }
         }
     }
@@ -678,6 +494,7 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        findViewById<MaterialSwitch?>(R.id.swSettingsMasterService)?.isChecked = Prefs.autoReconnectEnabled(this)
         val count = Prefs.allowedPackages(this).size
         findViewById<TextView>(R.id.txtAllowedSummary).text = if (count == 0) {
             "No apps selected — nothing is mirrored"

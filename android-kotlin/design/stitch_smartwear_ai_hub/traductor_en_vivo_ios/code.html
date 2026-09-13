@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Companion Hub - Traducción en Vivo</title>
+<!-- Google Fonts: Inter & SF-style typography -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&amp;family=SF+Pro+Text:wght@400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+JP:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "ios-bg": "#F2F2F7",
+            "ios-card": "#FFFFFF",
+            "ios-card-secondary": "#F8F9FA",
+            "ios-blue": "#007AFF",
+            "ios-blue-light": "#EBF3FF",
+            "ios-green": "#34C759",
+            "ios-green-light": "#E9F9EE",
+            "ios-gray-text": "#8E8E93",
+            "ios-secondary-text": "#6C6C70",
+            "ios-separator": "rgba(60, 60, 67, 0.12)",
+            "ios-border": "rgba(0, 0, 0, 0.06)",
+            "ios-red": "#FF3B30",
+            "ios-red-light": "#FFF0EF"
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"SF Pro Display"', 'Inter', 'system-ui', 'sans-serif'],
+            jp: ['"Noto Sans JP"', '-apple-system', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-filled {
+      font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+    }
+    
+    /* Native iOS Switch styling */
+    .ios-switch {
+      position: relative;
+      display: inline-block;
+      width: 51px;
+      height: 31px;
+    }
+    .ios-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .ios-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #E9E9EB;
+      transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 31px;
+    }
+    .ios-slider:before {
+      position: absolute;
+      content: "";
+      height: 27px;
+      width: 27px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0,0,0,0.06);
+      transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 50%;
+    }
+    input:checked + .ios-slider {
+      background-color: #34C759;
+    }
+    input:checked + .ios-slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Subtle iOS Wave Pulse */
+    @keyframes iosPulseWave {
+      0%, 100% { height: 4px; }
+      50% { height: 18px; }
+    }
+    .wave-b1 { animation: iosPulseWave 0.9s ease-in-out infinite 0.1s; }
+    .wave-b2 { animation: iosPulseWave 1.1s ease-in-out infinite 0.3s; }
+    .wave-b3 { animation: iosPulseWave 0.7s ease-in-out infinite 0.15s; }
+    .wave-b4 { animation: iosPulseWave 1.2s ease-in-out infinite 0.4s; }
+    .wave-b5 { animation: iosPulseWave 0.8s ease-in-out infinite 0.25s; }
+
+    /* Hide scrollbars for chips */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-ios-bg text-[#1C1C1E] min-h-screen flex flex-col font-sans antialiased selection:bg-ios-blue selection:text-white">
+<!-- TOP APP BAR / iOS NAVIGATION BAR -->
+<header class="sticky top-0 z-40 w-full bg-ios-bg/85 backdrop-blur-xl border-b border-ios-separator">
+<!-- iOS Status Bar Placeholder area -->
+<div class="h-11 w-full flex items-center justify-between px-6 pt-1 select-none text-[14px] font-semibold text-[#000000]">
+<span>9:41</span>
+<div class="flex items-center gap-1.5 text-black">
+<span class="material-symbols-outlined text-[17px] -mr-0.5">signal_cellular_alt</span>
+<span class="material-symbols-outlined text-[17px] -mr-0.5">wifi</span>
+<span class="material-symbols-outlined material-symbols-filled text-[20px]">battery_full</span>
+</div>
+</div>
+<!-- Navigation Title & Action Bar -->
+<div class="flex items-center justify-between px-4 pb-2.5 pt-1">
+<div class="flex items-center gap-2">
+<button class="w-9 h-9 flex items-center justify-center rounded-full active:bg-black/5 transition-colors text-ios-blue">
+<span class="material-symbols-outlined text-[24px]">arrow_back_ios_new</span>
+</button>
+<div>
+<h1 class="text-[17px] font-semibold tracking-tight text-[#000000] leading-none">Traductor en Vivo</h1>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-ios-green"></span>
+<span class="text-[11px] font-medium text-ios-gray-text tracking-normal uppercase">BLE 5.4 • Motor Neural Activo (8ms)</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-9 h-9 flex items-center justify-center rounded-full bg-black/[0.04] text-ios-blue active:bg-black/10 transition-colors">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+</button>
+</div>
+</div>
+</header>
+<!-- MAIN SCROLLABLE CONTENT -->
+<main class="flex-1 w-full max-w-xl mx-auto px-4 pt-3 pb-36 flex flex-col gap-y-4">
+<!-- SUBTITLE HERO / WEARABLE BADGE -->
+<div class="flex items-center justify-between px-1">
+<p class="text-[13px] text-ios-secondary-text">Audio bidireccional asistido y proyección HUD</p>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-ios-border shadow-sm text-[12px] font-medium text-[#1C1C1E]">
+<span class="material-symbols-outlined text-ios-blue text-[15px]">headphones</span>
+<span class="text-ios-gray-text text-[10px]">+</span>
+<span class="material-symbols-outlined text-ios-blue text-[15px]">eyeglasses</span>
+<span class="w-1.5 h-1.5 rounded-full bg-ios-green ml-0.5 animate-pulse"></span>
+</div>
+</div>
+<!-- AUDIO ROUTING INSET GROUP (Apple HIG Inset Grouped Table Card) -->
+<section class="bg-ios-card rounded-2xl shadow-sm border border-ios-border overflow-hidden divide-y divide-ios-separator">
+<!-- Switch Item 1 -->
+<div class="p-3.5 sm:px-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-xl bg-[#007AFF]/10 flex items-center justify-center text-ios-blue flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">hearing</span>
+</div>
+<div>
+<h2 class="text-[15px] font-semibold text-[#1C1C1E] leading-snug">Canal de audio en auriculares</h2>
+<p class="text-[12px] text-ios-secondary-text leading-tight mt-0.5">Escuchar traducción en tiempo real con baja latencia</p>
+</div>
+</div>
+<label class="ios-switch ml-3 flex-shrink-0">
+<input checked="" type="checkbox"/>
+<span class="ios-slider"></span>
+</label>
+</div>
+<!-- Switch Item 2 -->
+<div class="p-3.5 sm:px-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-xl bg-[#5856D6]/10 flex items-center justify-center text-[#5856D6] flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</div>
+<div>
+<h2 class="text-[15px] font-semibold text-[#1C1C1E] leading-snug">Subtítulos HUD en Gafas AR</h2>
+<p class="text-[12px] text-ios-secondary-text leading-tight mt-0.5">Ver traducción proyectada en el campo visual</p>
+</div>
+</div>
+<label class="ios-switch ml-3 flex-shrink-0">
+<input checked="" type="checkbox"/>
+<span class="ios-slider"></span>
+</label>
+</div>
+</section>
+<!-- APPLE TRANSLATE STYLE DUAL LANGUAGE SELECTOR PILLS -->
+<section class="flex items-center gap-2 p-1.5 rounded-2xl bg-black/[0.04]">
+<!-- Source Language Pill -->
+<button class="flex-1 flex items-center justify-between bg-ios-card px-3.5 py-2.5 rounded-xl shadow-sm border border-ios-border active:bg-gray-50 transition-colors">
+<div class="flex items-center gap-2 min-w-0">
+<span class="text-[18px]">🇪🇸</span>
+<div class="text-left truncate">
+<div class="text-[10px] uppercase font-semibold text-ios-gray-text tracking-wide">Entrada</div>
+<div class="text-[15px] font-semibold text-[#1C1C1E] truncate">Español (ES)</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-ios-gray-text text-[18px]">unfold_more</span>
+</button>
+<!-- Reversible Swap Pill Button -->
+<button aria-label="Intercambiar idiomas" class="w-10 h-10 rounded-xl bg-ios-card hover:bg-ios-blue-light active:scale-95 shadow-sm border border-ios-border flex items-center justify-center text-ios-blue transition-all flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">sync_alt</span>
+</button>
+<!-- Target Language Pill -->
+<button class="flex-1 flex items-center justify-between bg-ios-card px-3.5 py-2.5 rounded-xl shadow-sm border border-ios-border active:bg-gray-50 transition-colors">
+<div class="flex items-center gap-2 min-w-0">
+<span class="text-[18px]">🇯🇵</span>
+<div class="text-left truncate">
+<div class="text-[10px] uppercase font-semibold text-ios-gray-text tracking-wide">Destino</div>
+<div class="text-[15px] font-semibold text-[#1C1C1E] truncate">Japonés (JP)</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-ios-gray-text text-[18px]">unfold_more</span>
+</button>
+</section>
+<!-- LIVE TRANSCRIPTION FEED CONTAINER -->
+<div class="space-y-3 pt-1">
+<!-- Telemetry Info Pill -->
+<div class="flex items-center justify-between px-2 text-[12px] text-ios-gray-text font-medium">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-ios-blue animate-ping"></span>
+<span class="text-ios-blue font-semibold">Captura Estéreo Espacial</span>
+</div>
+<div class="flex items-center gap-2 text-[11px]">
+<span>Latencia: <strong class="text-ios-green font-semibold">12 ms</strong></span>
+<span>•</span>
+<span>Modelo: <strong class="text-[#1C1C1E] font-medium">Gemini-Neural-v4</strong></span>
+</div>
+</div>
+<!-- SPEAKER 1: Interlocutor (Remote Speaker Japanese -> Spanish) -->
+<div class="bg-ios-card rounded-2xl p-4 shadow-sm border border-ios-border">
+<div class="flex items-center justify-between mb-2.5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-[#E5E5EA] flex items-center justify-center text-[11px] font-bold text-[#1C1C1E]">
+              JP
+            </div>
+<span class="text-[13px] font-semibold text-[#1C1C1E]">Interlocutor</span>
+<span class="text-[11px] text-ios-gray-text">(Gafas AR FOV Izq.)</span>
+</div>
+<span class="text-[11px] text-ios-gray-text">10:42:04</span>
+</div>
+<!-- Original Japanese -->
+<p class="font-jp text-[15px] text-ios-secondary-text leading-relaxed tracking-wide">
+          こんにちは。新幹線のチケットはどこで購入できますか？
+        </p>
+<!-- Divider -->
+<div class="my-2.5 h-[1px] bg-ios-separator"></div>
+<!-- Translated Spanish -->
+<div class="flex items-start justify-between gap-3">
+<p class="text-[17px] font-semibold text-ios-blue leading-snug">
+            "Hola. ¿Dónde puedo comprar los boletos para el tren bala Shinkansen?"
+          </p>
+<button class="w-8 h-8 rounded-full bg-ios-blue-light text-ios-blue flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[18px]">volume_up</span>
+</button>
+</div>
+<div class="mt-2 pt-2 border-t border-black/[0.04] flex items-center gap-1.5 text-[11px] text-ios-green font-medium">
+<span class="material-symbols-outlined text-[13px]">check_circle</span>
+<span>Reproducido en Auriculares (Voz Sintética Natural)</span>
+</div>
+</div>
+<!-- SPEAKER 2: Local User (Tú - Spanish -> Japanese) Subtle iOS Blue Tinted Card -->
+<div class="bg-ios-blue-light/70 rounded-2xl p-4 shadow-sm border border-ios-blue/20">
+<div class="flex items-center justify-between mb-2.5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-ios-blue text-white flex items-center justify-center text-[10px] font-bold">
+              TÚ
+            </div>
+<span class="text-[13px] font-semibold text-ios-blue">Tú</span>
+<span class="text-[11px] text-ios-secondary-text">(Micrófonos Auriculares)</span>
+</div>
+<!-- Live Voice Detection Equalizer -->
+<div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/80 border border-ios-blue/15 text-[11px] text-ios-blue font-medium">
+<span class="mr-0.5">Detectando voz</span>
+<div class="w-0.5 bg-ios-blue rounded-full wave-b1"></div>
+<div class="w-0.5 bg-ios-blue rounded-full wave-b2"></div>
+<div class="w-0.5 bg-ios-blue rounded-full wave-b3"></div>
+<div class="w-0.5 bg-ios-blue rounded-full wave-b4"></div>
+<div class="w-0.5 bg-ios-blue rounded-full wave-b5"></div>
+</div>
+</div>
+<!-- User Spanish Input -->
+<p class="text-[16px] text-[#1C1C1E] font-medium leading-relaxed">
+          Puedes comprarlos en las máquinas automáticas de la estación central o en la taquilla con el letrero verde.
+        </p>
+<!-- Divider -->
+<div class="my-2.5 h-[1px] bg-ios-blue/15"></div>
+<!-- Target Japanese Translation -->
+<p class="font-jp text-[15px] font-medium text-[#1D3557] leading-relaxed">
+          → 中央駅の自動券売機、または緑の窓口（みどりの窓口）で購入できます。
+        </p>
+<!-- Projection HUD Badge -->
+<div class="mt-2.5 flex items-center justify-between pt-2 border-t border-ios-blue/10">
+<span class="text-[11px] text-ios-gray-text">10:42:15</span>
+<div class="flex items-center gap-1.5 text-[11px] font-medium text-ios-blue bg-white/90 px-2.5 py-1 rounded-full shadow-xs border border-ios-blue/15">
+<span class="material-symbols-outlined text-[14px]">eyeglasses</span>
+<span>Subtítulo proyectado en HUD AR a 1.8m focal</span>
+</div>
+</div>
+</div>
+</div>
+<!-- CONTEXTUAL AI QUICK REPLIES (Horizontal Scroll iOS Pills) -->
+<div class="pt-2">
+<div class="flex items-center gap-1.5 px-1 mb-2 text-[12px] text-ios-secondary-text font-medium">
+<span class="material-symbols-outlined text-[16px] text-ios-blue">smart_toy</span>
+<span>Sugerencias contextuales rápidas:</span>
+</div>
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4">
+<button class="flex-shrink-0 px-3.5 py-2 rounded-full bg-white hover:bg-gray-50 active:bg-gray-100 border border-ios-border text-[13px] font-medium text-[#1C1C1E] shadow-sm flex items-center gap-1.5 transition-colors">
+<span>"¿Quieres que te acompañe a la taquilla?"</span>
+<span class="material-symbols-outlined text-[14px] text-ios-blue">north_east</span>
+</button>
+<button class="flex-shrink-0 px-3.5 py-2 rounded-full bg-white hover:bg-gray-50 active:bg-gray-100 border border-ios-border text-[13px] font-medium text-[#1C1C1E] shadow-sm flex items-center gap-1.5 transition-colors">
+<span>"Aceptan tarjetas de crédito internacionales."</span>
+<span class="material-symbols-outlined text-[14px] text-ios-blue">north_east</span>
+</button>
+<button class="flex-shrink-0 px-3.5 py-2 rounded-full bg-white hover:bg-gray-50 active:bg-gray-100 border border-ios-border text-[13px] font-medium text-[#1C1C1E] shadow-sm flex items-center gap-1.5 transition-colors">
+<span>"Buen viaje a Tokio."</span>
+<span class="material-symbols-outlined text-[14px] text-ios-blue">north_east</span>
+</button>
+</div>
+</div>
+</main>
+<!-- BOTTOM FLOATING ACTION DOCK (Clean iOS Pill Dock) -->
+<aside class="fixed bottom-20 left-0 right-0 z-40 px-4 flex justify-center pointer-events-none">
+<div class="pointer-events-auto flex items-center gap-3 p-2 rounded-full bg-white/95 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-black/[0.08]">
+<!-- Secondary: Guardar en Notas -->
+<button class="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-black/[0.04] active:bg-black/10 text-[13px] font-medium text-[#1C1C1E] transition-all">
+<span class="material-symbols-outlined text-[18px] text-ios-blue">note_add</span>
+<span>Guardar</span>
+</button>
+<!-- Center Primary: Pulsing Voice Mic Button -->
+<div class="relative flex items-center justify-center">
+<!-- Pulsing Ring -->
+<div class="absolute -inset-1.5 rounded-full bg-ios-blue/20 animate-ping"></div>
+<button aria-label="Micrófono activo auto-detección" class="relative w-14 h-14 rounded-full bg-ios-blue hover:bg-[#006ee6] text-white shadow-[0_4px_16px_rgba(0,122,255,0.38)] flex flex-col items-center justify-center active:scale-95 transition-all">
+<span class="material-symbols-outlined material-symbols-filled text-[24px]">mic</span>
+<span class="text-[9px] font-bold tracking-tight uppercase">AUTO</span>
+</button>
+</div>
+<!-- Tertiary: Pausar Sesión -->
+<button class="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-black/[0.04] active:bg-black/10 text-[13px] font-medium text-ios-red transition-all">
+<span class="material-symbols-outlined text-[18px] text-ios-red">pause_circle</span>
+<span>Pausar</span>
+</button>
+</div>
+</aside>
+<!-- NATIVE iOS TRANSLUCENT TAB BAR -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-[#F9F9F9]/85 backdrop-blur-xl border-t border-ios-separator pb-6 pt-1.5 select-none">
+<div class="max-w-md mx-auto flex items-center justify-around px-2">
+<!-- Hub -->
+<a class="flex flex-col items-center justify-center text-ios-gray-text hover:text-[#1C1C1E] transition-colors py-0.5" href="#">
+<span class="material-symbols-outlined text-[24px]">home</span>
+<span class="text-[10px] font-medium mt-0.5 tracking-tight">Hub</span>
+</a>
+<!-- Devices -->
+<a class="flex flex-col items-center justify-center text-ios-gray-text hover:text-[#1C1C1E] transition-colors py-0.5" href="#">
+<span class="material-symbols-outlined text-[24px]">devices</span>
+<span class="text-[10px] font-medium mt-0.5 tracking-tight">Dispositivos</span>
+</a>
+<!-- AR Studio -->
+<a class="flex flex-col items-center justify-center text-ios-gray-text hover:text-[#1C1C1E] transition-colors py-0.5" href="#">
+<span class="material-symbols-outlined text-[24px]">eyeglasses</span>
+<span class="text-[10px] font-medium mt-0.5 tracking-tight">AR Studio</span>
+</a>
+<!-- Traducir (ACTIVE HIG ITEM) -->
+<a class="flex flex-col items-center justify-center text-ios-blue py-0.5 font-semibold" href="#">
+<span class="material-symbols-outlined material-symbols-filled text-[24px]">translate</span>
+<span class="text-[10px] font-semibold mt-0.5 tracking-tight">Traducir</span>
+</a>
+<!-- Notes -->
+<a class="flex flex-col items-center justify-center text-ios-gray-text hover:text-[#1C1C1E] transition-colors py-0.5" href="#">
+<span class="material-symbols-outlined text-[24px]">note_stack</span>
+<span class="text-[10px] font-medium mt-0.5 tracking-tight">Notas</span>
+</a>
+</div>
+</nav>
+</body></html>

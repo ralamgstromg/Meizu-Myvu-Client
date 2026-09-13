@@ -66,7 +66,7 @@ import java.util.ArrayList
 import java.util.Date
 import java.util.Locale
 
-class ConnectActivity : AppCompatActivity(), LogBus.Listener {
+class ConnectActivity : AppCompatActivity() {
 
     private lateinit var txtMac: TextInputEditText
     private lateinit var txtNotifyTitle: TextInputEditText
@@ -78,8 +78,6 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
     private lateinit var txtGlasses: TextView
     private lateinit var statusDot: View
     private lateinit var progress: View
-    private lateinit var rvLog: RecyclerView
-    private lateinit var logAdapter: LogAdapter
 
     private lateinit var pairingOverlay: View
     private lateinit var ring1: View
@@ -149,10 +147,6 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         txtGlasses = findViewById(R.id.txtGlasses)
         statusDot = findViewById(R.id.statusDot)
         progress = findViewById(R.id.progress)
-        rvLog = findViewById(R.id.rvLog)
-        logAdapter = LogAdapter(this)
-        rvLog.layoutManager = LinearLayoutManager(this)
-        rvLog.adapter = logAdapter
         lastDotColor = ContextCompat.getColor(this, R.color.state_idle)
 
         pairingOverlay = findViewById(R.id.pairingOverlay)
@@ -169,7 +163,10 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
 
         txtMac.setText(Prefs.targetMac(this))
 
-        wireTabs()
+        findViewById<View>(R.id.btnOpenActivityLog)?.setOnClickListener {
+            startActivity(Intent(this, ActivityLogActivity::class.java))
+        }
+
         wireConnection()
         wireFeatures()
         wireSettings()
@@ -182,10 +179,6 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
 
     override fun onStart() {
         super.onStart()
-        Prefs.loggingEnabled(this)
-        logAdapter.setAll(LogBus.history())
-        scrollToBottom()
-        LogBus.addListener(this)
         bindService(Intent(this, MyvuService::class.java), serviceConnection, 0)
 
         findViewById<MaterialSwitch>(R.id.swMirror).isChecked =
@@ -195,6 +188,7 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
 
     override fun onResume() {
         super.onResume()
+        findViewById<MaterialSwitch>(R.id.swMasterService)?.isChecked = Prefs.autoReconnectEnabled(this)
         updateDashboardData()
         updateAccessibilityWarningBanner()
         com.myvu.client.health.HealthService.getInstance(this).registerHardwareSensor()
@@ -229,7 +223,6 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
         stopRings()
         stateJob?.cancel()
         stateJob = null
-        LogBus.removeListener(this)
         if (bound) {
             unbindService(serviceConnection)
             bound = false
@@ -239,7 +232,6 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
     private fun wireNavigationDrawer() {
         val drawerLayout: DrawerLayout = findViewById(R.id.drawerLayout)
         val navigationView: NavigationView = findViewById(R.id.navigationView)
-        val tabs: TabLayout = findViewById(R.id.tabs)
 
         findViewById<View>(R.id.btnNavigationDrawer)?.setOnClickListener {
             drawerLayout.openDrawer(GravityCompat.START)
@@ -260,6 +252,9 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
                 R.id.nav_voice_recorder -> {
                     startActivity(Intent(this, VoiceRecorderActivity::class.java))
                 }
+                R.id.nav_devices -> {
+                    DeviceManagementBottomSheet.show(supportFragmentManager)
+                }
                 R.id.nav_ai_config -> {
                     startActivity(Intent(this, SettingsActivity::class.java))
                 }
@@ -270,42 +265,39 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
                     startActivity(Intent(this, NotificationAppsActivity::class.java))
                 }
                 R.id.nav_logs -> {
-                    tabs.getTabAt(1)?.select()
+                    startActivity(Intent(this, ActivityLogActivity::class.java))
+                }
+                R.id.nav_total_disconnect -> {
+                    stopConnection()
                 }
             }
             true
         }
     }
 
-    private fun wireTabs() {
-        val pageControls: View = findViewById(R.id.pageControls)
-        val pageLog: View = findViewById(R.id.pageLog)
-        val tabs: TabLayout = findViewById(R.id.tabs)
-        tabs.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-            override fun onTabSelected(tab: TabLayout.Tab) {
-                val log = tab.position == 1
-                crossFade(if (log) pageLog else pageControls, if (log) pageControls else pageLog)
-                if (log) scrollToBottom()
-            }
-            override fun onTabUnselected(tab: TabLayout.Tab) {}
-            override fun onTabReselected(tab: TabLayout.Tab) {}
-        })
-    }
-
-    private fun crossFade(show: View, hide: View) {
-        if (show.visibility == View.VISIBLE) return
-        show.alpha = 0f
-        show.visibility = View.VISIBLE
-        show.animate().alpha(1f).setDuration(180).start()
-        hide.animate().alpha(0f).setDuration(120).withEndAction {
-            hide.visibility = View.GONE
-            hide.alpha = 1f
-        }.start()
-    }
-
     private fun wireConnection() {
         findViewById<View>(R.id.btnConnect).setOnClickListener { startConnection() }
         findViewById<View>(R.id.btnDisconnect).setOnClickListener { stopConnection() }
+
+        val swMasterService = findViewById<MaterialSwitch>(R.id.swMasterService)
+        swMasterService?.isChecked = Prefs.autoReconnectEnabled(this)
+        swMasterService?.setOnClickListener {
+            val isChecked = (it as MaterialSwitch).isChecked
+            if (isChecked) {
+                LogBus.log("Activando servicios en segundo plano y reconexión automática...")
+                Prefs.setAutoReconnectEnabled(this, true)
+                startConnection()
+                Toast.makeText(this, "Servicios en segundo plano activados", Toast.LENGTH_SHORT).show()
+            } else {
+                LogBus.log("Desactivando servicios en segundo plano para ahorro de batería...")
+                stopConnection()
+            }
+        }
+
+        findViewById<View>(R.id.btnOpenAiChat)?.setOnClickListener {
+            startActivity(Intent(this, com.myvu.client.ui.chat.ChatActivity::class.java))
+        }
+
         findViewById<View>(R.id.btnTrackpad).setOnClickListener {
             startActivity(Intent(this, TrackpadActivity::class.java))
         }
@@ -432,12 +424,6 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
             } else {
                 LogBus.log("Modo Celular: Frame de calibración ic=$calibrationIc")
             }
-        }
-
-        findViewById<View>(R.id.btnShareLog).setOnClickListener { shareLog() }
-        findViewById<View>(R.id.btnClearLog).setOnClickListener {
-            LogBus.clear()
-            logAdapter.clear()
         }
     }
 
@@ -680,11 +666,12 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
     }
 
     private fun stopConnection() {
-        LogBus.log("Disconnecting: disabling auto-reconnect and canceling background tasks...")
-        Prefs.setAutoReconnectEnabled(this, false)
-        com.myvu.client.service.ServiceWatchdogReceiver.cancelWatchdog(this)
-        startService(Intent(this, MyvuService::class.java).setAction(MyvuService.ACTION_STOP))
-        render(ConnectionState.IDLE)
+        findViewById<MaterialSwitch>(R.id.swMasterService)?.isChecked = false
+        com.myvu.client.core.TotalDisconnectHelper.performTotalDisconnect(this) {
+            runOnUiThread {
+                render(ConnectionState.IDLE)
+            }
+        }
     }
 
 
@@ -825,62 +812,6 @@ class ConnectActivity : AppCompatActivity(), LogBus.Listener {
             )
         } catch (e: Exception) {
             LogBus.trace("battery-optimisation prompt unavailable: $e")
-        }
-    }
-
-    private fun shareLog() {
-        try {
-            val sb = StringBuilder()
-            val history = LogBus.history()
-            for (line in history) sb.append(line).append('\n')
-            val fullLog = sb.toString()
-
-            // Guardar en archivo para evitar el límite de tamaño de Intent.EXTRA_TEXT
-            val logFile = java.io.File(cacheDir, "myvu_client_log.txt")
-            logFile.writeText(fullLog)
-
-            val logUri = androidx.core.content.FileProvider.getUriForFile(
-                this,
-                "$packageName.fileprovider",
-                logFile
-            )
-
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_SUBJECT, "MYVU Client Log (${history.size} líneas)")
-                putExtra(Intent.EXTRA_TEXT, fullLog)
-                putExtra(Intent.EXTRA_STREAM, logUri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-
-            startActivity(Intent.createChooser(shareIntent, "Compartir Log Completo"))
-        } catch (e: Exception) {
-            LogBus.error("could not share log file", e)
-            val fallbackText = LogBus.history().joinToString("\n")
-            startActivity(
-                Intent.createChooser(
-                    Intent(Intent.ACTION_SEND)
-                        .setType("text/plain")
-                        .putExtra(Intent.EXTRA_SUBJECT, "MYVU client log")
-                        .putExtra(Intent.EXTRA_TEXT, fallbackText),
-                    "Share log"
-                )
-            )
-        }
-    }
-
-    override fun onLine(line: String) {
-        val atBottom = logAtBottom()
-        val last = logAdapter.add(line)
-        if (atBottom) rvLog.scrollToPosition(last)
-    }
-
-    private fun logAtBottom(): Boolean = !rvLog.canScrollVertically(1)
-
-    private fun scrollToBottom() {
-        rvLog.post {
-            val n = logAdapter.size()
-            if (n > 0) rvLog.scrollToPosition(n - 1)
         }
     }
 

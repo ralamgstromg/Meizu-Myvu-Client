@@ -120,6 +120,16 @@ class HealthService(context: Context) : SensorEventListener {
         }
     }
 
+    fun unregisterHardwareSensor() {
+        try {
+            sensorManager?.unregisterListener(this)
+            isSensorRegistered = false
+            LogBus.log("HealthService -> Hardware step sensors unregistered")
+        } catch (e: Exception) {
+            LogBus.warn("HealthService -> Error unregistering step sensor: ${e.message}")
+        }
+    }
+
     override fun onSensorChanged(event: SensorEvent?) {
         if (event == null) return
         if (event.sensor.type == Sensor.TYPE_STEP_COUNTER) {

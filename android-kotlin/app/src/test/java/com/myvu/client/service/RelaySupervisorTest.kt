@@ -1,9 +1,17 @@
 package com.myvu.client.service
 
+import android.os.Handler
+import android.os.Looper
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class RelaySupervisorTest {
 
     @Test
@@ -25,5 +33,40 @@ class RelaySupervisorTest {
 
         // Attempt 5+ -> Capped at 60000ms
         assertEquals(60000L, RelaySupervisor.calculateBackoffDelay(10))
+    }
+
+    @Test
+    fun testStableRelayThresholdConstant() {
+        assertEquals(30000L, RelaySupervisor.STABLE_RELAY_THRESHOLD_MS)
+    }
+
+    @Test
+    fun testSppServerClosedSuspendsSupervisor() {
+        val handler = Handler(Looper.getMainLooper())
+        var connectCalls = 0
+        val delegate = object : RelaySupervisor.Delegate {
+            override fun isRelayConnected(): Boolean = false
+            override fun canConnectRelay(): Boolean = true
+            override fun connectRelay() { connectCalls++ }
+        }
+        val supervisor = RelaySupervisor(handler, delegate)
+        supervisor.start()
+
+        assertFalse(supervisor.isSppServerSuspended())
+
+        supervisor.onSppServerClosed()
+        assertTrue(supervisor.isSppServerSuspended())
+
+        // onRelayLost while suspended must remain suspended and not connect
+        supervisor.onRelayLost()
+        assertTrue(supervisor.isSppServerSuspended())
+
+        // Wake resets suspension and triggers immediate connect attempt
+        supervisor.wake()
+        assertFalse(supervisor.isSppServerSuspended())
+        assertEquals(1, supervisor.getAttempt())
+        assertEquals(1, connectCalls)
+
+        supervisor.stop()
     }
 }

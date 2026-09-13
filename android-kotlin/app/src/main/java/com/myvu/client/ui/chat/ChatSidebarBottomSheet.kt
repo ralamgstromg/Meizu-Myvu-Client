@@ -287,27 +287,42 @@ class ChatSidebarBottomSheet : BottomSheetDialogFragment() {
     }
 
     private class ChatViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val cardMessage: com.google.android.material.card.MaterialCardView = itemView.findViewById(R.id.cardMessage)
+        private val layMessageRoot: LinearLayout = itemView.findViewById(R.id.layMessageRoot)
+        private val layMessageRow: LinearLayout = itemView.findViewById(R.id.layMessageRow)
+        private val imgAiAvatar: ImageView = itemView.findViewById(R.id.imgAiAvatar)
+        private val bubbleContainer: LinearLayout = itemView.findViewById(R.id.bubbleContainer)
         private val txtMessageContent: TextView = itemView.findViewById(R.id.txtMessageContent)
         private val txtMessageTime: TextView = itemView.findViewById(R.id.txtMessageTime)
         private val txtMessageSource: TextView = itemView.findViewById(R.id.txtMessageSource)
         private val imgMessageAttached: ImageView = itemView.findViewById(R.id.imgMessageAttached)
 
         fun bind(msg: ChatMessage) {
+            val context = itemView.context
             txtMessageContent.text = msg.content
             val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(msg.timestamp))
             txtMessageTime.text = timeStr
-            txtMessageSource.text = msg.actionResult ?: if (msg.direction == "USER") "Tú" else "IA"
+            txtMessageSource.text = msg.actionResult ?: if (msg.direction == "USER") "Tú" else "Companion AI"
 
-            if ("USER" == msg.direction) {
-                cardMessage.setCardBackgroundColor(itemView.context.getColor(R.color.obsidian_container_high))
-                (itemView as LinearLayout).gravity = android.view.Gravity.END
+            val isUser = "USER" == msg.direction
+            if (isUser) {
+                layMessageRoot.gravity = android.view.Gravity.END
+                layMessageRow.gravity = android.view.Gravity.END
+                imgAiAvatar.visibility = View.GONE
+                bubbleContainer.setBackgroundResource(R.drawable.bg_ios_bubble_user)
+                txtMessageContent.setTextColor(android.graphics.Color.WHITE)
+                txtMessageTime.setTextColor(android.graphics.Color.parseColor("#B3FFFFFF"))
+                txtMessageSource.setTextColor(android.graphics.Color.WHITE)
             } else {
-                cardMessage.setCardBackgroundColor(itemView.context.getColor(R.color.obsidian_container_low))
-                (itemView as LinearLayout).gravity = android.view.Gravity.START
+                layMessageRoot.gravity = android.view.Gravity.START
+                layMessageRow.gravity = android.view.Gravity.START
+                imgAiAvatar.visibility = View.VISIBLE
+                bubbleContainer.setBackgroundResource(R.drawable.bg_ios_bubble_ai)
+                txtMessageContent.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.ios_label))
+                txtMessageTime.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.ios_secondary_label))
+                txtMessageSource.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.ios_blue))
             }
 
-            if (!msg.actionResult.isNullOrBlank() && msg.actionResult.startsWith("content://") || msg.actionResult?.startsWith("file://") == true) {
+            if (!msg.actionResult.isNullOrBlank() && (msg.actionResult.startsWith("content://") || msg.actionResult.startsWith("file://"))) {
                 imgMessageAttached.visibility = View.VISIBLE
                 try {
                     imgMessageAttached.setImageURI(Uri.parse(msg.actionResult))

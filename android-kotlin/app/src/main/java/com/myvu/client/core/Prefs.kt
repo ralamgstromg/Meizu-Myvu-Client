@@ -527,6 +527,16 @@ object Prefs {
     }
 
     @JvmStatic
+    fun glassesActionButtonAction(c: Context): String {
+        return prefs(c).getString("glasses_action_button_action", "VOICE_AI_FIXED") ?: "VOICE_AI_FIXED"
+    }
+
+    @JvmStatic
+    fun setGlassesActionButtonAction(c: Context, action: String) {
+        prefs(c).edit().putString("glasses_action_button_action", action).apply()
+    }
+
+    @JvmStatic
     fun touchpadTapAction(c: Context): String {
         return prefs(c).getString("touchpad_tap_action", "none") ?: "none"
     }
@@ -679,4 +689,34 @@ object Prefs {
         val clamped = seconds.coerceIn(15, 600)
         prefs(c).edit().putInt(KEY_SCREEN_RELOCK_TIMEOUT_SECONDS, clamped).apply()
     }
+
+    // --- Modo de Interfaz (Claro / Oscuro / Sistema) ---
+
+    private const val KEY_THEME_MODE = "ui_theme_mode"
+    const val THEME_MODE_SYSTEM = "system"
+    const val THEME_MODE_LIGHT = "light"
+    const val THEME_MODE_DARK = "dark"
+
+    @JvmStatic
+    fun themeMode(c: Context): String {
+        return prefs(c).getString(KEY_THEME_MODE, THEME_MODE_SYSTEM) ?: THEME_MODE_SYSTEM
+    }
+
+    @JvmStatic
+    fun setThemeMode(c: Context, mode: String) {
+        prefs(c).edit().putString(KEY_THEME_MODE, mode).apply()
+        applyTheme(c)
+    }
+
+    @JvmStatic
+    fun applyTheme(c: Context) {
+        val mode = themeMode(c)
+        val nightMode = when (mode) {
+            THEME_MODE_LIGHT -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
+            THEME_MODE_DARK -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
+            else -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+        }
+        androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(nightMode)
+    }
 }
+

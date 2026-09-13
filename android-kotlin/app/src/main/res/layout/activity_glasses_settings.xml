@@ -1,0 +1,663 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/ios_system_bg"
+    android:orientation="vertical">
+
+    <!-- Top Bar estilo iOS Navigation Bar -->
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/ios_nav_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Regresar"
+            android:src="@drawable/ic_ios_back" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gafas AR • Gestos y HUD"
+                android:textColor="@color/ios_label"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtGlassesSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Configuración de patillas y hardware"
+                android:textColor="@color/ios_secondary_label"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSave"
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:minHeight="0dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:paddingVertical="0dp"
+            android:gravity="center"
+            android:background="@drawable/bg_ios_pill"
+            android:paddingHorizontal="14dp"
+            android:text="Guardar"
+            android:textColor="@color/ios_blue"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            app:backgroundTint="@null" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:background="@color/ios_separator" />
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Card 1: Estado del Dispositivo -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_ios_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_ios_card_secondary"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_glasses"
+                        app:tint="@color/ios_blue"
+                        android:contentDescription="Gafas AR" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/txtGlassesName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Meizu MYVU AR"
+                            android:textColor="@color/ios_label"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/txtGlassesMac"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="MAC: Desconocida"
+                            android:textColor="@color/ios_secondary_label"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/txtGlassesBattery"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="85%"
+                        android:textColor="@color/ios_green"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Card 2: Gestos Táctiles de las Patillas ("Patas") -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_ios_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="GESTOS DE LA PATILLA TÁCTIL (PATAS)"
+                    android:textColor="@color/ios_secondary_label"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="12dp"
+                    android:text="Configura qué acción ejecuta cada gesto táctil realizado en las patillas de los lentes:"
+                    android:textColor="@color/ios_secondary_label"
+                    android:textSize="12sp" />
+
+                <!-- Toque Simple -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Toque Simple (Tap)"
+                    android:textColor="@color/ios_label"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+                <Spinner
+                    android:id="@+id/spinnerTap"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_ios_spinner"
+                    android:paddingHorizontal="12dp" />
+
+                <!-- Doble Toque -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Doble Toque (Double Tap)"
+                    android:textColor="@color/ios_label"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+                <Spinner
+                    android:id="@+id/spinnerDoubleTap"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_ios_spinner"
+                    android:paddingHorizontal="12dp" />
+
+                <!-- Triple Toque -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Triple Toque (Triple Tap)"
+                    android:textColor="@color/ios_label"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+                <Spinner
+                    android:id="@+id/spinnerTripleTap"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_ios_spinner"
+                    android:paddingHorizontal="12dp" />
+
+                <!-- Deslizar Adelante -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Deslizar Adelante (Swipe Forward)"
+                    android:textColor="@color/ios_label"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+                <Spinner
+                    android:id="@+id/spinnerSwipeForward"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_ios_spinner"
+                    android:paddingHorizontal="12dp" />
+
+                <!-- Deslizar Atrás -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Deslizar Atrás (Swipe Backward)"
+                    android:textColor="@color/ios_label"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+                <Spinner
+                    android:id="@+id/spinnerSwipeBackward"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_ios_spinner"
+                    android:paddingHorizontal="12dp" />
+
+                <!-- Pulsación Larga -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Pulsación Larga (Long Press)"
+                    android:textColor="@color/ios_label"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+                <Spinner
+                    android:id="@+id/spinnerLongPress"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="2dp"
+                    android:background="@drawable/bg_ios_spinner"
+                    android:paddingHorizontal="12dp" />
+            </LinearLayout>
+
+            <!-- Card 3: Botón Físico de Acción (Montura) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_ios_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="BOTÓN FÍSICO DE ACCIÓN (MONTURA)"
+                    android:textColor="@color/ios_secondary_label"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="El botón físico de la montura activa el pipeline instantáneo de reconocimiento de voz y respuesta por IA en el HUD."
+                    android:textColor="@color/ios_secondary_label"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Comportamiento del Botón"
+                    android:textColor="@color/ios_label"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+                <Spinner
+                    android:id="@+id/spinnerActionButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="2dp"
+                    android:background="@drawable/bg_ios_spinner"
+                    android:paddingHorizontal="12dp" />
+            </LinearLayout>
+
+            <!-- Card 4: Manejo de Notificaciones (HUD, TTS o Ambos) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_ios_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="MANEJO DE NOTIFICACIONES"
+                    android:textColor="@color/ios_secondary_label"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="10dp"
+                    android:text="Elige cómo se presentarán las notificaciones entrantes en tus gafas AR:"
+                    android:textColor="@color/ios_secondary_label"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Modo de Entrega de Notificaciones"
+                    android:textColor="@color/ios_label"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <Spinner
+                    android:id="@+id/spinnerNotificationMode"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/bg_ios_spinner"
+                    android:paddingHorizontal="12dp" />
+
+                <TextView
+                    android:id="@+id/txtNotificationModeDescription"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Visual (HUD) y Sonora (TTS): Muestra en pantalla y lee por voz."
+                    android:textColor="@color/ios_secondary_label"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <!-- Card 5: Pantalla y Visor MicroOLED -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:background="@drawable/bg_ios_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="PANTALLA HUD &amp; VISOR AR"
+                    android:textColor="@color/ios_secondary_label"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04" />
+
+                <!-- 1. Brillo -->
+                <TextView
+                    android:id="@+id/txtBrightnessLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="Brillo de Pantalla HUD: Nivel 3 (60%)"
+                    android:textColor="@color/ios_label"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="Brillo bajo"
+                        android:src="@drawable/ic_brightness_low"
+                        app:tint="@color/ios_secondary_label" />
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/sliderHudBrightness"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginHorizontal="4dp"
+                        android:valueFrom="1"
+                        android:valueTo="5"
+                        android:stepSize="1"
+                        android:value="3"
+                        app:thumbColor="@color/ios_blue"
+                        app:trackColorActive="@color/ios_blue"
+                        app:trackColorInactive="@color/ios_separator" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="Brillo alto"
+                        android:src="@drawable/ic_brightness_high"
+                        app:tint="@color/ios_secondary_label" />
+                </LinearLayout>
+
+                <!-- 2. Volumen -->
+                <TextView
+                    android:id="@+id/txtGlassesVolumeLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Volumen de las Gafas: Nivel 11"
+                    android:textColor="@color/ios_label"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/sliderGlassesVolume"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:valueFrom="0"
+                    android:valueTo="15"
+                    android:stepSize="1"
+                    android:value="11"
+                    app:thumbColor="@color/ios_blue"
+                    app:trackColorActive="@color/ios_blue"
+                    app:trackColorInactive="@color/ios_separator" />
+
+                <!-- 3. Posición FOV -->
+                <TextView
+                    android:id="@+id/txtStandbyPosLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Posición del Dashboard en FOV: Centro (0)"
+                    android:textColor="@color/ios_label"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/sliderStandbyPos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:valueFrom="0"
+                    android:valueTo="3"
+                    android:stepSize="1"
+                    android:value="0"
+                    app:thumbColor="@color/ios_blue"
+                    app:trackColorActive="@color/ios_blue"
+                    app:trackColorInactive="@color/ios_separator" />
+
+                <!-- 4. Tiempo Pantalla Activa -->
+                <TextView
+                    android:id="@+id/txtScreenOffLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Tiempo de Pantalla Activa: 10s"
+                    android:textColor="@color/ios_label"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/sliderScreenOff"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:valueFrom="3"
+                    android:valueTo="60"
+                    android:stepSize="1"
+                    android:value="10"
+                    app:thumbColor="@color/ios_blue"
+                    app:trackColorActive="@color/ios_blue"
+                    app:trackColorInactive="@color/ios_separator" />
+
+                <!-- 5. Duración Notificaciones HUD -->
+                <TextView
+                    android:id="@+id/txtNotifDurationLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Duración Notificaciones en HUD: 5s"
+                    android:textColor="@color/ios_label"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/sliderNotifDuration"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:valueFrom="1"
+                    android:valueTo="30"
+                    android:stepSize="1"
+                    android:value="5"
+                    app:thumbColor="@color/ios_blue"
+                    app:trackColorActive="@color/ios_blue"
+                    app:trackColorInactive="@color/ios_separator" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOpenTrackpad"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_ios_card_secondary"
+                    android:text="Abrir Control Trackpad Remoto"
+                    android:textColor="@color/ios_blue"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@null" />
+            </LinearLayout>
+
+            <!-- Card 6: Escucha y Batería de las Gafas -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_ios_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ESCUCHA, VOZ &amp; RESPUESTA IA"
+                    android:textColor="@color/ios_secondary_label"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04" />
+
+                <!-- Modo de Respuesta de IA -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="Canal de Respuesta de IA:"
+                    android:textColor="@color/ios_label"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/btnAiResponseModeGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAiResponseVoice"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:textSize="11sp"
+                        android:text="Solo voz" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAiResponseVisual"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:textSize="11sp"
+                        android:text="Solo pantalla" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAiResponseBoth"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:textSize="11sp"
+                        android:text="Voz y HUD" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <!-- Switch Escucha Continua -->
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/swContinuousDialogue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:textSize="13sp"
+                    android:textColor="@color/ios_label"
+                    android:text="Escucha activa continua" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textSize="11sp"
+                    android:textColor="@color/ios_secondary_label"
+                    android:text="Mantiene el micrófono abierto tras responder para diálogo continuado sin tocar la patilla. Aumenta el consumo de batería." />
+
+                <!-- Switch Wake Word -->
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/swVoiceWakeup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textSize="13sp"
+                    android:textColor="@color/ios_label"
+                    android:text="Activación por voz (Wake word)" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textSize="11sp"
+                    android:textColor="@color/ios_secondary_label"
+                    android:text="Despierta al asistente por comando de voz en segundo plano. Aumenta el consumo de batería." />
+
+                <!-- Switch SCO Gemini -->
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/swForceGeminiSco"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textSize="13sp"
+                    android:textColor="@color/ios_label"
+                    android:text="Forzar micrófono SCO para Gemini" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textSize="11sp"
+                    android:textColor="@color/ios_secondary_label"
+                    android:text="Captura tu voz a través de los micrófonos de la montura al invocar la app Gemini." />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>
