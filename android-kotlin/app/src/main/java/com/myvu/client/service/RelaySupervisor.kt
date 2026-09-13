@@ -73,8 +73,12 @@ class RelaySupervisor(
     }
 
     /** Called when the glasses explicitly ask for the relay (cmd 71) or a feature requests it. */
-    fun wake() {
+    fun wake(force: Boolean = false) {
         if (!running) return
+        if (sppServerSuspended && !force) {
+            LogBus.trace("RelaySupervisor: SPP suspended by glasses — ignoring unforced wake to conserve battery")
+            return
+        }
         sppServerSuspended = false
         attempt = 0
         connectedSince = 0L

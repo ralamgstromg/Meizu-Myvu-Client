@@ -61,8 +61,13 @@ class RelaySupervisorTest {
         supervisor.onRelayLost()
         assertTrue(supervisor.isSppServerSuspended())
 
-        // Wake resets suspension and triggers immediate connect attempt
-        supervisor.wake()
+        // Unforced wake must respect suspension and NOT connect
+        supervisor.wake(force = false)
+        assertTrue(supervisor.isSppServerSuspended())
+        assertEquals(0, connectCalls)
+
+        // Forced wake resets suspension and triggers immediate connect attempt
+        supervisor.wake(force = true)
         assertFalse(supervisor.isSppServerSuspended())
         assertEquals(1, supervisor.getAttempt())
         assertEquals(1, connectCalls)

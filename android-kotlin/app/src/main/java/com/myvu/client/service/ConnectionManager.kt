@@ -152,6 +152,17 @@ class ConnectionManager(
 
     private var lastTimeSyncSentAt = 0L
 
+    private var lastSppServerClosedAt: Long = 0L
+    @Volatile
+    private var isRelayFeatureActive: Boolean = false
+
+    fun setRelayFeatureActive(active: Boolean) {
+        isRelayFeatureActive = active
+        if (active) {
+            wakeRelay(force = true)
+        }
+    }
+
     private var supervisor: RelaySupervisor? = null
 
     private class PendingAction(
@@ -214,7 +225,7 @@ class ConnectionManager(
             // the relay down (its retry budget spent), a press listened to
             // nothing and timed out with "0 packets in" -- so treat the
             // press like the glasses asking for the relay back.
-            supervisor?.wake()
+            supervisor?.wake(force = true)
 
             val actionBtnMapping = Prefs.glassesActionButtonAction(this.context)
             if (code == 3 && actionBtnMapping == "LAUNCH_GEMINI") {
@@ -708,16 +719,15 @@ class ConnectionManager(
             LinkCommands.CMD_SPP_SERVER_UUID_SYNC -> handleSppUuidSync(msg.data)
             LinkCommands.CMD_SPP_SERVER_REQUEST_CONNECT -> {
                 LogBus.trace("<- SPP_SERVER_REQUEST_CONNECT")
-                sppServerOpen = true
-                supervisor?.wake()
+                handleSppOpenRequest()
             }
             LinkCommands.CMD_SPP_SERVER_REQUEST_STATE_OPEN -> {
                 LogBus.trace("<- SPP server open")
-                sppServerOpen = true
-                supervisor?.wake()
+                handleSppOpenRequest()
             }
             LinkCommands.CMD_SPP_SERVER_REQUEST_STATE_CLOSE -> {
                 sppServerOpen = false
+                lastSppServerClosedAt = System.currentTimeMillis()
                 if (relayEstablishing) {
                     LogBus.trace("<- SPP server close (stale; relay still establishing)")
                     closeRelay()
@@ -732,6 +742,17 @@ class ConnectionManager(
                 LogBus.trace("internal <- LinkProtocol cmd=${msg.cmd} (${msg.data.size}B)")
             }
         }
+    }
+
+    private fun handleSppOpenRequest() {
+        val now = System.currentTimeMillis()
+        val elapsedSinceClose = now - lastSppServerClosedAt
+        if (!isRelayFeatureActive && lastSppServerClosedAt > 0L && elapsedSinceClose < SPP_COOLDOWN_MS) {
+            LogBus.trace("<- SPP open request ignored (cooldown: ${elapsedSinceClose}ms / ${SPP_COOLDOWN_MS}ms, no active relay feature)")
+            return
+        }
+        sppServerOpen = true
+        supervisor?.wake(force = isRelayFeatureActive)
     }
 
     /**
@@ -757,7 +778,7 @@ class ConnectionManager(
         sppUuidVal = uuid
         sppServerOpen = true
         LogBus.log("<- SPP_SERVER_UUID_SYNC: uuid=$sppUuidVal")
-        supervisor?.wake()
+        supervisor?.wake(force = isRelayFeatureActive)
     }
 
     override fun onExternalMessage(pkgType: Int, payload: ByteArray) {
@@ -825,9 +846,9 @@ class ConnectionManager(
         return r != null && r.isConnected && s != null && s.ready
     }
 
-    fun wakeRelay() {
+    fun wakeRelay(force: Boolean = true) {
         sppServerOpen = true
-        conn.post { supervisor?.wake() }
+        conn.post { supervisor?.wake(force) }
     }
 
     override fun canConnectRelay(): Boolean {
@@ -1085,7 +1106,7 @@ class ConnectionManager(
                 supervisor?.start()
             }
             conn.postDelayed({
-                supervisor?.wake()
+                supervisor?.wake(force = true)
             }, 2500)
         }
     }
@@ -1296,11 +1317,13 @@ class ConnectionManager(
     // ----------------------------------------------------------- trackpad
 
     fun trackpadStart() {
-        wakeRelay()
+        setRelayFeatureActive(true)
+        wakeRelay(force = true)
         sendAction(Trackpad.start(), AppLayer.PKG_LAUNCHER, AppLayer.PKG_LAUNCHER)
     }
 
     fun trackpadStop() {
+        setRelayFeatureActive(false)
         sendAction(Trackpad.stop(), AppLayer.PKG_LAUNCHER, AppLayer.PKG_LAUNCHER)
     }
 
@@ -1490,6 +1513,7 @@ class ConnectionManager(
     companion object {
         private const val DEVICE_NAME = "MyvuAndroid"
         private const val CATEGORY_ID = "9999"
+        private const val SPP_COOLDOWN_MS = 15000L
         private const val RELAY_ESTABLISH_TIMEOUT_MS = 10000L
         private const val RECONNECT_BASE_MS = 2000L
         private const val RECONNECT_MAX_MS = 60000L

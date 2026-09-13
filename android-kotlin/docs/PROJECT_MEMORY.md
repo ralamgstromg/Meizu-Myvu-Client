@@ -37,6 +37,31 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
 | **Inteligencia Artificial** | `com.myvu.client.ai` | Inferencia privada/local mediante `LocalAiClient` (LiteLLM/OpenAI compatible), streaming Gemini Live y cliente en la nube `GeminiClient`. |
 | **Interfaz de Usuario** | `com.myvu.client.ui` | Vistas Material 3 & Apple Cupertino HIG (`ConnectActivity`, `ActivityLogActivity`, `NotesActivity`, `ChatActivity`, `GlassesSettingsActivity`, `HeadphoneSettingsActivity`, `SettingsActivity`). |
 
+### [2026-09-12] — Eliminación del Bucle Ping-Pong RFCOMM y Optimización Crítica de Batería (Gafas y Teléfono)
+- **Requerimiento del Usuario**:
+  - Analizar el log `/home/rcastro/Descargas/myvu_client_log.txt`, identificar problemas o errores, y detectar cualquier impacto en la batería o rendimiento de las gafas o del móvil.
+  - Aplicar correcciones sistemáticas.
+- **Diagnóstico Forense del Registro**:
+  - **Google Assistant**: Confirmado resuelto. Cero activaciones erróneas del asistente en el log tras la corrección del botón físico (`202` -> `ACTION_BUTTON`).
+  - **Bucle Zombi Ping-Pong de Reconexión RFCOMM**:
+    - El 98% del log (8 ciclos de conexión en 67 segundos, 7 en apenas 13 segundos) registraba intentos continuos de reconexión RFCOMM con `attempt 1/6`.
+    - Secuencia observada: Teléfono conecta RFCOMM -> handshake `-> AUTH_SUCCESS` -> a los 5ms las gafas cierran el servidor SPP (`CMD_SPP_SERVER_REQUEST_STATE_CLOSE`) porque no hay streaming activo -> el supervisor entra en *passive low-power mode* -> 2 segundos después, el daemon de las gafas emite ráfaga `CMD_SPP_SERVER_REQUEST_CONNECT` (71) o `CMD_SPP_SERVER_REQUEST_STATE_OPEN` (72) -> `ConnectionManager` invocaba ciegamente `supervisor?.wake()` -> `RelaySupervisor` reseteaba `attempt = 0` y `sppServerSuspended = false`, forzando reconexión inmediata (`attempt 1/6`).
+  - **Impacto Severo en Dispositivos**:
+    - Gafas MYVU: El radio Bluetooth Classic (BR/EDR) consume 10-20x más energía que BLE. Conectar y autenticar criptografía cada 2 segundos impedía el Deep Sleep del procesador de las gafas, drenando sus diminutas baterías de patilla (~170-200 mAh).
+    - Móvil: Mantenía el Bluetooth Controller en estado de alta potencia, despertaba corrutinas de E/S y handlers cada 2 segundos, e impedía el modo Doze de Android.
+- **Implementación y Solución**:
+  1. **`RelaySupervisor.kt`**:
+     - `wake(force: Boolean = false)`: Si `sppServerSuspended` es verdadero (las gafas cerraron el servidor SPP explícitamente), se ignora el despertar no forzado (`force = false`) para respetar el modo pasivo de ultra bajo consumo y no reactivar el supervisor por ráfagas pasivas.
+     - Se preserva el despertar inmediato cuando `force = true` para acciones deliberadas del usuario (botón de IA con micrófono, Trackpad, o inicio de sesión).
+  2. **`ConnectionManager.kt`**:
+     - `handleSppOpenRequest()`: Se agregó control de cooldown (`SPP_COOLDOWN_MS = 15000L`) y validación de `isRelayFeatureActive`. Si las gafas cerraron el SPP recientemente y ninguna función activa (Trackpad, grabación de audio IA) requiere RFCOMM, se descartan las solicitudes de apertura ruidosas del daemon BLE de las gafas.
+     - `trackpadStart()` y `trackpadStop()`: Integración de `setRelayFeatureActive(true/false)` para activar RFCOMM bajo demanda únicamente cuando la superficie táctil esté en uso.
+     - `wakeRelay(force: Boolean = true)`: Garantiza que las llamadas explícitas reactiven el supervisor.
+  3. **Pruebas y Verificación**:
+     - `RelaySupervisorTest.kt`: Actualizado y verificado que `wake(force = false)` respeta la suspensión pasiva, mientras que `wake(force = true)` reactiva el supervisor.
+     - 309 pruebas unitarias pasando al 100% (`BUILD SUCCESSFUL in 14s`).
+     - Compilación limpia de APK (`assembleDebug` en 777ms).
+
 ### [2026-09-12] — Corrección del Botón Físico de Montura (Google Assistant No Deseado con 1 Pulsación) y Optimización de Telemetría
 - **Requerimiento del Usuario**:
   - Al presionar el botón físico de la montura de las gafas Meizu MYVU 1 sola vez, aún se seguía activando el asistente de Google en el celular.
