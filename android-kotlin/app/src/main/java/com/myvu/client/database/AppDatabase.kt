@@ -16,7 +16,7 @@ import com.myvu.client.data.BluetoothDeviceDao
  */
 @Database(
     entities = [ChatMessage::class, ChatSession::class, UserProfile::class, BluetoothDeviceEntity::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -35,6 +35,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.core.app.ActivityCompat
@@ -279,6 +280,45 @@ class ConnectActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnConnect).setOnClickListener { startConnection() }
         findViewById<View>(R.id.btnDisconnect).setOnClickListener { stopConnection() }
 
+        findViewById<View>(R.id.cardSelectedDevice)?.setOnClickListener {
+            DeviceManagementBottomSheet.show(supportFragmentManager)
+        }
+
+        lifecycleScope.launch {
+            val devManager = com.myvu.client.service.BluetoothDeviceManager.getInstance(this@ConnectActivity)
+            devManager.getAllDevicesFlow().collectLatest { devices ->
+                val primary = devices.find { it.isPrimary } ?: devices.firstOrNull()
+                val active = devices.find { it.isConnected } ?: primary
+
+                val txtActiveDeviceName = findViewById<TextView>(R.id.txtActiveDeviceName)
+                val txtActiveDevicePrimaryBadge = findViewById<TextView>(R.id.txtActiveDevicePrimaryBadge)
+                val txtActiveDeviceMac = findViewById<TextView>(R.id.txtActiveDeviceMac)
+                val imgActiveDeviceType = findViewById<ImageView>(R.id.imgActiveDeviceType)
+
+                if (active != null) {
+                    txtActiveDeviceName?.text = active.name
+                    txtActiveDevicePrimaryBadge?.visibility = if (active.isPrimary) View.VISIBLE else View.GONE
+                    val statusPrefix = if (active.isConnected) "● Conectado" else "Vinculado"
+                    txtActiveDeviceMac?.text = "$statusPrefix • ${active.macAddress} (Toca para cambiar)"
+
+                    when (active.deviceType) {
+                        com.myvu.client.data.BluetoothDeviceType.SMART_GLASSES.name -> {
+                            imgActiveDeviceType?.setImageResource(R.drawable.ic_glasses)
+                        }
+                        com.myvu.client.data.BluetoothDeviceType.HEADPHONES.name -> {
+                            imgActiveDeviceType?.setImageResource(R.drawable.ic_headphones)
+                        }
+                        else -> {
+                            imgActiveDeviceType?.setImageResource(R.drawable.ic_bluetooth_device)
+                        }
+                    }
+                    if (text(txtMac).isEmpty() && active.deviceType == com.myvu.client.data.BluetoothDeviceType.SMART_GLASSES.name) {
+                        txtMac.setText(active.macAddress)
+                    }
+                }
+            }
+        }
+
         val swMasterService = findViewById<MaterialSwitch>(R.id.swMasterService)
         swMasterService?.isChecked = Prefs.autoReconnectEnabled(this)
         swMasterService?.setOnClickListener {
@@ -349,11 +389,45 @@ class ConnectActivity : AppCompatActivity() {
                 body = "Hello from the MYVU client"
             }
             val nTitle = if (title.isEmpty()) "Notification" else title
-            if (need()) {
-                service?.connection()?.sendTestNotification(nTitle, body)
-            } else {
-                LogBus.log("Modo Celular: Notificación local -> $nTitle: $body")
-                android.widget.Toast.makeText(this, "📱 Notificación local: $nTitle", android.widget.Toast.LENGTH_SHORT).show()
+            val isHudAvailable = need()
+
+            lifecycleScope.launch {
+                val db = com.myvu.client.database.AppDatabase.getInstance(this@ConnectActivity)
+                val devices = db.bluetoothDeviceDao().getAllDevices()
+                val primaryMac = com.myvu.client.core.Prefs.primaryDeviceMac(this@ConnectActivity)
+                val primaryDev = devices.find { it.macAddress == primaryMac } ?: devices.find { it.isPrimary }
+                val targetDev = devices.find { it.isConnected } ?: primaryDev
+
+                val notifMode = targetDev?.notificationMode ?: com.myvu.client.data.DeviceNotificationMode.BOTH.name
+                val isVisualRequested = targetDev?.isVisualNotificationEnabled() ?: true
+                val isAudioRequested = targetDev?.isAudioNotificationEnabled() ?: true
+
+                var handledHud = false
+                var handledAudio = false
+
+                // 1. Deliver to HUD if glasses are connected and visual is requested
+                if (isHudAvailable && isVisualRequested) {
+                    service?.connection()?.sendTestNotification(nTitle, body)
+                    handledHud = true
+                }
+
+                // 2. Deliver via Audio TTS if audio is requested
+                if (isAudioRequested) {
+                    val ttsText = "Notificación de prueba: $nTitle. $body"
+                    com.myvu.client.core.TextToSpeechHelper.init(this@ConnectActivity)
+                    com.myvu.client.core.TextToSpeechHelper.speak(ttsText, context = this@ConnectActivity)
+                    handledAudio = true
+                }
+
+                // Feedback Toast
+                val msg = when {
+                    handledHud && handledAudio -> "👓 Notificación enviada a HUD y 🎧 Audio TTS"
+                    handledHud -> "👓 Notificación enviada a HUD de gafas"
+                    handledAudio -> "🎧 Notificación reproducida por Audio (TTS)"
+                    else -> "📱 Notificación local: $nTitle"
+                }
+                LogBus.log(msg)
+                android.widget.Toast.makeText(this@ConnectActivity, msg, android.widget.Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -504,25 +578,53 @@ class ConnectActivity : AppCompatActivity() {
 
     private fun startConnection() {
         Prefs.setAutoReconnectEnabled(this, true)
-        val mac = text(txtMac).uppercase()
-        val auto = mac.isEmpty()
-        if (!auto && !mac.matches(Regex("([0-9A-F]{2}:){5}[0-9A-F]{2}"))) {
-            LogBus.warn("not a valid MAC address: $mac")
-            return
+        val macInput = text(txtMac).trim().uppercase()
+        val devManager = com.myvu.client.service.BluetoothDeviceManager.getInstance(this)
+
+        lifecycleScope.launch {
+            val primary = devManager.getPrimaryDevice()
+            val mac = if (macInput.isNotEmpty()) {
+                macInput
+            } else if (primary != null && primary.deviceType == com.myvu.client.data.BluetoothDeviceType.SMART_GLASSES.name) {
+                primary.macAddress
+            } else {
+                ""
+            }
+
+            // If user has chosen a non-glasses primary device (e.g. Headphones) and MAC input is empty:
+            if (macInput.isEmpty() && primary != null && primary.deviceType != com.myvu.client.data.BluetoothDeviceType.SMART_GLASSES.name) {
+                LogBus.log("Connecting to primary audio device: ${primary.name} (${primary.macAddress})")
+                devManager.connectDeviceWithCleanSwitch(primary) { success ->
+                    runOnUiThread {
+                        if (success) {
+                            Toast.makeText(this@ConnectActivity, "Conectado a ${primary.name}", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this@ConnectActivity, "No se pudo conectar a ${primary.name}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                return@launch
+            }
+
+            val auto = mac.isEmpty()
+            if (!auto && !mac.matches(Regex("([0-9A-F]{2}:){5}[0-9A-F]{2}"))) {
+                LogBus.warn("not a valid MAC address: $mac")
+                return@launch
+            }
+            val start = Intent(this@ConnectActivity, MyvuService::class.java).setAction(MyvuService.ACTION_START)
+            if (auto) {
+                LogBus.log("no MAC entered -- auto-searching for glasses")
+                Prefs.setTargetMac(this@ConnectActivity, "")
+                start.putExtra(MyvuService.EXTRA_MAC, "")
+            } else {
+                Prefs.setTargetMac(this@ConnectActivity, mac)
+                start.putExtra(MyvuService.EXTRA_MAC, mac)
+            }
+            ContextCompat.startForegroundService(this@ConnectActivity, start)
+            requestDozeExemption()
+            if (!bound) bindService(Intent(this@ConnectActivity, MyvuService::class.java), serviceConnection, 0)
+            showPairing()
         }
-        val start = Intent(this, MyvuService::class.java).setAction(MyvuService.ACTION_START)
-        if (auto) {
-            LogBus.log("no MAC entered -- auto-searching for glasses")
-            Prefs.setTargetMac(this, "")
-            start.putExtra(MyvuService.EXTRA_MAC, "")
-        } else {
-            Prefs.setTargetMac(this, mac)
-            start.putExtra(MyvuService.EXTRA_MAC, mac)
-        }
-        ContextCompat.startForegroundService(this, start)
-        requestDozeExemption()
-        if (!bound) bindService(Intent(this, MyvuService::class.java), serviceConnection, 0)
-        showPairing()
     }
 
     private fun wirePairing() {

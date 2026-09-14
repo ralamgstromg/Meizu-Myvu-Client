@@ -76,6 +76,27 @@
         android:visibility="gone"
         android:layout_marginVertical="8dp" />
 
+    <!-- Discovered / Unbonded Devices Section -->
+    <TextView
+        android:id="@+id/txtDiscoveredHeader"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="6dp"
+        android:text="Dispositivos Disponibles para Emparejar"
+        android:textColor="@color/cyber_teal"
+        android:textStyle="bold"
+        android:textSize="13sp"
+        android:visibility="gone" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvDiscoveredList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxHeight="180dp"
+        android:clipToPadding="false"
+        android:visibility="gone" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

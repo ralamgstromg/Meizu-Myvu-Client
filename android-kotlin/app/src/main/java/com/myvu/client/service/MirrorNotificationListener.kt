@@ -138,6 +138,7 @@ class MirrorNotificationListener : NotificationListenerService() {
                 val activeDevices = if (connectedDevices.isNotEmpty()) connectedDevices else listOfNotNull(dao.getActiveConnectedDevice())
 
                 // 1. Audio handling (TTS Readout)
+                // If any active or connected device has audio/TTS enabled, speak aloud
                 val audioDevice = activeDevices.firstOrNull { it.isAudioNotificationEnabled() }
                 if (audioDevice != null) {
                     val app = appLabel(pkg)
@@ -149,24 +150,23 @@ class MirrorNotificationListener : NotificationListenerService() {
                         "Notificación de $app: $text"
                     }
                     com.myvu.client.core.TextToSpeechHelper.init(this@MirrorNotificationListener)
-                    com.myvu.client.core.TextToSpeechHelper.speak(ttsText)
+                    com.myvu.client.core.TextToSpeechHelper.speak(ttsText, context = this@MirrorNotificationListener)
                     LogBus.log("TTS read notification for [${audioDevice.name}] (mode=${audioDevice.notificationMode}) from $app: $ttsText")
                 }
 
                 // 2. Visual handling (Glasses HUD Display)
+                // Display on Smart Glasses HUD if:
+                // - Glasses are actively connected
+                // - AND at least one active device (glasses or connected headphone/wearable) has visual notifications enabled (BOTH or VISUAL_ONLY)
                 val connection = MyvuService.activeConnection()
                 if (connection == null) {
-                    LogBus.trace("not mirroring ${appLabel(pkg)} to glasses: not connected to glasses")
+                    LogBus.trace("not mirroring ${appLabel(pkg)} to glasses: HUD not connected")
                     return@launch
                 }
 
-                val glassesDevice = activeDevices.find { it.deviceType == com.myvu.client.data.BluetoothDeviceType.SMART_GLASSES.name }
-                    ?: dao.getConnectedDeviceByType(com.myvu.client.data.BluetoothDeviceType.SMART_GLASSES.name)
-                    ?: dao.getAllDevices().find { it.deviceType == com.myvu.client.data.BluetoothDeviceType.SMART_GLASSES.name }
-
-                val shouldShowVisual = glassesDevice?.isVisualNotificationEnabled() ?: true
-                if (!shouldShowVisual) {
-                    LogBus.log("Smart glasses notification visual handling is disabled (${glassesDevice?.notificationMode}) -- skipping HUD mirror")
+                val visualRequested = activeDevices.any { it.isVisualNotificationEnabled() }
+                if (!visualRequested) {
+                    LogBus.log("Visual notification handling disabled for active devices -- skipping HUD mirror")
                     return@launch
                 }
 

@@ -74,12 +74,53 @@ class HeadphoneSettingsActivity : AppCompatActivity() {
 
         setupSpinners()
 
+        // Explicitly initialize Text-to-Speech Engine
+        TextToSpeechHelper.init(this)
+
         btnBack.setOnClickListener { finish() }
         btnSave.setOnClickListener { saveSettings() }
 
         btnTestVoice.setOnClickListener {
-            TextToSpeechHelper.speak("Hola, la síntesis de voz en tus auriculares está configurada y lista para recibir comandos.")
-            Toast.makeText(this, "Reproduciendo prueba de voz...", Toast.LENGTH_SHORT).show()
+            TextToSpeechHelper.init(this)
+            TextToSpeechHelper.speak(
+                "Hola, la síntesis de voz en tus auriculares está configurada y lista para recibir comandos.",
+                context = this
+            )
+            Toast.makeText(this, "Reproduciendo prueba de voz en tus auriculares...", Toast.LENGTH_SHORT).show()
+        }
+
+        findViewById<View>(R.id.btnTestNotification)?.setOnClickListener {
+            val mode = com.myvu.client.data.DeviceNotificationMode.getModeByIndex(spinnerNotificationMode.selectedItemPosition)
+            val connection = com.myvu.client.service.MyvuService.activeConnection()
+            var handledHud = false
+            var handledAudio = false
+
+            // 1. Visual HUD if selected and smart glasses are connected
+            if (mode.isVisualNotificationEnabled()) {
+                if (connection != null) {
+                    connection.sendTestNotification("Notificación en Auriculares", "Recepción en pantalla HUD activada.")
+                    handledHud = true
+                }
+            }
+
+            // 2. Audio TTS if selected
+            if (mode.isAudioNotificationEnabled()) {
+                TextToSpeechHelper.init(this)
+                TextToSpeechHelper.speak(
+                    "Notificación de prueba en tus auriculares: mensaje recibido con éxito.",
+                    context = this
+                )
+                handledAudio = true
+            }
+
+            val msg = when {
+                handledHud && handledAudio -> "👓 Notificación enviada a HUD y 🎧 Audio TTS"
+                handledHud -> "👓 Notificación enviada al visor HUD"
+                handledAudio -> "🎧 Notificación reproducida por Voz (TTS)"
+                mode == com.myvu.client.data.DeviceNotificationMode.NONE -> "Notificaciones desactivadas en este modo"
+                else -> "⚠️ Gafas no conectadas para visualización HUD"
+            }
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
         }
 
         loadDevice()

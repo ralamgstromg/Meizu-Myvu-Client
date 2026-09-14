@@ -122,5 +122,19 @@ class BluetoothDeviceManagerTest {
             batteryLevel = 80
         )
         assertEquals(80, entity.batteryLevel)
+        org.junit.Assert.assertFalse(entity.isPrimary)
+    }
+
+    @Test
+    fun testBluetoothDeviceEntityIsPrimaryField() {
+        val primaryEntity = com.myvu.client.data.BluetoothDeviceEntity(
+            macAddress = "11:22:33:44:55:77",
+            name = "MYVU Glasses",
+            isPrimary = true
+        )
+        org.junit.Assert.assertTrue(primaryEntity.isPrimary)
+
+        val updated = primaryEntity.copy(isPrimary = false)
+        org.junit.Assert.assertFalse(updated.isPrimary)
     }
 }

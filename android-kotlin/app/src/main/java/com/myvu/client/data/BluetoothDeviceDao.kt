@@ -10,14 +10,17 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface BluetoothDeviceDao {
 
-    @Query("SELECT * FROM bluetooth_devices ORDER BY isConnected DESC, lastConnectedTime DESC")
+    @Query("SELECT * FROM bluetooth_devices ORDER BY isPrimary DESC, isConnected DESC, lastConnectedTime DESC")
     fun getAllDevicesFlow(): Flow<List<BluetoothDeviceEntity>>
 
-    @Query("SELECT * FROM bluetooth_devices ORDER BY isConnected DESC, lastConnectedTime DESC")
+    @Query("SELECT * FROM bluetooth_devices ORDER BY isPrimary DESC, isConnected DESC, lastConnectedTime DESC")
     suspend fun getAllDevices(): List<BluetoothDeviceEntity>
 
     @Query("SELECT * FROM bluetooth_devices WHERE macAddress = :mac LIMIT 1")
     suspend fun getDevice(mac: String): BluetoothDeviceEntity?
+
+    @Query("SELECT * FROM bluetooth_devices WHERE isPrimary = 1 LIMIT 1")
+    suspend fun getPrimaryDevice(): BluetoothDeviceEntity?
 
     @Query("SELECT * FROM bluetooth_devices WHERE isConnected = 1 LIMIT 1")
     suspend fun getActiveConnectedDevice(): BluetoothDeviceEntity?
@@ -33,6 +36,9 @@ interface BluetoothDeviceDao {
 
     @Update
     suspend fun update(device: BluetoothDeviceEntity)
+
+    @Query("UPDATE bluetooth_devices SET isPrimary = CASE WHEN macAddress = :mac THEN 1 ELSE 0 END")
+    suspend fun setPrimaryDevice(mac: String)
 
     @Query("UPDATE bluetooth_devices SET isConnected = :connected, lastConnectedTime = :time WHERE macAddress = :mac")
     suspend fun updateConnectionState(mac: String, connected: Boolean, time: Long = System.currentTimeMillis())

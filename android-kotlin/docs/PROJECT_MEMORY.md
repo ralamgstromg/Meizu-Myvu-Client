@@ -2014,3 +2014,113 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
      - `./gradlew assembleDebug`: **BUILD SUCCESSFUL**.
      - `codegraph sync`: Sincronizado.
 
+---
+
+## 44. Mejora de Conexión de Dispositivos: Pairing en Vivo, Dispositivo Principal y Protocolo Clean Switch
+
+### Fecha: 14 de Septiembre de 2026
+### Contexto y Necesidad
+Se requería dotar al ecosistema de conexión Bluetooth de:
+1. Capacidad de escaneo y emparejamiento (pairing directo con `createBond()`) para dispositivos no vinculados.
+2. Selección explícita de un "Dispositivo Principal" (`isPrimary`), guardado en base de datos Room y preferencias locales, dándole prioridad de reconexión y target por defecto.
+3. Conexión de dispositivos según su canal principal:
+   - Gafas Inteligentes (`SMART_GLASSES`): Pila completa Starry BLE GATT + RFCOMM socket relay + AudioProfiles (HFP/A2DP) + servicios HUD/sensores/IA.
+   - Auriculares / Wearables (`HEADPHONES` / `GENERIC`): Conexión de perfiles de audio Bluetooth (A2DP/HFP) + lectura de notificaciones TTS + comandos de voz.
+4. **Protocolo Clean Switch (Desconexión limpia y deshabilitación de servicios)**:
+   - Al seleccionar cualquier dispositivo Bluetooth para conectar, si ya había otro conectado, se desconecta primero de forma limpia, liberando y cancelando todos sus servicios en ejecución (sockets BLE/RFCOMM, proxies de audio, canales SCO, teleprompter, HUD, IA en vuelo), actualizando el estado en Room DB, y luego conectando el nuevo dispositivo.
+
+### Cambios Implementados
+1. **Modelo de Datos y Persistencia**:
+   - `BluetoothDeviceEntity.kt`:
+     - Añadido campo `val isPrimary: Boolean = false`.
+   - `BluetoothDeviceDao.kt`:
+     - Orden actualizado en consultas para priorizar dispositivo principal: `ORDER BY isPrimary DESC, isConnected DESC, lastConnectedTime DESC`.
+     - Añadido `@Query("SELECT * FROM bluetooth_devices WHERE isPrimary = 1 LIMIT 1") suspend fun getPrimaryDevice(): BluetoothDeviceEntity?`.
+     - Añadido `@Query("UPDATE bluetooth_devices SET isPrimary = CASE WHEN macAddress = :mac THEN 1 ELSE 0 END") suspend fun setPrimaryDevice(mac: String)`.
+   - `AppDatabase.kt`:
+     - Versión de base de datos incrementada de `5` a `6`.
+   - `Prefs.kt`:
+     - Añadidas constantes y métodos `primaryDeviceMac(context): String` y `setPrimaryDeviceMac(context, mac: String)`.
+
+2. **Capa de Transmit y Control en `ConnectionManager`**:
+   - `start(mac: String)`: Si se recibe una petición hacia una MAC diferente y la pila no está `IDLE`, realiza desconexión limpia del dispositivo anterior (`teardown()`), cierra perfiles de audio, limpia sesion y conecta inmediatamente a la nueva MAC.
+   - Añadido método `disconnectForSwitch(onComplete: (() -> Unit)?)` para desconexión limpia inmediata de las gafas sin desactivar la reconexión global de la aplicación.
+
+3. **Audio Clásico en `AudioProfiles`**:
+   - Añadido método `disconnect(device: BluetoothDevice?)` y `tryDisconnect(tag, proxy, device)` utilizando reflexión sobre los proxies HFP y A2DP para liberar vínculos de audio al alternar dispositivos.
+
+4. **Gestor Universal `BluetoothDeviceManager`**:
+   - Flujo reactivo `unbondedDiscoveredDevices` para aislar dispositivos descubiertos no vinculados durante el escaneo.
+   - Escucha de `BluetoothDevice.ACTION_BOND_STATE_CHANGED` en el `BroadcastReceiver`:
+     - Manejo de estados `BOND_BONDING`, `BOND_BONDED` y `BOND_NONE`.
+     - Inserción y clasificación automática en Room DB al completarse el vínculo.
+   - Métodos `pairDevice(mac: String): Boolean` y `unpairDevice(mac: String): Boolean`.
+   - Métodos `setPrimaryDevice(mac: String)` y `getPrimaryDevice(): BluetoothDeviceEntity?`.
+   - Asignación automática de dispositivo principal inicial en `syncPairedDevices()` si no existe ninguno configurado.
+   - **Método `connectDeviceWithCleanSwitch(targetDevice, onComplete)`**:
+     - Localiza dispositivo activo anterior.
+     - Si es diferente, lo desconecta proactivamente (gafas vía `disconnectForSwitch()`, auriculares vía proxies de audio y liberación de canales SCO).
+     - Actualiza Room DB marcando el anterior como desconectado.
+     - Espera pausa de estabilización (250ms).
+     - Conecta el nuevo dispositivo según su tipo (Gafas vía `MyvuService.ACTION_START` o Auriculares vía proxies de audio y DB).
+
+5. **Interfaz de Usuario**:
+   - `item_bluetooth_device.xml`:
+     - Badge visual `txtPrimaryBadge` ("★ PRINCIPAL") con estilo pill azul.
+     - Botón directo de acción `btnConnectDevice` ("Conectar", "Desconectar" o "Vincular").
+     - Botón de opciones `btnMoreOptions` (`PopupMenu` con "Establecer como Principal", "Configurar Gestos y Notificaciones", "Desvincular / Olvidar").
+   - `bottom_sheet_devices.xml` y `DeviceManagementBottomSheet.kt`:
+     - Sección de Dispositivos Vinculados con estado reactivo, botón de conexión con Clean Switch y menú de opciones.
+     - Sección de Dispositivos Disponibles para Emparejar (`rvDiscoveredList` y `txtDiscoveredHeader`) visible reactivamente durante/tras escaneo con botón "Vincular".
+   - `view_dashboard.xml` y `ConnectActivity.kt`:
+     - Nueva tarjeta selectora `cardSelectedDevice` en el hero de conexión que muestra el nombre, tipo, badge de principal y MAC del dispositivo actual, abriendo el bottom sheet de gestión al tocarla.
+     - `startConnection()` enrutado inteligentemente hacia el dispositivo principal si no se ingresa MAC manual.
+
+6. **Verificación y Pruebas**:
+   - Pruebas añadidas en `BluetoothDeviceManagerTest.kt` (`testBluetoothDeviceEntityIsPrimaryField`).
+   - `./gradlew testDebugUnitTest`: **BUILD SUCCESSFUL** (todos los tests pasando).
+   - `./gradlew assembleDebug`: **BUILD SUCCESSFUL**.
+   - `codegraph sync`: Sincronizado.
+
+---
+
+## 45. [2026-09-14] — Corrección de Prueba de Voz TTS y Entrega Universal de Notificaciones Multi-Dispositivo (HUD, Audio, Ambas)
+
+### Requerimientos:
+1. Al acceder a los ajustes de auriculares (`HeadphoneSettingsActivity`), la opción "Probar Voz del Asistente (TTS)" no ejecutaba la síntesis de audio.
+2. Permitir y garantizar que cualquier dispositivo Bluetooth configurado pueda recibir notificaciones vía HUD si las gafas inteligentes están disponibles/conectadas, o Auditiva (TTS), o Ambas (`BOTH`, `VISUAL_ONLY`, `AUDIO_ONLY`, `NONE`).
+
+### Diagnóstico y Causa Raíz:
+1. **TTS en Auriculares sin Inicializar**:
+   - `TextToSpeechHelper` requiere invocar `init(context)`. `HeadphoneSettingsActivity` llamaba a `TextToSpeechHelper.speak(...)` sin haber inicializado el motor en `onCreate()`, provocando que la instancia fuera nula si `MyvuService` no estaba corriendo o si la actividad se abrió directamente desde la lista de dispositivos.
+2. **Enrutamiento Restringido de Notificaciones en `MirrorNotificationListener`**:
+   - Para el HUD visual de las gafas, el listener verificaba si las gafas estaban conectadas y consultaba exclusivamente la entidad de las gafas. Si un usuario tenía unos auriculares como dispositivo activo o conectado con modo `BOTH` o `VISUAL_ONLY` para recibir alertas mientras usaba ambos periféricos, el sistema omitía el envío al HUD.
+3. **Falta de Botones de Prueba en Pantallas de Ajustes**:
+   - Los usuarios no podían probar directamente desde la configuración de las gafas o de los auriculares cómo se manifestaba la notificación (HUD, TTS o ambas).
+   - El botón de prueba en `ConnectActivity` (`btnNotify`) solo enviaba al HUD de las gafas y no disparaba TTS hacia los auriculares cuando estos estaban activos.
+
+### Soluciones Implementadas:
+1. **`TextToSpeechHelper.kt`**:
+   - Parámetro opcional `context: Context? = null` en `speak(text, queueMode, context)`. Si se invoca sin inicialización previa pero con `context`, auto-inicializa el motor y encola el texto para su reproducción inmediata al completarse `onInit()`.
+   - Método `isReady(): Boolean` expuesto para comprobación de estado.
+2. **`HeadphoneSettingsActivity.kt` & `activity_headphone_settings.xml`**:
+   - `onCreate()` invoca explícitamente `TextToSpeechHelper.init(this)`.
+   - `btnTestVoice` asegura la inicialización y pasa `context = this` a `speak(...)`.
+   - Nuevo botón `btnTestNotification` ("Probar Notificación (HUD / TTS)") que evalúa el modo seleccionado (`BOTH`, `VISUAL_ONLY`, `AUDIO_ONLY`, `NONE`) y despacha la prueba tanto al HUD (si las gafas están conectadas) como por síntesis TTS a los auriculares.
+3. **`GlassesSettingsActivity.kt` & `activity_glasses_settings.xml`**:
+   - Añadido botón interactivo `btnTestGlassesNotification` ("Probar Notificación (HUD / TTS)") en la tarjeta de notificaciones para probar instantáneamente la entrega visual en el visor HUD y/o auditiva según el modo seleccionado.
+4. **`MirrorNotificationListener.kt`**:
+   - Lógica de enrutamiento ampliada:
+     - **Audio**: Si cualquier dispositivo activo o conectado requiere notificaciones auditivas (`isAudioNotificationEnabled()`), lee en voz alta por TTS con inicialización garantizada.
+     - **Visual (HUD)**: Si las gafas inteligentes están conectadas (`MyvuService.activeConnection() != null`) y al menos un dispositivo activo (gafas, auriculares o wearable) tiene habilitada la notificación visual (`isVisualNotificationEnabled()`), formatea y envía el paquete JSON al HUD de las gafas.
+5. **`ConnectActivity.kt`**:
+   - `btnNotify` actualizado: consulta el dispositivo activo/primario en Room; si requiere visual y el HUD está disponible, lo proyecta en las gafas; si requiere audio, lo sintetiza por TTS a los auriculares; y emite un toast descriptivo del canal utilizado.
+
+### Verificación:
+- Test unitario `testHeadphoneSettingsCanSelectBothNotificationsAndTriggerButtons` agregado en `SettingsGestureConfigTest.kt`.
+- Pruebas unitarias de Robolectric y JUnit: `./gradlew testDebugUnitTest` -> **BUILD SUCCESSFUL**.
+- Compilación de la aplicación: `./gradlew assembleDebug` -> **BUILD SUCCESSFUL**.
+- `rtk codegraph sync`: Sincronizado.
+
+
+

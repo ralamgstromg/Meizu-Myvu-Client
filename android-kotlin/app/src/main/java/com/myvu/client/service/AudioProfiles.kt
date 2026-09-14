@@ -167,6 +167,20 @@ class AudioProfiles(
         )
     }
 
+    fun disconnect(device: BluetoothDevice?) {
+        if (device == null) return
+        val target = resolveTargetDevice(device)
+        tryDisconnect("HFP", headset, target)
+        tryDisconnect("A2DP", a2dp, target)
+    }
+
+    private fun tryDisconnect(tag: String, proxy: BluetoothProfile?, device: BluetoothDevice) {
+        if (proxy == null) return
+        if (getState(proxy, device) == BluetoothProfile.STATE_DISCONNECTED) return
+        val disconnect = invoke1(proxy, "disconnect", device)
+        LogBus.log("AudioProfiles: $tag disconnect requested for ${device.address} (result=$disconnect)")
+    }
+
     /**
      * The truthful btStatus to advertise to the glasses right now: the highest
      * classic-audio profile that is actually connected, else ACL.

@@ -62,6 +62,9 @@ Cliente complementario nativo en Android (Kotlin) para gafas de realidad aumenta
 
 - **Plataforma Universal de Agente IA para Dispositivos Bluetooth**:
   - **Soporte Multi-Dispositivo**: Compatible con Gafas Inteligentes AR (MYVU), Auriculares / Audífonos Bluetooth (TWS, diadema, in-ear) y Wearables genéricos.
+  - **Emparejamiento en Vivo (Pairing Directo)**: Descubrimiento de periféricos cercanos no vinculados y ejecución directa del flujo de vinculación PIN/SSP (`createBond()`) y desvinculación (`removeBond()`) desde el selector de dispositivos, con monitor reactivo de `ACTION_BOND_STATE_CHANGED`.
+  - **Dispositivo Principal con Conexión Prioritaria (`isPrimary`)**: Designación persistente en Room (`BluetoothDeviceEntity.isPrimary`) y `Prefs` de un dispositivo maestro por defecto. El panel de conexión (`ConnectActivity`) resalta el dispositivo seleccionado con tarjeta interactiva Cupertino (`cardSelectedDevice`), insignia visual (`★ PRINCIPAL`) y botón directo de conexión/gestión.
+  - **Protocolo Clean Switch (Desconexión Limpia y Relevo Atómico)**: Al pulsar conectar en un nuevo dispositivo desde el área de conexión, el sistema ejecuta una desconexión preventiva del periférico anterior: desmantela de forma ordenada los enlaces RFCOMM, Starry BLE, proxies HFP/A2DP (`AudioProfiles`), sockets SCO y listeners HUD antes de iniciar la nueva conexión (con delay de asentamiento de 250ms), previniendo conflictos en el HCI de la radio Bluetooth del teléfono.
   - **Detección y Clasificación Automática (`BluetoothDeviceManager`)**: Reconoce y cataloga dispositivos emparejados en el sistema y permite escanear nuevos dispositivos Bluetooth en tiempo real.
   - **Catálogo Unificado de Acciones Comunes (`CommonDeviceActions`)**: 13 acciones transversales que cualquier dispositivo puede ejecutar (Lanzar Gemini, Gemini Live, Asistente de teléfono, notas de voz IA, leer notificaciones, Mi Día/Daily Briefing, teleprompter, control multimedia, etc.).
   - **Interfaces Propias y Diferenciadas de Configuración por Dispositivo**:
@@ -90,12 +93,13 @@ Cliente complementario nativo en Android (Kotlin) para gafas de realidad aumenta
     - Lectura en voz alta por TTS de notificaciones pendientes (`MirrorNotificationListener`).
     - Controles multimedia (play/pausa, siguiente, anterior).
   - **Manejo Granular de Notificaciones por Dispositivo (`DeviceNotificationMode`)**: Cada dispositivo Bluetooth permite configurar de forma personalizada el canal de entrega de alertas entrantes:
-    - **Visual (HUD)**: Se proyecta en la pantalla microLED de las gafas inteligentes (silencioso, sin interrumpir con voz).
+    - **Visual (HUD)**: Se proyecta en la pantalla microLED de las gafas inteligentes (silencioso, sin interrumpir con voz) si están disponibles.
     - **Sonora (TTS)**: Se lee en voz alta por síntesis de voz (`TextToSpeechHelper`) hacia los audífonos o altavoces.
-    - **Ambos**: Visualización simultánea en HUD y lectura por voz TTS.
+    - **Ambos**: Visualización simultánea en pantalla HUD de las gafas y lectura hablada por voz TTS en los auriculares.
     - **Desactivadas**: Silencia completamente las alertas para ese dispositivo específico.
-  - **Enrutamiento Inteligente Multi-Dispositivo (`MirrorNotificationListener`)**: Analiza los periféricos activos conectados; si las gafas tienen habilitadas notificaciones visuales las envía al HUD, y si los audífonos o gafas tienen habilitada la lectura por voz reproduce *"De [App]: [Título]. [Texto]"* en los auriculares, funcionando tanto en conjunto como de forma autónoma.
-  - **Motor de Audio TTS en Español (`TextToSpeechHelper`)**: Síntesis nativa para lectura de notificaciones, confirmaciones de comandos y resúmenes ejecutivos a través del auricular.
+    - **Validación y Pruebas en Vivo**: Botones de prueba instantánea en Gafas AR (`btnTestGlassesNotification`), Auriculares Bluetooth (`btnTestNotification` y `btnTestVoice`) y Dashboard (`btnNotify`) para comprobar la recepción visual y auditiva sin esperar notificaciones reales.
+  - **Enrutamiento Inteligente Multi-Dispositivo (`MirrorNotificationListener`)**: Analiza los periféricos activos conectados de manera desacoplada; si cualquier dispositivo conectado tiene habilitada la entrega visual y las gafas están enlazadas proyecta al HUD, y si tiene habilitada la entrega sonora reproduce *"De [App]: [Título]. [Texto]"* en los auriculares por TTS.
+  - **Motor de Audio TTS en Español con Auto-Inicialización (`TextToSpeechHelper`)**: Síntesis nativa para lectura de notificaciones, prueba de voz y resúmenes con soporte de arranque en caliente (`context`), encolado de elocuciones pendientes y estado `isReady()`.
   - **Indicadores de Batería Reales en Tiempo Real (`BluetoothDeviceManager` & `InboundRouter`)**:
     - Extracción continua de nivel de batería desde el hardware de las gafas MYVU (`get_device_info`, `sync_glass_battery_info`), broadcasts de Android (`ACTION_BATTERY_LEVEL_CHANGED`), eventos HFP AT `+IPHONEACCEV` para auriculares Bluetooth, y consulta reflexiva a la API nativa de Android (`device.getBatteryLevel()`).
     - Persistencia automática en Room DB y actualización reactiva en `ChatActivity`, `GlassesSettingsActivity`, `HeadphoneSettingsActivity` y `DeviceManagementBottomSheet` sin porcentajes ficticios ni simulados.

@@ -21,6 +21,7 @@ object Prefs {
     private const val KEY_WEATHER_ENABLED = "weather_enabled"
     private const val KEY_WEATHER_PLACE = "weather_place"
     private const val KEY_AUTO_RECONNECT = "auto_reconnect_enabled"
+    private const val KEY_PRIMARY_DEVICE_MAC = "primary_device_mac"
 
 
     const val DEFAULT_MAC = ""
@@ -55,6 +56,17 @@ object Prefs {
     @JvmStatic
     fun setTargetMac(c: Context, mac: String) {
         prefs(c).edit().putString(KEY_MAC, mac).apply()
+    }
+
+    @JvmStatic
+    fun primaryDeviceMac(c: Context): String {
+        val stored = prefs(c).getString(KEY_PRIMARY_DEVICE_MAC, "") ?: ""
+        return stored.ifBlank { targetMac(c) }
+    }
+
+    @JvmStatic
+    fun setPrimaryDeviceMac(c: Context, mac: String) {
+        prefs(c).edit().putString(KEY_PRIMARY_DEVICE_MAC, mac).apply()
     }
 
     @JvmStatic

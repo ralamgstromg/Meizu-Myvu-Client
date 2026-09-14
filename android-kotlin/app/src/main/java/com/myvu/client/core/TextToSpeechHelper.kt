@@ -15,9 +15,13 @@ object TextToSpeechHelper : TextToSpeech.OnInitListener {
     private var isInitialized = false
     private val pendingUtterances = mutableListOf<String>()
 
-    fun init(context: Context) {
+    fun isReady(): Boolean = isInitialized && tts != null
+
+    fun init(context: Context, onReady: (() -> Unit)? = null) {
         if (tts == null) {
             tts = TextToSpeech(context.applicationContext, this)
+        } else if (isInitialized) {
+            onReady?.invoke()
         }
     }
 
@@ -45,9 +49,14 @@ object TextToSpeechHelper : TextToSpeech.OnInitListener {
 
     /**
      * Speaks text aloud through the current active audio device (e.g. Bluetooth headphones).
+     * If context is provided and TTS is not yet instantiated, auto-initializes the engine.
      */
-    fun speak(text: String, queueMode: Int = TextToSpeech.QUEUE_FLUSH) {
+    fun speak(text: String, queueMode: Int = TextToSpeech.QUEUE_FLUSH, context: Context? = null) {
         if (text.isBlank()) return
+
+        if (context != null && tts == null) {
+            init(context)
+        }
 
         if (!isInitialized || tts == null) {
             synchronized(pendingUtterances) {

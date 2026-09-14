@@ -44,6 +44,9 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
     private val _discoveredDevices = MutableStateFlow<List<BluetoothDeviceEntity>>(emptyList())
     val discoveredDevices: StateFlow<List<BluetoothDeviceEntity>> = _discoveredDevices.asStateFlow()
 
+    private val _unbondedDiscoveredDevices = MutableStateFlow<List<BluetoothDeviceEntity>>(emptyList())
+    val unbondedDiscoveredDevices: StateFlow<List<BluetoothDeviceEntity>> = _unbondedDiscoveredDevices.asStateFlow()
+
     private val _activeDevice = MutableStateFlow<BluetoothDeviceEntity?>(null)
     val activeDevice: StateFlow<BluetoothDeviceEntity?> = _activeDevice.asStateFlow()
 
@@ -80,6 +83,13 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
                     if (device != null) {
                         LogBus.log("BluetoothDeviceManager -> Device disconnected: ${device.name ?: "Unknown"} (${device.address})")
                         handleDeviceConnectionChanged(device, false)
+                    }
+                }
+                BluetoothDevice.ACTION_BOND_STATE_CHANGED -> {
+                    val bondState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.BOND_NONE)
+                    val prevBondState = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, BluetoothDevice.BOND_NONE)
+                    if (device != null) {
+                        handleBondStateChanged(device, bondState, prevBondState)
                     }
                 }
                 "android.bluetooth.device.action.BATTERY_LEVEL_CHANGED" -> {
@@ -191,6 +201,16 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
                         )
                     }
                 }
+                // Ensure a Primary Device is designated if none is set
+                if (dao.getPrimaryDevice() == null) {
+                    val primaryMac = Prefs.primaryDeviceMac(context).takeIf { it.isNotBlank() }
+                        ?: dao.getAllDevices().find { it.deviceType == BluetoothDeviceType.SMART_GLASSES.name }?.macAddress
+                        ?: dao.getAllDevices().firstOrNull()?.macAddress
+                    if (primaryMac != null) {
+                        dao.setPrimaryDevice(primaryMac)
+                        LogBus.log("BluetoothDeviceManager -> Auto-assigned primary device: $primaryMac")
+                    }
+                }
                 refreshActiveDevice()
             } catch (e: Exception) {
                 LogBus.error("BluetoothDeviceManager -> Failed to sync paired devices", e)
@@ -213,10 +233,59 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
             lastConnectedTime = System.currentTimeMillis()
         )
 
-        val current = _discoveredDevices.value.toMutableList()
-        if (current.none { it.macAddress.equals(mac, ignoreCase = true) }) {
-            current.add(entity)
-            _discoveredDevices.value = current
+        val currentAll = _discoveredDevices.value.toMutableList()
+        if (currentAll.none { it.macAddress.equals(mac, ignoreCase = true) }) {
+            currentAll.add(entity)
+            _discoveredDevices.value = currentAll
+        }
+
+        if (device.bondState == BluetoothDevice.BOND_NONE) {
+            val currentUnbonded = _unbondedDiscoveredDevices.value.toMutableList()
+            if (currentUnbonded.none { it.macAddress.equals(mac, ignoreCase = true) }) {
+                currentUnbonded.add(entity)
+                _unbondedDiscoveredDevices.value = currentUnbonded
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun handleBondStateChanged(device: BluetoothDevice, bondState: Int, prevBondState: Int) {
+        val mac = device.address
+        val name = device.name ?: "Dispositivo Bluetooth"
+        LogBus.log("BluetoothDeviceManager -> Bond state changed for $name ($mac): $prevBondState -> $bondState")
+        when (bondState) {
+            BluetoothDevice.BOND_BONDED -> {
+                LogBus.log("BluetoothDeviceManager -> Device bonded successfully: $name ($mac)")
+                scope.launch {
+                    val type = classifyDevice(name, device.bluetoothClass, mac)
+                    val battery = readDeviceBattery(device)
+                    val existing = dao.getDevice(mac)
+                    val entity = (existing ?: BluetoothDeviceEntity(
+                        macAddress = mac,
+                        name = name,
+                        deviceType = type.name,
+                        isConnected = false,
+                        batteryLevel = battery,
+                        lastConnectedTime = System.currentTimeMillis()
+                    )).copy(name = name, batteryLevel = battery ?: existing?.batteryLevel)
+                    dao.insertOrUpdate(entity)
+                    _unbondedDiscoveredDevices.value = _unbondedDiscoveredDevices.value.filter {
+                        !it.macAddress.equals(mac, ignoreCase = true)
+                    }
+                    if (dao.getPrimaryDevice() == null) {
+                        setPrimaryDevice(mac)
+                    }
+                    refreshActiveDevice()
+                }
+            }
+            BluetoothDevice.BOND_NONE -> {
+                if (prevBondState == BluetoothDevice.BOND_BONDING) {
+                    LogBus.warn("BluetoothDeviceManager -> Pairing failed or was cancelled for $name ($mac)")
+                }
+            }
+            BluetoothDevice.BOND_BONDING -> {
+                LogBus.log("BluetoothDeviceManager -> Pairing in progress for $name ($mac)...")
+            }
         }
     }
 
@@ -244,6 +313,9 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
                     lastConnectedTime = System.currentTimeMillis()
                 )
                 dao.insertOrUpdate(newEntity)
+            }
+            if (connected) {
+                dao.markOthersDisconnected(mac)
             }
             refreshActiveDevice()
         }
@@ -371,6 +443,7 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
     fun startScanning() {
         if (!hasBluetoothPermission()) return
         _discoveredDevices.value = emptyList()
+        _unbondedDiscoveredDevices.value = emptyList()
         _isScanning.value = true
         scanHandler.removeCallbacks(scanTimeoutRunnable)
         scanHandler.postDelayed(scanTimeoutRunnable, SCAN_TIMEOUT_MS)
@@ -492,6 +565,155 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
             )
         )
         refreshActiveDevice()
+    }
+
+    @SuppressLint("MissingPermission")
+    fun pairDevice(mac: String): Boolean {
+        if (!hasBluetoothPermission()) {
+            LogBus.warn("BluetoothDeviceManager -> Missing Bluetooth permission for pairing")
+            return false
+        }
+        val adapter = bluetoothAdapter ?: return false
+        return try {
+            val dev = adapter.getRemoteDevice(mac)
+            if (dev.bondState == BluetoothDevice.BOND_NONE) {
+                LogBus.log("BluetoothDeviceManager -> Requesting createBond() for ${dev.name ?: mac} ($mac)")
+                dev.createBond()
+            } else {
+                LogBus.log("BluetoothDeviceManager -> Device $mac already bonded or bonding (${dev.bondState})")
+                true
+            }
+        } catch (e: Exception) {
+            LogBus.error("BluetoothDeviceManager -> Failed to start pairing with $mac", e)
+            false
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun unpairDevice(mac: String): Boolean {
+        if (!hasBluetoothPermission()) return false
+        val adapter = bluetoothAdapter ?: return false
+        return try {
+            val dev = adapter.getRemoteDevice(mac)
+            val removeBondMethod = dev.javaClass.getMethod("removeBond")
+            val result = removeBondMethod.invoke(dev) as? Boolean ?: false
+            LogBus.log("BluetoothDeviceManager -> removeBond for $mac: $result")
+            scope.launch {
+                dao.deleteDevice(mac)
+                refreshActiveDevice()
+            }
+            result
+        } catch (e: Exception) {
+            LogBus.warn("BluetoothDeviceManager -> Could not unpair $mac: ${e.message}")
+            scope.launch {
+                dao.deleteDevice(mac)
+                refreshActiveDevice()
+            }
+            false
+        }
+    }
+
+    suspend fun setPrimaryDevice(mac: String) {
+        try {
+            dao.setPrimaryDevice(mac)
+            Prefs.setPrimaryDeviceMac(context, mac)
+            val dev = dao.getDevice(mac)
+            if (dev?.deviceType == BluetoothDeviceType.SMART_GLASSES.name) {
+                Prefs.setTargetMac(context, mac)
+            }
+            LogBus.log("BluetoothDeviceManager -> Set primary device: ${dev?.name ?: mac} ($mac)")
+            refreshActiveDevice()
+        } catch (e: Exception) {
+            LogBus.error("BluetoothDeviceManager -> Failed to set primary device: $mac", e)
+        }
+    }
+
+    suspend fun getPrimaryDevice(): BluetoothDeviceEntity? {
+        return dao.getPrimaryDevice()
+    }
+
+    private var audioProfiles: AudioProfiles? = null
+
+    @Synchronized
+    private fun getAudioProfiles(): AudioProfiles? {
+        val adapter = bluetoothAdapter ?: return null
+        if (audioProfiles == null) {
+            audioProfiles = AudioProfiles(context, adapter, Prefs.targetMac(context), null)
+        }
+        return audioProfiles
+    }
+
+    /**
+     * Connects a device with clean switch:
+     * Disconnects any currently connected device and disables its services
+     * before connecting the new device.
+     */
+    suspend fun connectDeviceWithCleanSwitch(targetDevice: BluetoothDeviceEntity, onComplete: ((Boolean) -> Unit)? = null) {
+        try {
+            val currentActive = dao.getActiveConnectedDevice()
+            val isDifferentDevice = currentActive != null && !currentActive.macAddress.equals(targetDevice.macAddress, ignoreCase = true)
+
+            // Step 1: Disconnect and disable services of the previous device
+            if (isDifferentDevice && currentActive != null) {
+                LogBus.log("BluetoothDeviceManager -> Clean Switch: Disconnecting previous device ${currentActive.name} (${currentActive.macAddress})")
+
+                // Disable previous glasses connection if it was active
+                val conn = MyvuService.activeConnection()
+                if (conn != null && conn.state() != ConnectionState.IDLE) {
+                    conn.disconnectForSwitch()
+                }
+
+                // Release audio SCO channels & previous headphone audio profiles
+                com.myvu.client.app.feature.TouchGestureManager.releaseBluetoothSco(context)
+                if (currentActive.deviceType == BluetoothDeviceType.HEADPHONES.name || currentActive.deviceType == BluetoothDeviceType.GENERIC.name) {
+                    try {
+                        val prevDevice = bluetoothAdapter?.getRemoteDevice(currentActive.macAddress)
+                        getAudioProfiles()?.disconnect(prevDevice)
+                    } catch (ignored: Exception) {}
+                }
+
+                // Update database: previous device is now disconnected
+                dao.updateConnectionState(currentActive.macAddress, false)
+
+                // Short stabilization pause to allow Android BT stack to close ACL and channels cleanly
+                kotlinx.coroutines.delay(250L)
+            }
+
+            // Step 2: Connect the new target device according to its primary connection type
+            LogBus.log("BluetoothDeviceManager -> Clean Switch: Connecting new device ${targetDevice.name} (${targetDevice.macAddress}) [${targetDevice.deviceType}]")
+
+            when (targetDevice.deviceType) {
+                BluetoothDeviceType.SMART_GLASSES.name -> {
+                    Prefs.setAutoReconnectEnabled(context, true)
+                    Prefs.setTargetMac(context, targetDevice.macAddress)
+                    val startIntent = Intent(context, MyvuService::class.java).apply {
+                        action = MyvuService.ACTION_START
+                        putExtra(MyvuService.EXTRA_MAC, targetDevice.macAddress)
+                    }
+                    ContextCompat.startForegroundService(context, startIntent)
+                }
+                else -> {
+                    // Classic Bluetooth Audio (Headphones / Earbuds / Generic Wearable)
+                    val adapter = bluetoothAdapter
+                    if (adapter != null && adapter.isEnabled) {
+                        try {
+                            val bDev = adapter.getRemoteDevice(targetDevice.macAddress)
+                            getAudioProfiles()?.connect(bDev)
+                        } catch (e: Exception) {
+                            LogBus.warn("BluetoothDeviceManager -> Could not connect audio profiles: ${e.message}")
+                        }
+                    }
+                    dao.markOthersDisconnected(targetDevice.macAddress)
+                    dao.updateConnectionState(targetDevice.macAddress, true)
+                }
+            }
+
+            refreshActiveDevice()
+            onComplete?.invoke(true)
+        } catch (e: Exception) {
+            LogBus.error("BluetoothDeviceManager -> Error during clean switch connection", e)
+            onComplete?.invoke(false)
+        }
     }
 
     fun getAllDevicesFlow() = dao.getAllDevicesFlow()

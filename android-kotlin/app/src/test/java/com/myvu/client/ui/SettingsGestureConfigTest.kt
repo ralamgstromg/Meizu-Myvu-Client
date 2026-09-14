@@ -1,6 +1,7 @@
 package com.myvu.client.ui
 
 import android.content.Intent
+import android.view.View
 import android.widget.Button
 import android.widget.Spinner
 import com.google.android.material.button.MaterialButtonToggleGroup
@@ -449,6 +450,43 @@ class SettingsGestureConfigTest {
             val glasses = dao.getDevice(glassesMac)
             assertNotNull(glasses)
             assertTrue("Glasses active listening should be true after save", glasses!!.activeListeningEnabled)
+        }
+    }
+
+    @Test
+    fun testHeadphoneSettingsCanSelectBothNotificationsAndTriggerButtons() {
+        val headphoneMac = "55:44:33:22:11:00"
+        val intent = Intent().apply {
+            putExtra(HeadphoneSettingsActivity.EXTRA_MAC, headphoneMac)
+        }
+
+        val controller = Robolectric.buildActivity(HeadphoneSettingsActivity::class.java, intent).setup()
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        val act = controller.get()
+
+        val spNotif = act.findViewById<Spinner>(R.id.spinnerNotificationMode)
+        val bothIdx = com.myvu.client.data.DeviceNotificationMode.getIndex(com.myvu.client.data.DeviceNotificationMode.BOTH.name)
+        spNotif.setSelection(bothIdx)
+
+        val btnTestVoice = act.findViewById<View>(R.id.btnTestVoice)
+        assertNotNull(btnTestVoice)
+        btnTestVoice.performClick()
+
+        val btnTestNotif = act.findViewById<View>(R.id.btnTestNotification)
+        assertNotNull(btnTestNotif)
+        btnTestNotif.performClick()
+
+        act.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSave).performClick()
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+
+        runBlocking {
+            val context = RuntimeEnvironment.getApplication()
+            val dao = AppDatabase.getInstance(context).bluetoothDeviceDao()
+            val dev = dao.getDevice(headphoneMac)
+            assertNotNull(dev)
+            assertEquals(com.myvu.client.data.DeviceNotificationMode.BOTH.name, dev?.notificationMode)
+            assertTrue(dev?.isVisualNotificationEnabled() == true)
+            assertTrue(dev?.isAudioNotificationEnabled() == true)
         }
     }
 }

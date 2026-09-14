@@ -392,14 +392,27 @@ Para delegación y automatización cotidiana con mínima fricción cognitiva:
 
 La plataforma desacopla la inteligencia agéntica del hardware específico de las gafas AR, convirtiendo la aplicación en un Agente IA Universal para cualquier dispositivo Bluetooth:
 
-### 11.1 Clasificación y Gestión de Dispositivos (`BluetoothDeviceManager`)
+### 11.1 Clasificación, Pairing y Gestión de Dispositivos (`BluetoothDeviceManager`)
 - **Heurística de Clasificación Dinámica**:
   - `SMART_GLASSES`: Reconoce gafas por nombre de dispositivo (`myvu`, `starry`, `smart glasses`, `ray-ban meta`, `inmo`, `rokid`, `xreal`) o coincidencia con la MAC configurada en `Prefs.targetMac`.
   - `HEADPHONES`: Reconoce audífonos TWS, de diadema o in-ear por nombre (`airpods`, `buds`, `freebuds`, `earbuds`, `headphone`, `headset`, `wh-1000xm`, `wf-1000xm`, `bose`, `jbl`, `sony`, etc.) o por la clase Bluetooth del dispositivo (`AudioVideoWearableHeadset`, `AudioVideoHeadphones`, `AudioVideoHandsfree`).
   - `GENERIC`: Dispositivos periféricos o wearables genéricos.
-- **Sincronización y Escaneo**:
-  - Sincroniza automáticamente los dispositivos emparejados en el sistema Android y escucha eventos de conexión (`ACTION_ACL_CONNECTED` / `ACTION_ACL_DISCONNECTED`) y descubrimiento (`ACTION_FOUND`).
-  - Almacena el estado en Room (`BluetoothDeviceEntity`) manteniendo el flag del dispositivo actualmente activo (`isActiveDevice`).
+- **Sincronización, Escaneo y Emparejamiento en Vivo (Pairing)**:
+  - Sincroniza automáticamente los dispositivos emparejados en el sistema Android y escucha eventos de conexión (`ACTION_ACL_CONNECTED` / `ACTION_ACL_DISCONNECTED`), descubrimiento (`ACTION_FOUND`) y estado de vínculo (`ACTION_BOND_STATE_CHANGED`).
+  - Separa en tiempo real los dispositivos vinculados (`getAllDevicesFlow()`) de los dispositivos cercanos no vinculados (`unbondedDiscoveredDevices`).
+  - Soporte directo de emparejamiento desde la UI mediante `pairDevice(mac)` (`createBond()`) y olvido con `unpairDevice(mac)`.
+- **Dispositivo Principal (Primary Device)**:
+  - Soporte de designación de un Dispositivo Principal (`isPrimary: Boolean`) persistido en Room DB (v6) y `Prefs.primaryDeviceMac`.
+  - El dispositivo principal tiene prioridad automática de reconexión y es el target predeterminado del sistema cuando se conecta sin especificar MAC.
+- **Protocolo Clean Switch (Desconexión Limpia y Deshabilitación de Servicios)**:
+  - Implementado en `connectDeviceWithCleanSwitch(targetDevice)`:
+    1. Si hay un dispositivo conectado y es diferente al seleccionado, se procede a su desconexión proactiva antes de enlazar el nuevo.
+    2. Se liberan y cancelan los servicios en ejecución del dispositivo anterior:
+       - Si eran gafas: `ConnectionManager.disconnectForSwitch()` (cierre de socket RFCOMM, sesión BLE, teleprompter, HUD, navegación, sincronización de clima y turnos de IA en vuelo).
+       - Si eran auriculares: `AudioProfiles.disconnect()` (desconexión de proxies HFP/A2DP vía reflexión) y liberación de canales Bluetooth SCO (`TouchGestureManager.releaseBluetoothSco()`).
+    3. Se actualiza el estado en Room DB marcando el anterior como desconectado.
+    4. Se aguarda una ventana de estabilización (250ms) para que el controlador Bluetooth de Android libere el radio HCI.
+    5. Se conecta el nuevo dispositivo según su canal principal (gafas con Starry BLE/RFCOMM o auriculares con A2DP/HFP y lectura TTS de notificaciones).
 
 ### 11.2 Gestos de Auriculares y Retroalimentación por Voz (`HeadphoneGestureManager` & `TextToSpeechHelper`)
 - **Evaluador de Gestos en Botones Multimedia**:
@@ -417,17 +430,28 @@ La plataforma desacopla la inteligencia agéntica del hardware específico de la
   - `READ_UNREAD_NOTIFICATIONS`: Sintetiza y lee en voz alta por los audífonos las notificaciones pendientes mediante `TextToSpeechHelper`.
   - `DAILY_BRIEFING`: Genera y reproduce el resumen ejecutivo de la jornada (clima, hora, agenda, tareas y notificaciones).
   - Controles multimedia estándar (`MEDIA_PLAY_PAUSE`, `MEDIA_NEXT`, `MEDIA_PREV`).
-- **Retroalimentación Auditiva (TTS)**:
-  - `TextToSpeechHelper`: Motor nativo TTS con localización en español (`es-CO`/`es-ES`) que habla confirmaciones y respuestas sintetizadas hacia el canal de audio del auricular.
+- **Retroalimentación Auditiva (TTS) y Auto-Inicialización Resiliente**:
+  - `TextToSpeechHelper`: Motor nativo TTS con localización en español (`es-CO`/`es-ES`) que sintetiza confirmaciones, lecturas y respuestas habladas hacia el canal de audio del auricular o altavoz activo.
+  - Cuenta con sobrecarga `speak(text, queueMode, context)` con soporte de auto-inicialización en caliente si el motor aún no había sido instanciado, encolado de elocuciones pendientes (`pendingUtterances`) y método `isReady(): Boolean`.
+- **Manejo Universal de Notificaciones por Dispositivo (`DeviceNotificationMode`)**:
+  - Cada dispositivo Bluetooth (gafas, auriculares, wearables) puede configurarse en cualquiera de los 4 modos de entrega:
+    - **Visual y Sonora (`BOTH`)**: Proyecta en el visor HUD de las gafas (si están disponibles/conectadas) y sintetiza por voz en auriculares.
+    - **Solo Visual (`VISUAL_ONLY`)**: Proyecta en el HUD de las gafas de forma silenciosa sin lectura de voz.
+    - **Solo Sonora (`AUDIO_ONLY`)**: Lee por voz en el auricular o altavoz sin proyectar en el HUD.
+    - **Desactivadas (`NONE`)**: Silencia las alertas para el dispositivo.
+  - Enrutamiento inteligente desacoplado en `MirrorNotificationListener`: si cualquier dispositivo activo tiene solicitado modo visual y las gafas están conectadas, envía la trama al HUD; si cualquier dispositivo activo tiene solicitado modo sonoro, sintetiza la notificación por TTS.
+  - Botones de prueba integrados en `GlassesSettingsActivity` (`btnTestGlassesNotification`), `HeadphoneSettingsActivity` (`btnTestNotification` y `btnTestVoice`) y `ConnectActivity` (`btnNotify`) para validar en caliente la recepción en el HUD y/o el auricular.
 
-### 11.3 UI Centralizada en Chat y Panel de Dispositivos (`ChatActivity` & `DeviceManagementBottomSheet`)
+### 11.3 UI Centralizada en Chat y Panel de Dispositivos (`ChatActivity`, `ConnectActivity` & `DeviceManagementBottomSheet`)
 - **Chat como Pantalla Principal (`MAIN`/`LAUNCHER`)**:
   - La actividad principal de la aplicación es `ChatActivity`, garantizando interacción directa con el agente de IA, comandos rápidos y herramientas en texto o voz.
-- **Gestión Multi-Dispositivo**:
-  - `DeviceManagementBottomSheet`: Permite al usuario conmutar entre dispositivos, iniciar escaneo Bluetooth y acceder a las configuraciones dedicadas según el tipo:
-    - Para gafas AR: Abre `ConnectActivity` / `SettingsActivity` (HUD, teleprompter, navegación, brillo).
-    - Para auriculares: Abre `HeadphoneSettingsActivity` (gestos de 1/2/3 toques, interruptores de TTS y lectura de notificaciones).
-    - Muestra en tiempo real el porcentaje real de batería y el distintivo del modo de notificación para cada equipo (`HUD + TTS`, `HUD`, `TTS`, `Mudo`).
+- **Gestión Multi-Dispositivo y Selector en Hero Dashboard**:
+  - `cardSelectedDevice` en `ConnectActivity` (`view_dashboard.xml`): Muestra el nombre, tipo, badge de principal y estado de conexión en tiempo real, abriendo el bottom sheet de gestión.
+  - `DeviceManagementBottomSheet`:
+    - Lista de dispositivos vinculados con distintivo visual `★ PRINCIPAL`, botones de conexión con protocolo Clean Switch y menú emergente para fijar como principal, configurar o desvincular.
+    - Sección reactiva de dispositivos descubiertos cercanos para emparejamiento directo en un toque.
+    - Acceso directo a configuraciones según categoría (gafas vs auriculares).
+    - Muestra en tiempo real el porcentaje de batería y el modo de notificación configurado (`HUD + TTS`, `HUD`, `TTS`, `Mudo`).
 
 ### 11.4 Telemetría y Monitoreo de Batería en Tiempo Real (`BluetoothDeviceManager`, `InboundRouter`, Room DB)
 - **Captura Multi-Canal de Nivel de Batería**:

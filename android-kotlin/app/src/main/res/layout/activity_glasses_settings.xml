@@ -369,6 +369,17 @@
                     android:text="Visual (HUD) y Sonora (TTS): Muestra en pantalla y lee por voz."
                     android:textColor="@color/ios_secondary_label"
                     android:textSize="11sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTestGlassesNotification"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="14dp"
+                    android:text="Probar Notificación (HUD / TTS)"
+                    android:textColor="@color/ios_blue"
+                    app:cornerRadius="12dp"
+                    app:strokeColor="@color/ios_blue" />
             </LinearLayout>
 
             <!-- Card 5: Pantalla y Visor MicroOLED -->

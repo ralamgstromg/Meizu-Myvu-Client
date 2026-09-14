@@ -197,6 +197,37 @@ class GlassesSettingsActivity : AppCompatActivity() {
             startActivity(Intent(this, TrackpadActivity::class.java))
         }
 
+        findViewById<View>(R.id.btnTestGlassesNotification)?.setOnClickListener {
+            val mode = com.myvu.client.data.DeviceNotificationMode.getModeByIndex(spinnerNotificationMode.selectedItemPosition)
+            val connection = com.myvu.client.service.MyvuService.activeConnection()
+            var handledHud = false
+            var handledAudio = false
+
+            if (mode.isVisualNotificationEnabled()) {
+                if (connection != null) {
+                    connection.sendTestNotification("Prueba Gafas AR", "Notificación visual en pantalla HUD activa.")
+                    handledHud = true
+                }
+            }
+            if (mode.isAudioNotificationEnabled()) {
+                com.myvu.client.core.TextToSpeechHelper.init(this)
+                com.myvu.client.core.TextToSpeechHelper.speak(
+                    "Notificación de prueba en tus gafas inteligentes: pantalla HUD y audio configurados.",
+                    context = this
+                )
+                handledAudio = true
+            }
+
+            val msg = when {
+                handledHud && handledAudio -> "👓 Notificación enviada a HUD y 🔊 Audio TTS"
+                handledHud -> "👓 Notificación enviada al visor HUD"
+                handledAudio -> "🔊 Notificación reproducida por Voz (TTS)"
+                mode == com.myvu.client.data.DeviceNotificationMode.NONE -> "Notificaciones desactivadas en este modo"
+                else -> "⚠️ Gafas no conectadas al visor HUD"
+            }
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+        }
+
         loadDevice()
     }
 

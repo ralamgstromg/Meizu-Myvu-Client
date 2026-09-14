@@ -437,18 +437,30 @@ class ConnectionManager(
 
     fun start(mac: String) {
         conn.post {
-            // A second START (repeat tap, service restart, redelivered
-            // intent) must not stand up a parallel BLE stack against the
-            // same glasses -- they accept one central at a time.
+            val normalizedNewMac = mac.trim().uppercase()
+            val normalizedOldMac = targetMac?.trim()?.uppercase()
+
             if (state != ConnectionState.IDLE && state != ConnectionState.FAILED) {
-                LogBus.trace("connect ignored: already $state")
-                listener?.onStateChanged(state)
-                return@post
+                if (normalizedOldMac == normalizedNewMac && normalizedNewMac.isNotEmpty()) {
+                    LogBus.trace("connect ignored: already $state for target $mac")
+                    listener?.onStateChanged(state)
+                    return@post
+                } else {
+                    LogBus.log("ConnectionManager -> Switching device from $normalizedOldMac to $normalizedNewMac: disconnecting previous device first")
+                    cancelReconnect()
+                    teardown()
+                    audioProfiles?.close()
+                    audioProfiles = null
+                    state = ConnectionState.IDLE
+                }
             }
             userStopped = false
             Prefs.setAutoReconnectEnabled(context, true)
             cancelReconnect()
-            targetMac = mac
+            targetMac = normalizedNewMac
+            if (normalizedNewMac.isNotEmpty()) {
+                Prefs.setTargetMac(context, normalizedNewMac)
+            }
             beginConnect()
         }
     }
@@ -549,6 +561,22 @@ class ConnectionManager(
             audioProfiles?.close()
             audioProfiles = null
             state = ConnectionState.IDLE
+        }
+    }
+
+    /**
+     * Cleanly disconnects the current glasses and disables all their services
+     * to allow an immediate clean switch to another device.
+     */
+    fun disconnectForSwitch(onComplete: (() -> Unit)? = null) {
+        conn.post {
+            LogBus.log("ConnectionManager -> disconnectForSwitch: releasing current device session & services")
+            cancelReconnect()
+            teardown()
+            audioProfiles?.close()
+            audioProfiles = null
+            state = ConnectionState.IDLE
+            onComplete?.invoke()
         }
     }
 

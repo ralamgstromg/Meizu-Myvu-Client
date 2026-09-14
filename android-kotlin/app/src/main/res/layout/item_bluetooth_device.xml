@@ -34,14 +34,35 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/txtDeviceName"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Auriculares Bluetooth"
-                android:textColor="@color/on_surface_obsidian"
-                android:textSize="15sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/txtDeviceName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Auriculares Bluetooth"
+                    android:textColor="@color/on_surface_obsidian"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/txtPrimaryBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_ios_pill_active"
+                    android:paddingHorizontal="6dp"
+                    android:paddingVertical="2dp"
+                    android:text="★ PRINCIPAL"
+                    android:textColor="@color/ios_blue"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -69,17 +90,28 @@
         </LinearLayout>
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnConfigureDevice"
-            style="@style/Widget.Material3.Button.TonalButton"
+            android:id="@+id/btnConnectDevice"
             android:layout_width="wrap_content"
             android:layout_height="36dp"
             android:minHeight="0dp"
             android:insetTop="0dp"
             android:insetBottom="0dp"
+            android:paddingHorizontal="10dp"
             android:paddingVertical="0dp"
-            android:text="Configurar"
-            android:textColor="@color/cyber_teal"
+            android:text="Conectar"
+            android:textColor="#FFFFFF"
+            app:backgroundTint="@color/ios_blue"
             android:textSize="12sp"
+            android:textStyle="bold"
             app:cornerRadius="18dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMoreOptions"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:contentDescription="Opciones de dispositivo"
+            app:icon="@drawable/ic_more_vert_cyber"
+            app:iconTint="@color/ios_secondary_label" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

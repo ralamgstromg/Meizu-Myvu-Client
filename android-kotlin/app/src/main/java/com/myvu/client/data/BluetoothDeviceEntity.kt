@@ -74,7 +74,8 @@ data class BluetoothDeviceEntity(
     val notificationMode: String = DeviceNotificationMode.BOTH.name,
     val hudBrightness: Int = 80,
     val isFavorite: Boolean = false,
-    val activeListeningEnabled: Boolean = false
+    val activeListeningEnabled: Boolean = false,
+    val isPrimary: Boolean = false
 ) {
     fun isVisualNotificationEnabled(): Boolean {
         return notificationMode == DeviceNotificationMode.VISUAL_ONLY.name ||
