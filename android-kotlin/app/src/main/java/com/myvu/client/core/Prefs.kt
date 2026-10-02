@@ -259,6 +259,15 @@ object Prefs {
         return prefs(c).getString(KEY_TTS_PROVIDER, "system") ?: "system"
     }
 
+    /** Spoken answers show a short summary on the glasses HUD instead of the full text. */
+    @JvmStatic
+    fun hudCondensedAnswers(c: Context): Boolean = prefs(c).getBoolean("hud_condensed_answers", true)
+
+    @JvmStatic
+    fun setHudCondensedAnswers(c: Context, enabled: Boolean) {
+        prefs(c).edit().putBoolean("hud_condensed_answers", enabled).apply()
+    }
+
     @JvmStatic
     fun aiResponseMode(c: Context): String {
         return prefs(c).getString("ai_response_mode", "voice_and_visual") ?: "voice_and_visual"

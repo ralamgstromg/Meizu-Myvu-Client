@@ -73,8 +73,17 @@ class AiConversation(
         onFinished = { _ ->
             if (textMode || !SPOKEN_FOLLOW_UP_TURNS) finish() else nextTurn()
         },
-        modeProvider = { AiResponseMode.fromId(Prefs.aiResponseMode(this.context)) }
+        modeProvider = { AiResponseMode.fromId(Prefs.aiResponseMode(this.context)) },
+        condenseVisualWhenSpoken = { condenseHudWhenSpoken && Prefs.hudCondensedAnswers(this.context) }
     )
+
+    /**
+     * Set by the glasses connection: the sender targets a small HUD, so a spoken answer
+     * shows only a summary there. Off for other senders (e.g. ChatEngineService stores
+     * the full answer it intercepts).
+     */
+    @Volatile
+    var condenseHudWhenSpoken: Boolean = false
     private val actionExecutor = PhoneActionExecutor(this.context)
     private val audio: ExecutorService = Executors.newSingleThreadExecutor { r ->
         Thread(r, "ai-audio").apply {

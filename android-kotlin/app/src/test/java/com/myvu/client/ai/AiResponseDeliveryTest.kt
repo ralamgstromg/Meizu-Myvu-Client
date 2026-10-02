@@ -157,6 +157,48 @@ class AiResponseDeliveryTest {
         assertTrue(sent.isEmpty())
     }
 
+    @Test
+    fun spokenAnswerShowsSummaryOnHudButSpeaksFullText() {
+        val sent = mutableListOf<String>()
+        val speaker = RecordingSpeaker()
+        val full = "Mañana habrá lluvia por la tarde. Lleva paraguas. " + "Detalle extenso del pronóstico por horas. ".repeat(8)
+        val delivery = AiResponseDelivery(
+            sender = { sent += it },
+            tts = speaker,
+            isSessionActive = { true },
+            onFinished = {},
+            condenseVisualWhenSpoken = { true }
+        )
+
+        delivery.deliver(AiResponse("s1", full, true))
+
+        val hudAnswer = org.json.JSONObject(sent.first { it.contains("\"answer\"") })
+            .getJSONObject("payload").getString("answer")
+        assertTrue(hudAnswer.startsWith("Mañana habrá lluvia por la tarde. Lleva paraguas."))
+        assertTrue(hudAnswer.length <= HudSummary.DEFAULT_MAX_CHARS)
+        assertTrue(hudAnswer.endsWith("."))
+        // TTS receives the full (glasses-cleaned) answer, not the summary.
+        assertTrue(speaker.lastText!!.length > hudAnswer.length * 2)
+    }
+
+    @Test
+    fun visualOnlyKeepsFullTextEvenWhenCondensingIsEnabled() {
+        val sent = mutableListOf<String>()
+        val full = "Primera frase. " + "Texto largo. ".repeat(30)
+        val delivery = AiResponseDelivery(
+            sender = { sent += it },
+            tts = FakeSpeaker(),
+            isSessionActive = { true },
+            onFinished = {},
+            mode = AiResponseMode.VISUAL_ONLY,
+            condenseVisualWhenSpoken = { true }
+        )
+
+        delivery.deliver(AiResponse("s1", full, true))
+
+        assertTrue(sent.first { it.contains("\"answer\"") }.contains(full.trim()))
+    }
+
     private class FakeSpeaker : AiResponseDelivery.Speaker {
         override fun speak(text: String, callback: (Boolean) -> Unit) = callback(true)
         override fun stop() = Unit

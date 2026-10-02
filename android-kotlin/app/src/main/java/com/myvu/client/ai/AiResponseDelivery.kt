@@ -10,7 +10,9 @@ class AiResponseDelivery(
     private val isSessionActive: (String) -> Boolean,
     private val onFinished: (Boolean) -> Unit,
     private val mode: AiResponseMode = AiResponseMode.VOICE_AND_VISUAL,
-    private val modeProvider: (() -> AiResponseMode)? = null
+    private val modeProvider: (() -> AiResponseMode)? = null,
+    /** When true and the answer is also spoken, the HUD gets a short summary ([HudSummary]). */
+    private val condenseVisualWhenSpoken: () -> Boolean = { false }
 ) {
     interface Speaker {
         fun speak(text: String, callback: (Boolean) -> Unit)
@@ -52,8 +54,9 @@ class AiResponseDelivery(
         val speak = response.shouldSpeak && selectedMode != AiResponseMode.VISUAL_ONLY
         val visual = selectedMode != AiResponseMode.VOICE_ONLY
         if (visual) {
-            sender(AiProtocol.chatAnswer(response.sessionId, text, response.baseStatus))
-            LogBus.log("AI_TEXT_SENT sessionId=${response.sessionId} source=${response.source} answerLength=${text.length}")
+            val hudText = if (speak && condenseVisualWhenSpoken()) HudSummary.condense(text) else text
+            sender(AiProtocol.chatAnswer(response.sessionId, hudText, response.baseStatus))
+            LogBus.log("AI_TEXT_SENT sessionId=${response.sessionId} source=${response.source} answerLength=${text.length} hudLength=${hudText.length}")
         }
 
         if (!speak) {

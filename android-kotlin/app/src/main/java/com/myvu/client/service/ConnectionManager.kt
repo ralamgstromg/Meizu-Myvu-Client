@@ -1260,7 +1260,7 @@ class ConnectionManager(
         if (existing != null) return existing
         val newAi = AiConversation(context) { actionJson, targetPkg, sourcePkg ->
             sendAction(actionJson, targetPkg, sourcePkg)
-        }
+        }.apply { condenseHudWhenSpoken = true }
         ai = newAi
         return newAi
     }
