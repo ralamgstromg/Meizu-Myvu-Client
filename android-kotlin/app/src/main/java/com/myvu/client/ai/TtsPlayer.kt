@@ -19,6 +19,12 @@ import java.util.concurrent.Executors
 /** Speaks the assistant's answer. */
 class TtsPlayer(private val context: Context) {
 
+    private companion object {
+        /** Max chars per queued utterance: about one or two spoken sentences. */
+        const val SPEECH_CHUNK_CHARS = 220
+    }
+
+
     fun interface Callback {
         fun onSpoken(success: Boolean)
     }
@@ -42,6 +48,8 @@ class TtsPlayer(private val context: Context) {
     private var callbackGeneration = 0
     private var activeCallbackGeneration = 0
     private var activeUtteranceId: String? = null
+    private var activeFirstUtteranceId: String? = null
+    private var activeChunkIds: Set<String> = emptySet()
 
     fun init() {
         if (tts != null) return
@@ -59,9 +67,10 @@ class TtsPlayer(private val context: Context) {
                     tts?.setLanguage(Locale.getDefault())
                 }
             }
+            tts?.setSpeechRate(Prefs.ttsSpeechRate(context))
             tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) {
-                    if (utteranceId == activeUtteranceId) {
+                    if (utteranceId == activeFirstUtteranceId) {
                         LogBus.log("TTS_PLAYBACK_STARTED generation=$activeCallbackGeneration")
                     }
                 }
@@ -73,7 +82,7 @@ class TtsPlayer(private val context: Context) {
                 }
 
                 override fun onError(utteranceId: String?) {
-                    if (utteranceId != activeUtteranceId) return
+                    if (utteranceId == null || utteranceId !in activeChunkIds) return
                     LogBus.warn("text-to-speech failed for $utteranceId")
                     LogBus.log("TTS_PLAYBACK_FINISHED generation=$activeCallbackGeneration success=false")
                     flushPending(false)
@@ -89,7 +98,8 @@ class TtsPlayer(private val context: Context) {
         }
     }
 
-    fun speak(text: String, cb: Callback?) {
+    fun speak(rawText: String, cb: Callback?) {
+        val text = com.myvu.client.core.locale.SpeechNormalizer.normalize(rawText)
         if (tts == null) {
             pendingText = text
             pending = cb
@@ -141,13 +151,22 @@ class TtsPlayer(private val context: Context) {
             return
         }
         val generation = activeCallbackGeneration
-        val id = UUID.randomUUID().toString()
-        activeUtteranceId = id
-        LogBus.log("TTS_REQUEST_STARTED generation=$generation textLength=${text.length} provider=system")
-        val result = tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, id)
-        if (result != TextToSpeech.SUCCESS) {
-            LogBus.warn("tts.speak returned $result")
-            flushPending(false)
+        // Queue sentence-sized chunks: the engine starts speaking the first one
+        // without synthesizing the whole answer. The callback fires on the last.
+        val chunks = HudSummary.paginate(text, SPEECH_CHUNK_CHARS).ifEmpty { listOf(text) }
+        val ids = chunks.map { UUID.randomUUID().toString() }
+        activeFirstUtteranceId = ids.first()
+        activeUtteranceId = ids.last()
+        activeChunkIds = ids.toSet()
+        LogBus.log("TTS_REQUEST_STARTED generation=$generation textLength=${text.length} chunks=${chunks.size} provider=system")
+        chunks.forEachIndexed { i, chunk ->
+            val mode = if (i == 0) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
+            val result = tts?.speak(chunk, mode, null, ids[i])
+            if (result != TextToSpeech.SUCCESS) {
+                LogBus.warn("tts.speak returned $result for chunk ${i + 1}/${chunks.size}")
+                flushPending(false)
+                return
+            }
         }
     }
 

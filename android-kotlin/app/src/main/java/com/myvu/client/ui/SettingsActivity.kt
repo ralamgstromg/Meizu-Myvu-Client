@@ -313,6 +313,7 @@ class SettingsActivity : AppCompatActivity() {
         wireWeather()
         wireMirror()
         wireActionPolicy()
+        wireSpeechAndNotificationSliders()
         wireLogging()
         wireAutoReLock()
         findViewById<View>(R.id.btnPickApps).setOnClickListener {
@@ -409,6 +410,29 @@ class SettingsActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.btnOpenActivityLog)?.setOnClickListener {
             startActivity(Intent(this, ActivityLogActivity::class.java))
+        }
+    }
+
+    private fun wireSpeechAndNotificationSliders() {
+        val rateLabel: TextView? = findViewById(R.id.lblTtsSpeechRate)
+        findViewById<com.google.android.material.slider.Slider?>(R.id.sliderTtsSpeechRate)?.let { slider ->
+            val rate = Prefs.ttsSpeechRate(this)
+            slider.value = (Math.round(rate * 20f) / 20f).coerceIn(slider.valueFrom, slider.valueTo)
+            rateLabel?.text = String.format(java.util.Locale("es", "CO"), "Velocidad de voz: %.2fx", slider.value)
+            slider.addOnChangeListener { _, value, fromUser ->
+                rateLabel?.text = String.format(java.util.Locale("es", "CO"), "Velocidad de voz: %.2fx", value)
+                if (fromUser) Prefs.setTtsSpeechRate(this, value)
+            }
+        }
+        val wordsLabel: TextView? = findViewById(R.id.lblNotificationMaxWords)
+        findViewById<com.google.android.material.slider.Slider?>(R.id.sliderNotificationMaxWords)?.let { slider ->
+            val words = Prefs.notificationMaxWords(this)
+            slider.value = (Math.round(words / 5f) * 5f).coerceIn(slider.valueFrom, slider.valueTo)
+            wordsLabel?.text = "Resumir notificaciones a ${slider.value.toInt()} palabras"
+            slider.addOnChangeListener { _, value, fromUser ->
+                wordsLabel?.text = "Resumir notificaciones a ${value.toInt()} palabras"
+                if (fromUser) Prefs.setNotificationMaxWords(this, value.toInt())
+            }
         }
     }
 

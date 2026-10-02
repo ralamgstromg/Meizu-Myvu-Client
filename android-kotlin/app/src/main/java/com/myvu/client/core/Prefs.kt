@@ -259,6 +259,29 @@ object Prefs {
         return prefs(c).getString(KEY_TTS_PROVIDER, "system") ?: "system"
     }
 
+    /** Max words of a mirrored notification on the HUD and when spoken. */
+    @JvmStatic
+    fun notificationMaxWords(c: Context): Int =
+        prefs(c).getInt("notification_max_words", com.myvu.client.service.NotificationDigest.DEFAULT_MAX_WORDS)
+            .coerceIn(com.myvu.client.service.NotificationDigest.MIN_WORDS, com.myvu.client.service.NotificationDigest.MAX_WORDS)
+
+    @JvmStatic
+    fun setNotificationMaxWords(c: Context, words: Int) {
+        prefs(c).edit().putInt(
+            "notification_max_words",
+            words.coerceIn(com.myvu.client.service.NotificationDigest.MIN_WORDS, com.myvu.client.service.NotificationDigest.MAX_WORDS)
+        ).apply()
+    }
+
+    /** TTS speech rate (1.0 = engine default). Shared by TtsPlayer and TextToSpeechHelper. */
+    @JvmStatic
+    fun ttsSpeechRate(c: Context): Float = prefs(c).getFloat("tts_speech_rate", 1.0f).coerceIn(0.5f, 2.0f)
+
+    @JvmStatic
+    fun setTtsSpeechRate(c: Context, rate: Float) {
+        prefs(c).edit().putFloat("tts_speech_rate", rate.coerceIn(0.5f, 2.0f)).apply()
+    }
+
     /** Spoken answers show a short summary on the glasses HUD instead of the full text. */
     @JvmStatic
     fun hudCondensedAnswers(c: Context): Boolean = prefs(c).getBoolean("hud_condensed_answers", true)

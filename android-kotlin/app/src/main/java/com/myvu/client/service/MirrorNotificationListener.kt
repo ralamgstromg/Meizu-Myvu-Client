@@ -139,16 +139,11 @@ class MirrorNotificationListener : NotificationListenerService() {
 
                 // 1. Audio handling (TTS Readout)
                 // If any active or connected device has audio/TTS enabled, speak aloud
+                val maxWords = com.myvu.client.core.Prefs.notificationMaxWords(this@MirrorNotificationListener)
                 val audioDevice = activeDevices.firstOrNull { it.isAudioNotificationEnabled() }
                 if (audioDevice != null) {
                     val app = appLabel(pkg)
-                    val ttsText = if (!title.isNullOrBlank() && !text.isNullOrBlank()) {
-                        "De $app: $title. $text"
-                    } else if (!title.isNullOrBlank()) {
-                        "De $app: $title"
-                    } else {
-                        "Notificación de $app: $text"
-                    }
+                    val ttsText = NotificationDigest.spoken(app, title, text, maxWords)
                     com.myvu.client.core.TextToSpeechHelper.init(this@MirrorNotificationListener)
                     com.myvu.client.core.TextToSpeechHelper.speak(ttsText, context = this@MirrorNotificationListener)
                     LogBus.log("TTS read notification for [${audioDevice.name}] (mode=${audioDevice.notificationMode}) from $app: $ttsText")
@@ -171,8 +166,9 @@ class MirrorNotificationListener : NotificationListenerService() {
                 }
 
                 // Deliver formatted notification to glasses HUD
-                val displayTitle = if (TextUtils.isEmpty(title)) appLabel(pkg) else NotificationFilter.truncate(title)
-                val displayText = NotificationFilter.truncate(text ?: "")
+                val (hudTitle, hudText) = NotificationDigest.hud(appLabel(pkg), title, text, maxWords)
+                val displayTitle = NotificationFilter.truncate(hudTitle)
+                val displayText = NotificationFilter.truncate(hudText)
                 val notifId = Notifications.notificationId(pkg, sbn.id)
                 val entry: JSONObject = Notifications.entry(
                     pkg,

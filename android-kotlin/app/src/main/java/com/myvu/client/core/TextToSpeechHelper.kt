@@ -12,6 +12,7 @@ import java.util.Locale
 object TextToSpeechHelper : TextToSpeech.OnInitListener {
 
     private var tts: TextToSpeech? = null
+    private var appContext: Context? = null
     private var isInitialized = false
     private val pendingUtterances = mutableListOf<String>()
 
@@ -25,6 +26,7 @@ object TextToSpeechHelper : TextToSpeech.OnInitListener {
     }
 
     fun init(context: Context, onReady: (() -> Unit)? = null) {
+        appContext = context.applicationContext
         if (tts == null) {
             tts = TextToSpeech(context.applicationContext, this)
         } else if (isInitialized) {
@@ -38,7 +40,7 @@ object TextToSpeechHelper : TextToSpeech.OnInitListener {
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                 tts?.setLanguage(Locale("es", "ES"))
             }
-            tts?.setSpeechRate(1.05f)
+            appContext?.let { tts?.setSpeechRate(Prefs.ttsSpeechRate(it)) }
             tts?.setPitch(1.0f)
             isInitialized = true
             LogBus.log("TextToSpeechHelper -> TTS Engine initialized successfully")
@@ -58,8 +60,9 @@ object TextToSpeechHelper : TextToSpeech.OnInitListener {
      * Speaks text aloud through the current active audio device (e.g. Bluetooth headphones).
      * If context is provided and TTS is not yet instantiated, auto-initializes the engine.
      */
-    fun speak(text: String, queueMode: Int = TextToSpeech.QUEUE_FLUSH, context: Context? = null) {
-        if (text.isBlank()) return
+    fun speak(rawText: String, queueMode: Int = TextToSpeech.QUEUE_FLUSH, context: Context? = null) {
+        if (rawText.isBlank()) return
+        val text = com.myvu.client.core.locale.SpeechNormalizer.normalize(rawText)
 
         if (context != null && tts == null) {
             init(context)
