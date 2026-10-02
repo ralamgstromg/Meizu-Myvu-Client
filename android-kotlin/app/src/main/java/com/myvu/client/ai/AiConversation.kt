@@ -519,6 +519,24 @@ class AiConversation(
             content = question,
             mediaType = if (textMode) "TEXT" else "VOICE"
         )
+        // A sensitive action the model asked for last turn runs only on the user's confirmation.
+        val confirmed = SensitiveActionGate.resolve(question)
+        if (confirmed != null) {
+            val turnSessionId = sessionId
+            worker.execute {
+                val msg = try {
+                    kotlinx.coroutines.runBlocking { confirmed() }
+                } catch (e: Exception) {
+                    LogBus.error("AI: confirmed action failed", e)
+                    "No pude ejecutar la acción confirmada."
+                }
+                main.post {
+                    if (!active || turnSessionId != sessionId) return@post
+                    deliverFinal(msg, AiResponse.Source.AI)
+                }
+            }
+            return
+        }
         val route = voiceRouter.tryRoute(question)
         if (route.handled) {
             if (route.isAsyncWeather) {
@@ -640,10 +658,28 @@ class AiConversation(
 
         // 2. Ejecutar validador JSON legacy si aplica
         val parsed = GeminiActionValidator.parse(skillProcessed)
-        if (parsed.actions.isNotEmpty()) {
-            for (action in parsed.actions) {
-                actionExecutor.executeAction(action)
+        var heldPrompt: String? = null
+        for (action in parsed.actions) {
+            val sensitive = SensitiveActionGate.isSensitiveActionType(action.type)
+            when (SensitiveActionGate.decide(context, sensitive)) {
+                SensitiveActionGate.Decision.ALLOW -> actionExecutor.executeAction(action)
+                SensitiveActionGate.Decision.DENY -> {
+                    LogBus.warn("AiConversation: Blocked sensitive action '${action.type}' by action policy")
+                    heldPrompt = SensitiveActionGate.BLOCKED_MESSAGE
+                }
+                SensitiveActionGate.Decision.CONFIRM -> {
+                    heldPrompt = SensitiveActionGate.hold(
+                        SensitiveActionGate.describeAction(action.type, action.arguments)
+                    ) {
+                        main.post { actionExecutor.executeAction(action) }
+                        "Listo."
+                    }
+                }
             }
+        }
+        if (heldPrompt != null) {
+            deliverFinal(heldPrompt, AiResponse.Source.AI)
+            return
         }
 
         // 3. Procesar acciones legacy por texto/regex

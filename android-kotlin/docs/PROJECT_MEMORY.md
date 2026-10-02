@@ -2145,3 +2145,22 @@ Se requería dotar al ecosistema de conexión Bluetooth de:
 - `./gradlew assembleDebug`: **BUILD SUCCESSFUL**.
 - Nota del entorno: el JDK 25 configurado en `gradle.properties` (`/usr/lib/jvm/java-25-openjdk-amd64`) no existía en la máquina. La verificación se hizo con Temurin 21 portable (`-Dorg.gradle.java.home`).
 - Pendiente: prueba manual con las gafas (lista en la sección 3, paso 4 del plan).
+
+## 47. [2026-10-02] — Confirmación de Acciones Sensibles Generadas por la IA (`SensitiveActionGate`)
+
+### Requerimientos:
+- Cerrar el riesgo de inyección de prompt indirecta: la IA podía enviar mensajes o llamar sin confirmación tras leer contenido de terceros. Plan: `docs/superpowers/plans/2026-10-02-sensitive-action-confirmation-gate-plan.md`.
+
+### Diagnóstico y Causa Raíz:
+- `ActionPolicy` (`ALLOW_ALL`, `CONFIRM_SENSITIVE`, `DENY_ALL`) existía desde el commit inicial, pero no lo usaba nadie. El grafo lo marcó como nodo aislado.
+- `AgenticToolExecutor.pruneToolsForQuery()` habilita juntas las herramientas de lectura (`unread_*_summary`) y las de envío (`send_*`), y el bucle ejecutaba cualquier tool call sin confirmación. `AutoSendAccessibilityService` completaba el envío, incluso con el teléfono bloqueado.
+
+### Soluciones Implementadas:
+1. **`ai/SensitiveActionGate.kt`** (nuevo): decide según la política, retiene una acción pendiente con TTL de 60 s y la ejecuta solo si la siguiente frase del usuario es una confirmación completa.
+2. **`Prefs.actionPolicy` / `setActionPolicy`**: por defecto `CONFIRM_SENSITIVE`.
+3. **Integración en los tres caminos LLM → acción**: `AgenticToolExecutor` (corta el bucle), `SkillExecutor` y `AiConversation.deliver()` (acciones legacy). La confirmación se consume en `AiConversation.askAi()` y `ChatActivity.sendUserQuery()`.
+
+### Verificación:
+- `SensitiveActionGateTest` (8 tests): política, confirmación única, cancelación, descarte ante texto no relacionado, frase parcial que no confirma, TTL, y el bucle agéntico con un `AiClient` falso que intenta `send_whatsapp`.
+- `./gradlew testDebugUnitTest`: 327 tests, 0 fallos. `./gradlew assembleDebug`: **BUILD SUCCESSFUL**.
+- Pendiente: selector de política en Ajustes y prueba manual por voz.

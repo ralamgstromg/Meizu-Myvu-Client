@@ -608,6 +608,19 @@ object Prefs {
         prefs(c).edit().putString("touchpad_long_press_action", action).apply()
     }
 
+    /** How AI-initiated sensitive actions (send message, call) are gated. See SensitiveActionGate. */
+    @JvmStatic
+    fun actionPolicy(c: Context): com.myvu.client.ai.ActionPolicy {
+        val raw = prefs(c).getString("ai_action_policy", null)
+        return com.myvu.client.ai.ActionPolicy.values().firstOrNull { it.name == raw }
+            ?: com.myvu.client.ai.ActionPolicy.CONFIRM_SENSITIVE
+    }
+
+    @JvmStatic
+    fun setActionPolicy(c: Context, policy: com.myvu.client.ai.ActionPolicy) {
+        prefs(c).edit().putString("ai_action_policy", policy.name).apply()
+    }
+
     @JvmStatic
     fun autoReconnectEnabled(c: Context): Boolean {
         return prefs(c).getBoolean(KEY_AUTO_RECONNECT, true)

@@ -204,6 +204,19 @@ El subsistema en `com.myvu.client.skills` permite añadir funcionalidades al dis
 - **Comunicación**: `call-contact`, `send-whatsapp`, `send-telegram`, `unread-notifications`.
 - **Información Rápida**: `weather-forecast`, `hud-navigation`, `google-search`, `currency-convert`.
 
+### 5.0 Seguridad: Confirmación de Acciones Sensibles (`SensitiveActionGate`, `ActionPolicy`)
+- **Riesgo**: El modelo lee contenido de terceros (mensajes sin leer, correos, páginas web). Ese contenido puede traer instrucciones inyectadas, por lo que una petición del modelo de enviar o llamar no equivale a la intención del usuario.
+- **Política** (`Prefs.actionPolicy`, clave `ai_action_policy`): `CONFIRM_SENSITIVE` por defecto, `ALLOW_ALL` o `DENY_ALL`.
+- **Acciones sensibles**:
+  - Skills: `send-whatsapp`, `send-telegram`, `send-email`, `send-sms`, `call-contact`, `voip-call`.
+  - Acciones JSON legacy: `send_sms`, `make_call`, `call_*`, `open_whatsapp`, `open_telegram`.
+- **Puntos de control**: Todos los caminos donde la salida del LLM se convierte en acción pasan por `SensitiveActionGate.decide()`:
+  - `AgenticToolExecutor` corta el bucle ReAct y devuelve el prompt de confirmación.
+  - `SkillExecutor` cubre las etiquetas `[SKILL: ...]`.
+  - `AiConversation.deliver()` cubre las `GeminiAction` legacy.
+- **Confirmación**: La acción queda retenida (una sola a la vez, TTL de 60 s) y solo se ejecuta si la **siguiente frase del usuario** es una confirmación completa ("confirmar", "sí, envíalo", "dale"…). `SensitiveActionGate.resolve()` solo se invoca con texto del usuario, en `AiConversation.askAi()` y `ChatActivity.sendUserQuery()`. Cualquier otra frase descarta la acción.
+- **Fuera del gate**: Los comandos directos que resuelve `VoiceActionRouter` no pasan por el LLM.
+
 ### 5.1 Control de Medios y Aplicaciones Externas (`com.myvu.client.media.MediaPlaybackHelper`)
 - **Doble Capa de Control de Transporte**:
   - **`MediaSessionManager` + `MediaController`**: Aprovecha el permiso de escucha de notificaciones de `MirrorNotificationListener` para interactuar directamente con la sesión activa de reproducción. Soporta comandos directos (`play`, `pause`, `skipToNext`, `skipToPrevious`, `stop`) y lectura de metadatos (`METADATA_KEY_TITLE`, `METADATA_KEY_ARTIST`) para responder en HUD y voz a *"¿Qué canción está sonando?"*.

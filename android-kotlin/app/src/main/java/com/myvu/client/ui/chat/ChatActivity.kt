@@ -606,11 +606,21 @@ class ChatActivity : AppCompatActivity() {
             val executor = PhoneActionExecutor(this@ChatActivity)
             val router = VoiceActionRouter(this@ChatActivity, executor)
 
-            val route = router.tryRoute(queryText)
+            // A sensitive action the model asked for last turn runs only on the user's confirmation.
+            val confirmed = com.myvu.client.ai.SensitiveActionGate.resolve(queryText)
+            val route = if (confirmed == null) router.tryRoute(queryText) else null
             var responseText = ""
             var sourceName = "CHAT_UI"
 
-            if (route.handled) {
+            if (confirmed != null) {
+                responseText = try {
+                    confirmed()
+                } catch (e: Exception) {
+                    LogBus.error("ChatActivity -> Confirmed action failed", e)
+                    "No pude ejecutar la acción confirmada."
+                }
+                sourceName = "CONFIRMATION"
+            } else if (route != null && route.handled) {
                 responseText = route.responseText
                 sourceName = route.source.name
             } else {

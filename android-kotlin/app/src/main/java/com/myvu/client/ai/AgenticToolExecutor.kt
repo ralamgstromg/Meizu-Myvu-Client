@@ -101,7 +101,31 @@ class AgenticToolExecutor(
                     JSONObject()
                 }
 
-                val actionResult = if (handler != null) {
+                // Sending/calling must be confirmed by the user, not by the model:
+                // tool output (unread messages, web pages) may carry injected instructions.
+                val sensitive = handler != null && SensitiveActionGate.isSensitiveSkill(skillId)
+                val decision = SensitiveActionGate.decide(context, sensitive)
+                if (decision == SensitiveActionGate.Decision.CONFIRM && handler != null) {
+                    val prompt = SensitiveActionGate.hold(SensitiveActionGate.describeSkill(skillId, argsJson)) {
+                        handler.execute(context, argsJson).message
+                    }
+                    return AgenticExecutionResult(
+                        finalAnswer = prompt,
+                        executedActions = executedActions,
+                        totalTurns = turns
+                    )
+                }
+
+                val actionResult = if (decision == SensitiveActionGate.Decision.DENY) {
+                    LogBus.warn("AgenticToolExecutor: Blocked sensitive skill '$skillId' by action policy")
+                    ExecutedToolAction(
+                        toolName = toolCall.functionName,
+                        skillId = skillId,
+                        arguments = argsJson,
+                        success = false,
+                        feedback = SensitiveActionGate.BLOCKED_MESSAGE
+                    )
+                } else if (handler != null) {
                     try {
                         LogBus.log("AgenticToolExecutor: Executing skill '$skillId' with args: $argsJson")
                         val res = handler.execute(context, argsJson)

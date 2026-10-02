@@ -1,6 +1,7 @@
 package com.myvu.client.skills
 
 import android.content.Context
+import com.myvu.client.ai.SensitiveActionGate
 import com.myvu.client.core.LogBus
 import org.json.JSONObject
 
@@ -29,6 +30,23 @@ object SkillExecutor {
             JSONObject()
         }
 
+        val cleanText = llmResponse.replace(match.value, "").trim()
+        val sensitive = SensitiveActionGate.isSensitiveSkill(skillId)
+        when (SensitiveActionGate.decide(context, sensitive)) {
+            SensitiveActionGate.Decision.CONFIRM -> {
+                val prompt = SensitiveActionGate.hold(SensitiveActionGate.describeSkill(skillId, jsonArgs)) {
+                    handler.execute(context, jsonArgs).message
+                }
+                return if (cleanText.isEmpty()) prompt else "$cleanText $prompt"
+            }
+            SensitiveActionGate.Decision.DENY -> {
+                LogBus.warn("SkillExecutor: Blocked sensitive skill '$skillId' by action policy")
+                val blocked = SensitiveActionGate.BLOCKED_MESSAGE
+                return if (cleanText.isEmpty()) blocked else "$cleanText $blocked"
+            }
+            SensitiveActionGate.Decision.ALLOW -> Unit
+        }
+
         LogBus.log("SkillExecutor: Executing skill '$skillId' with args: $jsonArgs")
         val result = handler.execute(context, jsonArgs)
 
@@ -39,7 +57,6 @@ object SkillExecutor {
         }
 
         // Clean tag from output or append result feedback
-        val cleanText = llmResponse.replace(match.value, "").trim()
         return if (cleanText.isEmpty()) userFeedback else "$cleanText $userFeedback"
     }
 }
