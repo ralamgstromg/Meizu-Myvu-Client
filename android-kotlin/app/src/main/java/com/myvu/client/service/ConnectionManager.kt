@@ -8,12 +8,12 @@ import android.os.Handler
 import android.os.HandlerThread
 import com.myvu.client.ai.AiConversation
 import com.myvu.client.app.AppLayer
+import com.myvu.client.app.GlassesEventHandler
 import com.myvu.client.app.InboundRouter
 import com.myvu.client.app.RelaySession
 import com.myvu.client.app.feature.AiProtocol
 import com.myvu.client.app.feature.ClockSync
 import com.myvu.client.app.feature.GlassGesture
-import com.myvu.client.app.feature.Notifications
 import com.myvu.client.app.feature.SystemSettings
 import com.myvu.client.app.feature.Teleprompter
 import com.myvu.client.app.feature.TouchGestureManager
@@ -200,177 +200,19 @@ class ConnectionManager(
 
     fun inboundRouter(): InboundRouter = inbound
 
-    init {
-        // The glasses' AI button (code:3) and wake word (code:7) both land here.
-        inbound.setAiTriggerListener { code, payload ->
-            // control:0 is the button RELEASE / page close. It must NOT
-            // abort a turn already in flight -- the release arrives moments
-            // after the press -- so it only marks the conversation to end
-            // at the next turn boundary.
-            if (payload != null && payload.optInt("control", 1) == 0) {
-                ai?.onPageClosed()
-                return@setAiTriggerListener
-            }
-
-            if (code == 3) {
-                val elapsedSinceKey = System.currentTimeMillis() - TouchGestureManager.lastPhysicalKeyEventTime
-                if (TouchGestureManager.lastPhysicalKeyEventTime > 0L && elapsedSinceKey in 0..500L) {
-                    LogBus.log("Suppressing duplicate AI trigger (code: 3) within ${elapsedSinceKey}ms of physical button key event")
-                    return@setAiTriggerListener
-                }
-                TouchGestureManager.notifyPhysicalButtonPressed(this.context)
-            }
-
-            // The glasses' mic audio only flows over the app relay. With
-            // the relay down (its retry budget spent), a press listened to
-            // nothing and timed out with "0 packets in" -- so treat the
-            // press like the glasses asking for the relay back.
-            supervisor?.wake(force = true)
-
-            val actionBtnMapping = Prefs.glassesActionButtonAction(this.context)
-            if (code == 3 && actionBtnMapping == "LAUNCH_GEMINI") {
-                TouchGestureManager.launchGeminiAssistant(this.context, isLive = false)
-                return@setAiTriggerListener
-            } else if (code == 3 && actionBtnMapping == "LAUNCH_GEMINI_LIVE") {
-                TouchGestureManager.launchGeminiAssistant(this.context, isLive = true)
-                return@setAiTriggerListener
-            } else if (code == 3 && actionBtnMapping == "LAUNCH_PHONE_ASSISTANT") {
-                TouchGestureManager.launchPhoneAssistant(this.context)
-                return@setAiTriggerListener
-            }
-
-            ai().onTrigger(code)
-        }
-
-        inbound.setTouchGestureListener { gestureType, rawCode, _, eventTime ->
-            TouchGestureManager.handleGesture(this.context, gestureType, rawCode, createGestureActionExecutor(), eventTime)
-        }
-
-        inbound.setWeatherRequestListener {
-            weather().refresh()
-        }
-
-        inbound.setBatteryUpdateListener { battery, isCharging ->
-            updateGlassesBattery(battery, isCharging)
-        }
-    }
+    /** Glasses input policy: AI button, wake word, touchpad gestures, weather and battery requests. */
+    private val events = GlassesEventHandler(context, inbound, object : GlassesEventHandler.Delegate {
+        override fun wakeRelay() { supervisor?.wake(force = true) }
+        override fun triggerAi(triggerCode: Int) { ai().onTrigger(triggerCode) }
+        // Never create the conversation just to close it.
+        override fun pageClosed() { ai?.onPageClosed() }
+        override fun refreshWeather() { weather().refresh() }
+        override fun updateBattery(battery: Int, isCharging: Boolean) { updateGlassesBattery(battery, isCharging) }
+        override fun sendAction(actionJson: String) { this@ConnectionManager.sendAction(actionJson) }
+    })
 
     fun executeGesture(gesture: GlassGesture, rawCode: Int = gesture.code, eventTime: Long = -1L) {
-        TouchGestureManager.handleGesture(this.context, gesture, rawCode, createGestureActionExecutor(), eventTime)
-    }
-
-    private fun createGestureActionExecutor(): TouchGestureManager.ActionExecutor {
-        return object : TouchGestureManager.ActionExecutor {
-            override fun executeAiAssistant(code: Int) {
-                ai().onTrigger(code)
-            }
-
-            override fun executeHudDashboard() {
-                LogBus.log("HUD Dashboard action: letting glasses display native HUD dashboard")
-            }
-
-            override fun executeVoiceAgentAura() {
-                ai().onTrigger(3)
-            }
-
-            override fun executeGeminiAssistant() {
-                TouchGestureManager.launchGeminiAssistant(this@ConnectionManager.context, isLive = false)
-            }
-
-            override fun executeGeminiLive() {
-                TouchGestureManager.launchGeminiAssistant(this@ConnectionManager.context, isLive = true)
-            }
-
-            override fun executePhoneAssistant() {
-                TouchGestureManager.launchPhoneAssistant(this@ConnectionManager.context)
-                try {
-                    sendAction(Notifications.buildShow("MYVU", "Asistente activado"))
-                } catch (ignored: Exception) {
-                }
-            }
-
-            override fun executeLaunchApp(packageName: String) {
-                TouchGestureManager.launchApp(this@ConnectionManager.context, packageName)
-                try {
-                    val appName = try {
-                        val pm = this@ConnectionManager.context.packageManager
-                        pm.getApplicationLabel(pm.getApplicationInfo(packageName, 0)).toString()
-                    } catch (e: Exception) {
-                        packageName
-                    }
-                    sendAction(Notifications.buildShow("MYVU", "Abriendo $appName..."))
-                } catch (ignored: Exception) {
-                }
-            }
-
-            override fun executeWeatherSync() {
-                weather().refresh()
-                try {
-                    sendAction(Notifications.buildShow("MYVU", "Actualizando clima..."))
-                } catch (ignored: Exception) {
-                }
-            }
-
-            override fun executeToggleMirror() {
-                val enabled = !Prefs.mirrorEnabled(this@ConnectionManager.context)
-                Prefs.setMirrorEnabled(this@ConnectionManager.context, enabled)
-                LogBus.log("Touchpad gesture -> Notification mirroring " + (if (enabled) "ON" else "OFF"))
-                try {
-                    sendAction(Notifications.buildShow("MYVU", "Espejo notificaciones: " + (if (enabled) "Activado" else "Desactivado")))
-                } catch (ignored: Exception) {
-                }
-            }
-
-            override fun executeMediaPlayPause() {
-                LogBus.log("Touchpad gesture -> Media Play/Pause")
-                TouchGestureManager.sendMediaKey(this@ConnectionManager.context, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
-                try {
-                    sendAction(Notifications.buildShow("MYVU", "Música: Play / Pausa"))
-                } catch (ignored: Exception) {
-                }
-            }
-
-            override fun executeMediaNext() {
-                LogBus.log("Touchpad gesture -> Media Next")
-                TouchGestureManager.sendMediaKey(this@ConnectionManager.context, android.view.KeyEvent.KEYCODE_MEDIA_NEXT)
-                try {
-                    sendAction(Notifications.buildShow("MYVU", "Música: Siguiente"))
-                } catch (ignored: Exception) {
-                }
-            }
-
-            override fun executeMediaPrevious() {
-                LogBus.log("Touchpad gesture -> Media Previous")
-                TouchGestureManager.sendMediaKey(this@ConnectionManager.context, android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS)
-                try {
-                    sendAction(Notifications.buildShow("MYVU", "Música: Anterior"))
-                } catch (ignored: Exception) {
-                }
-            }
-
-            override fun executeOpenTeleprompter() {
-                LogBus.log("Touchpad gesture -> Open Teleprompter")
-                try {
-                    sendAction(Teleprompter.buildOpen("", "MYVU"))
-                } catch (ignored: Exception) {
-                }
-            }
-
-            override fun executeZenMode() {
-                val enabled = !Prefs.zenModeEnabled(this@ConnectionManager.context)
-                Prefs.setZenModeEnabled(this@ConnectionManager.context, enabled)
-                LogBus.log("Touchpad gesture -> Zen mode " + if (enabled) "ON" else "OFF")
-                try {
-                    setZenMode(enabled)
-                    sendAction(Notifications.buildShow("MYVU", "Modo Zen: " + if (enabled) "Activado" else "Desactivado"))
-                } catch (ignored: Exception) {
-                }
-            }
-
-            override fun executeNone() {
-                LogBus.log("Touchpad gesture -> None")
-            }
-        }
+        events.handleGesture(gesture, rawCode, eventTime)
     }
 
     fun connHandler(): Handler = conn
@@ -592,7 +434,7 @@ class ConnectionManager(
     private fun teardown() {
         scanner?.stop()
         // Release any ongoing Bluetooth SCO audio channel
-        com.myvu.client.app.feature.TouchGestureManager.releaseBluetoothSco(context)
+        TouchGestureManager.releaseBluetoothSco(context)
         // Fully release AI conversation (executor threads + TTS engine binding)
         ai?.shutdown()
         ai = null
