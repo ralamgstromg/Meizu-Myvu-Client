@@ -2124,3 +2124,24 @@ Se requería dotar al ecosistema de conexión Bluetooth de:
 
 
 
+
+## 46. [2026-10-02] — Política de Entrada de las Gafas Unificada en `GlassesEventHandler`
+
+### Requerimientos:
+- Eliminar la lógica de entrada de las gafas duplicada entre `ConnectionManager` y `GlassesEventHandler`. Plan: `docs/superpowers/plans/2026-10-02-wire-glasses-event-handler-into-connection-manager-plan.md`.
+
+### Diagnóstico y Causa Raíz:
+- El análisis del grafo de conocimiento (graphify) señaló a `ConnectionManager` como el hub real de acoplamiento: 38 imports internos y 26 comunidades.
+- `GlassesEventHandler` ya tenía extraída la política (botón de IA, wake word, gestos, clima y batería) y tenía tests, pero **nunca se instanciaba en producción**. `ConnectionManager` seguía usando su propia copia inline (`init` más `createGestureActionExecutor()`, unas 175 líneas).
+- Consecuencia: los tests validaban código que no corría, y cada fix de gestos había que aplicarlo dos veces.
+
+### Soluciones Implementadas:
+1. **`GlassesEventHandler.kt`**: Se añade `handleGesture(gesture, rawCode, eventTime)` público, el log de `executeHudDashboard` y los comentarios de diseño (`control:0`, `wakeRelay`) copiados de producción.
+2. **`ConnectionManager.kt`**: Crea `GlassesEventHandler` con un `Delegate`. `pageClosed` usa `ai?.onPageClosed()` para no crear la conversación solo para cerrarla. `executeGesture()` delega en el handler. Se eliminan unas 160 líneas duplicadas sin cambiar la API pública.
+3. **Tests**: Nuevo `GlassesEventHandlerPolicyTest` (Robolectric) que cubre los mapeos del botón, la wake word, la supresión de 500 ms, `control:0` y los gestos Zen, mirror y clima. `PhysicalActionButtonConflictTest` ahora usa `GlassesEventHandler` real en lugar de un listener escrito a mano.
+
+### Verificación:
+- `./gradlew testDebugUnitTest`: 319 tests, 0 fallos.
+- `./gradlew assembleDebug`: **BUILD SUCCESSFUL**.
+- Nota del entorno: el JDK 25 configurado en `gradle.properties` (`/usr/lib/jvm/java-25-openjdk-amd64`) no existía en la máquina. La verificación se hizo con Temurin 21 portable (`-Dorg.gradle.java.home`).
+- Pendiente: prueba manual con las gafas (lista en la sección 3, paso 4 del plan).

@@ -62,12 +62,16 @@ class PhysicalActionButtonConflictTest {
         var simulatedTime = 1000L
         TouchGestureManager.timeProvider = { simulatedTime }
 
+        // Production AI-button policy; only the gesture executor is swapped for a recorder.
         var aiTriggered = 0
-        router.setAiTriggerListener { code, _ ->
-            if (code == 3) {
-                aiTriggered++
-            }
-        }
+        GlassesEventHandler(null, router, object : GlassesEventHandler.Delegate {
+            override fun wakeRelay() {}
+            override fun triggerAi(triggerCode: Int) { if (triggerCode == 3) aiTriggered++ }
+            override fun pageClosed() {}
+            override fun refreshWeather() {}
+            override fun updateBattery(battery: Int, isCharging: Boolean) {}
+            override fun sendAction(actionJson: String) {}
+        })
 
         router.setTouchGestureListener { gestureType, rawCode, _, eventTime ->
             TouchGestureManager.handleGesture(null, gestureType, rawCode, executor, eventTime)
