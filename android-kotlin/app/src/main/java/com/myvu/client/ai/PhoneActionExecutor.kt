@@ -625,7 +625,16 @@ class PhoneActionExecutor(context: Context) {
         if (AutoSendAccessibilityService.isAccessibilityServiceEnabled(context)) {
             AutoSendAccessibilityService.triggerAutoSend(targetPackage, isDeviceLocked = isLocked)
         } else {
-            LogBus.warn("AutoSendAccessibilityService is NOT enabled in Android Settings. Message will be pre-filled, but automated send requires enabling accessibility service.")
+            // Without the accessibility service Android does not let us press "Send":
+            // leave the message ready and tell the user how to finish.
+            LogBus.warn("AutoSendAccessibilityService is NOT enabled: message pre-filled, user must tap Send")
+            val notice = "Mensaje listo. Toca Enviar para terminar."
+            com.myvu.client.core.errors.attempt("Auto-send fallback notice") {
+                com.myvu.client.service.MyvuService.activeConnection()
+                    ?.sendAction(com.myvu.client.app.feature.Notifications.buildShow("MYVU", notice))
+                com.myvu.client.core.TextToSpeechHelper.init(context)
+                com.myvu.client.core.TextToSpeechHelper.speak(notice, context = context)
+            }
         }
 
         if (isLocked) {
