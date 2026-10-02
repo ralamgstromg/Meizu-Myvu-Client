@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import android.content.Intent
 import com.myvu.client.core.LogBus
@@ -20,7 +21,7 @@ class AiVoiceRecorderHandler : SkillHandler {
             SkillResult(true, "Abriendo Grabadora de Voz IA con transcripción Whisper")
         } catch (e: Exception) {
             LogBus.error("AiVoiceRecorderHandler: Failed to launch VoiceRecorderActivity", e)
-            SkillResult(false, "No se pudo abrir la Grabadora de Voz IA: ${e.message}")
+            SkillResult(false, "No se pudo abrir la Grabadora de Voz IA. ${e.userMessage("AiVoiceRecorderHandler")}")
         }
     }
 }

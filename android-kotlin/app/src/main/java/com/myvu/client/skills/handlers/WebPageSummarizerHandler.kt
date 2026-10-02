@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.core.LogBus
 import com.myvu.client.skills.SkillHandler
@@ -79,7 +80,7 @@ class WebPageSummarizerHandler : SkillHandler {
             )
         } catch (e: Exception) {
             LogBus.error("WebPageSummarizerHandler -> Error fetching URL", e)
-            SkillResult(false, "Error al descargar o resumir la página web: ${e.message}")
+            SkillResult(false, "Error al descargar o resumir la página web. ${e.userMessage("WebPageSummarizerHandler")}")
         }
     }
 }

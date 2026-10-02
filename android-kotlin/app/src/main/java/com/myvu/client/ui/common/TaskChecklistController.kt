@@ -1,5 +1,6 @@
 package com.myvu.client.ui.common
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import android.graphics.Paint
 import android.view.Gravity
@@ -138,7 +139,7 @@ class TaskChecklistController(
         } catch (e: Exception) {
             LogBus.error("TaskChecklistController: Error parsing tasks JSON", e)
             val errorTv = TextView(activity).apply {
-                text = "Error al leer tareas: ${e.message}"
+                text = "Error al leer tareas. ${e.userMessage("TaskChecklistController")}"
                 setTextColor(ContextCompat.getColor(context, R.color.cyber_neon_red))
             }
             layTasksContainer.addView(errorTv)
@@ -228,7 +229,7 @@ class TaskChecklistController(
             Toast.makeText(activity, "Se exportaron $exportedCount tareas a Mis Tareas", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             LogBus.error("TaskChecklistController: Error exporting tasks to TodoRepository", e)
-            Toast.makeText(activity, "Error al exportar tareas: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(activity, "Error al exportar tareas. ${e.userMessage("TaskChecklistController")}", Toast.LENGTH_SHORT).show()
         }
     }
 }

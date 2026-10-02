@@ -1,5 +1,6 @@
 package com.myvu.client.ui.common
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -55,7 +56,7 @@ class AttachmentUiController(
                         onAttachmentAdded(att)
                     } catch (e: Exception) {
                         LogBus.error("AttachmentUiController: Error processing captured photo", e)
-                        Toast.makeText(activity, "Error al procesar foto: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(activity, "Error al procesar foto. ${e.userMessage("AttachmentUiController")}", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -70,7 +71,7 @@ class AttachmentUiController(
                         onAttachmentAdded(att)
                     } catch (e: Exception) {
                         LogBus.error("AttachmentUiController: Error picking document", e)
-                        Toast.makeText(activity, "Error al procesar archivo: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(activity, "Error al procesar archivo. ${e.userMessage("AttachmentUiController")}", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -90,7 +91,7 @@ class AttachmentUiController(
                 takePhotoLauncher.launch(photoUri)
             } catch (e: Exception) {
                 LogBus.error("AttachmentUiController: Failed to launch camera", e)
-                Toast.makeText(activity, "No se pudo abrir la cámara: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, "No se pudo abrir la cámara. ${e.userMessage("AttachmentUiController")}", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -111,7 +112,7 @@ class AttachmentUiController(
                 pickDocumentLauncher.launch(mimeTypes)
             } catch (e: Exception) {
                 LogBus.error("AttachmentUiController: Failed to launch file picker", e)
-                Toast.makeText(activity, "No se pudo abrir el selector de archivos: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, "No se pudo abrir el selector de archivos. ${e.userMessage("AttachmentUiController")}", Toast.LENGTH_SHORT).show()
             }
         }
     }

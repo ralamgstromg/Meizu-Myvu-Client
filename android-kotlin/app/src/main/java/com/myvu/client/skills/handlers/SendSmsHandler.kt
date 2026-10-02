@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -71,7 +72,7 @@ class SendSmsHandler : SkillHandler {
             SkillResult(true, "✉️ **Abriendo SMS** para **$displayName** ($cleanPhone) con el texto: \"$message\"")
         } catch (e: Exception) {
             LogBus.error("SendSmsHandler: Could not launch SMS composer", e)
-            SkillResult(false, "Error al enviar mensaje de texto: ${e.message}")
+            SkillResult(false, "Error al enviar mensaje de texto. ${e.userMessage("SendSmsHandler")}")
         }
     }
 }

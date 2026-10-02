@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -44,7 +45,7 @@ class SendEmailHandler : SkillHandler {
             SkillResult(true, "✉️ **Abriendo correo** para **$displayName** ($emailAddress)$subText.")
         } catch (e: Exception) {
             LogBus.error("SendEmailHandler: Error launching email client", e)
-            SkillResult(false, "No se pudo abrir la aplicación de correo para '$displayName': ${e.message}")
+            SkillResult(false, "No se pudo abrir la aplicación de correo para '$displayName'. ${e.userMessage("SendEmailHandler")}")
         }
     }
 }

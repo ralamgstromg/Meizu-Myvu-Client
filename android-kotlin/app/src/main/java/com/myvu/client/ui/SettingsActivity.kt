@@ -1,5 +1,6 @@
 package com.myvu.client.ui
 
+import com.myvu.client.core.errors.userMessage
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -93,7 +94,7 @@ class SettingsActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             LogBus.error("Google Sign-In failed", e)
-            Toast.makeText(this, "Error Play Services: ${e.message}\nUsa 'Conexión Web' o 'Token'.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Error Play Services. ${e.userMessage("SettingsActivity")}\nUsa 'Conexión Web' o 'Token'.", Toast.LENGTH_LONG).show()
             updateGoogleDriveUi()
         }
     }
@@ -822,8 +823,8 @@ class SettingsActivity : AppCompatActivity() {
                 progressBackup?.visibility = View.GONE
                 btnGenerateBackup?.isEnabled = true
                 btnRestoreBackup?.isEnabled = true
-                txtBackupStatus?.text = "Error: ${e.message}"
-                Toast.makeText(this@SettingsActivity, "Error al generar respaldo: ${e.message}", Toast.LENGTH_LONG).show()
+                txtBackupStatus?.text = "Error. ${e.userMessage("SettingsActivity")}"
+                Toast.makeText(this@SettingsActivity, "Error al generar respaldo. ${e.userMessage("SettingsActivity")}", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -911,8 +912,8 @@ class SettingsActivity : AppCompatActivity() {
                 progressBackup?.visibility = View.GONE
                 btnGenerateBackup?.isEnabled = true
                 btnRestoreBackup?.isEnabled = true
-                txtBackupStatus?.text = "Error: ${e.message}"
-                Toast.makeText(this@SettingsActivity, "Error al restaurar: ${e.message}", Toast.LENGTH_LONG).show()
+                txtBackupStatus?.text = "Error. ${e.userMessage("SettingsActivity")}"
+                Toast.makeText(this@SettingsActivity, "Error al restaurar. ${e.userMessage("SettingsActivity")}", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -953,8 +954,8 @@ class SettingsActivity : AppCompatActivity() {
                         progressBackup?.visibility = View.GONE
                         btnGenerateBackup?.isEnabled = true
                         btnRestoreBackup?.isEnabled = true
-                        txtBackupStatus?.text = "Error: ${e.message}"
-                        Toast.makeText(this@SettingsActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                        txtBackupStatus?.text = "Error. ${e.userMessage("SettingsActivity")}"
+                        Toast.makeText(this@SettingsActivity, "Error. ${e.userMessage("SettingsActivity")}", Toast.LENGTH_LONG).show()
                     }
                 }
             }

@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import android.content.Intent
 import android.provider.AlarmClock
@@ -45,7 +46,7 @@ class QuickAlarmTimerHandler : SkillHandler {
                         context.startActivity(intent)
                         return SkillResult(true, "🛑 **Alarma desactivada / silenciada**.")
                     } catch (e: Exception) {
-                        return SkillResult(false, "No se pudo desactivar la alarma: ${e.message}")
+                        return SkillResult(false, "No se pudo desactivar la alarma. ${e.userMessage("QuickAlarmTimerHandler")}")
                     }
                 }
                 "set_alarm" -> {
@@ -80,7 +81,7 @@ class QuickAlarmTimerHandler : SkillHandler {
             }
         } catch (e: Exception) {
             LogBus.error("QuickAlarmTimerHandler -> Error handling alarm/timer", e)
-            SkillResult(false, "Error al configurar alarma o temporizador: ${e.message}")
+            SkillResult(false, "Error al configurar alarma o temporizador. ${e.userMessage("QuickAlarmTimerHandler")}")
         }
     }
 

@@ -1,5 +1,6 @@
 package com.myvu.client.ui
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
@@ -75,7 +76,7 @@ class VoiceRecorderActivity : AppCompatActivity() {
             }
         } catch (e: Throwable) {
             LogBus.error("VoiceRecorderActivity: Fatal error in onCreate", e)
-            Toast.makeText(this, "Error al iniciar Grabadora de Voz: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Error al iniciar Grabadora de Voz. ${e.userMessage("VoiceRecorderActivity")}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -310,7 +311,7 @@ class VoiceRecorderActivity : AppCompatActivity() {
             startActivity(intent)
         } catch (e: Throwable) {
             LogBus.error("VoiceRecorderActivity: Error opening detail activity", e)
-            Toast.makeText(this, "Error al abrir la grabación: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Error al abrir la grabación. ${e.userMessage("VoiceRecorderActivity")}", Toast.LENGTH_SHORT).show()
         }
     }
 

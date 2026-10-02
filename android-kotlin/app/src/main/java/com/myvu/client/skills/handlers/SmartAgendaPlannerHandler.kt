@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.ContentResolver
 import android.content.Context
 import android.provider.CalendarContract
@@ -59,7 +60,7 @@ class SmartAgendaPlannerHandler : SkillHandler {
             )
         } catch (e: Exception) {
             LogBus.error("SmartAgendaPlannerHandler -> Exception reading calendar", e)
-            SkillResult(false, "Error al consultar la agenda del calendario: ${e.message}")
+            SkillResult(false, "Error al consultar la agenda del calendario. ${e.userMessage("SmartAgendaPlannerHandler")}")
         }
     }
 

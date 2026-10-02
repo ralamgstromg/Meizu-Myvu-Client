@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.ai.ExternalInfoService
 import com.myvu.client.core.LogBus
@@ -32,7 +33,7 @@ class NewsSearchHandler : SkillHandler {
             }
         } catch (e: Exception) {
             LogBus.error("NewsSearchHandler -> Error searching news", e)
-            SkillResult(false, "Error al buscar noticias: ${e.message}")
+            SkillResult(false, "Error al buscar noticias. ${e.userMessage("NewsSearchHandler")}")
         }
     }
 }

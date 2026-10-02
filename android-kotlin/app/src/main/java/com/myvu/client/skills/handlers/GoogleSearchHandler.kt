@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.ai.ExternalInfoService
 import com.myvu.client.core.LogBus
@@ -33,7 +34,7 @@ class GoogleSearchHandler : SkillHandler {
             }
         } catch (e: Exception) {
             LogBus.error("GoogleSearchHandler -> Exception during execution", e)
-            SkillResult(false, "Error al ejecutar la búsqueda en Google: ${e.message}")
+            SkillResult(false, "Error al ejecutar la búsqueda en Google. ${e.userMessage("GoogleSearchHandler")}")
         }
     }
 }

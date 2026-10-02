@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.ai.ExternalInfoService
 import com.myvu.client.core.LogBus
@@ -32,7 +33,7 @@ class CurrencyRateHandler : SkillHandler {
             }
         } catch (e: Exception) {
             LogBus.error("CurrencyRateHandler -> Exception during execution", e)
-            SkillResult(false, "Error al consultar tasa de cambio: ${e.message}")
+            SkillResult(false, "Error al consultar tasa de cambio. ${e.userMessage("CurrencyRateHandler")}")
         }
     }
 }

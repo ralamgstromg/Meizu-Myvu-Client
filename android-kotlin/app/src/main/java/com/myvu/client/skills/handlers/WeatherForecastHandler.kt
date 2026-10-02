@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.ai.ExternalInfoService
 import com.myvu.client.core.LogBus
@@ -36,7 +37,7 @@ class WeatherForecastHandler : SkillHandler {
             }
         } catch (e: Exception) {
             LogBus.error("WeatherForecastHandler -> Exception during execution", e)
-            SkillResult(false, "Error al consultar pronóstico del tiempo: ${e.message}")
+            SkillResult(false, "Error al consultar pronóstico del tiempo. ${e.userMessage("WeatherForecastHandler")}")
         }
     }
 }

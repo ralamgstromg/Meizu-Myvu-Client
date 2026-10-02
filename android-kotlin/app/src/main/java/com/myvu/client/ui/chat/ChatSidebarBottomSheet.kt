@@ -1,5 +1,6 @@
 package com.myvu.client.ui.chat
 
+import com.myvu.client.core.errors.userMessage
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
@@ -249,7 +250,7 @@ class ChatSidebarBottomSheet : BottomSheetDialogFragment() {
                         sourceName = provider.displayName
                     } catch (e: Exception) {
                         LogBus.error("ChatSidebar -> Error querying AI", e)
-                        responseText = "Error al consultar la IA: ${e.message}"
+                        responseText = "Error al consultar la IA. ${e.userMessage("ChatSidebarBottomSheet")}"
                         sourceName = "ERROR"
                     }
                 }

@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import android.content.Intent
 import android.provider.MediaStore
@@ -156,7 +157,7 @@ class OpenAppHandler : SkillHandler {
             SkillResult(false, "No se encontró ninguna aplicación instalada con el nombre '$appName'.")
         } catch (e: Exception) {
             LogBus.error("OpenAppHandler -> Error launching application", e)
-            SkillResult(false, "Error al abrir la aplicación: ${e.message}")
+            SkillResult(false, "Error al abrir la aplicación. ${e.userMessage("OpenAppHandler")}")
         }
     }
 }

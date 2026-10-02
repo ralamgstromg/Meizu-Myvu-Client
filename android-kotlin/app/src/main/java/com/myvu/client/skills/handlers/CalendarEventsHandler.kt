@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.ai.CalendarService
 import com.myvu.client.core.LogBus
@@ -45,7 +46,7 @@ class CalendarEventsHandler : SkillHandler {
             SkillResult(true, events, events)
         } catch (e: Exception) {
             LogBus.error("CalendarEventsHandler -> Error handling calendar", e)
-            SkillResult(false, "Error al interactuar con el calendario: ${e.message}")
+            SkillResult(false, "Error al interactuar con el calendario. ${e.userMessage("CalendarEventsHandler")}")
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.ai.ExternalInfoService
 import com.myvu.client.core.LogBus
@@ -36,7 +37,7 @@ class CurrencyConvertHandler : SkillHandler {
             }
         } catch (e: Exception) {
             LogBus.error("CurrencyConvertHandler -> Exception during execution", e)
-            SkillResult(false, "Error al calcular la conversión de divisas: ${e.message}")
+            SkillResult(false, "Error al calcular la conversión de divisas. ${e.userMessage("CurrencyConvertHandler")}")
         }
     }
 }

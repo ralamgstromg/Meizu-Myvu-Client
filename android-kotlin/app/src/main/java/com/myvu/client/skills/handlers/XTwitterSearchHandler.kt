@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.ai.ExternalInfoService
 import com.myvu.client.core.LogBus
@@ -51,7 +52,7 @@ class XTwitterSearchHandler : SkillHandler {
             }
         } catch (e: Exception) {
             LogBus.error("XTwitterSearchHandler -> Error searching X / Twitter", e)
-            SkillResult(false, "Error al consultar información en X / Twitter: ${e.message}")
+            SkillResult(false, "Error al consultar información en X / Twitter. ${e.userMessage("XTwitterSearchHandler")}")
         }
     }
 }

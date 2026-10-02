@@ -1,5 +1,6 @@
 package com.myvu.client.ui
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -109,7 +110,7 @@ class RecordingDetailActivity : AppCompatActivity(), AudioPlayerManager.Listener
             }
         } catch (e: Throwable) {
             LogBus.error("RecordingDetailActivity: Fatal error in onCreate", e)
-            Toast.makeText(this, "Error al abrir la grabación: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Error al abrir la grabación. ${e.userMessage("RecordingDetailActivity")}", Toast.LENGTH_LONG).show()
             finish()
         }
     }
@@ -463,7 +464,7 @@ class RecordingDetailActivity : AppCompatActivity(), AudioPlayerManager.Listener
             }
         } catch (e: Exception) {
             LogBus.error("RecordingDetailActivity: Failed to send to glasses", e)
-            Toast.makeText(this, "Error enviando a las gafas: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Error enviando a las gafas. ${e.userMessage("RecordingDetailActivity")}", Toast.LENGTH_SHORT).show()
         }
     }
 

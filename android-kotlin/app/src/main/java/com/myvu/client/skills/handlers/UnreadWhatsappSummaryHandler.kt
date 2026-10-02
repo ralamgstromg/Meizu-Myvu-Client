@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.service.MirrorNotificationListener
 import com.myvu.client.core.LogBus
@@ -23,7 +24,7 @@ class UnreadWhatsappSummaryHandler : SkillHandler {
             }
         } catch (e: Exception) {
             LogBus.error("UnreadWhatsappSummaryHandler -> Error reading WhatsApp summary", e)
-            SkillResult(false, "Error al consultar las notificaciones de WhatsApp: ${e.message}")
+            SkillResult(false, "Error al consultar las notificaciones de WhatsApp. ${e.userMessage("UnreadWhatsappSummaryHandler")}")
         }
     }
 }

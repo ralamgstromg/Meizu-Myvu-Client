@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.core.LogBus
 import com.myvu.client.database.NoteRepository
@@ -118,7 +119,7 @@ class RagHistorySearchHandler : SkillHandler {
             )
         } catch (e: Exception) {
             LogBus.error("RagHistorySearchHandler -> Error executing RAG search", e)
-            SkillResult(false, "Error al buscar en el historial local: ${e.message}")
+            SkillResult(false, "Error al buscar en el historial local. ${e.userMessage("RagHistorySearchHandler")}")
         }
     }
 

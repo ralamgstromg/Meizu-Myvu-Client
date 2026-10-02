@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.core.LogBus
 import com.myvu.client.service.MyvuService
@@ -78,7 +79,7 @@ class SmartTranslateHudHandler : SkillHandler {
             )
         } catch (e: Exception) {
             LogBus.error("SmartTranslateHudHandler -> Error during translation", e)
-            SkillResult(false, "Error al ejecutar la traducción: ${e.message}")
+            SkillResult(false, "Error al ejecutar la traducción. ${e.userMessage("SmartTranslateHudHandler")}")
         }
     }
 

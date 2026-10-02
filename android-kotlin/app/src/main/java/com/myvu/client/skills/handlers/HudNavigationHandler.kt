@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -79,7 +80,7 @@ class HudNavigationHandler : SkillHandler {
             }
         } catch (e: Exception) {
             LogBus.error("HudNavigationHandler -> Error starting navigation", e)
-            SkillResult(false, "Error al iniciar la navegación HUD: ${e.message}")
+            SkillResult(false, "Error al iniciar la navegación HUD. ${e.userMessage("HudNavigationHandler")}")
         }
     }
 }

@@ -10,6 +10,7 @@ import com.myvu.client.app.feature.SystemSettings
 import com.myvu.client.app.feature.Teleprompter
 import com.myvu.client.app.feature.TouchGestureManager
 import com.myvu.client.core.LogBus
+import com.myvu.client.core.errors.attempt
 import com.myvu.client.core.Prefs
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -193,10 +194,7 @@ class GlassesEventHandler(
                 if (ctx != null) {
                     TouchGestureManager.launchPhoneAssistant(ctx)
                 }
-                try {
-                    delegate.sendAction(Notifications.buildShow("MYVU", "Asistente activado"))
-                } catch (ignored: Exception) {
-                }
+                attempt("HUD feedback: card \"Asistente activado\"") { delegate.sendAction(Notifications.buildShow("MYVU", "Asistente activado")) }
             }
 
             override fun executeLaunchApp(packageName: String) {
@@ -220,10 +218,7 @@ class GlassesEventHandler(
 
             override fun executeWeatherSync() {
                 delegate.refreshWeather()
-                try {
-                    delegate.sendAction(Notifications.buildShow("MYVU", "Actualizando clima..."))
-                } catch (ignored: Exception) {
-                }
+                attempt("HUD feedback: card \"Actualizando clima...\"") { delegate.sendAction(Notifications.buildShow("MYVU", "Actualizando clima...")) }
             }
 
             override fun executeToggleMirror() {
@@ -248,10 +243,7 @@ class GlassesEventHandler(
                 if (ctx != null) {
                     TouchGestureManager.sendMediaKey(ctx, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
                 }
-                try {
-                    delegate.sendAction(Notifications.buildShow("MYVU", "Música: Play / Pausa"))
-                } catch (ignored: Exception) {
-                }
+                attempt("HUD feedback: card \"Música: Play / Pausa\"") { delegate.sendAction(Notifications.buildShow("MYVU", "Música: Play / Pausa")) }
             }
 
             override fun executeMediaNext() {
@@ -260,10 +252,7 @@ class GlassesEventHandler(
                 if (ctx != null) {
                     TouchGestureManager.sendMediaKey(ctx, KeyEvent.KEYCODE_MEDIA_NEXT)
                 }
-                try {
-                    delegate.sendAction(Notifications.buildShow("MYVU", "Música: Siguiente"))
-                } catch (ignored: Exception) {
-                }
+                attempt("HUD feedback: card \"Música: Siguiente\"") { delegate.sendAction(Notifications.buildShow("MYVU", "Música: Siguiente")) }
             }
 
             override fun executeMediaPrevious() {
@@ -272,18 +261,12 @@ class GlassesEventHandler(
                 if (ctx != null) {
                     TouchGestureManager.sendMediaKey(ctx, KeyEvent.KEYCODE_MEDIA_PREVIOUS)
                 }
-                try {
-                    delegate.sendAction(Notifications.buildShow("MYVU", "Música: Anterior"))
-                } catch (ignored: Exception) {
-                }
+                attempt("HUD feedback: card \"Música: Anterior\"") { delegate.sendAction(Notifications.buildShow("MYVU", "Música: Anterior")) }
             }
 
             override fun executeOpenTeleprompter() {
                 LogBus.log("Touchpad gesture -> Open Teleprompter")
-                try {
-                    delegate.sendAction(Teleprompter.buildOpen("", "MYVU"))
-                } catch (ignored: Exception) {
-                }
+                attempt("HUD feedback: open teleprompter") { delegate.sendAction(Teleprompter.buildOpen("", "MYVU")) }
             }
 
             override fun executeZenMode() {

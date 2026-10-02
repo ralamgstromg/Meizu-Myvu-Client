@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.ai.ExternalInfoService
 import com.myvu.client.core.LogBus
@@ -33,7 +34,7 @@ class DuckDuckGoSearchHandler : SkillHandler {
             }
         } catch (e: Exception) {
             LogBus.error("DuckDuckGoSearchHandler -> Error searching DuckDuckGo", e)
-            SkillResult(false, "Error al realizar la búsqueda en DuckDuckGo: ${e.message}")
+            SkillResult(false, "Error al realizar la búsqueda en DuckDuckGo. ${e.userMessage("DuckDuckGoSearchHandler")}")
         }
     }
 }

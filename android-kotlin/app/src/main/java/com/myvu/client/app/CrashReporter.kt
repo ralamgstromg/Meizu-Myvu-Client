@@ -103,15 +103,40 @@ object CrashReporter {
         }
     }
 
+    const val MAX_LOG_BYTES = 1L * 1024 * 1024
+    const val KEEP_LOG_FILES = 5
+
+    /** Crash log files, newest first: crash_log.txt, crash_log.1.txt, ... */
+    fun logFiles(context: Context): List<File> {
+        val dir = logDir(context)
+        return (listOf(File(dir, "crash_log.txt")) + (1 until KEEP_LOG_FILES).map { File(dir, "crash_log.$it.txt") })
+            .filter { it.exists() }
+    }
+
+    private fun logDir(context: Context): File =
+        File(context.getExternalFilesDir(null) ?: context.filesDir, "logs").apply { mkdirs() }
+
+    /** Shifts crash_log.txt -> .1 -> .2 ... once it exceeds [maxBytes]; drops the oldest. */
+    internal fun rotateIfNeeded(dir: File, maxBytes: Long = MAX_LOG_BYTES) {
+        val current = File(dir, "crash_log.txt")
+        if (!current.exists() || current.length() < maxBytes) return
+        File(dir, "crash_log.${KEEP_LOG_FILES - 1}.txt").delete()
+        for (i in KEEP_LOG_FILES - 2 downTo 1) {
+            File(dir, "crash_log.$i.txt").takeIf { it.exists() }?.renameTo(File(dir, "crash_log.${i + 1}.txt"))
+        }
+        current.renameTo(File(dir, "crash_log.1.txt"))
+    }
+
     private fun saveCrashReportToFile(context: Context, report: String) {
         try {
-            val dir = File(context.getExternalFilesDir(null), "logs").apply { mkdirs() }
-            val logFile = File(dir, "crash_log.txt")
-            FileWriter(logFile, true).use { writer ->
+            val dir = logDir(context)
+            rotateIfNeeded(dir)
+            FileWriter(File(dir, "crash_log.txt"), true).use { writer ->
                 writer.appendLine(report)
             }
         } catch (e: Exception) {
-            // Ignore file logging errors
+            // LogBus may be the thing failing here: use the platform log directly.
+            android.util.Log.w("CrashReporter", "Could not write crash log: ${e.message}")
         }
     }
 }

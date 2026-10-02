@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
@@ -80,7 +81,7 @@ class CallContactHandler : SkillHandler {
             SkillResult(true, "📱 Abriendo marcador telefónico para llamar a **$displayName** ($cleanPhone).")
         } catch (e: Exception) {
             LogBus.error("CallContactHandler: Error launching dialer", e)
-            SkillResult(false, "No se pudo iniciar la llamada a '$displayName': ${e.message}")
+            SkillResult(false, "No se pudo iniciar la llamada a '$displayName'. ${e.userMessage("CallContactHandler")}")
         }
     }
 }

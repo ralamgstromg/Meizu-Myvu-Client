@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.core.LogBus
 import com.myvu.client.skills.SkillHandler
@@ -47,7 +48,7 @@ class SmartOcrScannerHandler : SkillHandler {
             )
         } catch (e: Exception) {
             LogBus.error("SmartOcrScannerHandler -> Exception during OCR execution", e)
-            SkillResult(false, "Error al ejecutar el escáner OCR: ${e.message}")
+            SkillResult(false, "Error al ejecutar el escáner OCR. ${e.userMessage("SmartOcrScannerHandler")}")
         }
     }
 }

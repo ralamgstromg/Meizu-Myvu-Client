@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.service.MirrorNotificationListener
 import com.myvu.client.core.LogBus
@@ -24,7 +25,7 @@ class UnreadNotificationsHandler : SkillHandler {
             }
         } catch (e: Exception) {
             LogBus.error("UnreadNotificationsHandler -> Error reading notifications", e)
-            SkillResult(false, "Error al consultar las notificaciones: ${e.message}")
+            SkillResult(false, "Error al consultar las notificaciones. ${e.userMessage("UnreadNotificationsHandler")}")
         }
     }
 }

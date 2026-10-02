@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.core.LogBus
 import com.myvu.client.database.ReminderRepository
@@ -72,7 +73,7 @@ class CreateReminderHandler : SkillHandler {
             }
         } catch (e: Exception) {
             LogBus.error("CreateReminderHandler -> Exception during execution", e)
-            SkillResult(false, "Error al programar el recordatorio: ${e.message}")
+            SkillResult(false, "Error al programar el recordatorio. ${e.userMessage("CreateReminderHandler")}")
         }
     }
 }

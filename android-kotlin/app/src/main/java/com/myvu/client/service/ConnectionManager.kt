@@ -21,6 +21,7 @@ import com.myvu.client.app.feature.Trackpad
 import com.myvu.client.core.GlassesConfig
 import com.myvu.client.core.Hex
 import com.myvu.client.core.LogBus
+import com.myvu.client.core.errors.attempt
 import com.myvu.client.core.Prefs
 import com.myvu.client.crypto.StarryCrypto
 import com.myvu.client.nav.FusedLocationSource
@@ -991,54 +992,21 @@ class ConnectionManager(
 
     private fun applyDefaults() {
         conn.postDelayed({
-            try {
-                sendActionNow(ClockSync.build())
-            } catch (ignored: Exception) {
-            }
+            attempt("Glasses settings sync: ClockSync") { sendActionNow(ClockSync.build()) }
         }, 100)
         conn.postDelayed({
-            try {
-                sendActionNow(SystemSettings.setScreenOffTime(GlassesConfig.getScreenOffTime(context)))
-            } catch (ignored: Exception) {
-            }
-            try {
-                sendActionNow(SystemSettings.setBrightness(GlassesConfig.getBrightness(context)))
-            } catch (ignored: Exception) {
-            }
-            try {
-                sendActionNow(SystemSettings.setVolume(GlassesConfig.getVolume(context)))
-            } catch (ignored: Exception) {
-            }
+            attempt("Glasses settings sync: setScreenOffTime") { sendActionNow(SystemSettings.setScreenOffTime(GlassesConfig.getScreenOffTime(context))) }
+            attempt("Glasses settings sync: setBrightness") { sendActionNow(SystemSettings.setBrightness(GlassesConfig.getBrightness(context))) }
+            attempt("Glasses settings sync: setVolume") { sendActionNow(SystemSettings.setVolume(GlassesConfig.getVolume(context))) }
         }, 250)
         conn.postDelayed({
-            try {
-                sendActionNow(SystemSettings.setStandbyPosition(GlassesConfig.getStandbyPosition(context)))
-            } catch (ignored: Exception) {
-            }
-            try {
-                sendActionNow(SystemSettings.setZenMode(Prefs.zenModeEnabled(context)))
-            } catch (ignored: Exception) {
-            }
-            try {
-                sendActionNow(SystemSettings.setWearDetection(Prefs.wearDetectionEnabled(context)))
-            } catch (ignored: Exception) {
-            }
-            try {
-                sendActionNow(SystemSettings.setMusicTpControl(Prefs.musicTouchPanelEnabled(context)))
-            } catch (ignored: Exception) {
-            }
-            try {
-                if (Prefs.airModeEnabled(context)) sendActionNow(SystemSettings.setAirMode(true))
-            } catch (ignored: Exception) {
-            }
-            try {
-                sendActionNow(SystemSettings.toggleWifi(Prefs.wifiEnabled(context)))
-            } catch (ignored: Exception) {
-            }
-            try {
-                sendActionNow(SystemSettings.setLanguage("es", "CO"))
-            } catch (ignored: Exception) {
-            }
+            attempt("Glasses settings sync: setStandbyPosition") { sendActionNow(SystemSettings.setStandbyPosition(GlassesConfig.getStandbyPosition(context))) }
+            attempt("Glasses settings sync: setZenMode") { sendActionNow(SystemSettings.setZenMode(Prefs.zenModeEnabled(context))) }
+            attempt("Glasses settings sync: setWearDetection") { sendActionNow(SystemSettings.setWearDetection(Prefs.wearDetectionEnabled(context))) }
+            attempt("Glasses settings sync: setMusicTpControl") { sendActionNow(SystemSettings.setMusicTpControl(Prefs.musicTouchPanelEnabled(context))) }
+            attempt("Glasses settings sync: setAirMode") { if (Prefs.airModeEnabled(context)) sendActionNow(SystemSettings.setAirMode(true)) }
+            attempt("Glasses settings sync: toggleWifi") { sendActionNow(SystemSettings.toggleWifi(Prefs.wifiEnabled(context))) }
+            attempt("Glasses settings sync: setLanguage") { sendActionNow(SystemSettings.setLanguage("es", "CO")) }
             try {
                 sendActionNow(
                     AiProtocol.assistantConfig(

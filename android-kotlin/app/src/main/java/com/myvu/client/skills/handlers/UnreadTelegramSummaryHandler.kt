@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.service.MirrorNotificationListener
 import com.myvu.client.core.LogBus
@@ -23,7 +24,7 @@ class UnreadTelegramSummaryHandler : SkillHandler {
             }
         } catch (e: Exception) {
             LogBus.error("UnreadTelegramSummaryHandler -> Error reading Telegram summary", e)
-            SkillResult(false, "Error al consultar las notificaciones de Telegram: ${e.message}")
+            SkillResult(false, "Error al consultar las notificaciones de Telegram. ${e.userMessage("UnreadTelegramSummaryHandler")}")
         }
     }
 }

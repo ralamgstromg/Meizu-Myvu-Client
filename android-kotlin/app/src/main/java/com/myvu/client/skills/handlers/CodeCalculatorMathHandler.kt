@@ -1,5 +1,6 @@
 package com.myvu.client.skills.handlers
 
+import com.myvu.client.core.errors.userMessage
 import android.content.Context
 import com.myvu.client.core.LogBus
 import com.myvu.client.skills.SkillHandler
@@ -43,7 +44,7 @@ class CodeCalculatorMathHandler : SkillHandler {
             SkillResult(true, resultMsg)
         } catch (e: Exception) {
             LogBus.error("CodeCalculatorMathHandler -> Calculation error", e)
-            SkillResult(false, "Error en el cálculo: ${e.message}")
+            SkillResult(false, "Error en el cálculo. ${e.userMessage("CodeCalculatorMathHandler")}")
         }
     }
 

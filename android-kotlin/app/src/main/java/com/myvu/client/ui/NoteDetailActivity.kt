@@ -1,5 +1,6 @@
 package com.myvu.client.ui
 
+import com.myvu.client.core.errors.userMessage
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -99,7 +100,7 @@ class NoteDetailActivity : AppCompatActivity() {
             }
         } catch (e: Throwable) {
             LogBus.error("NoteDetailActivity: Fatal error in onCreate", e)
-            Toast.makeText(this, "Error al abrir el detalle: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Error al abrir el detalle. ${e.userMessage("NoteDetailActivity")}", Toast.LENGTH_LONG).show()
             finish()
         }
     }
@@ -511,7 +512,7 @@ class NoteDetailActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             LogBus.error("NoteDetailActivity: Failed to send to glasses", e)
-            Toast.makeText(this, "Error enviando a las gafas: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Error enviando a las gafas. ${e.userMessage("NoteDetailActivity")}", Toast.LENGTH_SHORT).show()
         }
     }
 

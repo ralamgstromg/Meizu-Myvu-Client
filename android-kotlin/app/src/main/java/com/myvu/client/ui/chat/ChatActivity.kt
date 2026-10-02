@@ -1,5 +1,6 @@
 package com.myvu.client.ui.chat
 
+import com.myvu.client.core.errors.userMessage
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -669,7 +670,7 @@ class ChatActivity : AppCompatActivity() {
                         sourceName = provider.displayName
                     } catch (e: Exception) {
                         LogBus.error("ChatActivity -> Error querying AI", e)
-                        responseText = "Error al consultar la IA: ${e.message}"
+                        responseText = "Error al consultar la IA. ${e.userMessage("ChatActivity")}"
                         sourceName = "ERROR"
                     }
                 }
