@@ -25,6 +25,15 @@ object TextToSpeechHelper : TextToSpeech.OnInitListener {
         false
     }
 
+    /**
+     * Remembers the application context without binding the engine, so later
+     * speak() calls without a context (chat, headphone gestures) can start it.
+     * Called from MyApp.onCreate().
+     */
+    fun attach(context: Context) {
+        appContext = context.applicationContext
+    }
+
     fun init(context: Context, onReady: (() -> Unit)? = null) {
         appContext = context.applicationContext
         if (tts == null) {
@@ -45,14 +54,20 @@ object TextToSpeechHelper : TextToSpeech.OnInitListener {
             isInitialized = true
             LogBus.log("TextToSpeechHelper -> TTS Engine initialized successfully")
 
-            synchronized(pendingUtterances) {
-                for (text in pendingUtterances) {
-                    speak(text)
-                }
-                pendingUtterances.clear()
+            // Replay queued utterances in order: the first flushes, the rest queue behind it.
+            val queued = synchronized(pendingUtterances) {
+                pendingUtterances.toList().also { pendingUtterances.clear() }
+            }
+            queued.forEachIndexed { i, text ->
+                speak(text, if (i == 0) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD)
             }
         } else {
-            LogBus.warn("TextToSpeechHelper -> Failed to initialize TTS engine (status: $status)")
+            LogBus.warn("TextToSpeechHelper -> Failed to initialize TTS engine (status: $status) -- will retry on next request")
+            // Release the failed engine so the next speak() binds a new one instead of queueing forever.
+            runCatching { tts?.shutdown() }
+            tts = null
+            isInitialized = false
+            synchronized(pendingUtterances) { pendingUtterances.clear() }
         }
     }
 
@@ -60,16 +75,21 @@ object TextToSpeechHelper : TextToSpeech.OnInitListener {
      * Speaks text aloud through the current active audio device (e.g. Bluetooth headphones).
      * If context is provided and TTS is not yet instantiated, auto-initializes the engine.
      */
-    fun speak(rawText: String, queueMode: Int = TextToSpeech.QUEUE_FLUSH, context: Context? = null) {
-        if (rawText.isBlank()) return
-        val text = com.myvu.client.core.locale.SpeechNormalizer.normalize(rawText)
+    fun speak(text: String, queueMode: Int = TextToSpeech.QUEUE_FLUSH, context: Context? = null) {
+        if (text.isBlank()) return
 
-        if (context != null && tts == null) {
-            init(context)
+        if (tts == null) {
+            val ctx = context ?: appContext
+            if (ctx == null) {
+                LogBus.warn("TextToSpeechHelper -> speak() before attach()/init(): dropped")
+                return
+            }
+            init(ctx)
         }
 
         if (!isInitialized || tts == null) {
             synchronized(pendingUtterances) {
+                // Raw text: normalized once when actually spoken.
                 pendingUtterances.add(text)
             }
             return
@@ -79,7 +99,8 @@ object TextToSpeechHelper : TextToSpeech.OnInitListener {
             putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, android.media.AudioManager.STREAM_MUSIC)
         }
         val utteranceId = "tts_${System.currentTimeMillis()}"
-        tts?.speak(text, queueMode, params, utteranceId)
+        val result = tts?.speak(com.myvu.client.core.locale.SpeechNormalizer.normalize(text), queueMode, params, utteranceId)
+        if (result != TextToSpeech.SUCCESS) LogBus.warn("TextToSpeechHelper -> speak returned $result")
     }
 
     fun stop() {

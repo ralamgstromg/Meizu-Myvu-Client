@@ -8,6 +8,7 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import com.myvu.client.core.LogBus
 import com.myvu.client.core.Prefs
+import com.myvu.client.core.locale.SpeechNormalizer
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -56,7 +57,12 @@ class TtsPlayer(private val context: Context) {
         tts = TextToSpeech(context) { status ->
             ready = status == TextToSpeech.SUCCESS
             if (!ready) {
-                LogBus.warn("text-to-speech unavailable (status $status)")
+                LogBus.warn("text-to-speech unavailable (status $status) -- will retry on next request")
+                // Drop the failed engine so the next speak() binds a fresh one instead of
+                // waiting forever on an instance that will never become ready.
+                runCatching { tts?.shutdown() }
+                tts = null
+                pendingText = null
                 flushPending(false)
                 return@TextToSpeech
             }
@@ -98,8 +104,8 @@ class TtsPlayer(private val context: Context) {
         }
     }
 
-    fun speak(rawText: String, cb: Callback?) {
-        val text = com.myvu.client.core.locale.SpeechNormalizer.normalize(rawText)
+    /** [text] is raw answer text; it is normalized for es-CO speech exactly once, right before synthesis. */
+    fun speak(text: String, cb: Callback?) {
         if (tts == null) {
             pendingText = text
             pending = cb
@@ -126,7 +132,7 @@ class TtsPlayer(private val context: Context) {
                 val client = HttpTtsClient(endpoint, apiKey, model, voice)
                 network.execute {
                     try {
-                        val audio = client.synthesize(text)
+                        val audio = client.synthesize(SpeechNormalizer.normalize(text))
                         main.post {
                             if (gen == requestGeneration) playWavBytes(audio)
                         }
@@ -144,12 +150,19 @@ class TtsPlayer(private val context: Context) {
         speakSystemTts(text)
     }
 
-    private fun speakSystemTts(text: String) {
+    private fun speakSystemTts(rawText: String) {
         if (!ready) {
-            LogBus.warn("TTS requested before init completed")
+            if (tts != null) {
+                // Engine still binding (1-3 s on first use): keep the request; init() replays it.
+                LogBus.log("TTS engine not ready yet -- queued until initialization completes")
+                pendingText = rawText
+                return
+            }
+            LogBus.warn("TTS requested with no engine")
             flushPending(false)
             return
         }
+        val text = SpeechNormalizer.normalize(rawText)
         val generation = activeCallbackGeneration
         // Queue sentence-sized chunks: the engine starts speaking the first one
         // without synthesizing the whole answer. The callback fires on the last.

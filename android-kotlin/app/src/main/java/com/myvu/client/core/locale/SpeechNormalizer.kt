@@ -7,7 +7,8 @@ package com.myvu.client.core.locale
  * - 24 h and am/pm times become "3:30 de la tarde"
  * - %, °C, km/h, km and URLs become words
  *
- * Input is expected to be plain text (Markdown already stripped).
+ * Input is expected to be plain text (Markdown already stripped). Idempotent:
+ * normalizing already-normalized text returns it unchanged.
  */
 object SpeechNormalizer {
 
@@ -28,7 +29,11 @@ object SpeechNormalizer {
     private val PREFIX_CURRENCY = Regex("(COP|USD|US\\$|EUR|€|\\$)\\s?$AMOUNT(?!\\d)")
     private val SUFFIX_CURRENCY = Regex("(?<![\\d.,])$AMOUNT\\s?(COP|USD|EUR|€)(?![A-Za-z])")
 
-    private val TIME = Regex("\\b([01]?\\d|2[0-3]):([0-5]\\d)\\s*(a\\.?\\s?m\\.?|p\\.?\\s?m\\.?)?(?![\\w:])", RegexOption.IGNORE_CASE)
+    // The final lookahead keeps normalize() idempotent: "3:30 de la tarde" is not rewritten again.
+    private val TIME = Regex(
+        "\\b([01]?\\d|2[0-3]):([0-5]\\d)\\s*(a\\.?\\s?m\\.?|p\\.?\\s?m\\.?)?(?![\\w:])(?!\\s*de la (?:mañana|tarde|noche))",
+        RegexOption.IGNORE_CASE
+    )
 
     fun normalize(input: String): String {
         var s = input

@@ -41,4 +41,15 @@ class SpeechNormalizerTest {
         assertEquals("Viento de 20 kilómetros por hora a 5 kilómetros", n("Viento de 20 km/h a 5 km"))
         assertEquals("Más en enlace", n("Más en https://example.com/a?b=1"))
     }
+
+    @Test
+    fun normalizingTwiceChangesNothing() {
+        for (input in listOf(
+            "Reunión a las 15:30", "Alarma a las 7:00 a. m.", "La TRM es 4,150.32 COP",
+            "Lluvia 80%, 18 °C", "Cuesta US$ 1.05", "Viento de 20 km/h"
+        )) {
+            val once = n(input)
+            assertEquals(input, once, n(once))
+        }
+    }
 }

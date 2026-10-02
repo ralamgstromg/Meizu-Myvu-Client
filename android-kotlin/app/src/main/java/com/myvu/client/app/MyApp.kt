@@ -9,6 +9,7 @@ class MyApp : Application() {
         super.onCreate()
         com.myvu.client.core.Prefs.applyTheme(this)
         CrashReporter.install(this)
+        com.myvu.client.core.TextToSpeechHelper.attach(this)
         SkillRegistry.initialize(this)
         com.myvu.client.health.HealthService.getInstance(this)
         if (com.myvu.client.core.Prefs.autoReconnectEnabled(this)) {
