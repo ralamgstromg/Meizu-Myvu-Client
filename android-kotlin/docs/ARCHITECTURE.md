@@ -253,6 +253,10 @@ El subsistema en `com.myvu.client.skills` permite añadir funcionalidades al dis
 - **Resumen en el HUD**: cuando la respuesta también se habla y la conversación pertenece a las gafas (`AiConversation.condenseHudWhenSpoken`, que activa `ConnectionManager.ai()`), el HUD recibe `HudSummary.condense()`: oraciones completas hasta 160 caracteres, o un corte en límite de palabra con "…". La voz lee la respuesta completa. Se desactiva con `Prefs.hudCondensedAnswers` (`hud_condensed_answers`). En `visual_only` el HUD siempre muestra el texto completo.
 - La instancia de `ChatEngineService` no resume, porque su `sender` guarda la respuesta completa en el historial.
 - Con solo audífonos no se usa el HUD: `HeadphoneGestureManager` abre `ChatActivity` con STT automático y respuesta por TTS.
+- **Paginación** (`HudAnswerPager`): cuando el HUD recibió un resumen, durante 90 s el swipe adelante muestra la página siguiente de la respuesta completa (tarjeta `Notifications.buildShow`, "(n/total)") y el swipe atrás la anterior. Al llegar al final muestra "Fin de la respuesta". Mientras el pager está abierto, estos swipes no ejecutan su acción mapeada.
+- **Confirmación por gesto** (`SensitiveActionGate`): mientras hay una acción sensible pendiente, el doble toque en la patilla la confirma y el swipe atrás la cancela. Se intercepta con `TouchGestureManager.ActionExecutor.interceptGesture()`, después de la supresión del botón físico y de la síntesis de toques. El prompt de confirmación nunca se resume.
+- **Barge-in en audífonos**: un toque de play/pausa mientras `TextToSpeechHelper` habla solo corta la voz.
+- **Ajustes**: el interruptor "Resumen en HUD" está en `GlassesSettingsActivity` y "Pedir confirmación antes de que la IA envíe mensajes o llame" en `SettingsActivity`. Para desactivar este último hay que aceptar una advertencia.
 
 ### 6.1 Detección de Actividad de Voz (VAD) Adaptativa y Control de Latencia (`AiConversation`)
 - **Umbral Dinámico Post-Habla**:

@@ -2221,3 +2221,17 @@ Se requería dotar al ecosistema de conexión Bluetooth de:
 ### Verificación:
 - `HudSummaryTest` (3 tests) y 2 tests nuevos en `AiResponseDeliveryTest`.
 - `./gradlew testDebugUnitTest`: 341 tests, 0 fallos, en dos ejecuciones (`--rerun`). `assembleDebug`: **BUILD SUCCESSFUL**.
+
+## 51. [2026-10-02] — Mejoras para HUD y Audífonos: D3–D6 e Interruptores en Ajustes
+
+### Soluciones Implementadas:
+- **D6** `BluetoothDeviceManager.isActiveListeningEnabledBlocking()` lee el `activeDevice` cacheado. Se elimina el `runBlocking` sobre Room en el hilo principal, salvo antes de la primera actualización.
+- **Ajustes**: interruptor "Resumen en HUD" (`Prefs.hudCondensedAnswers`) en `GlassesSettingsActivity`. Interruptor de confirmación de acciones sensibles (`Prefs.actionPolicy`) en `SettingsActivity`; para desactivarlo hay que aceptar una advertencia de inyección de prompt.
+- **D4** Barge-in: un toque en el audífono mientras `TextToSpeechHelper.isSpeaking()` solo detiene la voz (`HeadphoneGestureManager.SpeechOutput`, reemplazable en tests).
+- **D5** `TouchGestureManager.ActionExecutor.interceptGesture()` (nuevo hook después de la supresión y la síntesis de toques). En `GlassesEventHandler`, con una acción pendiente: doble toque → `SensitiveActionGate.confirmPending()` y resultado en el HUD; swipe atrás → `cancelPending()`. El prompt de confirmación no se resume en el HUD.
+- **D3** `HudSummary.paginate()` + `HudAnswerPager` (TTL de 90 s): `AiResponseDelivery.onVisualCondensed` abre el pager y los swipes pasan las páginas con `Notifications.buildShow`.
+
+### Verificación:
+- Tests nuevos: `HeadphoneBargeInTest`, `HudAnswerPagerTest` (4) y 4 tests en `GlassesEventHandlerPolicyTest` (confirmar, cancelar, mapeo sin acción pendiente, paginación).
+- `./gradlew testDebugUnitTest`: 350 tests, 0 fallos, en dos ejecuciones. `assembleDebug`: **BUILD SUCCESSFUL**.
+- Pendiente: prueba manual con las gafas y los audífonos.
