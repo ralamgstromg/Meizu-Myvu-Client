@@ -185,8 +185,9 @@ object BackupManager {
                 throw e
             }
 
-            // Re-open to run onUpgrade for older backups.
+            // Re-open to run onUpgrade for older backups; the search index rebuilds from the new data.
             LocalDatabase.getInstance(app).writableDatabase
+            com.myvu.client.search.SearchIndex.invalidate(app)
             onProgress("¡Restauración completada con éxito!")
             RestoreResult(
                 success = true,

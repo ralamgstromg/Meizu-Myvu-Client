@@ -9,6 +9,6 @@ parameters:
     required: true
   search_scope:
     type: string
-    description: Ámbito de búsqueda (all, recordings, notes, tasks).
+    description: Ámbito de búsqueda (all, recordings, notes, reminders, tasks, chat).
     required: false
 ---
