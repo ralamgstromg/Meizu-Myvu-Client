@@ -2235,3 +2235,16 @@ Se requería dotar al ecosistema de conexión Bluetooth de:
 - Tests nuevos: `HeadphoneBargeInTest`, `HudAnswerPagerTest` (4) y 4 tests en `GlassesEventHandlerPolicyTest` (confirmar, cancelar, mapeo sin acción pendiente, paginación).
 - `./gradlew testDebugUnitTest`: 350 tests, 0 fallos, en dos ejecuciones. `assembleDebug`: **BUILD SUCCESSFUL**.
 - Pendiente: prueba manual con las gafas y los audífonos.
+
+## 52. [2026-10-02] — Fase 1 de UX: TTS Natural es-CO y Notificaciones Resumidas
+
+### Requerimientos:
+- Propuesta de rediseño de UX, espacio de trabajo IA, rutinas programadas, errores y logs, y permisos. Plan completo: `docs/superpowers/plans/2026-10-02-ux-redesign-ai-workspace-plan.md` (fases 2–5 pendientes de aprobación).
+
+### Soluciones Implementadas (Fase 1):
+- `core/locale/SpeechNormalizer`: números de formato US a es-CO, monedas habladas con centavos, horas en formato de 12 h con "de la mañana/tarde/noche", unidades, `%` y URLs. Se aplica en `TtsPlayer` y `TextToSpeechHelper`.
+- `TtsPlayer`: encola la respuesta por oraciones (≤220 caracteres, `QUEUE_ADD`) para empezar a hablar antes. Velocidad configurable con `Prefs.ttsSpeechRate` (slider en Ajustes).
+- `service/NotificationDigest`: formato "Mensaje de X en App: …", sin emojis, limitado a N palabras (`Prefs.notificationMaxWords`, por defecto 20, slider en Ajustes). Lo usa `MirrorNotificationListener` para el HUD y la voz.
+
+### Verificación:
+- `SpeechNormalizerTest` (5) y `NotificationDigestTest` (3). `./gradlew testDebugUnitTest`: 358 tests, 0 fallos. `assembleDebug`: **BUILD SUCCESSFUL**.
