@@ -41,7 +41,8 @@ class BootReceiver : BroadcastReceiver() {
                 Intent.ACTION_TIME_CHANGED == action ||
                 Intent.ACTION_TIMEZONE_CHANGED == action
             ) {
-                LogBus.log("BootReceiver -> Rescheduling pending reminders after $action")
+                LogBus.log("BootReceiver -> Rescheduling pending reminders and routines after $action")
+                com.myvu.client.routines.RoutineScheduler.scheduleAll(context)
 
                 val repo = ReminderRepository(context)
                 val pending = repo.getPendingReminders()

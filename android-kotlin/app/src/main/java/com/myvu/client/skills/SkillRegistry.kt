@@ -59,6 +59,7 @@ object SkillRegistry {
         registerHandler("weather-forecast", WeatherForecastHandler())
         registerHandler("create-note", CreateNoteHandler())
         registerHandler("create-reminder", CreateReminderHandler())
+        registerHandler("schedule-routine", com.myvu.client.skills.handlers.ScheduleRoutineHandler())
         registerHandler("ai-voice-recorder", AiVoiceRecorderHandler())
         registerHandler("calendar-events", CalendarEventsHandler())
         registerHandler("unread-notifications", UnreadNotificationsHandler())

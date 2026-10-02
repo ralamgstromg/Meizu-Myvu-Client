@@ -35,22 +35,7 @@ object ReminderScheduler {
         val pendingIntent = PendingIntent.getBroadcast(context, requestCode, intent, flags)
 
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (alarmManager.canScheduleExactAlarms()) {
-                    try {
-                        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
-                    } catch (se: SecurityException) {
-                        LogBus.warn("ReminderScheduler -> Exact alarm permission missing, falling back: ${se.message}")
-                        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
-                    }
-                } else {
-                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
-                }
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
-            } else {
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
-            }
+            com.myvu.client.core.ExactAlarms.set(alarmManager, triggerAtMillis, pendingIntent)
             LogBus.log("ReminderScheduler -> scheduled reminder #$reminderId at $triggerAtMillis")
             return true
         } catch (e: Exception) {

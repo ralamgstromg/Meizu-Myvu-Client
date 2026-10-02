@@ -259,6 +259,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".routines.RoutineReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".service.ServiceWatchdogReceiver"
             android:exported="false" />
 

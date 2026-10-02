@@ -232,6 +232,12 @@ class AgenticToolExecutor(
                 selectedToolNames.add("create_reminder")
             }
 
+            // Recurring routines ("todos los días a las 7 resúmeme la agenda")
+            if (q.contains("todos los dias") || q.contains("cada dia") || q.contains("cada manana") || q.contains("cada noche") ||
+                q.contains("rutina") || q.contains("programa") || q.contains("de lunes a")) {
+                selectedToolNames.add("schedule_routine")
+            }
+
             // Voice Recorder
             if (q.contains("graba") || q.contains("audio") || q.contains("dictado")) {
                 selectedToolNames.add("ai_voice_recorder")

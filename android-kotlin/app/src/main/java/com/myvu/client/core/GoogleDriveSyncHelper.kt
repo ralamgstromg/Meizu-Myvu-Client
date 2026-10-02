@@ -37,6 +37,8 @@ object GoogleDriveSyncHelper {
 
     const val DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file"
     private const val USER_INFO_SCOPE = "https://www.googleapis.com/auth/userinfo.email"
+    /** Read-only mail access for the unread-email summary (GmailService). Needs re-consent. */
+    const val GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
     private const val OAUTH_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
     private const val OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token"
     private const val DRIVE_FILES_API = "https://www.googleapis.com/drive/v3/files"
@@ -110,7 +112,7 @@ object GoogleDriveSyncHelper {
     }
 
     fun buildAuthUrl(clientId: String, redirectUri: String): String {
-        val encodedScope = URLEncoder.encode("$DRIVE_SCOPE $USER_INFO_SCOPE", "UTF-8")
+        val encodedScope = URLEncoder.encode("$DRIVE_SCOPE $USER_INFO_SCOPE $GMAIL_READONLY_SCOPE", "UTF-8")
         val encodedRedirect = URLEncoder.encode(redirectUri, "UTF-8")
         val encodedClientId = URLEncoder.encode(clientId, "UTF-8")
         return "$OAUTH_AUTH_URL?client_id=$encodedClientId&redirect_uri=$encodedRedirect&response_type=code&scope=$encodedScope&access_type=offline&prompt=consent"
@@ -283,7 +285,7 @@ object GoogleDriveSyncHelper {
         val account = GoogleSignIn.getLastSignedInAccount(context)
         if (account != null && account.account != null) {
             try {
-                val scope = "oauth2:$DRIVE_SCOPE"
+                val scope = "oauth2:$DRIVE_SCOPE $GMAIL_READONLY_SCOPE"
                 return@withContext GoogleAuthUtil.getToken(context.applicationContext, account.account!!, scope)
             } catch (e: Exception) {
                 LogBus.error("GoogleDriveSync -> Play Services getToken error", e)
@@ -311,7 +313,7 @@ object GoogleDriveSyncHelper {
     fun getGoogleSignInOptions(): GoogleSignInOptions {
         return GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
-            .requestScopes(Scope(DRIVE_SCOPE))
+            .requestScopes(Scope(DRIVE_SCOPE), Scope(GMAIL_READONLY_SCOPE))
             .build()
     }
 
