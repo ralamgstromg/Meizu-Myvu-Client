@@ -1,0 +1,2648 @@
+{
+  "android-kotlin/app/build.gradle.kts": {
+    "mtime": 1789076466.8355448,
+    "seen": 1790973958.5609531,
+    "ast_hash": "a88780aff1110ff5dcc336a6b0991665",
+    "semantic_hash": "a88780aff1110ff5dcc336a6b0991665"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/ActionCommand.kt": {
+    "mtime": 1788561497.354025,
+    "seen": 1790973958.5609574,
+    "ast_hash": "dcdc8ad12010bd6a45a8502561b4e176",
+    "semantic_hash": "dcdc8ad12010bd6a45a8502561b4e176"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/ActionPolicy.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.5609593,
+    "ast_hash": "f0549307881200fa73128e0c03b22415",
+    "semantic_hash": "f0549307881200fa73128e0c03b22415"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/AgenticToolExecutor.kt": {
+    "mtime": 1788977016.627347,
+    "seen": 1790973958.56096,
+    "ast_hash": "81771a2d21c76c3593af8bd95c176116",
+    "semantic_hash": "81771a2d21c76c3593af8bd95c176116"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/AiClient.kt": {
+    "mtime": 1788987460.3326356,
+    "seen": 1790973958.5609605,
+    "ast_hash": "0eda411faa6e973a1f93267d13df21e1",
+    "semantic_hash": "0eda411faa6e973a1f93267d13df21e1"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/AiConversation.kt": {
+    "mtime": 1789265412.8953614,
+    "seen": 1790973958.560961,
+    "ast_hash": "be4b1d440dbc1463eb2a56f4499bb134",
+    "semantic_hash": "be4b1d440dbc1463eb2a56f4499bb134"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/AiHttpClient.kt": {
+    "mtime": 1788986639.20542,
+    "seen": 1790973958.5609617,
+    "ast_hash": "e7b1237480a7b2937e860cc75ad610ab",
+    "semantic_hash": "e7b1237480a7b2937e860cc75ad610ab"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/AiProvider.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.5609627,
+    "ast_hash": "822862cf6535a5abd654ae04ee5fd443",
+    "semantic_hash": "822862cf6535a5abd654ae04ee5fd443"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/AiResponse.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.5609634,
+    "ast_hash": "4405a7c74dceb98b78100b8a49f9d7f9",
+    "semantic_hash": "4405a7c74dceb98b78100b8a49f9d7f9"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/AiResponseDelivery.kt": {
+    "mtime": 1788987369.8872597,
+    "seen": 1790973958.5609643,
+    "ast_hash": "0667615c8aad87e7b6534eaec0166206",
+    "semantic_hash": "0667615c8aad87e7b6534eaec0166206"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/AiResponseMode.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.560965,
+    "ast_hash": "b025891baddb9bc31fbd5094d2ff2711",
+    "semantic_hash": "b025891baddb9bc31fbd5094d2ff2711"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/AndroidSpeechEngine.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.5609663,
+    "ast_hash": "9b7f5ba09de05c852ad82d89e2044dc2",
+    "semantic_hash": "9b7f5ba09de05c852ad82d89e2044dc2"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/AndroidSpeechLanguagePolicy.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.560967,
+    "ast_hash": "75ae73b35bca4dc61b70f163a81d8776",
+    "semantic_hash": "75ae73b35bca4dc61b70f163a81d8776"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/AndroidSpeechRecognizer.kt": {
+    "mtime": 1788969296.5699658,
+    "seen": 1790973958.5609674,
+    "ast_hash": "8956c4e45c9cbb5044df6de71f817096",
+    "semantic_hash": "8956c4e45c9cbb5044df6de71f817096"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/AudioOptimizer.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.560968,
+    "ast_hash": "b72a0e03257f659c35da5baff4709dc5",
+    "semantic_hash": "b72a0e03257f659c35da5baff4709dc5"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/CalendarService.kt": {
+    "mtime": 1788970330.60887,
+    "seen": 1790973958.5609689,
+    "ast_hash": "9b553a2733678ff33c9799492cf68444",
+    "semantic_hash": "9b553a2733678ff33c9799492cf68444"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/ClaudeClient.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.5609698,
+    "ast_hash": "07338b74ccbae182e9410bcc6f27f9db",
+    "semantic_hash": "07338b74ccbae182e9410bcc6f27f9db"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/ConversationState.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.5609705,
+    "ast_hash": "ac139281dfa3f1a8310af2f7a461ebf1",
+    "semantic_hash": "ac139281dfa3f1a8310af2f7a461ebf1"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/DailyBriefingService.kt": {
+    "mtime": 1789063024.1170323,
+    "seen": 1790973958.560971,
+    "ast_hash": "da9ca89dcf0747ff78345b92e9a755ae",
+    "semantic_hash": "da9ca89dcf0747ff78345b92e9a755ae"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/ExternalInfoService.kt": {
+    "mtime": 1788990055.1409123,
+    "seen": 1790973958.5609717,
+    "ast_hash": "1998e389c98ecde097248e63c098739f",
+    "semantic_hash": "1998e389c98ecde097248e63c098739f"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/GeminiActionSchema.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.5609722,
+    "ast_hash": "f123cbe32dcd1ee53dd62f8d1798fda8",
+    "semantic_hash": "f123cbe32dcd1ee53dd62f8d1798fda8"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/GeminiActionValidator.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.5609732,
+    "ast_hash": "380f818dc156f67f21652c73849c5a5c",
+    "semantic_hash": "380f818dc156f67f21652c73849c5a5c"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/GlassesMicStream.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.5609741,
+    "ast_hash": "095bb650912172f0aa8e80cc92047b20",
+    "semantic_hash": "095bb650912172f0aa8e80cc92047b20"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/HttpEndpoint.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.5609746,
+    "ast_hash": "8ec3500f4a1a5d6532b63ae0e38d6c4d",
+    "semantic_hash": "8ec3500f4a1a5d6532b63ae0e38d6c4d"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/HttpRetry.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.560975,
+    "ast_hash": "f4e1fd9d1218576bb991859ec3e4be0a",
+    "semantic_hash": "f4e1fd9d1218576bb991859ec3e4be0a"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/HttpTtsClient.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.560976,
+    "ast_hash": "8249368fb7972713325408d809a7b8ef",
+    "semantic_hash": "8249368fb7972713325408d809a7b8ef"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/LocalAiClient.kt": {
+    "mtime": 1788986955.044024,
+    "seen": 1790973958.5609767,
+    "ast_hash": "def0d500a330421ff7bb0734068f7e71",
+    "semantic_hash": "def0d500a330421ff7bb0734068f7e71"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/MeetingAiProcessor.kt": {
+    "mtime": 1788986679.791001,
+    "seen": 1790973958.5609777,
+    "ast_hash": "121e410bd9572d2c76945c69a27ea7d5",
+    "semantic_hash": "121e410bd9572d2c76945c69a27ea7d5"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/MyvuVoiceInteractionService.kt": {
+    "mtime": 1788984165.6003969,
+    "seen": 1790973958.5609784,
+    "ast_hash": "ac70533ded60acf95c08b3fad799d198",
+    "semantic_hash": "ac70533ded60acf95c08b3fad799d198"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/NoteAiProcessor.kt": {
+    "mtime": 1788986757.9421299,
+    "seen": 1790973958.560979,
+    "ast_hash": "5da0782c2f24c25265d6c336d4a8c035",
+    "semantic_hash": "5da0782c2f24c25265d6c336d4a8c035"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/OpenAiClient.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.5609796,
+    "ast_hash": "6dc4c55477a6eed50376ff183e08956a",
+    "semantic_hash": "6dc4c55477a6eed50376ff183e08956a"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/OpenAiTranscriptionClient.kt": {
+    "mtime": 1788975408.792934,
+    "seen": 1790973958.5609806,
+    "ast_hash": "aa9dc9fa292502a84432746381d38368",
+    "semantic_hash": "aa9dc9fa292502a84432746381d38368"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/OpusDecoderStream.kt": {
+    "mtime": 1788989958.8494864,
+    "seen": 1790973958.5609813,
+    "ast_hash": "02af9011edbc5757321441be8e94b100",
+    "semantic_hash": "02af9011edbc5757321441be8e94b100"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/OpusStream.kt": {
+    "mtime": 1788561497.3540502,
+    "seen": 1790973958.5609818,
+    "ast_hash": "85d63438757d8a47fafd33c306b327b7",
+    "semantic_hash": "85d63438757d8a47fafd33c306b327b7"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/PhoneActionExecutor.kt": {
+    "mtime": 1789079783.6576567,
+    "seen": 1790973958.5609822,
+    "ast_hash": "4f1310e4a4ce19acfe0476d8f9b805d4",
+    "semantic_hash": "4f1310e4a4ce19acfe0476d8f9b805d4"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/RoutineManager.kt": {
+    "mtime": 1789063323.1646206,
+    "seen": 1790973958.560983,
+    "ast_hash": "b98c5d7ed1061c675e00ad2af318f32c",
+    "semantic_hash": "b98c5d7ed1061c675e00ad2af318f32c"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/SpatialMemoryManager.kt": {
+    "mtime": 1789063126.2005973,
+    "seen": 1790973958.5609841,
+    "ast_hash": "892639e78f8fb38f3985251adf0b812b",
+    "semantic_hash": "892639e78f8fb38f3985251adf0b812b"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/SttProvider.kt": {
+    "mtime": 1788561497.3543172,
+    "seen": 1790973958.5609848,
+    "ast_hash": "34a9e84c472b7a6a3e44e152d79a12cc",
+    "semantic_hash": "34a9e84c472b7a6a3e44e152d79a12cc"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/SttSource.kt": {
+    "mtime": 1788561497.3543172,
+    "seen": 1790973958.5609858,
+    "ast_hash": "98db566a14e774151e822e4f5923f49b",
+    "semantic_hash": "98db566a14e774151e822e4f5923f49b"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/ToolCallModels.kt": {
+    "mtime": 1788971395.4819891,
+    "seen": 1790973958.5609863,
+    "ast_hash": "48c724ee7dc266e334366952bb6a3902",
+    "semantic_hash": "48c724ee7dc266e334366952bb6a3902"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/TranslationSession.kt": {
+    "mtime": 1788561497.3543172,
+    "seen": 1790973958.5609872,
+    "ast_hash": "0d508e5d4f5307fd241bfee138504d28",
+    "semantic_hash": "0d508e5d4f5307fd241bfee138504d28"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/TtsPlayer.kt": {
+    "mtime": 1788561497.3543172,
+    "seen": 1790973958.560988,
+    "ast_hash": "0d4c7bec1d5c77d81bf92666d1a6327e",
+    "semantic_hash": "0d4c7bec1d5c77d81bf92666d1a6327e"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/TtsProvider.kt": {
+    "mtime": 1788561497.3543172,
+    "seen": 1790973958.5609887,
+    "ast_hash": "da5179d971efff0640fd56f37eae030c",
+    "semantic_hash": "da5179d971efff0640fd56f37eae030c"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/VoiceActionRouter.kt": {
+    "mtime": 1789063386.9686007,
+    "seen": 1790973958.5609894,
+    "ast_hash": "988ec69eed256234781e8e9706383d86",
+    "semantic_hash": "988ec69eed256234781e8e9706383d86"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/VoiceNoteRecorder.kt": {
+    "mtime": 1788561497.3543172,
+    "seen": 1790973958.5609906,
+    "ast_hash": "820a0246ef5c63ec6d699e1939bda3fc",
+    "semantic_hash": "820a0246ef5c63ec6d699e1939bda3fc"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/WavAudioEncoder.kt": {
+    "mtime": 1788561497.3543172,
+    "seen": 1790973958.5609915,
+    "ast_hash": "4ffcf7e34d889e29ff73f5c4ff8c29ba",
+    "semantic_hash": "4ffcf7e34d889e29ff73f5c4ff8c29ba"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ai/WhisperLocalClient.kt": {
+    "mtime": 1788561497.3543172,
+    "seen": 1790973958.560992,
+    "ast_hash": "065408306f7a38ad414ba1e1456f3329",
+    "semantic_hash": "065408306f7a38ad414ba1e1456f3329"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/AppLayer.kt": {
+    "mtime": 1788561497.3543172,
+    "seen": 1790973958.5609927,
+    "ast_hash": "df8f4efb762bda554ca95013f1f75827",
+    "semantic_hash": "df8f4efb762bda554ca95013f1f75827"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/CrashReporter.kt": {
+    "mtime": 1788561497.3554244,
+    "seen": 1790973958.5609934,
+    "ast_hash": "822ab972d51c5e627002009f62437256",
+    "semantic_hash": "822ab972d51c5e627002009f62437256"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/GlassesEventHandler.kt": {
+    "mtime": 1789263366.7274127,
+    "seen": 1790973958.5609941,
+    "ast_hash": "f920644ec9465fa93638e2205a3952f0",
+    "semantic_hash": "f920644ec9465fa93638e2205a3952f0"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/InboundRouter.kt": {
+    "mtime": 1789268098.1049266,
+    "seen": 1790973958.560995,
+    "ast_hash": "2f12f23bbd77f4127529570a2623a624",
+    "semantic_hash": "2f12f23bbd77f4127529570a2623a624"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/MyApp.kt": {
+    "mtime": 1789157424.453829,
+    "seen": 1790973958.5609958,
+    "ast_hash": "ed3d0c2daace54dfd7ebbc50aaa3552d",
+    "semantic_hash": "ed3d0c2daace54dfd7ebbc50aaa3552d"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/RelaySession.kt": {
+    "mtime": 1788561497.3554244,
+    "seen": 1790973958.5609963,
+    "ast_hash": "4fe808391751d2055819d2c7a72840aa",
+    "semantic_hash": "4fe808391751d2055819d2c7a72840aa"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/feature/AiProtocol.kt": {
+    "mtime": 1789051297.8542001,
+    "seen": 1790973958.560997,
+    "ast_hash": "761df6260263bc2f1c250a34ef2069e6",
+    "semantic_hash": "761df6260263bc2f1c250a34ef2069e6"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/feature/ClockSync.kt": {
+    "mtime": 1788561497.3555682,
+    "seen": 1790973958.560998,
+    "ast_hash": "b0a5096bf37f1ce62cad6c5279e8281f",
+    "semantic_hash": "b0a5096bf37f1ce62cad6c5279e8281f"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/feature/GestureAction.kt": {
+    "mtime": 1789160359.0204759,
+    "seen": 1790973958.5609987,
+    "ast_hash": "e2cc40943b489485824dc6756b34a86a",
+    "semantic_hash": "e2cc40943b489485824dc6756b34a86a"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/feature/GlassGesture.kt": {
+    "mtime": 1789268050.1252706,
+    "seen": 1790973958.5609992,
+    "ast_hash": "270e1dd5782e8804645feeedb38b0134",
+    "semantic_hash": "270e1dd5782e8804645feeedb38b0134"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/feature/HudMessageQueue.kt": {
+    "mtime": 1788561497.3555682,
+    "seen": 1790973958.5609999,
+    "ast_hash": "0c17feb0024e0a84c30051da0c14ae2a",
+    "semantic_hash": "0c17feb0024e0a84c30051da0c14ae2a"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/feature/NavCommands.kt": {
+    "mtime": 1788561497.3555682,
+    "seen": 1790973958.5610003,
+    "ast_hash": "e47896a558342faac56b0a5025e17e23",
+    "semantic_hash": "e47896a558342faac56b0a5025e17e23"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/feature/Notifications.kt": {
+    "mtime": 1788561497.3555682,
+    "seen": 1790973958.5610013,
+    "ast_hash": "2215703d52999b7682b90256012162a3",
+    "semantic_hash": "2215703d52999b7682b90256012162a3"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/feature/SystemSettings.kt": {
+    "mtime": 1788561497.3555682,
+    "seen": 1790973958.5610018,
+    "ast_hash": "bda253e7169d57179ac9931e91fce4dc",
+    "semantic_hash": "bda253e7169d57179ac9931e91fce4dc"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/feature/Teleprompter.kt": {
+    "mtime": 1788561497.3555682,
+    "seen": 1790973958.5610025,
+    "ast_hash": "d4d82d4ba7257282e2e5eaebb7145b5f",
+    "semantic_hash": "d4d82d4ba7257282e2e5eaebb7145b5f"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/feature/TouchGestureManager.kt": {
+    "mtime": 1789268109.5800836,
+    "seen": 1790973958.5610032,
+    "ast_hash": "8c067e45856d7fcd5bc70df63d03535a",
+    "semantic_hash": "8c067e45856d7fcd5bc70df63d03535a"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/feature/Trackpad.kt": {
+    "mtime": 1788561497.3555682,
+    "seen": 1790973958.561004,
+    "ast_hash": "64ba24cbe28c1e75f5c935c1a66d3296",
+    "semantic_hash": "64ba24cbe28c1e75f5c935c1a66d3296"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/app/feature/Weather.kt": {
+    "mtime": 1788561497.3555682,
+    "seen": 1790973958.5610049,
+    "ast_hash": "36510887b0fa044441b23028ae8b0ba4",
+    "semantic_hash": "36510887b0fa044441b23028ae8b0ba4"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/BackupManager.kt": {
+    "mtime": 1789076100.3648708,
+    "seen": 1790973958.5610056,
+    "ast_hash": "6e8c1fe1e6c273e8b11d9cdfbc54b9a4",
+    "semantic_hash": "6e8c1fe1e6c273e8b11d9cdfbc54b9a4"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/BufferPool.kt": {
+    "mtime": 1788561497.355809,
+    "seen": 1790973958.5610063,
+    "ast_hash": "2f67ad1704713487a76d360d79b755a2",
+    "semantic_hash": "2f67ad1704713487a76d360d79b755a2"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/ContactHelper.kt": {
+    "mtime": 1789149473.5719547,
+    "seen": 1790973958.561007,
+    "ast_hash": "d907e4f0498de43c2a8d3a9e04182467",
+    "semantic_hash": "d907e4f0498de43c2a8d3a9e04182467"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/DocumentExtractor.kt": {
+    "mtime": 1788971414.2011404,
+    "seen": 1790973958.561008,
+    "ast_hash": "eb45e4562b0231d56d27e28e3a88b8b9",
+    "semantic_hash": "eb45e4562b0231d56d27e28e3a88b8b9"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/EdgeToEdgeHelper.kt": {
+    "mtime": 1789266965.7999816,
+    "seen": 1790973958.5610087,
+    "ast_hash": "600d0f489799ca2a8549a60f6471ddcc",
+    "semantic_hash": "600d0f489799ca2a8549a60f6471ddcc"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/GlassesConfig.kt": {
+    "mtime": 1788561497.355809,
+    "seen": 1790973958.5610096,
+    "ast_hash": "39bdf6f268380882b95fa1634c4d339a",
+    "semantic_hash": "39bdf6f268380882b95fa1634c4d339a"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/GoogleDriveSyncHelper.kt": {
+    "mtime": 1788561497.355809,
+    "seen": 1790973958.5610101,
+    "ast_hash": "8b54bcb4ef8513575eff62ab81992328",
+    "semantic_hash": "8b54bcb4ef8513575eff62ab81992328"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/Hex.kt": {
+    "mtime": 1788561497.355809,
+    "seen": 1790973958.5610106,
+    "ast_hash": "3a8aa9235f6cccf526948bc03dc6c1ac",
+    "semantic_hash": "3a8aa9235f6cccf526948bc03dc6c1ac"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/HttpCache.kt": {
+    "mtime": 1788561497.355809,
+    "seen": 1790973958.5610113,
+    "ast_hash": "21eae4045bc20937286d1f0430e4857e",
+    "semantic_hash": "21eae4045bc20937286d1f0430e4857e"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/LockScreenHelper.kt": {
+    "mtime": 1789164011.6530008,
+    "seen": 1790973958.5610118,
+    "ast_hash": "8f805c066a7f9840086ead8818621b5e",
+    "semantic_hash": "8f805c066a7f9840086ead8818621b5e"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/LogBus.kt": {
+    "mtime": 1789264114.4676123,
+    "seen": 1790973958.561012,
+    "ast_hash": "95a986e4fca704bde5c61435359f8a5f",
+    "semantic_hash": "95a986e4fca704bde5c61435359f8a5f"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/MarkdownRenderer.kt": {
+    "mtime": 1788561497.355809,
+    "seen": 1790973958.5610125,
+    "ast_hash": "65f4e663e1bc13fdf33e1026aa2f1692",
+    "semantic_hash": "65f4e663e1bc13fdf33e1026aa2f1692"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/MarkdownUtils.kt": {
+    "mtime": 1788987646.4286995,
+    "seen": 1790973958.561013,
+    "ast_hash": "fc1d86f3dd5664627a9154f728af7ee5",
+    "semantic_hash": "fc1d86f3dd5664627a9154f728af7ee5"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/MindMapVisualizerHelper.kt": {
+    "mtime": 1788561497.355809,
+    "seen": 1790973958.5610135,
+    "ast_hash": "a9cb3b1f6a58cfac84210aef34724b1e",
+    "semantic_hash": "a9cb3b1f6a58cfac84210aef34724b1e"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/Prefs.kt": {
+    "mtime": 1789388149.9709303,
+    "seen": 1790973958.561014,
+    "ast_hash": "90a0eca8fb8cc2f114be382ef15e074a",
+    "semantic_hash": "90a0eca8fb8cc2f114be382ef15e074a"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/SecurePrefs.kt": {
+    "mtime": 1788561497.355809,
+    "seen": 1790973958.5610144,
+    "ast_hash": "a31c99f681d0d3c955c73f495c7edc8f",
+    "semantic_hash": "a31c99f681d0d3c955c73f495c7edc8f"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/ServiceKeepAliveHelper.kt": {
+    "mtime": 1788961897.9547703,
+    "seen": 1790973958.561015,
+    "ast_hash": "b23fe1f2dff30c3c3d394b21147fb71d",
+    "semantic_hash": "b23fe1f2dff30c3c3d394b21147fb71d"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/SslUtils.kt": {
+    "mtime": 1788561497.355809,
+    "seen": 1790973958.5610154,
+    "ast_hash": "bf5201e788ee623700ebde6b745a70d3",
+    "semantic_hash": "bf5201e788ee623700ebde6b745a70d3"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/TextToSpeechHelper.kt": {
+    "mtime": 1789389170.140435,
+    "seen": 1790973958.5610158,
+    "ast_hash": "4b3331723f039bd5a39b100c44f86015",
+    "semantic_hash": "4b3331723f039bd5a39b100c44f86015"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/core/TotalDisconnectHelper.kt": {
+    "mtime": 1789166035.818894,
+    "seen": 1790973958.5610163,
+    "ast_hash": "7c302ff06222642dd6992406a211bd38",
+    "semantic_hash": "7c302ff06222642dd6992406a211bd38"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/crypto/EcKeyPair.kt": {
+    "mtime": 1788561497.355809,
+    "seen": 1790973958.5610166,
+    "ast_hash": "d185f1bc6ddeb05c6d29889288e27eb3",
+    "semantic_hash": "d185f1bc6ddeb05c6d29889288e27eb3"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/crypto/StarryCrypto.kt": {
+    "mtime": 1788561497.3562675,
+    "seen": 1790973958.5610175,
+    "ast_hash": "fa5165df4f80d84a470fa3f507347426",
+    "semantic_hash": "fa5165df4f80d84a470fa3f507347426"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/data/BluetoothDeviceDao.kt": {
+    "mtime": 1789388116.1895883,
+    "seen": 1790973958.5610182,
+    "ast_hash": "0b3865782e6c988e5e7d2294623fb85d",
+    "semantic_hash": "0b3865782e6c988e5e7d2294623fb85d"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/data/BluetoothDeviceEntity.kt": {
+    "mtime": 1789388104.1494672,
+    "seen": 1790973958.5610187,
+    "ast_hash": "2c21f5383171518ccec44efd46fb7db1",
+    "semantic_hash": "2c21f5383171518ccec44efd46fb7db1"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/data/ChatDao.kt": {
+    "mtime": 1788561497.3562675,
+    "seen": 1790973958.561019,
+    "ast_hash": "5b1b26052206f895fa3eb5c0c42974b5",
+    "semantic_hash": "5b1b26052206f895fa3eb5c0c42974b5"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/data/ChatMessage.kt": {
+    "mtime": 1788561497.356309,
+    "seen": 1790973958.5610194,
+    "ast_hash": "b7853af40eb4febade7ac39d696a5c6f",
+    "semantic_hash": "b7853af40eb4febade7ac39d696a5c6f"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/data/ChatSession.kt": {
+    "mtime": 1788561497.356309,
+    "seen": 1790973958.56102,
+    "ast_hash": "db2d07371d01e76eca88be78d8c0c094",
+    "semantic_hash": "db2d07371d01e76eca88be78d8c0c094"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/data/CommonDeviceActions.kt": {
+    "mtime": 1789163351.5463872,
+    "seen": 1790973958.5610204,
+    "ast_hash": "0c56f6c7540cad55cd728824697e0791",
+    "semantic_hash": "0c56f6c7540cad55cd728824697e0791"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/data/UserProfile.kt": {
+    "mtime": 1788561497.356309,
+    "seen": 1790973958.5610206,
+    "ast_hash": "781985364214625b336b15358fcddb2c",
+    "semantic_hash": "781985364214625b336b15358fcddb2c"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/data/UserProfileAnalyzer.kt": {
+    "mtime": 1788561497.356309,
+    "seen": 1790973958.561021,
+    "ast_hash": "e85bb8ce2de167a7103ece90ad6ff1ae",
+    "semantic_hash": "e85bb8ce2de167a7103ece90ad6ff1ae"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/database/AppDatabase.kt": {
+    "mtime": 1789388124.1496685,
+    "seen": 1790973958.5610218,
+    "ast_hash": "98e2308312e68c357643c52e6078a7d9",
+    "semantic_hash": "98e2308312e68c357643c52e6078a7d9"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/database/Attachment.kt": {
+    "mtime": 1788561497.3564079,
+    "seen": 1790973958.5610223,
+    "ast_hash": "e2942a7ee28f64fb62136ab56d567f0a",
+    "semantic_hash": "e2942a7ee28f64fb62136ab56d567f0a"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/database/LocalDatabase.kt": {
+    "mtime": 1788561497.3564079,
+    "seen": 1790973958.5610225,
+    "ast_hash": "b9724351273ff92271cfd93c3182d05a",
+    "semantic_hash": "b9724351273ff92271cfd93c3182d05a"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/database/Note.kt": {
+    "mtime": 1788561497.3564079,
+    "seen": 1790973958.561023,
+    "ast_hash": "fce9575bb04a4e8063aa4e35fcc77fee",
+    "semantic_hash": "fce9575bb04a4e8063aa4e35fcc77fee"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/database/NoteRepository.kt": {
+    "mtime": 1788561497.3564079,
+    "seen": 1790973958.5610235,
+    "ast_hash": "130ddeb4a525c2cce15c909015ff4a42",
+    "semantic_hash": "130ddeb4a525c2cce15c909015ff4a42"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/database/Reminder.kt": {
+    "mtime": 1788561497.3564079,
+    "seen": 1790973958.5610237,
+    "ast_hash": "73af902f1d43261c651c8707c972e1a8",
+    "semantic_hash": "73af902f1d43261c651c8707c972e1a8"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/database/ReminderRepository.kt": {
+    "mtime": 1788561497.3564079,
+    "seen": 1790973958.5610242,
+    "ast_hash": "c0b995dccf8dda8b53cdb5045c387cf2",
+    "semantic_hash": "c0b995dccf8dda8b53cdb5045c387cf2"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/database/TodoItem.kt": {
+    "mtime": 1788561497.3564079,
+    "seen": 1790973958.5610244,
+    "ast_hash": "9177cea44b105ab68adbed1e19ef6039",
+    "semantic_hash": "9177cea44b105ab68adbed1e19ef6039"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/database/TodoRepository.kt": {
+    "mtime": 1788561497.3564079,
+    "seen": 1790973958.5610251,
+    "ast_hash": "0438ae159d72ba55c7f37e4ca84798af",
+    "semantic_hash": "0438ae159d72ba55c7f37e4ca84798af"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/database/VoiceRecording.kt": {
+    "mtime": 1788561497.3564079,
+    "seen": 1790973958.5610256,
+    "ast_hash": "2db35ff7ab5273d08ad21f70eab70146",
+    "semantic_hash": "2db35ff7ab5273d08ad21f70eab70146"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/database/VoiceRecordingRepository.kt": {
+    "mtime": 1788561497.3564079,
+    "seen": 1790973958.5610259,
+    "ast_hash": "cf3b16f1ff8d0548d8dc3d3880f35653",
+    "semantic_hash": "cf3b16f1ff8d0548d8dc3d3880f35653"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/health/HealthService.kt": {
+    "mtime": 1789261386.1888218,
+    "seen": 1790973958.5610263,
+    "ast_hash": "31605ff625964173ef8cef5fe38240b8",
+    "semantic_hash": "31605ff625964173ef8cef5fe38240b8"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/media/MediaPlaybackHelper.kt": {
+    "mtime": 1788993531.8681564,
+    "seen": 1790973958.5610268,
+    "ast_hash": "afa7c6ccc2c2d9f586128c7b411a032a",
+    "semantic_hash": "afa7c6ccc2c2d9f586128c7b411a032a"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/nav/FusedLocationSource.kt": {
+    "mtime": 1788561497.3564079,
+    "seen": 1790973958.5610273,
+    "ast_hash": "a1024e8e5db85cf60e5a9851e100dd42",
+    "semantic_hash": "a1024e8e5db85cf60e5a9851e100dd42"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/nav/Geo.kt": {
+    "mtime": 1788561497.356674,
+    "seen": 1790973958.5610275,
+    "ast_hash": "2031a4a142d6e75c651c7a87484907c6",
+    "semantic_hash": "2031a4a142d6e75c651c7a87484907c6"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/nav/IcMap.kt": {
+    "mtime": 1788561497.356674,
+    "seen": 1790973958.561028,
+    "ast_hash": "6582664e7c6ab66285207fc110907e70",
+    "semantic_hash": "6582664e7c6ab66285207fc110907e70"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/nav/LocationSource.kt": {
+    "mtime": 1788561497.356674,
+    "seen": 1790973958.5610287,
+    "ast_hash": "c2a744e249a0fab9f1950306efdf5fc1",
+    "semantic_hash": "c2a744e249a0fab9f1950306efdf5fc1"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/nav/NavSession.kt": {
+    "mtime": 1788561497.356674,
+    "seen": 1790973958.561029,
+    "ast_hash": "ccfb40334abe09eab46e6777139aeff1",
+    "semantic_hash": "ccfb40334abe09eab46e6777139aeff1"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/nav/Osrm.kt": {
+    "mtime": 1788561497.356674,
+    "seen": 1790973958.5610294,
+    "ast_hash": "a33f423c2f108b70347fcd833039af4b",
+    "semantic_hash": "a33f423c2f108b70347fcd833039af4b"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/nav/Route.kt": {
+    "mtime": 1788561497.356674,
+    "seen": 1790973958.56103,
+    "ast_hash": "7d05066e999c13142c2433ddf28233b7",
+    "semantic_hash": "7d05066e999c13142c2433ddf28233b7"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/nav/RouteCache.kt": {
+    "mtime": 1788561497.356674,
+    "seen": 1790973958.5610301,
+    "ast_hash": "55f7c53da159949a6a47b592e9a9ab9e",
+    "semantic_hash": "55f7c53da159949a6a47b592e9a9ab9e"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/nav/RouteTracker.kt": {
+    "mtime": 1788561497.356674,
+    "seen": 1790973958.5610306,
+    "ast_hash": "88200774ff6bb4e531f568345750eadc",
+    "semantic_hash": "88200774ff6bb4e531f568345750eadc"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/AbilityReply.kt": {
+    "mtime": 1788561497.356674,
+    "seen": 1790973958.561031,
+    "ast_hash": "700465c7915f5dea7ea5290fbe7c8725",
+    "semantic_hash": "700465c7915f5dea7ea5290fbe7c8725"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/InitBurst.kt": {
+    "mtime": 1789059719.373102,
+    "seen": 1790973958.5610313,
+    "ast_hash": "f29c1a54ae3a9f224a0cbdaa3900198e",
+    "semantic_hash": "f29c1a54ae3a9f224a0cbdaa3900198e"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/MsgType.kt": {
+    "mtime": 1788561497.3568149,
+    "seen": 1790973958.5610318,
+    "ast_hash": "7210ac5d0b1569c049c0c91f7f5d51bf",
+    "semantic_hash": "7210ac5d0b1569c049c0c91f7f5d51bf"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/Pb.kt": {
+    "mtime": 1788561497.3568149,
+    "seen": 1790973958.5610325,
+    "ast_hash": "a80218a95cad6b1d71a07ce3c848f7f7",
+    "semantic_hash": "a80218a95cad6b1d71a07ce3c848f7f7"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/PbValue.kt": {
+    "mtime": 1788561497.3568149,
+    "seen": 1790973958.5610328,
+    "ast_hash": "abf541fab6e9d9cfbf27d02142440559",
+    "semantic_hash": "abf541fab6e9d9cfbf27d02142440559"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/Relay.kt": {
+    "mtime": 1788561497.3568149,
+    "seen": 1790973958.5610332,
+    "ast_hash": "d02fff8beb273e0e7eec1d36b01e1624",
+    "semantic_hash": "d02fff8beb273e0e7eec1d36b01e1624"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/RelayMessage.kt": {
+    "mtime": 1788561497.3568149,
+    "seen": 1790973958.5610337,
+    "ast_hash": "d769f80b2f5b336e0e50861ef2f063f5",
+    "semantic_hash": "d769f80b2f5b336e0e50861ef2f063f5"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/RelaySequencer.kt": {
+    "mtime": 1788561497.3568149,
+    "seen": 1790973958.561034,
+    "ast_hash": "23e85d054eb4795b676dba92884a4a6f",
+    "semantic_hash": "23e85d054eb4795b676dba92884a4a6f"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/Session.kt": {
+    "mtime": 1788561497.3568149,
+    "seen": 1790973958.5610344,
+    "ast_hash": "56d28f11f1f1596d4817b97696ca192c",
+    "semantic_hash": "56d28f11f1f1596d4817b97696ca192c"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/TlvBox.kt": {
+    "mtime": 1788561497.3568149,
+    "seen": 1790973958.5610347,
+    "ast_hash": "e4108941f874685fb31ab8d174a62c41",
+    "semantic_hash": "e4108941f874685fb31ab8d174a62c41"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/TlvTags.kt": {
+    "mtime": 1788561497.3568149,
+    "seen": 1790973958.5610352,
+    "ast_hash": "bd1a2e67113a8d3edb923429052170b2",
+    "semantic_hash": "bd1a2e67113a8d3edb923429052170b2"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/link/DeviceId.kt": {
+    "mtime": 1788561497.3568149,
+    "seen": 1790973958.5610359,
+    "ast_hash": "68ee257a593ec4b3c51c029e58b27480",
+    "semantic_hash": "68ee257a593ec4b3c51c029e58b27480"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/link/DeviceInfo.kt": {
+    "mtime": 1788561497.3569775,
+    "seen": 1790973958.5610363,
+    "ast_hash": "e89dda77bc9ac978cc73b2375d301cc8",
+    "semantic_hash": "e89dda77bc9ac978cc73b2375d301cc8"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/link/LinkCommands.kt": {
+    "mtime": 1788561497.3569775,
+    "seen": 1790973958.5610368,
+    "ast_hash": "a88f212b6098c1250bc0af4cac413a28",
+    "semantic_hash": "a88f212b6098c1250bc0af4cac413a28"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/link/LinkMessage.kt": {
+    "mtime": 1788561497.3569775,
+    "seen": 1790973958.5610373,
+    "ast_hash": "4881137b77ca5893743c6c0a76a1388b",
+    "semantic_hash": "4881137b77ca5893743c6c0a76a1388b"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/protocol/link/LinkProtocol.kt": {
+    "mtime": 1788561497.3569775,
+    "seen": 1790973958.5610375,
+    "ast_hash": "5e5851211fa26579fed4eeba5cc26626",
+    "semantic_hash": "5e5851211fa26579fed4eeba5cc26626"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/recorder/AudioPlayerManager.kt": {
+    "mtime": 1788561497.3569775,
+    "seen": 1790973958.561038,
+    "ast_hash": "a830a73157652c1edc801f54acc398f8",
+    "semantic_hash": "a830a73157652c1edc801f54acc398f8"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/recorder/MeetingAudioRecorder.kt": {
+    "mtime": 1788561497.357127,
+    "seen": 1790973958.5610383,
+    "ast_hash": "ad7a73b58a2ab72cb2d5290e5efe295d",
+    "semantic_hash": "ad7a73b58a2ab72cb2d5290e5efe295d"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/reminder/BootReceiver.kt": {
+    "mtime": 1789073192.991652,
+    "seen": 1790973958.5610387,
+    "ast_hash": "85e47091c9641e010466f7b32ffa7566",
+    "semantic_hash": "85e47091c9641e010466f7b32ffa7566"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/reminder/ReminderActionReceiver.kt": {
+    "mtime": 1788561497.3571703,
+    "seen": 1790973958.5610394,
+    "ast_hash": "e6bbfa61403790857a3e914b8a0c9a65",
+    "semantic_hash": "e6bbfa61403790857a3e914b8a0c9a65"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/reminder/ReminderNotifier.kt": {
+    "mtime": 1788561497.3571703,
+    "seen": 1790973958.56104,
+    "ast_hash": "a3077267427008cb729d93298ba538c6",
+    "semantic_hash": "a3077267427008cb729d93298ba538c6"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/reminder/ReminderReceiver.kt": {
+    "mtime": 1788561497.3571703,
+    "seen": 1790973958.5610404,
+    "ast_hash": "1933cc067e19aff7a4d10d6d9a80a41e",
+    "semantic_hash": "1933cc067e19aff7a4d10d6d9a80a41e"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/reminder/ReminderScheduler.kt": {
+    "mtime": 1788561497.3571703,
+    "seen": 1790973958.5610409,
+    "ast_hash": "b1384c9e9ce5a801df2f0c4030603ec8",
+    "semantic_hash": "b1384c9e9ce5a801df2f0c4030603ec8"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/reminder/ReminderTimeParser.kt": {
+    "mtime": 1788561497.3571703,
+    "seen": 1790973958.561041,
+    "ast_hash": "692ac9ca146368cb4ba220acdb7cc287",
+    "semantic_hash": "692ac9ca146368cb4ba220acdb7cc287"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/service/AudioProfiles.kt": {
+    "mtime": 1789388205.1964989,
+    "seen": 1790973958.5610416,
+    "ast_hash": "414b027b5f529faaf411cc7b8500fb3c",
+    "semantic_hash": "414b027b5f529faaf411cc7b8500fb3c"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/service/AutoSendAccessibilityService.kt": {
+    "mtime": 1789136950.5542622,
+    "seen": 1790973958.561042,
+    "ast_hash": "73cd59ade2a5500b9f689493646ffbfc",
+    "semantic_hash": "73cd59ade2a5500b9f689493646ffbfc"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/service/BluetoothDeviceManager.kt": {
+    "mtime": 1789388299.7034948,
+    "seen": 1790973958.5610425,
+    "ast_hash": "c582ec8504a8a5ad1b9444280f730a58",
+    "semantic_hash": "c582ec8504a8a5ad1b9444280f730a58"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/service/Bonding.kt": {
+    "mtime": 1788561497.357312,
+    "seen": 1790973958.561043,
+    "ast_hash": "225bc930cdd595061cb9c80bf4c76eb6",
+    "semantic_hash": "225bc930cdd595061cb9c80bf4c76eb6"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/service/ChatEngineService.kt": {
+    "mtime": 1788561497.357312,
+    "seen": 1790973958.5610435,
+    "ast_hash": "be726eb8cc7fbc6cbcbdb565efbdfeff",
+    "semantic_hash": "be726eb8cc7fbc6cbcbdb565efbdfeff"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/service/ConnectionManager.kt": {
+    "mtime": 1789388182.0642595,
+    "seen": 1790973958.561044,
+    "ast_hash": "d9e2075d1f7166daeda6a7431607b4eb",
+    "semantic_hash": "d9e2075d1f7166daeda6a7431607b4eb"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/service/ConnectionState.kt": {
+    "mtime": 1788561497.357312,
+    "seen": 1790973958.5610445,
+    "ast_hash": "5791e43e8f593b32cc97d909cac28ab0",
+    "semantic_hash": "5791e43e8f593b32cc97d909cac28ab0"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/service/HeadphoneGestureManager.kt": {
+    "mtime": 1789164203.6107464,
+    "seen": 1790973958.5610447,
+    "ast_hash": "b456bb1dce7c798abe083da7c0b543c9",
+    "semantic_hash": "b456bb1dce7c798abe083da7c0b543c9"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/service/MirrorNotificationListener.kt": {
+    "mtime": 1789389204.217839,
+    "seen": 1790973958.5610452,
+    "ast_hash": "afe4c8f4bd80214f4c7426ba877e1774",
+    "semantic_hash": "afe4c8f4bd80214f4c7426ba877e1774"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/service/MyvuService.kt": {
+    "mtime": 1789166026.144753,
+    "seen": 1790973958.5610456,
+    "ast_hash": "0ce0fc3d7f8775edc67b769aa7247e86",
+    "semantic_hash": "0ce0fc3d7f8775edc67b769aa7247e86"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/service/NotificationFilter.kt": {
+    "mtime": 1788969430.375154,
+    "seen": 1790973958.5610461,
+    "ast_hash": "90ca02433e2e0b37ec012ec229327fa3",
+    "semantic_hash": "90ca02433e2e0b37ec012ec229327fa3"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/service/RelaySupervisor.kt": {
+    "mtime": 1789269208.2477336,
+    "seen": 1790973958.5610466,
+    "ast_hash": "09ab1c4a2c3e13466dcde034566840c7",
+    "semantic_hash": "09ab1c4a2c3e13466dcde034566840c7"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/service/ServiceWatchdogReceiver.kt": {
+    "mtime": 1789061111.2870116,
+    "seen": 1790973958.561047,
+    "ast_hash": "99a0961beca38ca206d1900f1d909a54",
+    "semantic_hash": "99a0961beca38ca206d1900f1d909a54"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/Skill.kt": {
+    "mtime": 1788561497.357312,
+    "seen": 1790973958.5610476,
+    "ast_hash": "7fabf484f0b4725fbdbc8da3ef8cd7cb",
+    "semantic_hash": "7fabf484f0b4725fbdbc8da3ef8cd7cb"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/SkillExecutor.kt": {
+    "mtime": 1788987449.7094738,
+    "seen": 1790973958.561048,
+    "ast_hash": "d4f271864c7a82584d9aca3bf5b4a807",
+    "semantic_hash": "d4f271864c7a82584d9aca3bf5b4a807"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/SkillLoader.kt": {
+    "mtime": 1788561497.357687,
+    "seen": 1790973958.5610483,
+    "ast_hash": "669b2aa12a6f36ba7a7b91571ed107ae",
+    "semantic_hash": "669b2aa12a6f36ba7a7b91571ed107ae"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/SkillParser.kt": {
+    "mtime": 1788970995.3283246,
+    "seen": 1790973958.5610487,
+    "ast_hash": "f13bb080ce8421f623429fb71ab8554c",
+    "semantic_hash": "f13bb080ce8421f623429fb71ab8554c"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/SkillRegistry.kt": {
+    "mtime": 1788993496.1955168,
+    "seen": 1790973958.5610495,
+    "ast_hash": "0ff1232df51e15a5b8ee4487f2be95a8",
+    "semantic_hash": "0ff1232df51e15a5b8ee4487f2be95a8"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/SkillToolConverter.kt": {
+    "mtime": 1788960065.5288844,
+    "seen": 1790973958.56105,
+    "ast_hash": "50233466478ec0e31c34b29c35c8edf2",
+    "semantic_hash": "50233466478ec0e31c34b29c35c8edf2"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/AiVoiceRecorderHandler.kt": {
+    "mtime": 1788561497.357687,
+    "seen": 1790973958.5610502,
+    "ast_hash": "369b0e33f6e608fca6858b1d440b74a3",
+    "semantic_hash": "369b0e33f6e608fca6858b1d440b74a3"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/AppMediaControlHandler.kt": {
+    "mtime": 1788993474.2111223,
+    "seen": 1790973958.5610507,
+    "ast_hash": "a4343cb6c2a8e0da449c894b35028ebf",
+    "semantic_hash": "a4343cb6c2a8e0da449c894b35028ebf"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/CalendarEventsHandler.kt": {
+    "mtime": 1788970357.8578954,
+    "seen": 1790973958.5610511,
+    "ast_hash": "1b63c317b7b1f42fd146916f357ef3db",
+    "semantic_hash": "1b63c317b7b1f42fd146916f357ef3db"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/CallContactHandler.kt": {
+    "mtime": 1788970249.598195,
+    "seen": 1790973958.5610516,
+    "ast_hash": "fdff683c74f68845a7cea6b6ea9c5e56",
+    "semantic_hash": "fdff683c74f68845a7cea6b6ea9c5e56"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/CodeCalculatorMathHandler.kt": {
+    "mtime": 1788987435.4522567,
+    "seen": 1790973958.5610518,
+    "ast_hash": "c8eb86eb1ac6c5f62e131cb9eb23e884",
+    "semantic_hash": "c8eb86eb1ac6c5f62e131cb9eb23e884"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/CreateNoteHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610523,
+    "ast_hash": "53cbec172d2c993c447a8b25895a3b1c",
+    "semantic_hash": "53cbec172d2c993c447a8b25895a3b1c"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/CreateReminderHandler.kt": {
+    "mtime": 1788970389.3743155,
+    "seen": 1790973958.561053,
+    "ast_hash": "e05ced0cf5d39149a6b9c92e4fc87426",
+    "semantic_hash": "e05ced0cf5d39149a6b9c92e4fc87426"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/CurrencyConvertHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610533,
+    "ast_hash": "758963dc1461a2622e9e7782122fb44d",
+    "semantic_hash": "758963dc1461a2622e9e7782122fb44d"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/CurrencyRateHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610538,
+    "ast_hash": "881c9113c43f10586c5610c6e2e134c9",
+    "semantic_hash": "881c9113c43f10586c5610c6e2e134c9"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/DuckDuckGoSearchHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610542,
+    "ast_hash": "adf770e2e751dc7d47e3bf33541dbd4f",
+    "semantic_hash": "adf770e2e751dc7d47e3bf33541dbd4f"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/GoogleSearchHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610547,
+    "ast_hash": "ca8a1daa3afb76dfb658fc073a24e25f",
+    "semantic_hash": "ca8a1daa3afb76dfb658fc073a24e25f"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/HealthSummaryHandler.kt": {
+    "mtime": 1788985381.0718071,
+    "seen": 1790973958.5610557,
+    "ast_hash": "7d15eb63218c64f6995f8dfe7dfa1343",
+    "semantic_hash": "7d15eb63218c64f6995f8dfe7dfa1343"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/HudNavigationHandler.kt": {
+    "mtime": 1788970475.6077418,
+    "seen": 1790973958.561056,
+    "ast_hash": "afccc60f1f7d775a55629d9ceaae0831",
+    "semantic_hash": "afccc60f1f7d775a55629d9ceaae0831"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/NewsSearchHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610566,
+    "ast_hash": "156e7b77b4415fe0994e049f525df643",
+    "semantic_hash": "156e7b77b4415fe0994e049f525df643"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/OpenAppHandler.kt": {
+    "mtime": 1788970301.4381351,
+    "seen": 1790973958.561057,
+    "ast_hash": "71fa3ab987ae5a69fc7a4780bc485747",
+    "semantic_hash": "71fa3ab987ae5a69fc7a4780bc485747"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/QuickAlarmTimerHandler.kt": {
+    "mtime": 1788970312.7540042,
+    "seen": 1790973958.5610576,
+    "ast_hash": "dc028983d95a0944d47250090725c76a",
+    "semantic_hash": "dc028983d95a0944d47250090725c76a"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/RagHistorySearchHandler.kt": {
+    "mtime": 1788970719.5745606,
+    "seen": 1790973958.5610578,
+    "ast_hash": "998e2d330366f371d2f2406783536f5f",
+    "semantic_hash": "998e2d330366f371d2f2406783536f5f"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/SendEmailHandler.kt": {
+    "mtime": 1788970273.535297,
+    "seen": 1790973958.5610583,
+    "ast_hash": "34e5745902a0bde7c9ac95ae4d8005ce",
+    "semantic_hash": "34e5745902a0bde7c9ac95ae4d8005ce"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/SendSmsHandler.kt": {
+    "mtime": 1788979119.405866,
+    "seen": 1790973958.5610585,
+    "ast_hash": "3be6de6e7fed70275c72e7d807aeb331",
+    "semantic_hash": "3be6de6e7fed70275c72e7d807aeb331"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/SendTelegramHandler.kt": {
+    "mtime": 1788970266.0571926,
+    "seen": 1790973958.561059,
+    "ast_hash": "8fe9f1ffb59a3bc7edabf0ba016640df",
+    "semantic_hash": "8fe9f1ffb59a3bc7edabf0ba016640df"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/SendWhatsappHandler.kt": {
+    "mtime": 1788990015.8053281,
+    "seen": 1790973958.5610595,
+    "ast_hash": "92a4b2ac06ec9b86b763f9dff103708e",
+    "semantic_hash": "92a4b2ac06ec9b86b763f9dff103708e"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/SmartAgendaPlannerHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610602,
+    "ast_hash": "fe832d232605b21659ce78f1879bf3f4",
+    "semantic_hash": "fe832d232605b21659ce78f1879bf3f4"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/SmartOcrScannerHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610604,
+    "ast_hash": "f28bb2ec27a34b737f5ef8ed156400d7",
+    "semantic_hash": "f28bb2ec27a34b737f5ef8ed156400d7"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/SmartTranslateHudHandler.kt": {
+    "mtime": 1788970425.397955,
+    "seen": 1790973958.561061,
+    "ast_hash": "1aaff96365033493fd6de26454ac614b",
+    "semantic_hash": "1aaff96365033493fd6de26454ac614b"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/UnreadEmailsSummaryHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610614,
+    "ast_hash": "58f3712fe1ccdcfdf68d0c83180d764a",
+    "semantic_hash": "58f3712fe1ccdcfdf68d0c83180d764a"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/UnreadNotificationsHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610619,
+    "ast_hash": "789bf229a63593873ca0b92953bbb781",
+    "semantic_hash": "789bf229a63593873ca0b92953bbb781"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/UnreadTelegramSummaryHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610623,
+    "ast_hash": "71f7e35f9b9b88cde96e7c4d586a35be",
+    "semantic_hash": "71f7e35f9b9b88cde96e7c4d586a35be"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/UnreadWhatsappSummaryHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610626,
+    "ast_hash": "963bc4617176aea85e41894dfc4d1515",
+    "semantic_hash": "963bc4617176aea85e41894dfc4d1515"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/VoipCallHandler.kt": {
+    "mtime": 1788985363.0314996,
+    "seen": 1790973958.561063,
+    "ast_hash": "df385a4553f6caf3a2fdc7a8c74aa8ee",
+    "semantic_hash": "df385a4553f6caf3a2fdc7a8c74aa8ee"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/WeatherForecastHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610635,
+    "ast_hash": "8217508a14d32c92c225d62217135380",
+    "semantic_hash": "8217508a14d32c92c225d62217135380"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/WebPageSummarizerHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.561064,
+    "ast_hash": "b72cb9f95b3aeed56252847dfc2902b2",
+    "semantic_hash": "b72cb9f95b3aeed56252847dfc2902b2"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/WikipediaSearchHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610645,
+    "ast_hash": "b5062370e0160f8455328c354e56b685",
+    "semantic_hash": "b5062370e0160f8455328c354e56b685"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/skills/handlers/XTwitterSearchHandler.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610647,
+    "ast_hash": "931a9e5ae4d01a3a22fbe7cca9c28049",
+    "semantic_hash": "931a9e5ae4d01a3a22fbe7cca9c28049"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/Transport.kt": {
+    "mtime": 1788561497.357796,
+    "seen": 1790973958.5610652,
+    "ast_hash": "aa7f82622d5c80070c7a5c9ff63a0a09",
+    "semantic_hash": "aa7f82622d5c80070c7a5c9ff63a0a09"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/TransportListener.kt": {
+    "mtime": 1788561497.3582208,
+    "seen": 1790973958.5610657,
+    "ast_hash": "36226cd580ef74686f4f5a491e108530",
+    "semantic_hash": "36226cd580ef74686f4f5a491e108530"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/ble/BleHeartbeat.kt": {
+    "mtime": 1789061289.1607819,
+    "seen": 1790973958.5610662,
+    "ast_hash": "037817c55a3784f88ce4f4ba5e7f1b87",
+    "semantic_hash": "037817c55a3784f88ce4f4ba5e7f1b87"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/ble/BleMessageChannel.kt": {
+    "mtime": 1788561497.3582687,
+    "seen": 1790973958.5610664,
+    "ast_hash": "1635d3c6ed2cf9361a799c269bee0fe7",
+    "semantic_hash": "1635d3c6ed2cf9361a799c269bee0fe7"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/ble/BlePackets.kt": {
+    "mtime": 1788561497.3582687,
+    "seen": 1790973958.561067,
+    "ast_hash": "a22e59027639a736a420e2fe79e0815b",
+    "semantic_hash": "a22e59027639a736a420e2fe79e0815b"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/ble/BlePairing.kt": {
+    "mtime": 1788561497.3582687,
+    "seen": 1790973958.5610676,
+    "ast_hash": "22e924b234d771ec70fbfef95bf1962c",
+    "semantic_hash": "22e924b234d771ec70fbfef95bf1962c"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/ble/BleParsedPacket.kt": {
+    "mtime": 1788561497.3582687,
+    "seen": 1790973958.561068,
+    "ast_hash": "a23acb8a78ac0841a23c349d54a91b69",
+    "semantic_hash": "a23acb8a78ac0841a23c349d54a91b69"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/ble/BleReassembler.kt": {
+    "mtime": 1788561497.3582687,
+    "seen": 1790973958.5610683,
+    "ast_hash": "48125c375c277d84319dd98b03c2fefb",
+    "semantic_hash": "48125c375c277d84319dd98b03c2fefb"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/ble/BleTransport.kt": {
+    "mtime": 1789061085.0976038,
+    "seen": 1790973958.5610688,
+    "ast_hash": "2c24ebc75329bac6ff4c286be65f87cc",
+    "semantic_hash": "2c24ebc75329bac6ff4c286be65f87cc"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/ble/GattOp.kt": {
+    "mtime": 1788561497.3582687,
+    "seen": 1790973958.5610693,
+    "ast_hash": "11c1c3d5ce229dad4abecd8e8da58c8f",
+    "semantic_hash": "11c1c3d5ce229dad4abecd8e8da58c8f"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/ble/GattQueue.kt": {
+    "mtime": 1788561497.3582687,
+    "seen": 1790973958.5610695,
+    "ast_hash": "6cba5fee3be4a7859dd025ed326275c2",
+    "semantic_hash": "6cba5fee3be4a7859dd025ed326275c2"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/ble/GlassesScanner.kt": {
+    "mtime": 1788961606.1631706,
+    "seen": 1790973958.56107,
+    "ast_hash": "939dbc779447f7911482a173024e8f5e",
+    "semantic_hash": "939dbc779447f7911482a173024e8f5e"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/ble/Uuids.kt": {
+    "mtime": 1788561497.3582687,
+    "seen": 1790973958.5610707,
+    "ast_hash": "65788278850115a4e2d99c89826b4c49",
+    "semantic_hash": "65788278850115a4e2d99c89826b4c49"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/bt/BtTransport.kt": {
+    "mtime": 1788561497.3582687,
+    "seen": 1790973958.5610712,
+    "ast_hash": "5521fbb31f7867e52e9cad0b61cf49a9",
+    "semantic_hash": "5521fbb31f7867e52e9cad0b61cf49a9"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/bt/FrameReassembler.kt": {
+    "mtime": 1788561497.3585145,
+    "seen": 1790973958.5610716,
+    "ast_hash": "c2668514f7e2739f910a140478d93887",
+    "semantic_hash": "c2668514f7e2739f910a140478d93887"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/transport/bt/RfcommFraming.kt": {
+    "mtime": 1788561497.3585145,
+    "seen": 1790973958.5610719,
+    "ast_hash": "8ecd0f79b6feaf2a0db9c641df1fa0f6",
+    "semantic_hash": "8ecd0f79b6feaf2a0db9c641df1fa0f6"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/ActivityLogActivity.kt": {
+    "mtime": 1789266922.289453,
+    "seen": 1790973958.5610723,
+    "ast_hash": "c756cc8470e8f3b39e806c6d92d0de86",
+    "semantic_hash": "c756cc8470e8f3b39e806c6d92d0de86"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/ConnectActivity.kt": {
+    "mtime": 1789389214.4839609,
+    "seen": 1790973958.5610728,
+    "ast_hash": "7d4c938a1313d3fe8f4f78e517a55100",
+    "semantic_hash": "7d4c938a1313d3fe8f4f78e517a55100"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/DeviceManagementBottomSheet.kt": {
+    "mtime": 1789388357.186113,
+    "seen": 1790973958.561073,
+    "ast_hash": "56ce8160ad36b3617c8e16bcdba05f67",
+    "semantic_hash": "56ce8160ad36b3617c8e16bcdba05f67"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/GlassesSettingsActivity.kt": {
+    "mtime": 1789389252.3684106,
+    "seen": 1790973958.5610738,
+    "ast_hash": "09fb156dae9ba3efd8822fd0de601549",
+    "semantic_hash": "09fb156dae9ba3efd8822fd0de601549"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/GoogleOAuthActivity.kt": {
+    "mtime": 1788561497.3586686,
+    "seen": 1790973958.561074,
+    "ast_hash": "8e0358bdb6971fc0accd4123c14d07f4",
+    "semantic_hash": "8e0358bdb6971fc0accd4123c14d07f4"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/HeadphoneSettingsActivity.kt": {
+    "mtime": 1789389285.2329054,
+    "seen": 1790973958.5610745,
+    "ast_hash": "d2e734701e522a2230f01b809d1ed2ff",
+    "semantic_hash": "d2e734701e522a2230f01b809d1ed2ff"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/LiveRecordingBottomSheet.kt": {
+    "mtime": 1788561497.3586686,
+    "seen": 1790973958.561075,
+    "ast_hash": "7dacc4c87e93a983e2024b03c03cf738",
+    "semantic_hash": "7dacc4c87e93a983e2024b03c03cf738"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/NoteDetailActivity.kt": {
+    "mtime": 1788971571.3605626,
+    "seen": 1790973958.5610752,
+    "ast_hash": "8f121f17a508162909fc8fb8abe21d65",
+    "semantic_hash": "8f121f17a508162909fc8fb8abe21d65"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/NotesActivity.kt": {
+    "mtime": 1789267007.017488,
+    "seen": 1790973958.5610757,
+    "ast_hash": "af634a7281c4415167c2e464a5522822",
+    "semantic_hash": "af634a7281c4415167c2e464a5522822"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/NotificationAppsActivity.kt": {
+    "mtime": 1788561497.3586686,
+    "seen": 1790973958.5610762,
+    "ast_hash": "3018db97836a694523f29b7da91e7006",
+    "semantic_hash": "3018db97836a694523f29b7da91e7006"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/RecordingDetailActivity.kt": {
+    "mtime": 1788971595.2007992,
+    "seen": 1790973958.5610766,
+    "ast_hash": "1dcc6144da5c455c53b6c72a4fa68688",
+    "semantic_hash": "1dcc6144da5c455c53b6c72a4fa68688"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/SendTrampolineActivity.kt": {
+    "mtime": 1788984082.8051152,
+    "seen": 1790973958.5610774,
+    "ast_hash": "73325d5cfdb8821314cf755ac0817357",
+    "semantic_hash": "73325d5cfdb8821314cf755ac0817357"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/SettingsActivity.kt": {
+    "mtime": 1789264456.6303422,
+    "seen": 1790973958.5610776,
+    "ast_hash": "9545f4d2d444b92318933ae7cb4fb1c5",
+    "semantic_hash": "9545f4d2d444b92318933ae7cb4fb1c5"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/TrackpadActivity.kt": {
+    "mtime": 1788561497.3586686,
+    "seen": 1790973958.561078,
+    "ast_hash": "754b29338f291a8fbb66bdf7ec6d9063",
+    "semantic_hash": "754b29338f291a8fbb66bdf7ec6d9063"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/TrackpadView.kt": {
+    "mtime": 1788561497.3586686,
+    "seen": 1790973958.5610785,
+    "ast_hash": "17339de56f4f89d10f7090d9e766c201",
+    "semantic_hash": "17339de56f4f89d10f7090d9e766c201"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/VoiceRecorderActivity.kt": {
+    "mtime": 1789154744.8732924,
+    "seen": 1790973958.5610788,
+    "ast_hash": "45152b23c882b512d9bce7481f6b2c96",
+    "semantic_hash": "45152b23c882b512d9bce7481f6b2c96"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/VoiceRecordingAdapter.kt": {
+    "mtime": 1788561497.3586686,
+    "seen": 1790973958.5610793,
+    "ast_hash": "8ce7ac1797f4309ceec29a73d14e8bb4",
+    "semantic_hash": "8ce7ac1797f4309ceec29a73d14e8bb4"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/WaveformVisualizerView.kt": {
+    "mtime": 1788561497.3586686,
+    "seen": 1790973958.5610797,
+    "ast_hash": "3cfbf006e33175b4697a27dc6ba208dd",
+    "semantic_hash": "3cfbf006e33175b4697a27dc6ba208dd"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/chat/ChatActivity.kt": {
+    "mtime": 1789264484.4070709,
+    "seen": 1790973958.56108,
+    "ast_hash": "0d44038bb5c3681426af7600cadad03f",
+    "semantic_hash": "0d44038bb5c3681426af7600cadad03f"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/chat/ChatSidebarBottomSheet.kt": {
+    "mtime": 1789157846.9390156,
+    "seen": 1790973958.5610807,
+    "ast_hash": "8d1954d09b86958d887c041aa70ddece",
+    "semantic_hash": "8d1954d09b86958d887c041aa70ddece"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/common/AiChatController.kt": {
+    "mtime": 1788561497.3596346,
+    "seen": 1790973958.5610812,
+    "ast_hash": "bcf9576aa80e08f865b8fc8b93d18cbb",
+    "semantic_hash": "bcf9576aa80e08f865b8fc8b93d18cbb"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/common/AttachmentUiController.kt": {
+    "mtime": 1788561497.3596907,
+    "seen": 1790973958.5610814,
+    "ast_hash": "a26c307f5b7acf38eece0f9ced109eba",
+    "semantic_hash": "a26c307f5b7acf38eece0f9ced109eba"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/common/MindMapController.kt": {
+    "mtime": 1788561497.3596907,
+    "seen": 1790973958.561082,
+    "ast_hash": "f0a74379fbff2cab9ba21b05128f6fbe",
+    "semantic_hash": "f0a74379fbff2cab9ba21b05128f6fbe"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/ui/common/TaskChecklistController.kt": {
+    "mtime": 1788561497.3596907,
+    "seen": 1790973958.5610824,
+    "ast_hash": "21126fd24ee99dfa322817baa0d09f79",
+    "semantic_hash": "21126fd24ee99dfa322817baa0d09f79"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/weather/OpenMeteo.kt": {
+    "mtime": 1788974347.5220876,
+    "seen": 1790973958.5610828,
+    "ast_hash": "efe22a232a66ae6e90bd92114bb3a7f1",
+    "semantic_hash": "efe22a232a66ae6e90bd92114bb3a7f1"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/weather/WeatherCodes.kt": {
+    "mtime": 1788561497.3598013,
+    "seen": 1790973958.561083,
+    "ast_hash": "22fa52a62ea86b74f7d24150eea0d01a",
+    "semantic_hash": "22fa52a62ea86b74f7d24150eea0d01a"
+  },
+  "android-kotlin/app/src/main/java/com/myvu/client/weather/WeatherSync.kt": {
+    "mtime": 1789164033.99036,
+    "seen": 1790973958.5610836,
+    "ast_hash": "c37ae8e7b650c1b22e1bdd595d740c1f",
+    "semantic_hash": "c37ae8e7b650c1b22e1bdd595d740c1f"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/TrackpadTest.kt": {
+    "mtime": 1788561497.3627758,
+    "seen": 1790973958.5610843,
+    "ast_hash": "311d7cfd260ab8bc58a38394f7eb7c67",
+    "semantic_hash": "311d7cfd260ab8bc58a38394f7eb7c67"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/AgenticModuleIntegrationTest.kt": {
+    "mtime": 1788977126.323009,
+    "seen": 1790973958.5610845,
+    "ast_hash": "d6150f3700cfed53c80abc71b712e0bb",
+    "semantic_hash": "d6150f3700cfed53c80abc71b712e0bb"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/AiConversationSttTest.kt": {
+    "mtime": 1788561497.3628445,
+    "seen": 1790973958.561085,
+    "ast_hash": "3f3f4c6e3881d8de4d62e30cfe22b78e",
+    "semantic_hash": "3f3f4c6e3881d8de4d62e30cfe22b78e"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/AiResponseDeliveryTest.kt": {
+    "mtime": 1788987555.2460895,
+    "seen": 1790973958.5610855,
+    "ast_hash": "202fb819de2262e29055d31bce985642",
+    "semantic_hash": "202fb819de2262e29055d31bce985642"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/AiResponseTest.kt": {
+    "mtime": 1788561497.3628445,
+    "seen": 1790973958.5610857,
+    "ast_hash": "3aaac9033f2bd0fe1737519ebc25d09e",
+    "semantic_hash": "3aaac9033f2bd0fe1737519ebc25d09e"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/AndroidSpeechLanguagePolicyTest.kt": {
+    "mtime": 1788561497.3628445,
+    "seen": 1790973958.5610862,
+    "ast_hash": "efe0c02f0154b47308e403344502597d",
+    "semantic_hash": "efe0c02f0154b47308e403344502597d"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/AudioOptimizerTest.kt": {
+    "mtime": 1788561497.3628445,
+    "seen": 1790973958.5610864,
+    "ast_hash": "00f3c28e70127e7a4fe3ba5e8bef9a27",
+    "semantic_hash": "00f3c28e70127e7a4fe3ba5e8bef9a27"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/DailyAssistantAutomationTest.kt": {
+    "mtime": 1789063404.821875,
+    "seen": 1790973958.561087,
+    "ast_hash": "b39a92700d3434a3070bda70934e89ef",
+    "semantic_hash": "b39a92700d3434a3070bda70934e89ef"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/ExternalInfoServiceTest.kt": {
+    "mtime": 1788981403.3507152,
+    "seen": 1790973958.5610874,
+    "ast_hash": "b40f269ff7b216542e7c0c10309994e2",
+    "semantic_hash": "b40f269ff7b216542e7c0c10309994e2"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/GeminiActionValidatorTest.kt": {
+    "mtime": 1788561497.3628445,
+    "seen": 1790973958.561088,
+    "ast_hash": "d085eef8f3b95870e4d567059041800f",
+    "semantic_hash": "d085eef8f3b95870e4d567059041800f"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/MultimodalAiClientTest.kt": {
+    "mtime": 1788561497.3628445,
+    "seen": 1790973958.5610886,
+    "ast_hash": "ac6e85612e0bd7e027199fe2f9d3e9a2",
+    "semantic_hash": "ac6e85612e0bd7e027199fe2f9d3e9a2"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/StandaloneAiAndServiceToggleTest.kt": {
+    "mtime": 1789262007.768852,
+    "seen": 1790973958.561089,
+    "ast_hash": "d51c070279ab05a8c7a32144d0903163",
+    "semantic_hash": "d51c070279ab05a8c7a32144d0903163"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/SystemPromptTest.kt": {
+    "mtime": 1788561497.3628445,
+    "seen": 1790973958.5610893,
+    "ast_hash": "7cb7452d36ca81f06ed0aad10548b094",
+    "semantic_hash": "7cb7452d36ca81f06ed0aad10548b094"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/ToolCallingIntegrationTest.kt": {
+    "mtime": 1788971011.8041265,
+    "seen": 1790973958.5610898,
+    "ast_hash": "21b0009638d6a378c8ab7bd65f41dec9",
+    "semantic_hash": "21b0009638d6a378c8ab7bd65f41dec9"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/VadSensitivityTest.kt": {
+    "mtime": 1789265463.8521852,
+    "seen": 1790973958.5610902,
+    "ast_hash": "607b8584f6cdf15b6bd2bb9e7ef6ea3d",
+    "semantic_hash": "607b8584f6cdf15b6bd2bb9e7ef6ea3d"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/VoiceActionRouterTest.kt": {
+    "mtime": 1788993509.3257523,
+    "seen": 1790973958.5610907,
+    "ast_hash": "bd005bed1fccfa3938377dd9a4f1fe5e",
+    "semantic_hash": "bd005bed1fccfa3938377dd9a4f1fe5e"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/WavAudioEncoderTest.kt": {
+    "mtime": 1788561497.3628445,
+    "seen": 1790973958.5610912,
+    "ast_hash": "a014f173dd13a5530cff1bda6fdbbcca",
+    "semantic_hash": "a014f173dd13a5530cff1bda6fdbbcca"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ai/WhisperLocalClientTest.kt": {
+    "mtime": 1788561497.3628445,
+    "seen": 1790973958.5610917,
+    "ast_hash": "91670234fe1c45c128b2cff325b672ef",
+    "semantic_hash": "91670234fe1c45c128b2cff325b672ef"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/app/AppLayerTest.kt": {
+    "mtime": 1788561497.3628445,
+    "seen": 1790973958.5610921,
+    "ast_hash": "93b6d25f0e8e03d06c131c38d3cf2888",
+    "semantic_hash": "93b6d25f0e8e03d06c131c38d3cf2888"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/app/CrashReporterTest.kt": {
+    "mtime": 1788561497.363136,
+    "seen": 1790973958.5610924,
+    "ast_hash": "b4437e2f3dd81333bd53ace691cdaa31",
+    "semantic_hash": "b4437e2f3dd81333bd53ace691cdaa31"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/app/InboundGestureTest.kt": {
+    "mtime": 1789268226.8106897,
+    "seen": 1790973958.5610929,
+    "ast_hash": "395c6870bbd15355323928d4e5207e3e",
+    "semantic_hash": "395c6870bbd15355323928d4e5207e3e"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/app/InboundRouterTest.kt": {
+    "mtime": 1789161780.2760687,
+    "seen": 1790973958.5610933,
+    "ast_hash": "d6d6bdeed2ed5a8a03a1a9fe502301b2",
+    "semantic_hash": "d6d6bdeed2ed5a8a03a1a9fe502301b2"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/app/PhysicalActionButtonConflictTest.kt": {
+    "mtime": 1789268187.4661503,
+    "seen": 1790973958.5610938,
+    "ast_hash": "dcd79b04aaa1c638706bbedc3343ca62",
+    "semantic_hash": "dcd79b04aaa1c638706bbedc3343ca62"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/app/TouchGestureManagerTest.kt": {
+    "mtime": 1789263221.8512907,
+    "seen": 1790973958.561094,
+    "ast_hash": "2b72acc6e73262caa1566f35984d04b1",
+    "semantic_hash": "2b72acc6e73262caa1566f35984d04b1"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/app/feature/AiProtocolTest.kt": {
+    "mtime": 1789051455.9020133,
+    "seen": 1790973958.5610948,
+    "ast_hash": "e07811e540161cb588ed1fa6d3f52252",
+    "semantic_hash": "e07811e540161cb588ed1fa6d3f52252"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/core/BufferPoolTest.kt": {
+    "mtime": 1788561497.363136,
+    "seen": 1790973958.5610952,
+    "ast_hash": "43d5b04f4443fe272e7d059ecbd7df72",
+    "semantic_hash": "43d5b04f4443fe272e7d059ecbd7df72"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/core/ContactHelperTest.kt": {
+    "mtime": 1789149491.5752652,
+    "seen": 1790973958.5610955,
+    "ast_hash": "e0c336614cb98dbad1ce8c1330060bf1",
+    "semantic_hash": "e0c336614cb98dbad1ce8c1330060bf1"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/core/HexTest.kt": {
+    "mtime": 1788561497.363237,
+    "seen": 1790973958.561096,
+    "ast_hash": "425c31f8bf1a8c3f5ed90d13d3149f69",
+    "semantic_hash": "425c31f8bf1a8c3f5ed90d13d3149f69"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/core/HttpCacheTest.kt": {
+    "mtime": 1788561497.363237,
+    "seen": 1790973958.5610964,
+    "ast_hash": "2a416db548d8542e1b71823c6f4abd92",
+    "semantic_hash": "2a416db548d8542e1b71823c6f4abd92"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/core/LogBusTest.kt": {
+    "mtime": 1789266352.6966822,
+    "seen": 1790973958.561097,
+    "ast_hash": "edbbe3578c17f1d6302f5f04c93e8cf4",
+    "semantic_hash": "edbbe3578c17f1d6302f5f04c93e8cf4"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/core/MarkdownUtilsTest.kt": {
+    "mtime": 1788987525.805634,
+    "seen": 1790973958.5610974,
+    "ast_hash": "d909ef93c44d13f7d5065e04ab347d57",
+    "semantic_hash": "d909ef93c44d13f7d5065e04ab347d57"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/core/ResourceSafetyTest.kt": {
+    "mtime": 1788561497.363237,
+    "seen": 1790973958.5610976,
+    "ast_hash": "6c0e3ac142cbd9ad7d84ab4918aa4fa6",
+    "semantic_hash": "6c0e3ac142cbd9ad7d84ab4918aa4fa6"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/core/TotalDisconnectHelperTest.kt": {
+    "mtime": 1789261317.9160578,
+    "seen": 1790973958.5610983,
+    "ast_hash": "a1981d37ec79d85a87a902dd10cb95bd",
+    "semantic_hash": "a1981d37ec79d85a87a902dd10cb95bd"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/health/HealthServiceTest.kt": {
+    "mtime": 1788987575.3154466,
+    "seen": 1790973958.5610988,
+    "ast_hash": "85799526093f5690893f2f41e7745c5a",
+    "semantic_hash": "85799526093f5690893f2f41e7745c5a"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/protocol/InitBurstTest.kt": {
+    "mtime": 1789061163.4428241,
+    "seen": 1790973958.5610993,
+    "ast_hash": "40475a0b1d1308168de10e15c89a9258",
+    "semantic_hash": "40475a0b1d1308168de10e15c89a9258"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/protocol/LinkProtocolTest.kt": {
+    "mtime": 1788561497.363237,
+    "seen": 1790973958.5610995,
+    "ast_hash": "27ca55818cbcd61e03066d9cbc475490",
+    "semantic_hash": "27ca55818cbcd61e03066d9cbc475490"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/protocol/PbTest.kt": {
+    "mtime": 1788561497.3633132,
+    "seen": 1790973958.5611,
+    "ast_hash": "39f0bac55ecc37d83c677c74ad54a72a",
+    "semantic_hash": "39f0bac55ecc37d83c677c74ad54a72a"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/protocol/TlvBoxTest.kt": {
+    "mtime": 1788561497.3633132,
+    "seen": 1790973958.5611005,
+    "ast_hash": "261b01727db3d104821c4d8eb4941186",
+    "semantic_hash": "261b01727db3d104821c4d8eb4941186"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/service/AutoSendAccessibilityServiceTest.kt": {
+    "mtime": 1789073160.8181822,
+    "seen": 1790973958.561101,
+    "ast_hash": "37a2f3826160de5836fbd9c8eeed410c",
+    "semantic_hash": "37a2f3826160de5836fbd9c8eeed410c"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/service/BluetoothDeviceManagerTest.kt": {
+    "mtime": 1789388461.6062567,
+    "seen": 1790973958.5611012,
+    "ast_hash": "946efe95d9c644fb01ef3d12b1e1c88c",
+    "semantic_hash": "946efe95d9c644fb01ef3d12b1e1c88c"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/service/ConnectionManagerTeardownTest.kt": {
+    "mtime": 1788561497.3633132,
+    "seen": 1790973958.561102,
+    "ast_hash": "d353c388c6afb80cbfafa518fad40112",
+    "semantic_hash": "d353c388c6afb80cbfafa518fad40112"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/service/ConnectionManagerTest.kt": {
+    "mtime": 1789265472.2183197,
+    "seen": 1790973958.5611024,
+    "ast_hash": "3a03f1438bac05c2cfcc802045790f60",
+    "semantic_hash": "3a03f1438bac05c2cfcc802045790f60"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/service/ConnectionStateTest.kt": {
+    "mtime": 1788561497.363364,
+    "seen": 1790973958.5611026,
+    "ast_hash": "cd2d203dde20ee14e07139fcf8a3ee05",
+    "semantic_hash": "cd2d203dde20ee14e07139fcf8a3ee05"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/service/NotificationFilterTest.kt": {
+    "mtime": 1788561497.363364,
+    "seen": 1790973958.561103,
+    "ast_hash": "74cd88b08aa69347afba40e5a3941362",
+    "semantic_hash": "74cd88b08aa69347afba40e5a3941362"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/service/RelaySupervisorTest.kt": {
+    "mtime": 1789269346.6095233,
+    "seen": 1790973958.5611036,
+    "ast_hash": "e327d0c0cf8674fe76d3cd17c7a40e87",
+    "semantic_hash": "e327d0c0cf8674fe76d3cd17c7a40e87"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/transport/BleHeartbeatTest.kt": {
+    "mtime": 1789061182.1981163,
+    "seen": 1790973958.561104,
+    "ast_hash": "bd43b5c2cd3cb8f0fc3d2bc5945e4c19",
+    "semantic_hash": "bd43b5c2cd3cb8f0fc3d2bc5945e4c19"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/transport/BleTransportTest.kt": {
+    "mtime": 1788561497.363364,
+    "seen": 1790973958.5611045,
+    "ast_hash": "f3d3d59b8161df6785b193acfcfb3e91",
+    "semantic_hash": "f3d3d59b8161df6785b193acfcfb3e91"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/transport/BtTransportTest.kt": {
+    "mtime": 1788561497.3634672,
+    "seen": 1790973958.561105,
+    "ast_hash": "6d757d8c0fcac53fd42a015ea462ab9c",
+    "semantic_hash": "6d757d8c0fcac53fd42a015ea462ab9c"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ui/SettingsGestureConfigTest.kt": {
+    "mtime": 1789389332.6768217,
+    "seen": 1790973958.5611055,
+    "ast_hash": "7b8991b8f9dca31b5d40ce130871bf3d",
+    "semantic_hash": "7b8991b8f9dca31b5d40ce130871bf3d"
+  },
+  "android-kotlin/app/src/test/java/com/myvu/client/ui/StandaloneFeaturesTest.kt": {
+    "mtime": 1788561497.3635123,
+    "seen": 1790973958.561106,
+    "ast_hash": "bad0f1231a7a28210b75a4e685e9ed34",
+    "semantic_hash": "bad0f1231a7a28210b75a4e685e9ed34"
+  },
+  "android-kotlin/build.gradle.kts": {
+    "mtime": 1788971872.6038535,
+    "seen": 1790973958.5611064,
+    "ast_hash": "211b1640832775019398788d1e4eca81",
+    "semantic_hash": "211b1640832775019398788d1e4eca81"
+  },
+  "android-kotlin/gradlew": {
+    "mtime": 1788561497.3640559,
+    "seen": 1790973958.5611067,
+    "ast_hash": "794669d78aef1dd5c7d889ef618b311a",
+    "semantic_hash": "794669d78aef1dd5c7d889ef618b311a"
+  },
+  "android-kotlin/settings.gradle.kts": {
+    "mtime": 1788561497.3640559,
+    "seen": 1790973958.5611072,
+    "ast_hash": "8c584be3c3c473d51bb9aee2ed52d81a",
+    "semantic_hash": "8c584be3c3c473d51bb9aee2ed52d81a"
+  },
+  "android-kotlin/AGENTS.md": {
+    "mtime": 1789050955.955676,
+    "seen": 1790973958.5611076,
+    "ast_hash": "86b4a1135c4eb0eb702e12fb79c06eaf",
+    "semantic_hash": "86b4a1135c4eb0eb702e12fb79c06eaf"
+  },
+  "android-kotlin/BUILD_INSTRUCTIONS.md": {
+    "mtime": 1788984808.1329532,
+    "seen": 1790973958.561108,
+    "ast_hash": "45ef0ea5fdab3abef4cb8b109f477f46",
+    "semantic_hash": "45ef0ea5fdab3abef4cb8b109f477f46"
+  },
+  "android-kotlin/CLAUDE.md": {
+    "mtime": 1789050955.954439,
+    "seen": 1790973958.5611086,
+    "ast_hash": "86b4a1135c4eb0eb702e12fb79c06eaf",
+    "semantic_hash": "86b4a1135c4eb0eb702e12fb79c06eaf"
+  },
+  "android-kotlin/GEMINI.md": {
+    "mtime": 1789050955.95269,
+    "seen": 1790973958.561109,
+    "ast_hash": "86b4a1135c4eb0eb702e12fb79c06eaf",
+    "semantic_hash": "86b4a1135c4eb0eb702e12fb79c06eaf"
+  },
+  "android-kotlin/README.md": {
+    "mtime": 1789389549.3967175,
+    "seen": 1790973958.5611095,
+    "ast_hash": "e08d4af65f0532c0cab8e162848417e8",
+    "semantic_hash": "e08d4af65f0532c0cab8e162848417e8"
+  },
+  "android-kotlin/app/src/main/assets/captured_init.txt": {
+    "mtime": 1788561497.3533251,
+    "seen": 1790973958.5611098,
+    "ast_hash": "07f83ed08183f65746e77fc0d6d6121d",
+    "semantic_hash": "07f83ed08183f65746e77fc0d6d6121d"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/ai-voice-recorder/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.5611103,
+    "ast_hash": "e72395e6a0cc00a40ba63571851d6ed0",
+    "semantic_hash": "e72395e6a0cc00a40ba63571851d6ed0"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/app-media-control/SKILL.md": {
+    "mtime": 1788993459.102851,
+    "seen": 1790973958.5611107,
+    "ast_hash": "6bab9867fb4f32a71f51c9cf536bb583",
+    "semantic_hash": "6bab9867fb4f32a71f51c9cf536bb583"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/calendar-events/SKILL.md": {
+    "mtime": 1788971068.144006,
+    "seen": 1790973958.5611112,
+    "ast_hash": "c0ec62d654db410b8f95c631ca1408bf",
+    "semantic_hash": "c0ec62d654db410b8f95c631ca1408bf"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/call-contact/SKILL.md": {
+    "mtime": 1788971026.0719771,
+    "seen": 1790973958.561112,
+    "ast_hash": "8dbe2459cea67407b178ee6d4d0a7677",
+    "semantic_hash": "8dbe2459cea67407b178ee6d4d0a7677"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/code-calculator-math/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.5611122,
+    "ast_hash": "e06f1d92cc456c4528606e04ce7b95e0",
+    "semantic_hash": "e06f1d92cc456c4528606e04ce7b95e0"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/create-note/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.5611126,
+    "ast_hash": "2b344660fe802b7212a52e13ec7910ce",
+    "semantic_hash": "2b344660fe802b7212a52e13ec7910ce"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/create-reminder/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.561113,
+    "ast_hash": "ef2f7dfa0965a44e5475cfb436ae5130",
+    "semantic_hash": "ef2f7dfa0965a44e5475cfb436ae5130"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/currency-convert/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.5611145,
+    "ast_hash": "b37f9f9e8e880d23577407eb320bc715",
+    "semantic_hash": "b37f9f9e8e880d23577407eb320bc715"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/currency-rate/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.561115,
+    "ast_hash": "02963b22acdd471a181783a54a5a0555",
+    "semantic_hash": "02963b22acdd471a181783a54a5a0555"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/duckduckgo-search/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.5611157,
+    "ast_hash": "d169a6716bfc4b3a2440510b4c3da368",
+    "semantic_hash": "d169a6716bfc4b3a2440510b4c3da368"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/gemini-live-assistant/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.561116,
+    "ast_hash": "8c8a0128e214f5beb4f0ce58c1fc6419",
+    "semantic_hash": "8c8a0128e214f5beb4f0ce58c1fc6419"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/google-search/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.5611165,
+    "ast_hash": "2c4a4574c72daddc1061ae26e6c4906b",
+    "semantic_hash": "2c4a4574c72daddc1061ae26e6c4906b"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/health-summary/SKILL.md": {
+    "mtime": 1788985352.0113118,
+    "seen": 1790973958.561117,
+    "ast_hash": "4e5d01efaee7226d166e8a4e7cee9c59",
+    "semantic_hash": "4e5d01efaee7226d166e8a4e7cee9c59"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/hud-navigation/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.5611172,
+    "ast_hash": "e0803f47e6a80f46a5ec06851358802c",
+    "semantic_hash": "e0803f47e6a80f46a5ec06851358802c"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/news-search/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.5611176,
+    "ast_hash": "0af62d7ba39f728401250e5168b87ff2",
+    "semantic_hash": "0af62d7ba39f728401250e5168b87ff2"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/open-app/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.561118,
+    "ast_hash": "c1616b000cc1149c89413a471b304df1",
+    "semantic_hash": "c1616b000cc1149c89413a471b304df1"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/quick-alarm-timer/SKILL.md": {
+    "mtime": 1788971059.7118745,
+    "seen": 1790973958.5611184,
+    "ast_hash": "bd34db65cd327c1a713d9ff9f92774b6",
+    "semantic_hash": "bd34db65cd327c1a713d9ff9f92774b6"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/rag-history-search/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.561119,
+    "ast_hash": "7895fd4aa74787689428300311171e00",
+    "semantic_hash": "7895fd4aa74787689428300311171e00"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/send-email/SKILL.md": {
+    "mtime": 1788971044.0386298,
+    "seen": 1790973958.5611193,
+    "ast_hash": "89f10fea203561a5b98fe23a502f0475",
+    "semantic_hash": "89f10fea203561a5b98fe23a502f0475"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/send-telegram/SKILL.md": {
+    "mtime": 1788971038.2395391,
+    "seen": 1790973958.5611198,
+    "ast_hash": "117a8196b4d04bcb96926f8978a154f4",
+    "semantic_hash": "117a8196b4d04bcb96926f8978a154f4"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/send-whatsapp/SKILL.md": {
+    "mtime": 1788971032.070443,
+    "seen": 1790973958.5611203,
+    "ast_hash": "e43e262907628094757a2674b3116c43",
+    "semantic_hash": "e43e262907628094757a2674b3116c43"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/smart-agenda-planner/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.5611207,
+    "ast_hash": "69c7257f0f663a1b1c6901bb298ea1f6",
+    "semantic_hash": "69c7257f0f663a1b1c6901bb298ea1f6"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/smart-ocr-scanner/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.561121,
+    "ast_hash": "a43131b4158e9b343eac2df1e4affd8a",
+    "semantic_hash": "a43131b4158e9b343eac2df1e4affd8a"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/smart-translate-hud/SKILL.md": {
+    "mtime": 1788971051.4857461,
+    "seen": 1790973958.5611215,
+    "ast_hash": "9d9012bb5c96de77ec62529d527d6471",
+    "semantic_hash": "9d9012bb5c96de77ec62529d527d6471"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/unread-emails-summary/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.561122,
+    "ast_hash": "faa46dbf7e3fe4ff9046a570c3502b0a",
+    "semantic_hash": "faa46dbf7e3fe4ff9046a570c3502b0a"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/unread-notifications/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.5611227,
+    "ast_hash": "ac4e51514309415b6f3b280729b8e0ca",
+    "semantic_hash": "ac4e51514309415b6f3b280729b8e0ca"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/unread-telegram-summary/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.561123,
+    "ast_hash": "591dfab7494b9287b101874df97c8d9c",
+    "semantic_hash": "591dfab7494b9287b101874df97c8d9c"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/unread-whatsapp-summary/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.5611234,
+    "ast_hash": "c12fc0c66e4442dcdf5864d346b9c14d",
+    "semantic_hash": "c12fc0c66e4442dcdf5864d346b9c14d"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/voip-call/SKILL.md": {
+    "mtime": 1788985342.7161531,
+    "seen": 1790973958.5611238,
+    "ast_hash": "52d5c11e807a8b7e2491911cbe97c918",
+    "semantic_hash": "52d5c11e807a8b7e2491911cbe97c918"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/weather-forecast/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.5611243,
+    "ast_hash": "e1dfe1b0e72e0f2e6a98daba8891c8a9",
+    "semantic_hash": "e1dfe1b0e72e0f2e6a98daba8891c8a9"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/web-page-summarizer/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.5611246,
+    "ast_hash": "52f6accc33e47cce69c63163ed99405a",
+    "semantic_hash": "52f6accc33e47cce69c63163ed99405a"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/wikipedia-search/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.561125,
+    "ast_hash": "7fca1f993690089fd09c8e2b7507b4e3",
+    "semantic_hash": "7fca1f993690089fd09c8e2b7507b4e3"
+  },
+  "android-kotlin/app/src/main/assets/skills/built-in/x-twitter-search/SKILL.md": {
+    "mtime": 1788561497.3533874,
+    "seen": 1790973958.5611255,
+    "ast_hash": "e6423fdf7fc6da4aab3e953a5b406d51",
+    "semantic_hash": "e6423fdf7fc6da4aab3e953a5b406d51"
+  },
+  "android-kotlin/design/stitch_smartwear_ai_hub/centro_de_dispositivos_ios/code.html": {
+    "mtime": 1789174470.0,
+    "seen": 1790973958.561126,
+    "ast_hash": "721864560bea4fb412b9f7495830c2f7",
+    "semantic_hash": "721864560bea4fb412b9f7495830c2f7"
+  },
+  "android-kotlin/design/stitch_smartwear_ai_hub/cupertino_pro_native/DESIGN.md": {
+    "mtime": 1789174470.0,
+    "seen": 1790973958.5611265,
+    "ast_hash": "3679c0576b0233d5b72797521f098964",
+    "semantic_hash": "3679c0576b0233d5b72797521f098964"
+  },
+  "android-kotlin/design/stitch_smartwear_ai_hub/hub_principal_asistente_ia_ios/code.html": {
+    "mtime": 1789174470.0,
+    "seen": 1790973958.561127,
+    "ast_hash": "625b558115d1c8f2cc8d127e4941b936",
+    "semantic_hash": "625b558115d1c8f2cc8d127e4941b936"
+  },
+  "android-kotlin/design/stitch_smartwear_ai_hub/notas_mapas_mentales_ia_ios/code.html": {
+    "mtime": 1789174470.0,
+    "seen": 1790973958.5611272,
+    "ast_hash": "851aece4f3b86fcc62557c36b045319a",
+    "semantic_hash": "851aece4f3b86fcc62557c36b045319a"
+  },
+  "android-kotlin/design/stitch_smartwear_ai_hub/teleprompter_ar_hud_ios/code.html": {
+    "mtime": 1789174470.0,
+    "seen": 1790973958.5611277,
+    "ast_hash": "b5c118e0afae25680b151b4668b681a2",
+    "semantic_hash": "b5c118e0afae25680b151b4668b681a2"
+  },
+  "android-kotlin/design/stitch_smartwear_ai_hub/traductor_en_vivo_ios/code.html": {
+    "mtime": 1789174470.0,
+    "seen": 1790973958.5611281,
+    "ast_hash": "1e949bd95ee32e429e9fadafe5d2eaff",
+    "semantic_hash": "1e949bd95ee32e429e9fadafe5d2eaff"
+  },
+  "android-kotlin/docs/ANDROID_SETUP_GUIDE.md": {
+    "mtime": 1788984787.5065935,
+    "seen": 1790973958.5611284,
+    "ast_hash": "4b10438ba48d695f699c42aefc2bd907",
+    "semantic_hash": "4b10438ba48d695f699c42aefc2bd907"
+  },
+  "android-kotlin/docs/ARCHITECTURE.md": {
+    "mtime": 1789389535.7754846,
+    "seen": 1790973958.5611289,
+    "ast_hash": "f3c50c90a0d4b82494ffb195372a14c2",
+    "semantic_hash": "f3c50c90a0d4b82494ffb195372a14c2"
+  },
+  "android-kotlin/docs/PROJECT_MEMORY.md": {
+    "mtime": 1789389507.2279916,
+    "seen": 1790973958.5611296,
+    "ast_hash": "f5146c5245b4f358d1695d4aac57354c",
+    "semantic_hash": "f5146c5245b4f358d1695d4aac57354c"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-auto-connect-bluetooth-audio.md": {
+    "mtime": 1788962375.3020322,
+    "seen": 1790973958.5611298,
+    "ast_hash": "2acd2fb0de97fcf6cda938512b3e08a2",
+    "semantic_hash": "2acd2fb0de97fcf6cda938512b3e08a2"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-complete-disconnect-and-battery-saving.md": {
+    "mtime": 1788961866.9712896,
+    "seen": 1790973958.5611303,
+    "ast_hash": "5d7fb01cb8a73f02bd5ee225a023b820",
+    "semantic_hash": "5d7fb01cb8a73f02bd5ee225a023b820"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-currency-misrouting-and-news-clean-fix.md": {
+    "mtime": 1788981183.6282039,
+    "seen": 1790973958.5611308,
+    "ast_hash": "10cd6c759ab2acad4335de1180c598dd",
+    "semantic_hash": "10cd6c759ab2acad4335de1180c598dd"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-eliminate-false-relay-retry-and-whisper-prompt.md": {
+    "mtime": 1788975307.812643,
+    "seen": 1790973958.5611312,
+    "ast_hash": "b79682f3ecbd03904acfbcd977b69604",
+    "semantic_hash": "b79682f3ecbd03904acfbcd977b69604"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-expand-calendar-fastpath-and-optimize-ai-payload.md": {
+    "mtime": 1788975899.0887046,
+    "seen": 1790973958.5611315,
+    "ast_hash": "cb77122528d1d9dde82fa05c64388880",
+    "semantic_hash": "cb77122528d1d9dde82fa05c64388880"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-external-app-and-media-control-newpipe-opentune.md": {
+    "mtime": 1788993231.023734,
+    "seen": 1790973958.5611334,
+    "ast_hash": "2896f99cb6aa9bf68cfdaaa9d1e25d36",
+    "semantic_hash": "2896f99cb6aa9bf68cfdaaa9d1e25d36"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-fix-android-sdk-location.md": {
+    "mtime": 1788958433.5207543,
+    "seen": 1790973958.5611336,
+    "ast_hash": "41d54a51ddee47c4e7c1b662afe2c292",
+    "semantic_hash": "41d54a51ddee47c4e7c1b662afe2c292"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-fix-auto-search-and-phantom-mac.md": {
+    "mtime": 1788961508.2385805,
+    "seen": 1790973958.561134,
+    "ast_hash": "ecab6aad38ba180876f791623c37eb70",
+    "semantic_hash": "ecab6aad38ba180876f791623c37eb70"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-fix-local-openai-client-response.md": {
+    "mtime": 1788967123.454363,
+    "seen": 1790973958.5611346,
+    "ast_hash": "eb56a0b77fae5b8ee75fb95dbbf383d8",
+    "semantic_hash": "eb56a0b77fae5b8ee75fb95dbbf383d8"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-fix-notification-queue-infinite-loop.md": {
+    "mtime": 1788967938.7740164,
+    "seen": 1790973958.5611348,
+    "ast_hash": "a13a5c2c9544c94502859f7b0cdb7c68",
+    "semantic_hash": "a13a5c2c9544c94502859f7b0cdb7c68"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-fuzzy-contact-matching-and-messaging-enhancement.md": {
+    "mtime": 1788978875.8021812,
+    "seen": 1790973958.5611353,
+    "ast_hash": "0ef6c91886808cf7137acc84936b73e3",
+    "semantic_hash": "0ef6c91886808cf7137acc84936b73e3"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-google-assistant-parity-and-lockscreen-control.md": {
+    "mtime": 1788983681.2826366,
+    "seen": 1790973958.5611358,
+    "ast_hash": "77a33f9f27664593043c293ef72a6cf7",
+    "semantic_hash": "77a33f9f27664593043c293ef72a6cf7"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-init-memory-and-documentation.md": {
+    "mtime": 1788957327.3361087,
+    "seen": 1790973958.5611362,
+    "ast_hash": "7b5995e127da42d990a6ef2270b2c91d",
+    "semantic_hash": "7b5995e127da42d990a6ef2270b2c91d"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-live-web-search-news-stocks-currency.md": {
+    "mtime": 1788978201.008003,
+    "seen": 1790973958.5611367,
+    "ast_hash": "c516c437bf854be6dd963378a8ddd7d9",
+    "semantic_hash": "c516c437bf854be6dd963378a8ddd7d9"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-lockscreen-universal-messaging-autosend.md": {
+    "mtime": 1788982878.2505915,
+    "seen": 1790973958.5611372,
+    "ast_hash": "598dcf860ced2d41568bf9280a0a127a",
+    "semantic_hash": "598dcf860ced2d41568bf9280a0a127a"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-log-analysis-and-findings-resolution-plan.md": {
+    "mtime": 1788980240.9558291,
+    "seen": 1790973958.5611374,
+    "ast_hash": "fb1a622105cc34fb6bb4e5eb1e40f228",
+    "semantic_hash": "fb1a622105cc34fb6bb4e5eb1e40f228"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-log-analysis-and-improvements.md": {
+    "mtime": 1788968415.3552263,
+    "seen": 1790973958.561138,
+    "ast_hash": "579f8783851eb902ca14a059a5678bf9",
+    "semantic_hash": "579f8783851eb902ca14a059a5678bf9"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-log-analysis-and-latency-voice-improvements.md": {
+    "mtime": 1788973000.9508915,
+    "seen": 1790973958.5611384,
+    "ast_hash": "52828fdd5fadec7fd6ce4d0968448ca7",
+    "semantic_hash": "52828fdd5fadec7fd6ce4d0968448ca7"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-multimodal-notes-and-voice-recorder-enhancement.md": {
+    "mtime": 1788971382.7548888,
+    "seen": 1790973958.5611386,
+    "ast_hash": "0bd029106bfb7f4c4879f03a1b21ae0b",
+    "semantic_hash": "0bd029106bfb7f4c4879f03a1b21ae0b"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-plan-migracion-gemini-litellm-tool-calling.md": {
+    "mtime": 1788960390.9115815,
+    "seen": 1790973958.561139,
+    "ast_hash": "6e5635b49822ebbdd6642f8ef0f9c81c",
+    "semantic_hash": "6e5635b49822ebbdd6642f8ef0f9c81c"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-polish-weather-rfcomm-grammar.md": {
+    "mtime": 1788974271.0957763,
+    "seen": 1790973958.5611398,
+    "ast_hash": "8e68b1e68ab13547e98935802f9002fa",
+    "semantic_hash": "8e68b1e68ab13547e98935802f9002fa"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-skills-and-tools-enhancement-plan.md": {
+    "mtime": 1788970071.5113912,
+    "seen": 1790973958.56114,
+    "ast_hash": "8b7aaf99162582ffe58b3c9e47f23d71",
+    "semantic_hash": "8b7aaf99162582ffe58b3c9e47f23d71"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-update-all-dependencies-to-latest.md": {
+    "mtime": 1788971968.0440035,
+    "seen": 1790973958.5611405,
+    "ast_hash": "1110b3fa77538219156c7b58b5d27b20",
+    "semantic_hash": "1110b3fa77538219156c7b58b5d27b20"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-update-build-to-openjdk-25.md": {
+    "mtime": 1788958065.9456596,
+    "seen": 1790973958.561141,
+    "ast_hash": "589c2adc9a65ea9c790e5d47c44c9779",
+    "semantic_hash": "589c2adc9a65ea9c790e5d47c44c9779"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-voip-calls-and-health-integration.md": {
+    "mtime": 1788985038.7869465,
+    "seen": 1790973958.5611413,
+    "ast_hash": "0e0eed0add716c774cabd5853f49c38f",
+    "semantic_hash": "0e0eed0add716c774cabd5853f49c38f"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-web-search-fastpath-and-ai-timeout-optimization.md": {
+    "mtime": 1788976802.5471103,
+    "seen": 1790973958.5611417,
+    "ast_hash": "26f1c90e7c4586a516567489ef4737ad",
+    "semantic_hash": "26f1c90e7c4586a516567489ef4737ad"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-09-whatsapp-autosend-and-contact-delimiter-fix.md": {
+    "mtime": 1788981912.4973443,
+    "seen": 1790973958.561142,
+    "ast_hash": "34b27baaab7983c488dede55b216faa7",
+    "semantic_hash": "34b27baaab7983c488dede55b216faa7"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-agent-daily-assistant-and-automation-plan.md": {
+    "mtime": 1789062742.837729,
+    "seen": 1790973958.5611424,
+    "ast_hash": "c13f909165738273a0b3cb05b728b723",
+    "semantic_hash": "c13f909165738273a0b3cb05b728b723"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-auto-lock-phone-after-gemini-and-actions-plan.md": {
+    "mtime": 1789077862.9025905,
+    "seen": 1790973958.561143,
+    "ast_hash": "237109f46b7926b9e9d5f9a44c8a1c2f",
+    "semantic_hash": "237109f46b7926b9e9d5f9a44c8a1c2f"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-autosend-accessibility-watchdog-and-log-improvements.md": {
+    "mtime": 1789073589.5375073,
+    "seen": 1790973958.5611434,
+    "ast_hash": "14f3184de4bb699a103cc801499f719f",
+    "semantic_hash": "14f3184de4bb699a103cc801499f719f"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-battery-and-resource-optimization-plan.md": {
+    "mtime": 1789059580.5108762,
+    "seen": 1790973958.5611439,
+    "ast_hash": "fcc67ac26139c99f51f9c01b3bc60f2f",
+    "semantic_hash": "fcc67ac26139c99f51f9c01b3bc60f2f"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-complete-touchpad-gestures-customization-plan.md": {
+    "mtime": 1789065435.3335614,
+    "seen": 1790973958.5611444,
+    "ast_hash": "a8f6b3f67b91dd8642641aae903c13fb",
+    "semantic_hash": "a8f6b3f67b91dd8642641aae903c13fb"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-fix-gestures-app-launch-and-gemini-integration-plan.md": {
+    "mtime": 1789066599.845768,
+    "seen": 1790973958.5611446,
+    "ast_hash": "27190ee921049f4c9f13a54ef2b84f15",
+    "semantic_hash": "27190ee921049f4c9f13a54ef2b84f15"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-fix-spontaneous-agent-trigger-from-telemetry.md": {
+    "mtime": 1789064868.4555838,
+    "seen": 1790973958.561145,
+    "ast_hash": "f1d0d9bd2758e3d096bb6eab96c35f6d",
+    "semantic_hash": "f1d0d9bd2758e3d096bb6eab96c35f6d"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-fix-temple-touchpad-gestures-keycodes-and-sender-plan.md": {
+    "mtime": 1789068945.3481374,
+    "seen": 1790973958.5611455,
+    "ast_hash": "9d821c61b2ad7f3d48b3c30429dc0c42",
+    "semantic_hash": "9d821c61b2ad7f3d48b3c30429dc0c42"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-fix-touchpad-batches-and-spp-stability.md": {
+    "mtime": 1789076142.4078214,
+    "seen": 1790973958.5611458,
+    "ast_hash": "9ca9cb65924a90c04237c0056bac0518",
+    "semantic_hash": "9ca9cb65924a90c04237c0056bac0518"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-fix-touchpad-customization-plan.md": {
+    "mtime": 1789064153.1980531,
+    "seen": 1790973958.5611463,
+    "ast_hash": "a828951d961814d0329f86f9c81d7265",
+    "semantic_hash": "a828951d961814d0329f86f9c81d7265"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-fix-touchpad-double-tap-gemini-detection.md": {
+    "mtime": 1789074745.2386577,
+    "seen": 1790973958.561147,
+    "ast_hash": "592062238d8c1b138eaf287d074ff15a",
+    "semantic_hash": "592062238d8c1b138eaf287d074ff15a"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-gemini-audio-routing-and-relay-speedup.md": {
+    "mtime": 1789077234.2872105,
+    "seen": 1790973958.5611472,
+    "ast_hash": "7e60714e8c4c80da95d79db802234408",
+    "semantic_hash": "7e60714e8c4c80da95d79db802234408"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-gemini-audio-sco-battery-resource-optimization-plan.md": {
+    "mtime": 1789070893.2187226,
+    "seen": 1790973958.5611477,
+    "ast_hash": "7468d32a05a68a2a2817ce83ebbe85b9",
+    "semantic_hash": "7468d32a05a68a2a2817ce83ebbe85b9"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-gemini-double-tap-and-gemini-live-plan.md": {
+    "mtime": 1789080704.4509158,
+    "seen": 1790973958.5611482,
+    "ast_hash": "7943739f40ced933a2c4f03d7b11962b",
+    "semantic_hash": "7943739f40ced933a2c4f03d7b11962b"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-glasses-battery-drain-and-active-listening-fix.md": {
+    "mtime": 1789051258.430562,
+    "seen": 1790973958.5611484,
+    "ast_hash": "ae2efd6daa204504ac63de0fc25e0640",
+    "semantic_hash": "ae2efd6daa204504ac63de0fc25e0640"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-remove-unused-dependencies.md": {
+    "mtime": 1789076438.2439873,
+    "seen": 1790973958.561149,
+    "ast_hash": "524b5a5646f3c0b517ac7e38d976ef3c",
+    "semantic_hash": "524b5a5646f3c0b517ac7e38d976ef3c"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-restore-physical-button-and-temple-touch-gemini-plan.md": {
+    "mtime": 1789067949.956797,
+    "seen": 1790973958.5611494,
+    "ast_hash": "cf2e1cb13f1e2463633fa9333ce37e19",
+    "semantic_hash": "cf2e1cb13f1e2463633fa9333ce37e19"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-10-revert-auto-lock-screen.md": {
+    "mtime": 1789079658.5926983,
+    "seen": 1790973958.5611498,
+    "ast_hash": "b54cd83b4e7efbdc91b5f5a5439e9247",
+    "semantic_hash": "b54cd83b4e7efbdc91b5f5a5439e9247"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-device-notification-handling-mode-plan.md": {
+    "mtime": 1789160944.857724,
+    "seen": 1790973958.5611506,
+    "ast_hash": "90d2ccf8b2ba4446881b25b324b24ffb",
+    "semantic_hash": "90d2ccf8b2ba4446881b25b324b24ffb"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-device-specific-configuration-interfaces-plan.md": {
+    "mtime": 1789158401.0003135,
+    "seen": 1790973958.561151,
+    "ast_hash": "a4299675b3c11775d87172aaecd22eca",
+    "semantic_hash": "a4299675b3c11775d87172aaecd22eca"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-disable-active-listening-by-default-plan.md": {
+    "mtime": 1789164711.0826933,
+    "seen": 1790973958.5611513,
+    "ast_hash": "35fb1d31244a4b3f8d69de5d1ec21a24",
+    "semantic_hash": "35fb1d31244a4b3f8d69de5d1ec21a24"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-fix-connection-loop-and-total-disconnect-plan.md": {
+    "mtime": 1789165950.3276498,
+    "seen": 1790973958.5611517,
+    "ast_hash": "a3900a4eec9360609afcd5633d418bca",
+    "semantic_hash": "a3900a4eec9360609afcd5633d418bca"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-fix-gemini-google-app-hijack-plan.md": {
+    "mtime": 1789133888.7806573,
+    "seen": 1790973958.5611522,
+    "ast_hash": "879a76eb5ee0189d451dc3538480ee6e",
+    "semantic_hash": "879a76eb5ee0189d451dc3538480ee6e"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-fix-gemini-live-and-voice-auto-click-root-cause.md": {
+    "mtime": 1789135477.0690486,
+    "seen": 1790973958.5611525,
+    "ast_hash": "2bb1c668166bf8ecf2583195ab0e02ea",
+    "semantic_hash": "2bb1c668166bf8ecf2583195ab0e02ea"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-fix-reading-and-saving-glasses-settings-plan.md": {
+    "mtime": 1789163340.2159352,
+    "seen": 1790973958.561153,
+    "ast_hash": "0a85dddd8c9ab5c2c46f4d98ad8815eb",
+    "semantic_hash": "0a85dddd8c9ab5c2c46f4d98ad8815eb"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-fix-real-device-battery-indicators-plan.md": {
+    "mtime": 1789161454.1458495,
+    "seen": 1790973958.5611537,
+    "ast_hash": "da543304850182ff45ba6e15b9b4efd8",
+    "semantic_hash": "da543304850182ff45ba6e15b9b4efd8"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-fix-ui-alignment-and-light-mode-plan.md": {
+    "mtime": 1789159296.7662258,
+    "seen": 1790973958.561154,
+    "ast_hash": "1ed4bc075c7c35bc45ea7adb6b7aa8ce",
+    "semantic_hash": "1ed4bc075c7c35bc45ea7adb6b7aa8ce"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-gemini-live-and-touchpad-enhancements-plan.md": {
+    "mtime": 1789130185.0801806,
+    "seen": 1790973958.5611544,
+    "ast_hash": "a799817ecd4a35520a6003a5e799e406",
+    "semantic_hash": "a799817ecd4a35520a6003a5e799e406"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-glasses-action-button-and-headphone-agent-plan.md": {
+    "mtime": 1789160277.7652102,
+    "seen": 1790973958.5611548,
+    "ast_hash": "a6803e32ce52f87845ee930f4f07e9c1",
+    "semantic_hash": "a6803e32ce52f87845ee930f4f07e9c1"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-ios-cupertino-redesign-and-theme-migration-plan.md": {
+    "mtime": 1789157343.9309735,
+    "seen": 1790973958.561155,
+    "ast_hash": "6914580b436657165d7b63b173f4710c",
+    "semantic_hash": "6914580b436657165d7b63b173f4710c"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-launch-gemini-live-via-phone-assistant.md": {
+    "mtime": 1789136851.8769464,
+    "seen": 1790973958.5611556,
+    "ast_hash": "375e4340553b960c21805d12195c2c30",
+    "semantic_hash": "375e4340553b960c21805d12195c2c30"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-migrate-glasses-settings-and-fix-brightness-plan.md": {
+    "mtime": 1789162455.3889542,
+    "seen": 1790973958.5611558,
+    "ast_hash": "e49220de49e988de560cf432d5e2bdcd",
+    "semantic_hash": "e49220de49e988de560cf432d5e2bdcd"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-prioritized-sequential-contact-search-and-semantic-fallback.md": {
+    "mtime": 1789149283.050648,
+    "seen": 1790973958.5611563,
+    "ast_hash": "b949bc34b9019708df6c4ed8cf1a30eb",
+    "semantic_hash": "b949bc34b9019708df6c4ed8cf1a30eb"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-quick-ai-access-and-sidebar-menu-plan.md": {
+    "mtime": 1789154662.0744066,
+    "seen": 1790973958.5611567,
+    "ast_hash": "22956f5b7872bff86a7c26fbc015b9f1",
+    "semantic_hash": "22956f5b7872bff86a7c26fbc015b9f1"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-restore-gemini-live-and-voice-auto-click-plan.md": {
+    "mtime": 1789134704.240458,
+    "seen": 1790973958.5611575,
+    "ast_hash": "2ac1b8e073c4f8debc1730afb132b485",
+    "semantic_hash": "2ac1b8e073c4f8debc1730afb132b485"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-screen-relock-timeout.md": {
+    "mtime": 1789138324.5057237,
+    "seen": 1790973958.561158,
+    "ast_hash": "10a4467b11b3540327bec80572ee231d",
+    "semantic_hash": "10a4467b11b3540327bec80572ee231d"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-touch-gestures-and-gemini-mic-activation.md": {
+    "mtime": 1789131733.9229095,
+    "seen": 1790973958.5611584,
+    "ast_hash": "629b75272f473f1d9c74812bd3bf0da3",
+    "semantic_hash": "629b75272f473f1d9c74812bd3bf0da3"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-universal-bluetooth-agent-platform-plan.md": {
+    "mtime": 1789153226.5553844,
+    "seen": 1790973958.5611587,
+    "ast_hash": "8d38a03be25da330be4c36c6d00ac2e8",
+    "semantic_hash": "8d38a03be25da330be4c36c6d00ac2e8"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-11-validate-other-devices-settings-and-battery-drain-plan.md": {
+    "mtime": 1789163860.2335668,
+    "seen": 1790973958.5611591,
+    "ast_hash": "5796f46e9028c5a5f5911095e27e16d0",
+    "semantic_hash": "5796f46e9028c5a5f5911095e27e16d0"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-12-eliminate-rfcomm-ping-pong-battery-drain-plan.md": {
+    "mtime": 1789269173.0550015,
+    "seen": 1790973958.5611596,
+    "ast_hash": "9b35af4bb34ace3b446e4885526c35a8",
+    "semantic_hash": "9b35af4bb34ace3b446e4885526c35a8"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-12-fix-edge-to-edge-insets-notes-and-activity-log-plan.md": {
+    "mtime": 1789266833.5403957,
+    "seen": 1790973958.5611598,
+    "ast_hash": "c7a4e4878d56370926c874bae8423562",
+    "semantic_hash": "c7a4e4878d56370926c874bae8423562"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-12-fix-physical-action-button-and-temple-conflict-plan.md": {
+    "mtime": 1789263048.4896338,
+    "seen": 1790973958.5611606,
+    "ast_hash": "8a11cd33c1534558d45835be1810db7a",
+    "semantic_hash": "8a11cd33c1534558d45835be1810db7a"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-12-fix-physical-button-single-press-google-assistant-plan.md": {
+    "mtime": 1789267976.8822713,
+    "seen": 1790973958.5611608,
+    "ast_hash": "8c4adccec8251208be080f3ab0d48e2a",
+    "semantic_hash": "8c4adccec8251208be080f3ab0d48e2a"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-12-fix-relay-battery-drain-and-latency-plan.md": {
+    "mtime": 1789265123.8234751,
+    "seen": 1790973958.5611613,
+    "ast_hash": "fe4151adde4a5fa0f7b35b1f3196a58b",
+    "semantic_hash": "fe4151adde4a5fa0f7b35b1f3196a58b"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-12-service-toggle-and-standalone-ai-guarantee-plan.md": {
+    "mtime": 1789261771.5371683,
+    "seen": 1790973958.5611618,
+    "ast_hash": "4853341ec6ad8d1d3e1b05c509cdfa56",
+    "semantic_hash": "4853341ec6ad8d1d3e1b05c509cdfa56"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-12-ui-alignment-apple-design-and-log-improvements-plan.md": {
+    "mtime": 1789265819.0197275,
+    "seen": 1790973958.561162,
+    "ast_hash": "7a0cafb12d39491a3ac7c92c1b9bb625",
+    "semantic_hash": "7a0cafb12d39491a3ac7c92c1b9bb625"
+  },
+  "android-kotlin/docs/superpowers/plans/2026-09-12-unified-activity-log-system-plan.md": {
+    "mtime": 1789264039.6526248,
+    "seen": 1790973958.5611625,
+    "ast_hash": "34f4a89337aaff482cd9aa06cb0e777e",
+    "semantic_hash": "34f4a89337aaff482cd9aa06cb0e777e"
+  },
+  "android-kotlin/docs/superpowers/plans/device_connection_pairing_primary_clean_switch_plan.md": {
+    "mtime": 1789388049.6139276,
+    "seen": 1790973958.561163,
+    "ast_hash": "5a63ede334bf8d659d75c93987462fa1",
+    "semantic_hash": "5a63ede334bf8d659d75c93987462fa1"
+  },
+  "android-kotlin/docs/superpowers/plans/headphone_tts_and_multidevice_notifications_plan.md": {
+    "mtime": 1789389159.5473096,
+    "seen": 1790973958.5611634,
+    "ast_hash": "71cbbbdba43046d24e83389d73a9cdc8",
+    "semantic_hash": "71cbbbdba43046d24e83389d73a9cdc8"
+  },
+  "skills/built-in/ai-voice-recorder/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611637,
+    "ast_hash": "e72395e6a0cc00a40ba63571851d6ed0",
+    "semantic_hash": "e72395e6a0cc00a40ba63571851d6ed0"
+  },
+  "skills/built-in/calendar-events/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611644,
+    "ast_hash": "32b0a638ee3e20f8e45b6b3ac10dfea1",
+    "semantic_hash": "32b0a638ee3e20f8e45b6b3ac10dfea1"
+  },
+  "skills/built-in/call-contact/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611649,
+    "ast_hash": "df73205375d26e3d9680639b8b9e5743",
+    "semantic_hash": "df73205375d26e3d9680639b8b9e5743"
+  },
+  "skills/built-in/create-note/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.561165,
+    "ast_hash": "2b344660fe802b7212a52e13ec7910ce",
+    "semantic_hash": "2b344660fe802b7212a52e13ec7910ce"
+  },
+  "skills/built-in/create-reminder/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611656,
+    "ast_hash": "ef2f7dfa0965a44e5475cfb436ae5130",
+    "semantic_hash": "ef2f7dfa0965a44e5475cfb436ae5130"
+  },
+  "skills/built-in/currency-convert/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.561166,
+    "ast_hash": "b37f9f9e8e880d23577407eb320bc715",
+    "semantic_hash": "b37f9f9e8e880d23577407eb320bc715"
+  },
+  "skills/built-in/currency-rate/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611663,
+    "ast_hash": "02963b22acdd471a181783a54a5a0555",
+    "semantic_hash": "02963b22acdd471a181783a54a5a0555"
+  },
+  "skills/built-in/duckduckgo-search/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611668,
+    "ast_hash": "d169a6716bfc4b3a2440510b4c3da368",
+    "semantic_hash": "d169a6716bfc4b3a2440510b4c3da368"
+  },
+  "skills/built-in/gemini-live-assistant/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611675,
+    "ast_hash": "8c8a0128e214f5beb4f0ce58c1fc6419",
+    "semantic_hash": "8c8a0128e214f5beb4f0ce58c1fc6419"
+  },
+  "skills/built-in/google-search/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611677,
+    "ast_hash": "2c4a4574c72daddc1061ae26e6c4906b",
+    "semantic_hash": "2c4a4574c72daddc1061ae26e6c4906b"
+  },
+  "skills/built-in/hud-navigation/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611682,
+    "ast_hash": "e0803f47e6a80f46a5ec06851358802c",
+    "semantic_hash": "e0803f47e6a80f46a5ec06851358802c"
+  },
+  "skills/built-in/news-search/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611684,
+    "ast_hash": "0af62d7ba39f728401250e5168b87ff2",
+    "semantic_hash": "0af62d7ba39f728401250e5168b87ff2"
+  },
+  "skills/built-in/send-email/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.561169,
+    "ast_hash": "9b3e52cf1bb13fc080d6649b6afe4748",
+    "semantic_hash": "9b3e52cf1bb13fc080d6649b6afe4748"
+  },
+  "skills/built-in/send-telegram/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611694,
+    "ast_hash": "035c797bdcca22463a3d9282c12842d5",
+    "semantic_hash": "035c797bdcca22463a3d9282c12842d5"
+  },
+  "skills/built-in/send-whatsapp/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611699,
+    "ast_hash": "693f6b2ca3fc214e1ff6b254e56135f8",
+    "semantic_hash": "693f6b2ca3fc214e1ff6b254e56135f8"
+  },
+  "skills/built-in/unread-emails-summary/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.56117,
+    "ast_hash": "faa46dbf7e3fe4ff9046a570c3502b0a",
+    "semantic_hash": "faa46dbf7e3fe4ff9046a570c3502b0a"
+  },
+  "skills/built-in/unread-notifications/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611706,
+    "ast_hash": "ac4e51514309415b6f3b280729b8e0ca",
+    "semantic_hash": "ac4e51514309415b6f3b280729b8e0ca"
+  },
+  "skills/built-in/unread-telegram-summary/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611713,
+    "ast_hash": "591dfab7494b9287b101874df97c8d9c",
+    "semantic_hash": "591dfab7494b9287b101874df97c8d9c"
+  },
+  "skills/built-in/unread-whatsapp-summary/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611715,
+    "ast_hash": "c12fc0c66e4442dcdf5864d346b9c14d",
+    "semantic_hash": "c12fc0c66e4442dcdf5864d346b9c14d"
+  },
+  "skills/built-in/weather-forecast/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.561172,
+    "ast_hash": "e1dfe1b0e72e0f2e6a98daba8891c8a9",
+    "semantic_hash": "e1dfe1b0e72e0f2e6a98daba8891c8a9"
+  },
+  "skills/built-in/wikipedia-search/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611722,
+    "ast_hash": "7fca1f993690089fd09c8e2b7507b4e3",
+    "semantic_hash": "7fca1f993690089fd09c8e2b7507b4e3"
+  },
+  "skills/built-in/x-twitter-search/SKILL.md": {
+    "mtime": 1788561497.3748734,
+    "seen": 1790973958.5611727,
+    "ast_hash": "e6423fdf7fc6da4aab3e953a5b406d51",
+    "semantic_hash": "e6423fdf7fc6da4aab3e953a5b406d51"
+  },
+  "android-kotlin/app/src/main/res/drawable/ic_launcher_ar.png": {
+    "mtime": 1788561497.3603175,
+    "seen": 1790973958.5611732,
+    "ast_hash": "891ee00a650c9e03a86719696c54f3e1",
+    "semantic_hash": "891ee00a650c9e03a86719696c54f3e1"
+  },
+  "android-kotlin/design/stitch_smartwear_ai_hub/centro_de_dispositivos_ios/screen.png": {
+    "mtime": 1789174470.0,
+    "seen": 1790973958.5611734,
+    "ast_hash": "fa18798e97bac3fb775184e77d8834d6",
+    "semantic_hash": "fa18798e97bac3fb775184e77d8834d6"
+  },
+  "android-kotlin/design/stitch_smartwear_ai_hub/hub_principal_asistente_ia_ios/screen.png": {
+    "mtime": 1789174470.0,
+    "seen": 1790973958.561174,
+    "ast_hash": "de45406bebe64bd0ade043e23511250d",
+    "semantic_hash": "de45406bebe64bd0ade043e23511250d"
+  },
+  "android-kotlin/design/stitch_smartwear_ai_hub/notas_mapas_mentales_ia_ios/screen.png": {
+    "mtime": 1789174470.0,
+    "seen": 1790973958.5611746,
+    "ast_hash": "87cdb3438abf44ac2e7a89bf26293422",
+    "semantic_hash": "87cdb3438abf44ac2e7a89bf26293422"
+  },
+  "android-kotlin/design/stitch_smartwear_ai_hub/teleprompter_ar_hud_ios/screen.png": {
+    "mtime": 1789174470.0,
+    "seen": 1790973958.5611749,
+    "ast_hash": "b1267f3a144875af6d368176bd6229f1",
+    "semantic_hash": "b1267f3a144875af6d368176bd6229f1"
+  },
+  "android-kotlin/design/stitch_smartwear_ai_hub/traductor_en_vivo_ios/screen.png": {
+    "mtime": 1789174470.0,
+    "seen": 1790973958.5611753,
+    "ast_hash": "521f30a692e03f43e9fe791dab42cb04",
+    "semantic_hash": "521f30a692e03f43e9fe791dab42cb04"
+  }
+}
