@@ -28,7 +28,7 @@ Este archivo almacena la memoria viva del proyecto, decisiones técnicas, contex
 
 | Capa / Módulo | Paquete Principal | Responsabilidad |
 |---|---|---|
-| **Compilación / Toolchain** | Raíz / Gradle | OpenJDK 25 (`/usr/lib/jvm/java-25-openjdk-amd64`) en `gradle.properties`, Android SDK en `/home/rcastro/Android/Sdk` vía `local.properties`. |
+| **Compilación / Toolchain** | Raíz / Gradle | Temurin JDK 25 LTS (`/opt/jdk-25`) en `gradle.properties`, Android SDK en `/home/rcastro/Android/Sdk` vía `local.properties`. |
 | **Transporte** | `com.myvu.client.transport` | Conexión RFCOMM Bluetooth SPP y BLE GATT. Reconexión automática y manejo de sockets. |
 | **Protocolo** | `com.myvu.client.protocol` | Decodificación de tramas, serialización binaria, empaquetado TLV para el HUD de las gafas. |
 | **Servicio Central** | `com.myvu.client.service.MyvuService` | Foreground Service persistente. Maneja ciclo de vida del enlace, reenvío de notificaciones y dispatching. |
@@ -2164,3 +2164,17 @@ Se requería dotar al ecosistema de conexión Bluetooth de:
 - `SensitiveActionGateTest` (8 tests): política, confirmación única, cancelación, descarte ante texto no relacionado, frase parcial que no confirma, TTL, y el bucle agéntico con un `AiClient` falso que intenta `send_whatsapp`.
 - `./gradlew testDebugUnitTest`: 327 tests, 0 fallos. `./gradlew assembleDebug`: **BUILD SUCCESSFUL**.
 - Pendiente: selector de política en Ajustes y prueba manual por voz.
+
+## 48. [2026-10-02] — JDK 25 Reubicado en `/opt/jdk-25` (Deepin 25 Inmutable)
+
+### Diagnóstico y Causa Raíz:
+- `gradle.properties` apuntaba a `/usr/lib/jvm/java-25-openjdk-amd64`, que no existía. Gradle fallaba con `Java home supplied is invalid`.
+- Deepin 25 monta `/usr` en solo lectura (overlay de ostree), así que no se puede instalar ahí ni usar `update-alternatives`. Los repositorios de Deepin solo ofrecen `openjdk-21-jdk`.
+
+### Soluciones Implementadas:
+1. Temurin 25.0.4.1 LTS instalado en `/opt/jdk-25` (checksum SHA-256 verificado contra Adoptium). `JAVA_HOME` y `PATH` se definen en `/etc/profile.d/jdk25.sh`.
+2. `gradle.properties`: `org.gradle.java.home=/opt/jdk-25`.
+3. `BUILD_INSTRUCTIONS.md` §1.1 documenta la instalación y la sobrescritura por máquina en `~/.gradle/gradle.properties`. También se actualizaron `README.md` y `ARCHITECTURE.md`.
+
+### Verificación:
+- `./gradlew clean assembleDebug testDebugUnitTest` con JDK 25: **BUILD SUCCESSFUL**, 327 tests, 0 fallos.

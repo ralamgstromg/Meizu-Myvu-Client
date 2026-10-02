@@ -346,7 +346,7 @@ Para garantizar desacoplamiento entre las capacidades físicas de cada periféri
 
 ## 9. Entorno de Compilación y Toolchain
 
-- **JDK del Host / Gradle Daemon**: OpenJDK 25 (`/usr/lib/jvm/java-25-openjdk-amd64`), configurado en `gradle.properties` (`org.gradle.java.home`).
+- **JDK del Host / Gradle Daemon**: Temurin (OpenJDK) 25 LTS en `/opt/jdk-25`, configurado en `gradle.properties` (`org.gradle.java.home`). Se puede sobrescribir por máquina en `~/.gradle/gradle.properties`.
 - **Gradle**: 8.14.3 (con wrapper oficial `./gradlew`).
 - **Kotlin Gradle Plugin**: 2.1.10 con soporte de bytecode Java 21 (`jvmTarget = "21"`).
 - **Compatibilidad Android (D8 / Desugar)**: `JavaVersion.VERSION_21` para `compileOptions`.

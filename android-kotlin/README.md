@@ -217,7 +217,7 @@ Ubicadas en `app/src/main/assets/skills/built-in/`:
 ## 🚀 Requisitos y Compilación
 
 ### Requisitos del Entorno
-- **JDK**: OpenJDK 25 (`/usr/lib/jvm/java-25-openjdk-amd64`) para ejecución de Gradle Daemon y compilación.
+- **JDK**: Temurin (OpenJDK) 25 LTS en `/opt/jdk-25` (`org.gradle.java.home` en `gradle.properties`) para ejecutar el Gradle Daemon y compilar. En Deepin 25 `/usr` es de solo lectura; ver la instalación en `BUILD_INSTRUCTIONS.md` §1.1.
 - **Bytecode Compatibilidad**: Java 21 (`sourceCompatibility = JavaVersion.VERSION_21`, `jvmTarget = "21"`).
 - **Android SDK**: API Level 35 (`compileSdk 35`, `minSdk 26`).
 - **Gradle**: 8.14.3+ con wrapper `./gradlew`.
