@@ -261,6 +261,20 @@ El subsistema en `com.myvu.client.skills` permite añadir funcionalidades al dis
 
 ## 7. Persistencia y Almacenamiento
 
+### 7.0 Backup y Restauración v2 (`core/BackupManager`, `core/backup/BackupArchive`, `core/backup/PreferencesCodec`)
+- **Archivo**: `myvu-backup-yyyyMMdd-HHmmss.zip`. Se guarda en `getExternalFilesDir("backups")` (se conservan los 5 más recientes) y se copia a `Download/MYVU/`. Google Drive sigue usando `/myvu/backup/data.zip`.
+- **Contenido**: `manifest.json` (`format_version: 2`, versión de app y de DB, conteos, SHA-256 por entrada), `database.db`, `myvu_chat.db`, `preferences.json` (con tipos) y `media/<carpeta-origen>/<archivo>`.
+- **Seguridad**: `PreferencesCodec` excluye las claves con `token`, `secret`, `api_key`, `password` o `credential` (por ejemplo, los tokens OAuth de Drive). Las claves de IA viven en `SecurePrefs` (Keystore) y no se respaldan. `BackupArchive.extract` bloquea Zip Slip (verifica el separador) y limita a 10 000 entradas y 2 GiB.
+- **Creación**: hace `wal_checkpoint(TRUNCATE)` leyendo el cursor (los cursores son lazy) y escribe en streaming a un `.partial` que luego renombra.
+- **Restauración**:
+  1. Valida el manifiesto, los checksums y `db_version` ≤ la actual antes de tocar los datos.
+  2. Reemplaza `myvu_client.db`, fusiona las preferencias y devuelve los medios a su carpeta de origen.
+  3. Al final copia las tablas Room en una sola transacción sobre la conexión abierta (Room no se cierra).
+  4. Si algo falla, revierte `myvu_client.db` y las preferencias.
+  5. Al terminar pide reiniciar la app (`requiresRestart`).
+- Los respaldos v1 (sin `format_version`) se siguen restaurando.
+
+
 - **Room Database (`AppDatabase`)**:
   - `NoteEntity` y `ReminderEntity` con soporte para índices de texto y timestamps de activación.
   - `BluetoothDeviceEntity`: tabla de dispositivos emparejados y conectados con columnas dedicadas para tipo (`BluetoothDeviceType`), gestos de toques (`tap1Action`, `tap2Action`, `tap3Action`, `longPressAction`), gestos táctiles de patillas AR (`swipeForwardAction`, `swipeBackwardAction`), botón físico de montura (`actionButtonAction`), brillo HUD (`hudBrightness`), TTS y autolectura.

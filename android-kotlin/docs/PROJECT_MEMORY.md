@@ -2178,3 +2178,32 @@ Se requería dotar al ecosistema de conexión Bluetooth de:
 
 ### Verificación:
 - `./gradlew clean assembleDebug testDebugUnitTest` con JDK 25: **BUILD SUCCESSFUL**, 327 tests, 0 fallos.
+
+## 49. [2026-10-02] — Backup/Restore v2 y Corrección de Hilos
+
+### Requerimientos:
+- Analizar el agente, mejorar backup/restore, optimizar recursos e hilos, y proponer mejoras para HUD y audífonos. Plan: `docs/superpowers/plans/2026-10-02-agent-backup-resources-and-devices-plan.md`.
+
+### Diagnóstico y Causa Raíz:
+- **Pérdida de datos en respaldos**: el `PRAGMA wal_checkpoint` nunca se ejecutaba, porque el cursor se cerraba sin leerse. Lo que estaba en el WAL no entraba al respaldo.
+- **Credenciales expuestas**: `preferences.json` incluía los tokens OAuth de Google Drive (`gdrive_refresh_token`, `gdrive_client_secret`) y se copiaba a `Download/MYVU` y a Drive.
+- **Restauración frágil**: Room se sobrescribía con la conexión abierta. No había checksums, validación de versión ni rollback. La protección Zip Slip estaba incompleta. Los medios se aplanaban por nombre.
+- **ANR**: `AiConversation.deliver()` ejecutaba las skills (con red) con `runBlocking` en el hilo principal.
+- **Fuga de hilos**: `MeetingAiProcessor` creaba un executor por Activity, nunca lo apagaba y retenía el `Context` de la Activity.
+
+### Soluciones Implementadas:
+1. `core/backup/BackupArchive.kt`: zip en streaming con SHA-256 y extracción endurecida. `core/backup/PreferencesCodec.kt`: preferencias con tipos, sin secretos, y rollback.
+2. `BackupManager` reescrito (formato v2, lectura de v1):
+   - validación antes de aplicar;
+   - Room restaurado por transacción sin cerrarlo;
+   - rollback de la DB principal y de las preferencias;
+   - rotación de 5 respaldos con nombre por fecha;
+   - conteos con `COUNT(*)`.
+3. `SettingsActivity`: el mensaje sobre las claves de IA ahora es correcto y se agregó un reinicio obligatorio después de restaurar.
+4. `AiConversation`: las skills corren en el `worker` (`runSkills`) y `deliver()` solo entrega en el hilo principal.
+5. `MeetingAiProcessor`: usa `applicationContext`, tiene `release()` (apaga el executor y descarta los callbacks pendientes) y lo invocan `VoiceRecorderActivity` y `RecordingDetailActivity` en `onDestroy()`.
+
+### Verificación:
+- `BackupManagerTest` (9 tests): ida y vuelta con tipos y medios, historial de chat con Room abierto, exclusión de credenciales, checksum alterado, `db_version` futura, Zip Slip, v1 heredado, rollback y rotación.
+- `./gradlew testDebugUnitTest`: 336 tests, 0 fallos. `assembleDebug`: **BUILD SUCCESSFUL**.
+- Pendiente: prueba manual de respaldo y restauración en el dispositivo. Fase 3 (HUD y audífonos, D1–D6): propuestas en el plan.
