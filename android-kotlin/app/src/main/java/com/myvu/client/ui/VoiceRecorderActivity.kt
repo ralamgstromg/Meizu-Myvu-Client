@@ -348,6 +348,7 @@ class VoiceRecorderActivity : AppCompatActivity() {
         try {
             playerManager.stop()
         } catch (_: Throwable) {}
+        if (::aiProcessor.isInitialized) aiProcessor.release()
         super.onDestroy()
     }
 }

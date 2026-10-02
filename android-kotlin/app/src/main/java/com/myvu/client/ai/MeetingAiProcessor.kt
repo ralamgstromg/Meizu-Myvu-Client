@@ -14,11 +14,28 @@ import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class MeetingAiProcessor(private val context: Context) {
+class MeetingAiProcessor(context: Context) {
 
+    // Application context: the worker thread may still run after the owning Activity is destroyed.
+    private val context: Context = context.applicationContext
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val repository = VoiceRecordingRepository(context)
+    private val repository = VoiceRecordingRepository(this.context)
+
+    @Volatile
+    private var released = false
+
+    /** Stops the worker thread and drops pending UI callbacks. Call from the owner's onDestroy(). */
+    fun release() {
+        released = true
+        mainHandler.removeCallbacksAndMessages(null)
+        executor.shutdown()
+    }
+
+    private fun postToUi(block: () -> Unit) {
+        if (released) return
+        mainHandler.post { if (!released) block() }
+    }
 
     fun interface ProgressCallback {
         fun onProgress(stage: String)
@@ -54,7 +71,7 @@ class MeetingAiProcessor(private val context: Context) {
                 )
 
                 if (!client.isConfigured()) {
-                    mainHandler.post {
+                    postToUi {
                         callback.onResult(Result.failure(IllegalStateException("Proveedor STT no configurado. Configura tu API Key en Ajustes de IA.")))
                     }
                     return@execute
@@ -64,12 +81,12 @@ class MeetingAiProcessor(private val context: Context) {
                 val transcript = client.transcribeAudioFile(file)
                 LogBus.log("MeetingAiProcessor: Transcription completed (${transcript.length} chars)")
 
-                mainHandler.post {
+                postToUi {
                     callback.onResult(Result.success(transcript))
                 }
             } catch (e: Exception) {
                 LogBus.error("MeetingAiProcessor: STT Transcription failed", e)
-                mainHandler.post {
+                postToUi {
                     callback.onResult(Result.failure(e))
                 }
             }
@@ -88,7 +105,7 @@ class MeetingAiProcessor(private val context: Context) {
         executor.execute {
             val recording = repository.getRecordingById(recordingId)
             if (recording == null) {
-                mainHandler.post {
+                postToUi {
                     callback.onResult(Result.failure(IllegalArgumentException("Grabación no encontrada ID=$recordingId")))
                 }
                 return@execute
@@ -265,13 +282,13 @@ class MeetingAiProcessor(private val context: Context) {
                 repository.updateRecording(recording)
                 LogBus.log("MeetingAiProcessor: Full meeting analysis successfully saved for #${recording.id}")
 
-                mainHandler.post {
+                postToUi {
                     callback.onResult(Result.success(recording))
                 }
             } catch (e: Exception) {
                 LogBus.error("MeetingAiProcessor: Pipeline error", e)
                 repository.updateStatus(recordingId, VoiceRecording.STATUS_ERROR)
-                mainHandler.post {
+                postToUi {
                     callback.onResult(Result.failure(e))
                 }
             }
@@ -345,12 +362,12 @@ class MeetingAiProcessor(private val context: Context) {
                     client.ask(question)
                 }
 
-                mainHandler.post {
+                postToUi {
                     callback.onResult(Result.success(answer))
                 }
             } catch (e: Exception) {
                 LogBus.error("MeetingAiProcessor: Q&A failed", e)
-                mainHandler.post {
+                postToUi {
                     callback.onResult(Result.failure(e))
                 }
             }
@@ -391,7 +408,7 @@ class MeetingAiProcessor(private val context: Context) {
     }
 
     private fun postProgress(callback: ProgressCallback?, stage: String) {
-        mainHandler.post {
+        postToUi {
             callback?.onProgress(stage)
         }
     }

@@ -592,6 +592,7 @@ class RecordingDetailActivity : AppCompatActivity(), AudioPlayerManager.Listener
         super.onDestroy()
         playerManager.stop()
         mindMapController.destroy()
+        if (::aiProcessor.isInitialized) aiProcessor.release()
     }
 
     companion object {

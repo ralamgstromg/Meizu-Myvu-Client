@@ -628,32 +628,36 @@ class AiConversation(
                 return@execute
             }
             LogBus.log("AI_RESPONSE_RECEIVED sessionId=$turnSessionId answerLength=${answer.length}")
+            // Skills may hit the network: run them here on the worker, never on the main thread.
+            val skillProcessed = runSkills(answer)
             main.post {
                 if (!active || turnSessionId != sessionId) {
                     LogBus.log("AI: discarded response from abandoned turn $turnSessionId")
                     return@post
                 }
-                deliver(answer, turnSessionId)
+                deliver(answer, skillProcessed, turnSessionId)
             }
         }
     }
 
-    private fun deliver(rawAnswer: String?, turnSessionId: String = sessionId) {
+    /** Executes `[SKILL: ...]` tags in [rawAnswer]. Blocking: call from [worker] only. */
+    private fun runSkills(rawAnswer: String): String {
+        if (rawAnswer.isBlank()) return rawAnswer
+        return try {
+            runBlocking { com.myvu.client.skills.SkillExecutor.processAndExecute(context, rawAnswer) }
+        } catch (e: Exception) {
+            LogBus.error("AiConversation -> Skill execution failed", e)
+            rawAnswer
+        }
+    }
+
+    /** Main thread: applies legacy actions and hands the answer to [responseDelivery]. */
+    private fun deliver(rawAnswer: String?, skillProcessed: String, turnSessionId: String = sessionId) {
         if (!active || turnSessionId != sessionId) return
 
         if (rawAnswer.isNullOrBlank()) {
             deliverError("No pude obtener respuesta del agente.")
             return
-        }
-
-        // 1. Ejecutar Habilidades dinámicas del motor de Skills (Kotlin Handlers)
-        val skillProcessed = try {
-            kotlinx.coroutines.runBlocking {
-                com.myvu.client.skills.SkillExecutor.processAndExecute(context, rawAnswer)
-            }
-        } catch (e: Exception) {
-            LogBus.error("AiConversation -> Skill execution failed", e)
-            rawAnswer
         }
 
         // 2. Ejecutar validador JSON legacy si aplica
