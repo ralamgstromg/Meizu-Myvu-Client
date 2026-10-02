@@ -90,7 +90,7 @@ object BackupManager {
                 BackupArchive.write(out) { zip ->
                     val mainDb = app.getDatabasePath(LocalDatabase.DATABASE_NAME)
                     if (mainDb.exists()) zip.putFile(MAIN_DB_ENTRY, mainDb)
-                    val chatDb = app.getDatabasePath(CHAT_DB_NAME)
+                    val chatDb = chatDbFile(app)
                     if (chatDb.exists()) zip.putFile(CHAT_DB_NAME, chatDb)
 
                     onProgress("Exportando configuraciones (sin credenciales)...")
@@ -301,9 +301,7 @@ object BackupManager {
             LogBus.warn("BackupManager -> WAL checkpoint failed: ${e.message}")
         }
         try {
-            if (app.getDatabasePath(CHAT_DB_NAME).exists()) {
-                AppDatabase.getInstance(app).openHelper.writableDatabase.query("PRAGMA wal_checkpoint(TRUNCATE)").use { it.moveToFirst() }
-            }
+            AppDatabase.getInstance(app).openHelper.writableDatabase.query("PRAGMA wal_checkpoint(TRUNCATE)").use { it.moveToFirst() }
         } catch (e: Exception) {
             LogBus.warn("BackupManager -> Chat DB WAL checkpoint failed: ${e.message}")
         }
@@ -360,6 +358,10 @@ object BackupManager {
         if (target.exists() && !target.delete()) throw IOException("No se pudo reemplazar ${target.name}")
         if (!temp.renameTo(target)) throw IOException("No se pudo reemplazar ${target.name}")
     }
+
+    /** File of the open Room database (the singleton may have been opened with another path). */
+    private fun chatDbFile(app: Context): File =
+        AppDatabase.getInstance(app).openHelper.writableDatabase.path?.let(::File) ?: app.getDatabasePath(CHAT_DB_NAME)
 
     private fun countRows(app: Context, table: String): Int = try {
         LocalDatabase.getInstance(app).readableDatabase.rawQuery("SELECT COUNT(*) FROM $table", null).use { c ->
