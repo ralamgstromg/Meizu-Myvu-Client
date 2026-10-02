@@ -25,4 +25,15 @@ class NotificationDigestTest {
     fun hudFallsBackToAppNameAsTitle() {
         assertEquals("Gmail" to "Factura lista", NotificationDigest.hud("Gmail", null, "Factura lista", 20))
     }
+
+    @Test
+    fun groupTitlesNameSenderAndGroup() {
+        assertEquals(
+            "Mensaje de Softia en el grupo MovilPlata soft de WhatsApp: Todo bn",
+            NotificationDigest.spoken("WhatsApp", "MovilPlata soft: ~ Softia", "Todo bn", 20)
+        )
+        assertEquals("Mensaje de Ana en WhatsApp: hola", NotificationDigest.spoken("WhatsApp", "~ Ana", "hola", 20))
+        // Non-messaging apps keep "X: Y" titles as they are.
+        assertEquals("Mensaje de Banco: Alerta en Bancolombia: Compra aprobada", NotificationDigest.spoken("Bancolombia", "Banco: Alerta", "Compra aprobada", 20))
+    }
 }

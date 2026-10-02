@@ -65,7 +65,9 @@ object RoutineRunner {
     }
 
     private fun agenda(context: Context): String {
-        val events = CalendarService.getEvents(context, "hoy")
+        if (!CalendarService.hasPermission(context)) return CalendarService.NO_PERMISSION_MESSAGE
+        // getEvents() formats for chat (Markdown, emoji); routines and the Hoy card need plain text.
+        val events = com.myvu.client.core.MarkdownUtils.formatCleanPlainTextForGlasses(CalendarService.getEvents(context, "hoy"))
         return if (events.isBlank() || events.contains("No tienes eventos")) "No tienes eventos en la agenda de hoy."
         else "Agenda de hoy: $events"
     }

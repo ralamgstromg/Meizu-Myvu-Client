@@ -99,5 +99,13 @@ class LogBusTest {
         assertEquals(android.util.Log.WARN, warnEntry.level)
         assertEquals("Battery critically low: 5%", warnEntry.message)
     }
-}
 
+    @Test
+    fun sourceIsInferredFromMessageWordsNotTheAppTag() {
+        assertEquals(DeviceSource.PHONE, LogBus.inferDeviceSource("CalendarService -> Missing READ_CALENDAR permission", "myvu"))
+        assertEquals(DeviceSource.PHONE, LogBus.inferDeviceSource("Network unavailable, unable to sync", "myvu"))
+        assertEquals(DeviceSource.BLUETOOTH, LogBus.inferDeviceSource("BLE connecting to 2C:6F:4E:00:FB:C1...", "myvu"))
+        assertEquals(DeviceSource.GLASSES, LogBus.inferDeviceSource("app relay connected", "myvu"))
+        assertEquals(DeviceSource.AI, LogBus.inferDeviceSource("TTS_PLAYBACK_STARTED generation=1", "myvu"))
+    }
+}

@@ -18,7 +18,18 @@ object CalendarService {
     /**
      * Retrieves calendar events for a specific target day expression ("hoy", "mañana", or default hours).
      */
+    /** Message shown/spoken when calendar access was not granted (no stack trace logged). */
+    const val NO_PERMISSION_MESSAGE = "Para leer tu agenda, permite el acceso al calendario en Ajustes > Permisos."
+
+    fun hasPermission(context: Context): Boolean =
+        androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CALENDAR) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+
     fun getEvents(context: Context, dateExpr: String = "", queryFilter: String = ""): String {
+        if (!hasPermission(context)) {
+            LogBus.warn("CalendarService -> READ_CALENDAR not granted; agenda skipped")
+            return NO_PERMISSION_MESSAGE
+        }
         return try {
             val contentResolver: ContentResolver = context.contentResolver
             val cal = Calendar.getInstance()
@@ -112,7 +123,7 @@ object CalendarService {
             "No tengo permiso para acceder a tu calendario. Por favor concede el permiso en los ajustes del teléfono."
         } catch (e: Exception) {
             LogBus.error("CalendarService -> Failed to query calendar", e)
-            "No se pudo consultar el calendario en este momento: ${e.message}"
+            "No se pudo consultar el calendario en este momento."
         }
     }
 

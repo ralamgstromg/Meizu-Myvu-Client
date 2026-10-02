@@ -193,28 +193,26 @@ object LogBus {
         androidLog(Log.DEBUG, TAG, msg, null)
     }
 
-    private fun inferDeviceSource(msg: String, tag: String): DeviceSource {
-        val lower = (msg + " " + tag).lowercase(Locale.ROOT)
+    // Whole-word patterns: substring matching made "ble" hit "available"/"unable" and the
+    // app tag "myvu" (present on every line) classify everything as GLASSES.
+    private val GLASSES_WORDS = Regex(
+        "(?<![\\p{L}\\d])(glasses|gafas|lens|lente|temple|patilla|touchpad|hud|flyme|gestures?|rfcomm|relay|spp|" +
+            "action_btn|action_button|glass_event|teleprompter|myvu fbc\\w*)(?![\\p{L}\\d])"
+    )
+    private val BLUETOOTH_WORDS = Regex(
+        "(?<![\\p{L}\\d])(bluetooth|headphones?|headset|audífonos?|a2dp|hfp|ble|gatt|sco|bond(ed|ing)?|airpods|galaxy buds|bt device|audio device)(?![\\p{L}\\d])"
+    )
+    private val AI_WORDS = Regex(
+        "(?<![\\p{L}\\d])(ai|ia|gemini|aura|assistant|agente|chat|llm|stt|tts|transcri\\w*|whisper|groq|openai|claude|speech|skill\\w*|prompt)(?![\\p{L}\\d])"
+    )
+
+    /** Classifies a line by its message only (the tag is the same for the whole app). */
+    internal fun inferDeviceSource(msg: String, @Suppress("UNUSED_PARAMETER") tag: String): DeviceSource {
+        val lower = msg.lowercase(Locale.ROOT)
         return when {
-            lower.contains("glasses") || lower.contains("lens") || lower.contains("myvu") ||
-                lower.contains("temple") || lower.contains("touchpad") || lower.contains("hud") ||
-                lower.contains("flyme") || lower.contains("gesture") || lower.contains("rfcomm") ||
-                lower.contains("action_btn") || lower.contains("action_button") ||
-                lower.contains("glass_event") || lower.contains("turn icon") ||
-                lower.contains("send to lens") -> DeviceSource.GLASSES
-
-            lower.contains("bluetooth") || lower.contains("headphone") || lower.contains("headset") ||
-                lower.contains("a2dp") || lower.contains("audio device") || lower.contains("bt device") ||
-                lower.contains("ble") || lower.contains("sco") || lower.contains("bond") ||
-                lower.contains("airpods") || lower.contains("galaxy buds") ||
-                (lower.contains("disconnect") && lower.contains("device")) -> DeviceSource.BLUETOOTH
-
-            lower.contains("gemini") || lower.contains("aura") || lower.contains("assistant") ||
-                lower.contains("chat") || lower.contains("llm") || lower.contains("stt") ||
-                lower.contains("tts") || lower.contains("transcrib") || lower.contains("whisper") ||
-                lower.contains("groq") || lower.contains("openai") || lower.contains("ai prompt") ||
-                lower.contains("speech") -> DeviceSource.AI
-
+            GLASSES_WORDS.containsMatchIn(lower) -> DeviceSource.GLASSES
+            BLUETOOTH_WORDS.containsMatchIn(lower) -> DeviceSource.BLUETOOTH
+            AI_WORDS.containsMatchIn(lower) -> DeviceSource.AI
             else -> DeviceSource.PHONE
         }
     }
