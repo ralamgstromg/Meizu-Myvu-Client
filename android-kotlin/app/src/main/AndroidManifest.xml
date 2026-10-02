@@ -93,18 +93,28 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Myvu">
 
-        <!-- Main Launcher Activity: Agent Chat & Actions -->
+        <!-- Agent Chat & Actions -->
         <activity
             android:name=".ui.chat.ChatActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
+            android:exported="false" />
+
+        <!-- Main Launcher: Hoy / Biblioteca / Agente / Ajustes -->
+        <activity
+            android:name=".ui.home.HomeActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ui.PermissionsActivity"
+            android:exported="false" />
 
         <!-- Secondary Activities -->
         <activity

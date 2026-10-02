@@ -134,6 +134,8 @@ class ChatActivity : AppCompatActivity() {
         if (intent?.getBooleanExtra(EXTRA_AUTO_START_STT, false) == true) {
             handleAutoStartStt()
         }
+        // Deferred until onCreate has wired every view sendUserQuery() touches.
+        intent?.let { i -> window.decorView.post { handleInitialQuery(i) } }
 
         chatDrawerLayout = findViewById(R.id.chatDrawerLayout)
         topBar = findViewById(R.id.topBar)
@@ -564,6 +566,14 @@ class ChatActivity : AppCompatActivity() {
         if (intent?.getBooleanExtra(EXTRA_AUTO_START_STT, false) == true) {
             handleAutoStartStt()
         }
+        intent?.let { handleInitialQuery(it) }
+    }
+
+    /** Sends a question passed by another screen (e.g. the "Hoy" ask bar) once. */
+    private fun handleInitialQuery(intent: Intent) {
+        val query = intent.getStringExtra(EXTRA_INITIAL_QUERY)?.trim().orEmpty()
+        intent.removeExtra(EXTRA_INITIAL_QUERY)
+        if (query.isNotEmpty()) sendUserQuery(query)
     }
 
     override fun onResume() {
@@ -760,5 +770,6 @@ class ChatActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_AUTO_START_STT: String = "EXTRA_AUTO_START_STT"
+        const val EXTRA_INITIAL_QUERY: String = "EXTRA_INITIAL_QUERY"
     }
 }

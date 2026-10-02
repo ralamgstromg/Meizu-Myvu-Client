@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/ios_system_bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/txtTodayGreeting"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/ios_label"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:text="Hola" />
+
+        <TextView
+            android:id="@+id/txtTodayDate"
+            style="@style/Label.Myvu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="" />
+
+        <!-- Devices status -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardTodayDevices"
+            style="@style/Card.Myvu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <TextView
+                android:id="@+id/txtTodayDevices"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="14dp"
+                android:textColor="@color/ios_label"
+                android:text="Sin dispositivos conectados · Toca para conectar" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Ask bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Input.Myvu"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Preguntar al agente…">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edtTodayAsk"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionSend"
+                    android:inputType="textCapSentences"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTodayMic"
+                style="@style/Button.Myvu"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:contentDescription="Hablar con el agente"
+                android:text="🎙" />
+        </LinearLayout>
+
+        <!-- Your day -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Card.Myvu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/CardTitle.Myvu"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Tu día" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTodayListen"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Escuchar" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTodayRefresh"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Actualizar" />
+                </LinearLayout>
+
+                <ProgressBar
+                    android:id="@+id/progressToday"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:indeterminate="true"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/txtTodayBriefing"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:lineSpacingMultiplier="1.2"
+                    android:textColor="@color/ios_label"
+                    android:textSize="15sp"
+                    android:text="Cargando agenda, recordatorios y tareas…" />
+
+                <TextView
+                    android:id="@+id/txtTodayExternal"
+                    style="@style/Label.Myvu"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Quick actions -->
+        <TextView
+            style="@style/CardTitle.Myvu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Acciones rápidas" />
+
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:columnCount="2">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQuickMeeting"
+                style="@style/Button.Myvu.Outlined"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_margin="4dp"
+                android:text="🎙 Grabar reunión" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQuickNote"
+                style="@style/Button.Myvu.Outlined"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_margin="4dp"
+                android:text="📝 Notas y tareas" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQuickReminders"
+                style="@style/Button.Myvu.Outlined"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_margin="4dp"
+                android:text="⏰ Recordatorios" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQuickRoutines"
+                style="@style/Button.Myvu.Outlined"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_margin="4dp"
+                android:text="🔁 Rutinas" />
+        </GridLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

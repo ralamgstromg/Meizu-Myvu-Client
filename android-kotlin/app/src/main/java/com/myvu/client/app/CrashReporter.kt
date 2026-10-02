@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Looper
 import com.myvu.client.core.LogBus
-import com.myvu.client.ui.ConnectActivity
 import java.io.File
 import java.io.FileWriter
 import java.io.PrintWriter
@@ -18,7 +17,7 @@ import java.util.Locale
  * 1. Traps unexpected exceptions on both background threads and main UI thread.
  * 2. Writes full diagnostic crash report to local storage and LogBus.
  * 3. Prevents background worker crashes from terminating BLE / App services.
- * 4. Gracefully recovers the app to ConnectActivity on critical main thread failures in production.
+ * 4. Gracefully recovers the app to HomeActivity on critical main thread failures in production.
  */
 object CrashReporter {
 
@@ -83,7 +82,7 @@ object CrashReporter {
                     LogBus.error("CrashReporter: Initiating graceful rescue on main thread crash...", null)
 
                     try {
-                        val rescueIntent = Intent(appCtx, ConnectActivity::class.java).apply {
+                        val rescueIntent = Intent(appCtx, com.myvu.client.ui.home.HomeActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             putExtra("EXTRA_RESCUED_FROM_CRASH", true)
                         }

@@ -19,6 +19,8 @@ import com.myvu.client.database.ReminderRepository
 import com.myvu.client.database.TodoRepository
 import com.myvu.client.service.MyvuService
 import com.myvu.client.weather.WeatherSync
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -37,8 +39,11 @@ object RoutineRunner {
         deliver(context, routine, text)
     }
 
-    /** One sentence block per action, in [RoutineAction] order. Failing sections are skipped and logged. */
-    suspend fun compose(context: Context, actions: Set<RoutineAction>): String {
+    /**
+     * One sentence block per action, in [RoutineAction] order. Failing sections are
+     * skipped and logged. Runs on [Dispatchers.IO]: sections do DB and network I/O.
+     */
+    suspend fun compose(context: Context, actions: Set<RoutineAction>): String = withContext(Dispatchers.IO) {
         val parts = mutableListOf<String>()
         for (action in RoutineAction.values().filter { it in actions }) {
             val part = when (action) {
@@ -56,7 +61,7 @@ object RoutineRunner {
             }
             if (!part.isNullOrBlank()) parts.add(part.trim().let { if (it.endsWith(".")) it else "$it." })
         }
-        return parts.joinToString(" ").ifBlank { "No hay novedades para esta rutina." }
+        parts.joinToString(" ").ifBlank { "No hay novedades para esta rutina." }
     }
 
     private fun agenda(context: Context): String {

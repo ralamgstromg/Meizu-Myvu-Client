@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/ios_system_bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/ios_label"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:text="Agente" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAgentChat"
+                style="@style/Button.Myvu"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:text="💬 Abrir chat" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAgentVoice"
+                style="@style/Button.Myvu.Outlined"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:text="🎙 Hablar" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/txtAgentPolicy"
+            style="@style/Label.Myvu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/CardTitle.Myvu"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Rutinas programadas" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAgentNewRoutine"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+ Nueva" />
+        </LinearLayout>
+
+        <TextView
+            style="@style/Label.Myvu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Resúmenes automáticos de agenda, tareas, recordatorios, cumpleaños, correos, TRM y clima. Toca una rutina para editarla y mantén pulsado para borrarla." />
+
+        <TextView
+            android:id="@+id/txtAgentRoutinesEmpty"
+            style="@style/Label.Myvu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Aún no tienes rutinas. Crea una con «+ Nueva» o dile al agente: «todos los días a las 7 resúmeme la agenda y la TRM»." />
+
+        <LinearLayout
+            android:id="@+id/listAgentRoutines"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

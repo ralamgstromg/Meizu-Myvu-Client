@@ -74,6 +74,21 @@ object SearchIndex {
             hits.sortedWith(compareByDescending<Hit> { it.score }.thenByDescending { it.date }).take(limit)
         }
 
+    /** Most recent items of [kinds], newest first (Library view without a query). */
+    suspend fun recent(context: Context, kinds: Set<Kind> = Kind.values().toSet(), limit: Int = 50): List<Hit> =
+        withContext(Dispatchers.IO) {
+            refreshIfStale(context)
+            val placeholders = kinds.joinToString(",") { "?" }
+            db(context).rawQuery(
+                "SELECT kind, ref_id, date, title, body FROM docs WHERE kind IN ($placeholders) ORDER BY CAST(date AS INTEGER) DESC LIMIT $limit",
+                kinds.map { it.name }.toTypedArray()
+            ).use { c ->
+                generateSequence { if (c.moveToNext()) c else null }.map {
+                    Hit(Kind.valueOf(it.getString(0)), it.getString(1), it.getString(3), snippet(it.getString(4), "", ""), it.getLong(2), 0)
+                }.toList()
+            }
+        }
+
     /** Forces a rebuild on the next search (e.g. after a backup restore). */
     fun invalidate(context: Context) {
         db(context).delete("meta", null, null)
