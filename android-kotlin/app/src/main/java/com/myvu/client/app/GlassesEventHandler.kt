@@ -2,6 +2,7 @@ package com.myvu.client.app
 
 import android.content.Context
 import android.view.KeyEvent
+import com.myvu.client.ai.HudAnswerPager
 import com.myvu.client.ai.SensitiveActionGate
 import com.myvu.client.app.feature.GlassGesture
 import com.myvu.client.app.feature.Notifications
@@ -118,6 +119,22 @@ class GlassesEventHandler(
         }
     }
 
+    /** Swipes page through a condensed answer while it is open (see HudAnswerPager). */
+    private fun pageAnswer(gesture: GlassGesture): Boolean {
+        if (!HudAnswerPager.isOpen()) return false
+        return when (gesture) {
+            GlassGesture.SWIPE_FORWARD -> {
+                showOnHud(HudAnswerPager.next() ?: "Fin de la respuesta")
+                true
+            }
+            GlassGesture.SWIPE_BACKWARD -> {
+                HudAnswerPager.previous()?.let(::showOnHud)
+                true
+            }
+            else -> false
+        }
+    }
+
     private fun showOnHud(message: String) {
         try {
             delegate.sendAction(Notifications.buildShow("MYVU", message))
@@ -131,7 +148,7 @@ class GlassesEventHandler(
             // While the AI waits for confirmation of a sensitive action, a double tap
             // confirms it and a backward swipe discards it.
             override fun interceptGesture(gesture: GlassGesture): Boolean {
-                if (!SensitiveActionGate.hasPending()) return false
+                if (!SensitiveActionGate.hasPending()) return pageAnswer(gesture)
                 return when (gesture) {
                     GlassGesture.DOUBLE_TAP -> {
                         SensitiveActionGate.confirmPending()?.let(::runConfirmed)

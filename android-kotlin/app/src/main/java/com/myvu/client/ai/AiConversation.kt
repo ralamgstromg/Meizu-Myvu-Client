@@ -77,7 +77,8 @@ class AiConversation(
         // A pending confirmation prompt must show the full recipient and message on the HUD.
         condenseVisualWhenSpoken = {
             condenseHudWhenSpoken && Prefs.hudCondensedAnswers(this.context) && !SensitiveActionGate.hasPending()
-        }
+        },
+        onVisualCondensed = { full -> HudAnswerPager.open(full) }
     )
 
     /**

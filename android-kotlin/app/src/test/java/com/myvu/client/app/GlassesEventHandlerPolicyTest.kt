@@ -56,6 +56,7 @@ class GlassesEventHandlerPolicyTest {
     fun tearDown() {
         TouchGestureManager.resetDebounceForTesting()
         com.myvu.client.ai.SensitiveActionGate.clear()
+        com.myvu.client.ai.HudAnswerPager.close()
     }
 
     private fun aiTrigger(code: Int, control: Int = 1) =
@@ -179,5 +180,17 @@ class GlassesEventHandlerPolicyTest {
         handler.handleGesture(GlassGesture.SWIPE_BACKWARD)
 
         assertEquals(1, delegate.weatherRefreshCount)
+    }
+
+    @Test
+    fun swipesPageThroughCondensedAnswerInsteadOfTheirMapping() {
+        Prefs.setTouchpadSwipeForwardAction(context, "weather_sync")
+        com.myvu.client.ai.HudAnswerPager.open((1..12).joinToString(" ") { "Frase larga número $it del resultado." })
+
+        handler.handleGesture(GlassGesture.SWIPE_FORWARD)
+
+        assertEquals(0, delegate.weatherRefreshCount)
+        // JSONObject escapes "/" as "\/" in the notification payload: "(2\/3) ...".
+        assertTrue(delegate.sentActions.single().contains("\"content\":\"(2\\/"))
     }
 }

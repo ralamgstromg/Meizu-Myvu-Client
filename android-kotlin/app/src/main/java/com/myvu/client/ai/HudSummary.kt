@@ -28,4 +28,34 @@ object HudSummary {
         val lastSpace = cut.lastIndexOf(' ')
         return (if (lastSpace > maxChars / 2) cut.substring(0, lastSpace) else cut).trimEnd(',', ';', ':', ' ') + "…"
     }
+
+    /**
+     * Splits [text] into HUD pages of at most [maxChars]: whole sentences when they fit,
+     * word chunks for longer sentences. For sentence-shaped text the first page equals
+     * [condense].
+     */
+    fun paginate(text: String, maxChars: Int = DEFAULT_MAX_CHARS): List<String> {
+        val pages = mutableListOf<String>()
+        val current = StringBuilder()
+        fun flush() {
+            if (current.isNotEmpty()) pages.add(current.toString())
+            current.setLength(0)
+        }
+        fun append(piece: String) {
+            if (current.isNotEmpty() && current.length + 1 + piece.length > maxChars) flush()
+            if (current.isNotEmpty()) current.append(' ')
+            current.append(piece)
+        }
+        for (sentence in text.trim().split(SENTENCE_END).map { it.trim() }.filter { it.isNotEmpty() }) {
+            if (sentence.length <= maxChars) {
+                append(sentence)
+            } else {
+                flush()
+                for (word in sentence.split(Regex("\\s+"))) append(word)
+                flush()
+            }
+        }
+        flush()
+        return pages
+    }
 }

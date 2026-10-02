@@ -12,7 +12,9 @@ class AiResponseDelivery(
     private val mode: AiResponseMode = AiResponseMode.VOICE_AND_VISUAL,
     private val modeProvider: (() -> AiResponseMode)? = null,
     /** When true and the answer is also spoken, the HUD gets a short summary ([HudSummary]). */
-    private val condenseVisualWhenSpoken: () -> Boolean = { false }
+    private val condenseVisualWhenSpoken: () -> Boolean = { false },
+    /** Receives the full text when the HUD only got a summary (for temple paging). */
+    private val onVisualCondensed: (String) -> Unit = {}
 ) {
     interface Speaker {
         fun speak(text: String, callback: (Boolean) -> Unit)
@@ -55,6 +57,7 @@ class AiResponseDelivery(
         val visual = selectedMode != AiResponseMode.VOICE_ONLY
         if (visual) {
             val hudText = if (speak && condenseVisualWhenSpoken()) HudSummary.condense(text) else text
+            if (hudText.length < text.length) onVisualCondensed(text)
             sender(AiProtocol.chatAnswer(response.sessionId, hudText, response.baseStatus))
             LogBus.log("AI_TEXT_SENT sessionId=${response.sessionId} source=${response.source} answerLength=${text.length} hudLength=${hudText.length}")
         }
