@@ -2207,3 +2207,17 @@ Se requería dotar al ecosistema de conexión Bluetooth de:
 - `BackupManagerTest` (9 tests): ida y vuelta con tipos y medios, historial de chat con Room abierto, exclusión de credenciales, checksum alterado, `db_version` futura, Zip Slip, v1 heredado, rollback y rotación.
 - `./gradlew testDebugUnitTest`: 336 tests, 0 fallos. `assembleDebug`: **BUILD SUCCESSFUL**.
 - Pendiente: prueba manual de respaldo y restauración en el dispositivo. Fase 3 (HUD y audífonos, D1–D6): propuestas en el plan.
+
+## 50. [2026-10-02] — Resumen de Respuestas en el HUD con Voz Completa (D2)
+
+### Soluciones Implementadas:
+- `ai/HudSummary.kt`: resume la respuesta en oraciones completas hasta 160 caracteres, o corta en límite de palabra con "…".
+- `AiResponseDelivery`: si la respuesta se habla y `condenseVisualWhenSpoken()` es verdadero, el HUD recibe el resumen y la voz el texto completo. En `visual_only` el HUD muestra todo.
+- `AiConversation.condenseHudWhenSpoken`: solo `ConnectionManager.ai()` lo activa. `ChatEngineService` sigue guardando la respuesta completa.
+- `Prefs.hudCondensedAnswers` (por defecto `true`, todavía sin UI).
+- D1 (modo automático por dispositivo) se descartó: con solo audífonos la arquitectura ya responde por voz sin HUD (`HeadphoneGestureManager` → `ChatActivity`).
+- `BackupManager` toma la ruta de la base del chat de la instancia Room abierta. Dos tests fallaban según el orden de ejecución porque la ruta no coincidía.
+
+### Verificación:
+- `HudSummaryTest` (3 tests) y 2 tests nuevos en `AiResponseDeliveryTest`.
+- `./gradlew testDebugUnitTest`: 341 tests, 0 fallos, en dos ejecuciones (`--rerun`). `assembleDebug`: **BUILD SUCCESSFUL**.

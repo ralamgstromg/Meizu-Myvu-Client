@@ -38,8 +38,8 @@
 
 | # | Propuesta | Valor |
 |---|---|---|
-| D1 | **Modo de respuesta automático por dispositivo** (`AUTO`): con gafas conectadas, texto en HUD + voz; con solo audífonos, solo voz (hoy se envía texto a un HUD inexistente); sin dispositivos, voz por el altavoz. Se basa en `BluetoothDeviceManager.activeDevice`. | Alto |
-| D2 | **Texto distinto para HUD y para voz**: el HUD recibe un resumen corto (≤ 2 líneas o ~120 caracteres) y la voz la respuesta completa. Hoy ambos reciben el mismo texto largo. | Alto |
+| D1 | ~~Modo de respuesta automático por dispositivo~~ **Descartada tras el análisis**: con solo audífonos, `HeadphoneGestureManager` abre `ChatActivity` con STT automático y responde por TTS; nunca pasa por el HUD. La instancia de `ChatEngineService` usa un `sender` que guarda la respuesta en el historial. La arquitectura ya resuelve este caso. Propuesta original: **Modo de respuesta automático por dispositivo** (`AUTO`): con gafas conectadas, texto en HUD + voz; con solo audífonos, solo voz (hoy se envía texto a un HUD inexistente); sin dispositivos, voz por el altavoz. Se basa en `BluetoothDeviceManager.activeDevice`. | Alto |
+| D2 | **Implementada** (`ai/HudSummary`, `AiResponseDelivery.condenseVisualWhenSpoken`, `Prefs.hudCondensedAnswers`, por defecto activo, solo en la instancia de las gafas). **Texto distinto para HUD y para voz**: el HUD recibe un resumen corto (≤ 2 líneas o ~120 caracteres) y la voz la respuesta completa. Hoy ambos reciben el mismo texto largo. | Alto |
 | D3 | **Paginación del HUD** con swipe adelante/atrás mientras hay una respuesta abierta (reutilizando `GlassesEventHandler`). | Medio |
 | D4 | **Barge-in en audífonos**: tocar el audífono durante el TTS corta la reproducción y abre el micrófono (`HeadphoneGestureManager` y `AiResponseDelivery.cancel()`). | Medio |
 | D5 | Confirmación de acciones sensibles (ya hecha, `SensitiveActionGate`): mostrar el destinatario y el mensaje en el HUD y aceptar "confirmar" con doble toque. | Medio |

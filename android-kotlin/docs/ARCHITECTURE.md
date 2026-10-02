@@ -248,6 +248,12 @@ El subsistema en `com.myvu.client.skills` permite añadir funcionalidades al dis
 - **Motor Nube Conversacional (Gemini Live / GeminiClient)**:
   - Streaming conversacional de baja latencia con Gemini Live o API REST de Gemini.
 
+### 6.0 Entrega de Respuestas: HUD y Voz (`AiResponseDelivery`, `HudSummary`)
+- `AiResponseMode` (`voice_only`, `visual_only`, `voice_and_visual`) decide los canales de salida.
+- **Resumen en el HUD**: cuando la respuesta también se habla y la conversación pertenece a las gafas (`AiConversation.condenseHudWhenSpoken`, que activa `ConnectionManager.ai()`), el HUD recibe `HudSummary.condense()`: oraciones completas hasta 160 caracteres, o un corte en límite de palabra con "…". La voz lee la respuesta completa. Se desactiva con `Prefs.hudCondensedAnswers` (`hud_condensed_answers`). En `visual_only` el HUD siempre muestra el texto completo.
+- La instancia de `ChatEngineService` no resume, porque su `sender` guarda la respuesta completa en el historial.
+- Con solo audífonos no se usa el HUD: `HeadphoneGestureManager` abre `ChatActivity` con STT automático y respuesta por TTS.
+
 ### 6.1 Detección de Actividad de Voz (VAD) Adaptativa y Control de Latencia (`AiConversation`)
 - **Umbral Dinámico Post-Habla**:
   - Mientras el usuario habla, `AiConversation` monitorea la energía RMS pico (`peakEnergy`).
