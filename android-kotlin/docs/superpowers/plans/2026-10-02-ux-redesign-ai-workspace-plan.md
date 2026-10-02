@@ -1,7 +1,7 @@
 # Plan: Rediseño UX, Espacio de Trabajo IA, Tareas Programadas, Locale es-CO y Permisos
 
 **Fecha:** 2026-10-02
-**Estado:** Fase 1 implementada (TTS es-CO y notificaciones resumidas). Fases 2–5 propuestas, pendientes de aprobación.
+**Estado:** Fases 1–5 implementadas el 2026-10-02. Pendiente: búsqueda semántica (3b, opcional) y prueba manual en el dispositivo.
 
 ---
 
@@ -112,10 +112,12 @@
 
 ---
 
-## 6. Orden sugerido
-1. ~~Fase 1~~ ✅
-2. Fase 5.1 (errores y logs): base para todo lo demás.
-3. Fase 4 (rutinas + cumpleaños): valor inmediato sin rediseño.
-4. Fase 3 (búsqueda FTS).
-5. Fase 2 (rediseño), con mockups aprobados.
-6. Fase 5.2 (centro de permisos), integrado en los nuevos Ajustes.
+## 6. Estado de implementación
+| Fase | Commit | Notas |
+|---|---|---|
+| 1 TTS es-CO + notificaciones | `9a758e7` | |
+| 5.1 Errores y logs | `0549afb`, `c5a…` | `AppError`, `attempt`, rotación de crash logs, logs de crash en "Compartir" |
+| 4 Rutinas, cumpleaños y Gmail | `dd10a3f` | Gmail requiere volver a vincular Google (scope nuevo) |
+| 3 Búsqueda FTS | `280ff95` | 3b semántica: no implementada |
+| 5.2 Centro de permisos | `d71acaa` | Se quitaron `DISABLE_KEYGUARD` y `BODY_SENSORS` (sin uso) |
+| 2 Rediseño | `9c5620e` | Se implementó directamente, sin maquetas previas |

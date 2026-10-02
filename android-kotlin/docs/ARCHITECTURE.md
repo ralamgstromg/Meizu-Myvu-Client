@@ -4,6 +4,22 @@ Este documento describe la arquitectura interna, diseño de capas, flujo de dato
 
 ---
 
+## 0. Navegación Principal (`ui/home`)
+- **`HomeActivity`** es el launcher, con barra inferior y cuatro pestañas:
+  - **Hoy** (`TodayFragment`): estado de dispositivos, barra "Preguntar al agente" (abre `ChatActivity` con `EXTRA_INITIAL_QUERY` o STT), "Tu día" compuesto con `RoutineRunner.compose` (agenda, recordatorios, tareas, cumpleaños; TRM y clima en una segunda línea) y acciones rápidas.
+  - **Biblioteca** (`LibraryFragment`): lista unificada respaldada por `SearchIndex` (recientes o búsqueda mientras se escribe), con filtros por tipo. Abre `NoteDetailActivity` / `RecordingDetailActivity`.
+  - **Agente** (`AgentFragment`): chat y voz, estado de `ActionPolicy`, rutinas (plantillas, editor, activar o desactivar, "Probar", borrar con pulsación larga).
+  - **Ajustes** (`MoreFragment`): accesos a Dispositivos, Gafas, Audífonos, IA/Voz/Notificaciones/Respaldo, Apps, Permisos y Registro de actividad.
+- **`PermissionsActivity`**: centro de permisos (propósito, estado y botón para conceder). Se muestra una vez en el primer arranque si falta un permiso esencial.
+
+## 0.1 Servicios del Asistente
+- **Búsqueda** (`search/SearchIndex`): FTS4 en `myvu_search.db`, un dato derivado que se reconstruye cuando cambia la firma del contenido. Indexa notas, grabaciones (título, transcripción, resumen, puntos de acción), recordatorios, tareas y chat. Texto normalizado sin acentos, prefijos y ranking (título ×3). Lo usan la Biblioteca y la skill `rag-history-search`.
+- **Rutinas** (`routines/`): `ScheduledRoutine` + `RoutineStore` (JSON en preferencias), `RoutineRunner` (componer y entregar por notificación, voz o HUD), `RoutineScheduler`/`RoutineReceiver` (alarma exacta por rutina, se reprograma en `BootReceiver`), skill `schedule-routine`.
+- **Datos**: `BirthdayService` (eventos de cumpleaños de los contactos) y `GmailService` (no leídos de la bandeja principal con la API de Gmail y el scope `gmail.readonly`; si no está disponible, usa las notificaciones).
+- **Errores** (`core/errors/AppError`): `AppError.from(Throwable)` → mensaje en es-CO + log técnico; `Throwable.userMessage(where)`; `attempt(what) { }` para trabajo best-effort registrado. `CrashReporter` rota `logs/crash_log*.txt` (1 MB × 5), y el Registro de actividad los incluye al compartir.
+- **Voz y notificaciones**: `core/locale/SpeechNormalizer` (es-CO) y `service/NotificationDigest` (N palabras).
+
+
 ## 1. Visión General y Topología
 
 La aplicación actúa como puente bidireccional entre el sistema operativo Android y el hardware de las gafas Meizu Myvu (pantalla micro-LED monocromática/verde, micrófonos duales, sensores IMU y trackpad táctil).

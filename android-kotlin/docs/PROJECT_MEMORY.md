@@ -2248,3 +2248,17 @@ Se requería dotar al ecosistema de conexión Bluetooth de:
 
 ### Verificación:
 - `SpeechNormalizerTest` (5) y `NotificationDigestTest` (3). `./gradlew testDebugUnitTest`: 358 tests, 0 fallos. `assembleDebug`: **BUILD SUCCESSFUL**.
+
+## 53. [2026-10-02] — Rediseño Completo: Hoy/Biblioteca/Agente/Ajustes, Búsqueda, Rutinas, Errores y Permisos
+
+### Soluciones Implementadas:
+- **Errores y logs (5.1)**: `AppError` + `Throwable.userMessage()` en 50 puntos que mostraban `e.message` crudo; `attempt()` en la sincronización de ajustes con las gafas y en el feedback al HUD; rotación de crash logs, que además se incluyen al compartir el registro.
+- **Rutinas (4)**: `routines/` (modelo, store, runner, scheduler/receiver), `BirthdayService`, `GmailService` (scope `gmail.readonly` agregado al OAuth de Google: hay que volver a vincular la cuenta), skill `schedule-routine`, `ExactAlarms` compartido con `ReminderScheduler`.
+- **Búsqueda (3)**: `search/SearchIndex` (FTS4 en `myvu_search.db`, se reconstruye por firma, sin acentos, ranking). `rag-history-search` lo usa y ahora incluye el chat. El restore invalida el índice.
+- **Rediseño (2)**: `ui/home/HomeActivity` como launcher, con las pestañas Hoy, Biblioteca, Agente (rutinas) y Ajustes. `ChatActivity` deja de estar exportada y acepta `EXTRA_INITIAL_QUERY`. El rescate tras un crash vuelve a Home.
+- **Permisos (5.2)**: `PermissionsActivity` (centro de permisos; se muestra una vez al inicio). El Auto-Send sin accesibilidad deja el mensaje listo y avisa por HUD y voz. Se quitaron `DISABLE_KEYGUARD` y `BODY_SENSORS`.
+- **Restricción documentada**: Android solo permite pulsar "Enviar" en otras apps con un servicio de accesibilidad; no hay alternativa sin ese permiso.
+
+### Verificación:
+- Tests nuevos: `AppErrorTest`, `RoutinesTest` (6), `SearchIndexTest` (3), `HomeScreensTest` (4). `./gradlew testDebugUnitTest`: 374 tests, 0 fallos. `assembleDebug`: **BUILD SUCCESSFUL**.
+- Pendiente: prueba manual en el dispositivo (navegación, rutinas reales, Gmail con la cuenta re-vinculada, centro de permisos).
