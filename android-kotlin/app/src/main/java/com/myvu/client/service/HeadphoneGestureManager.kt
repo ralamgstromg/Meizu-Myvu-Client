@@ -27,6 +27,17 @@ class HeadphoneGestureManager private constructor(private val context: Context) 
     private val db = AppDatabase.getInstance(context)
     private val dao = db.bluetoothDeviceDao()
 
+    /** Spoken output the headset button can interrupt. Replaceable in tests. */
+    interface SpeechOutput {
+        fun isSpeaking(): Boolean
+        fun stop()
+    }
+
+    internal var speech: SpeechOutput = object : SpeechOutput {
+        override fun isSpeaking() = TextToSpeechHelper.isSpeaking()
+        override fun stop() = TextToSpeechHelper.stop()
+    }
+
     private var lastTapTime = 0L
     private var tapCount = 0
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -48,6 +59,13 @@ class HeadphoneGestureManager private constructor(private val context: Context) 
         when (keyCode) {
             KeyEvent.KEYCODE_HEADSETHOOK,
             KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                // Barge-in: a tap while the assistant is talking only silences it,
+                // instead of also toggling media or launching the mapped action.
+                if (tapCount == 0 && speech.isSpeaking()) {
+                    speech.stop()
+                    LogBus.log("HeadphoneGestureManager -> Tap during speech: TTS stopped (barge-in)")
+                    return true
+                }
                 val now = SystemClock.uptimeMillis()
                 handler.removeCallbacks(tapEvaluatorRunnable)
 

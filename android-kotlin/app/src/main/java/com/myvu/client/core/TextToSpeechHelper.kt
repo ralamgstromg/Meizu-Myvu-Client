@@ -17,6 +17,13 @@ object TextToSpeechHelper : TextToSpeech.OnInitListener {
 
     fun isReady(): Boolean = isInitialized && tts != null
 
+    /** True while an utterance is playing or queued. */
+    fun isSpeaking(): Boolean = try {
+        tts?.isSpeaking == true
+    } catch (e: Exception) {
+        false
+    }
+
     fun init(context: Context, onReady: (() -> Unit)? = null) {
         if (tts == null) {
             tts = TextToSpeech(context.applicationContext, this)
