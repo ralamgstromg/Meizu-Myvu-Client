@@ -448,6 +448,19 @@ class ActivityLogActivity : AppCompatActivity() {
                 }
             }
 
+            // Crash reports survive restarts; include the newest ones (capped) for support.
+            val crashFiles = com.myvu.client.app.CrashReporter.logFiles(this)
+            if (crashFiles.isNotEmpty()) {
+                sb.append("\n=== CRASH LOGS (más recientes primero) ===\n")
+                var budget = 200 * 1024
+                for (f in crashFiles) {
+                    if (budget <= 0) break
+                    val text = f.readText().takeLast(budget)
+                    sb.append("--- ${f.name} ---\n").append(text).append("\n")
+                    budget -= text.length
+                }
+            }
+
             val fullText = sb.toString()
             val logFile = File(cacheDir, "myvu_activity_log.txt")
             logFile.writeText(fullText)
