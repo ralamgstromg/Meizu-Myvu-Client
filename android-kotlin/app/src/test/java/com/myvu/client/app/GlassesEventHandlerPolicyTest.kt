@@ -55,6 +55,7 @@ class GlassesEventHandlerPolicyTest {
     @After
     fun tearDown() {
         TouchGestureManager.resetDebounceForTesting()
+        com.myvu.client.ai.SensitiveActionGate.clear()
     }
 
     private fun aiTrigger(code: Int, control: Int = 1) =
@@ -142,5 +143,41 @@ class GlassesEventHandlerPolicyTest {
 
         assertEquals(1, delegate.weatherRefreshCount)
         assertFalse(delegate.sentActions.isEmpty())
+    }
+
+    @Test
+    fun doubleTapConfirmsPendingSensitiveActionAndShowsResult() {
+        val gate = com.myvu.client.ai.SensitiveActionGate
+        val confirming = GlassesEventHandler(context, router, delegate, kotlinx.coroutines.Dispatchers.Unconfined)
+        var sent = 0
+        gate.hold("send-whatsapp (contact: Ana)") { sent++; "WhatsApp enviado" }
+
+        confirming.handleGesture(GlassGesture.DOUBLE_TAP)
+
+        assertEquals(1, sent)
+        assertFalse(gate.hasPending())
+        assertTrue(delegate.sentActions.any { it.contains("WhatsApp enviado") })
+    }
+
+    @Test
+    fun backwardSwipeCancelsPendingSensitiveAction() {
+        val gate = com.myvu.client.ai.SensitiveActionGate
+        var sent = 0
+        gate.hold("call-contact") { sent++; "Llamando" }
+
+        handler.handleGesture(GlassGesture.SWIPE_BACKWARD)
+
+        assertEquals(0, sent)
+        assertFalse(gate.hasPending())
+        assertTrue(delegate.sentActions.any { it.contains(com.myvu.client.ai.SensitiveActionGate.CANCELLED_MESSAGE) })
+    }
+
+    @Test
+    fun gesturesKeepTheirMappingWhenNothingIsPending() {
+        Prefs.setTouchpadSwipeBackwardAction(context, "weather_sync")
+
+        handler.handleGesture(GlassGesture.SWIPE_BACKWARD)
+
+        assertEquals(1, delegate.weatherRefreshCount)
     }
 }

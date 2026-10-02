@@ -2,6 +2,7 @@ package com.myvu.client.app
 
 import android.content.Context
 import android.view.KeyEvent
+import com.myvu.client.ai.SensitiveActionGate
 import com.myvu.client.app.feature.GlassGesture
 import com.myvu.client.app.feature.Notifications
 import com.myvu.client.app.feature.SystemSettings
@@ -9,6 +10,11 @@ import com.myvu.client.app.feature.Teleprompter
 import com.myvu.client.app.feature.TouchGestureManager
 import com.myvu.client.core.LogBus
 import com.myvu.client.core.Prefs
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 /**
@@ -18,8 +24,12 @@ import org.json.JSONObject
 class GlassesEventHandler(
     context: Context?,
     private val inbound: InboundRouter,
-    private val delegate: Delegate
+    private val delegate: Delegate,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
+
+    /** Runs actions confirmed from the temple (they may send messages or call). */
+    private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
 
     interface Delegate {
         fun wakeRelay()
@@ -96,8 +106,45 @@ class GlassesEventHandler(
         TouchGestureManager.handleGesture(context, gesture, rawCode, createActionExecutor(), eventTime)
     }
 
+    private fun runConfirmed(action: suspend () -> String) {
+        scope.launch {
+            val message = try {
+                action()
+            } catch (e: Exception) {
+                LogBus.error("GlassesEventHandler: confirmed action failed", e)
+                "No pude ejecutar la acción confirmada."
+            }
+            showOnHud(message)
+        }
+    }
+
+    private fun showOnHud(message: String) {
+        try {
+            delegate.sendAction(Notifications.buildShow("MYVU", message))
+        } catch (e: Exception) {
+            LogBus.warn("GlassesEventHandler: could not show '$message' on HUD: ${e.message}")
+        }
+    }
+
     private fun createActionExecutor(): TouchGestureManager.ActionExecutor {
         return object : TouchGestureManager.ActionExecutor {
+            // While the AI waits for confirmation of a sensitive action, a double tap
+            // confirms it and a backward swipe discards it.
+            override fun interceptGesture(gesture: GlassGesture): Boolean {
+                if (!SensitiveActionGate.hasPending()) return false
+                return when (gesture) {
+                    GlassGesture.DOUBLE_TAP -> {
+                        SensitiveActionGate.confirmPending()?.let(::runConfirmed)
+                        true
+                    }
+                    GlassGesture.SWIPE_BACKWARD -> {
+                        if (SensitiveActionGate.cancelPending()) showOnHud(SensitiveActionGate.CANCELLED_MESSAGE)
+                        true
+                    }
+                    else -> false
+                }
+            }
+
             override fun executeAiAssistant(code: Int) {
                 delegate.triggerAi(code)
             }

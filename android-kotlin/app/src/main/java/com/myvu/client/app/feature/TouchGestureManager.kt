@@ -50,6 +50,12 @@ object TouchGestureManager {
         fun executeHudDashboard() { executeNone() }
         fun executeVoiceAgentAura() { executeAiAssistant(3) }
         fun executeNone() { }
+
+        /**
+         * Called with the final gesture (after suppression and tap synthesis) before its
+         * mapped action. Return true to consume it, e.g. to confirm a pending AI action.
+         */
+        fun interceptGesture(gesture: GlassGesture): Boolean = false
     }
 
     private const val DEBOUNCE_MS = 200L
@@ -292,6 +298,11 @@ object TouchGestureManager {
         now: Long
     ) {
         lastTriggerTime = now
+
+        if (executor.interceptGesture(gesture)) {
+            LogBus.log("Touchpad gesture ($gesture, code=$rawCode) consumed by executor")
+            return
+        }
 
         if (GestureAction.isAppAction(rawActionId)) {
             val pkg = GestureAction.getAppPackage(rawActionId)

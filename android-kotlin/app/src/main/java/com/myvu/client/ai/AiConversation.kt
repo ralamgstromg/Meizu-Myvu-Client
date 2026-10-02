@@ -74,7 +74,10 @@ class AiConversation(
             if (textMode || !SPOKEN_FOLLOW_UP_TURNS) finish() else nextTurn()
         },
         modeProvider = { AiResponseMode.fromId(Prefs.aiResponseMode(this.context)) },
-        condenseVisualWhenSpoken = { condenseHudWhenSpoken && Prefs.hudCondensedAnswers(this.context) }
+        // A pending confirmation prompt must show the full recipient and message on the HUD.
+        condenseVisualWhenSpoken = {
+            condenseHudWhenSpoken && Prefs.hudCondensedAnswers(this.context) && !SensitiveActionGate.hasPending()
+        }
     )
 
     /**

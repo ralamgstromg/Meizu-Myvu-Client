@@ -98,6 +98,24 @@ object SensitiveActionGate {
         }
     }
 
+    /** Confirms the pending action through a physical gesture (e.g. glasses double tap). */
+    @Synchronized
+    fun confirmPending(): (suspend () -> String)? {
+        val p = livePending()
+        pending = null
+        if (p != null) LogBus.log("SensitiveActionGate: user confirmed '${p.description}' by gesture")
+        return p?.action
+    }
+
+    /** Discards the pending action through a physical gesture. Returns true if one was pending. */
+    @Synchronized
+    fun cancelPending(): Boolean {
+        val p = livePending()
+        pending = null
+        if (p != null) LogBus.log("SensitiveActionGate: user cancelled '${p.description}' by gesture")
+        return p != null
+    }
+
     @Synchronized
     fun clear() {
         pending = null
@@ -117,7 +135,7 @@ object SensitiveActionGate {
     }
 
     private fun confirmationPrompt(description: String): String =
-        "Necesito tu confirmación para ejecutar: $description. Di «confirmar» para continuar o «cancelar»."
+        "Necesito tu confirmación para ejecutar: $description. Di «confirmar» o toca dos veces la patilla de las gafas para continuar; di «cancelar» o desliza hacia atrás para descartar."
 
     private fun livePending(): Pending? {
         val p = pending ?: return null
