@@ -37,7 +37,12 @@ class GlassesEventHandler(
     }
 
     private fun installListeners() {
+        // The glasses' AI button (code:3) and wake word (code:7) both land here.
         inbound.setAiTriggerListener { code: Int, payload: JSONObject? ->
+            // control:0 is the button RELEASE / page close. It must NOT
+            // abort a turn already in flight -- the release arrives moments
+            // after the press -- so it only marks the conversation to end
+            // at the next turn boundary.
             if (payload != null && payload.optInt("control", 1) == 0) {
                 delegate.pageClosed()
                 return@setAiTriggerListener
@@ -53,6 +58,10 @@ class GlassesEventHandler(
                 TouchGestureManager.notifyPhysicalButtonPressed(ctx)
             }
 
+            // The glasses' mic audio only flows over the app relay. With
+            // the relay down (its retry budget spent), a press listened to
+            // nothing and timed out with "0 packets in" -- so treat the
+            // press like the glasses asking for the relay back.
             delegate.wakeRelay()
             val actionBtnMapping = if (ctx != null) Prefs.glassesActionButtonAction(ctx) else "VOICE_AI_FIXED"
             if (code == 3 && actionBtnMapping == "LAUNCH_GEMINI") {
@@ -82,6 +91,11 @@ class GlassesEventHandler(
         }
     }
 
+    /** Runs a gesture that did not arrive through [InboundRouter] (e.g. phone key events). */
+    fun handleGesture(gesture: GlassGesture, rawCode: Int = gesture.code, eventTime: Long = -1L) {
+        TouchGestureManager.handleGesture(context, gesture, rawCode, createActionExecutor(), eventTime)
+    }
+
     private fun createActionExecutor(): TouchGestureManager.ActionExecutor {
         return object : TouchGestureManager.ActionExecutor {
             override fun executeAiAssistant(code: Int) {
@@ -89,7 +103,7 @@ class GlassesEventHandler(
             }
 
             override fun executeHudDashboard() {
-                // Let native HUD display
+                LogBus.log("HUD Dashboard action: letting glasses display native HUD dashboard")
             }
 
             override fun executeVoiceAgentAura() {
