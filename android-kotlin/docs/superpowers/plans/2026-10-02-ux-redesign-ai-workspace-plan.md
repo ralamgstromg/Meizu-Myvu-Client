@@ -116,7 +116,7 @@
 | Fase | Commit | Notas |
 |---|---|---|
 | 1 TTS es-CO + notificaciones | `9a758e7` | |
-| 5.1 Errores y logs | `0549afb`, `c5a…` | `AppError`, `attempt`, rotación de crash logs, logs de crash en "Compartir" |
+| 5.1 Errores y logs | `0549afb`, `7539861` | `AppError`, `attempt`, rotación de crash logs, logs de crash en "Compartir" |
 | 4 Rutinas, cumpleaños y Gmail | `dd10a3f` | Gmail requiere volver a vincular Google (scope nuevo) |
 | 3 Búsqueda FTS | `280ff95` | 3b semántica: no implementada |
 | 5.2 Centro de permisos | `d71acaa` | Se quitaron `DISABLE_KEYGUARD` y `BODY_SENSORS` (sin uso) |
