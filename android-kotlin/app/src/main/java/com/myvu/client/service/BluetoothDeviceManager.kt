@@ -400,7 +400,12 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
     suspend fun refreshActiveDevice() {
         val active = dao.getActiveConnectedDevice()
         _activeDevice.value = active
+        activeDeviceLoaded = true
     }
+
+    /** True once [_activeDevice] mirrors the DB; every connection/settings write refreshes it. */
+    @Volatile
+    private var activeDeviceLoaded = false
 
     /**
      * Per-device active listening flag. Returns `false` (disabled) unless the device
@@ -413,9 +418,13 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
     }
 
     /**
-     * Blocking variant for callers outside coroutine scope (e.g., Handler Runnables).
+     * Synchronous variant for callers outside a coroutine (main thread, Handler Runnables).
+     * Reads the cached [activeDevice]; it only blocks on the DB before the first refresh.
      */
     fun isActiveListeningEnabledBlocking(): Boolean {
+        if (activeDeviceLoaded) {
+            return _activeDevice.value?.activeListeningEnabled ?: Prefs.continuousDialogueEnabled(context)
+        }
         return kotlinx.coroutines.runBlocking { isActiveListeningEnabled() }
     }
 
@@ -426,6 +435,7 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
     suspend fun markAllDevicesDisconnected() {
         dao.markAllDisconnected()
         _activeDevice.value = null
+        activeDeviceLoaded = true
         val updated = dao.getAllDevices()
         _discoveredDevices.value = updated
         LogBus.log("BluetoothDeviceManager: All devices marked as disconnected in database")
