@@ -446,8 +446,8 @@ class TouchGestureManagerTest {
 
         TouchGestureManager.notifyPhysicalButtonPressed(null)
 
-        // Temple gesture arrives 1300ms later (> 1200ms suppression window)
-        simulatedTime = 2300L
+        // Temple gesture arrives after suppression window expires (> 3000ms)
+        simulatedTime = 1000L + TouchGestureManager.PHYSICAL_BUTTON_SUPPRESSION_MS + 100L
         TouchGestureManager.handleGesture(null, GlassGesture.DOUBLE_TAP, 212, executor)
         assertTrue(executor.geminiAssistantCalled)
     }

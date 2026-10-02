@@ -198,8 +198,7 @@ object Prefs {
 
     @JvmStatic
     fun sttProvider(c: Context): String {
-        val prov = prefs(c).getString(KEY_STT_PROVIDER, "local") ?: "local"
-        return if (prov == "android") "local" else prov
+        return prefs(c).getString(KEY_STT_PROVIDER, "local") ?: "local"
     }
 
     @JvmStatic

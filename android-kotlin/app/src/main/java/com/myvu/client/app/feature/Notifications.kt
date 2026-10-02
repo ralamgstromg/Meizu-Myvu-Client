@@ -64,6 +64,7 @@ object Notifications {
             .put("id", notificationId(packageName, numericId))
             .put("packageName", packageName)
             .put("crateTime", postTime)
+            .put("createTime", postTime)
             .put("extra", "{}")
     }
 

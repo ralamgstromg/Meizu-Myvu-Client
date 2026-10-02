@@ -73,6 +73,12 @@ class TtsPlayer(private val context: Context) {
                     tts?.setLanguage(Locale.getDefault())
                 }
             }
+            tts?.setAudioAttributes(
+                android.media.AudioAttributes.Builder()
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                    .build()
+            )
             tts?.setSpeechRate(Prefs.ttsSpeechRate(context))
             tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) {
@@ -172,9 +178,12 @@ class TtsPlayer(private val context: Context) {
         activeUtteranceId = ids.last()
         activeChunkIds = ids.toSet()
         LogBus.log("TTS_REQUEST_STARTED generation=$generation textLength=${text.length} chunks=${chunks.size} provider=system")
+        val params = android.os.Bundle().apply {
+            putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, android.media.AudioManager.STREAM_MUSIC)
+        }
         chunks.forEachIndexed { i, chunk ->
             val mode = if (i == 0) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
-            val result = tts?.speak(chunk, mode, null, ids[i])
+            val result = tts?.speak(chunk, mode, params, ids[i])
             if (result != TextToSpeech.SUCCESS) {
                 LogBus.warn("tts.speak returned $result for chunk ${i + 1}/${chunks.size}")
                 flushPending(false)
@@ -193,6 +202,12 @@ class TtsPlayer(private val context: Context) {
             FileOutputStream(temp).use { out -> out.write(wav) }
 
             mediaPlayer = MediaPlayer().apply {
+                setAudioAttributes(
+                    android.media.AudioAttributes.Builder()
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                        .build()
+                )
                 setDataSource(temp.absolutePath)
                 setOnCompletionListener {
                     cleanupMediaPlayer()

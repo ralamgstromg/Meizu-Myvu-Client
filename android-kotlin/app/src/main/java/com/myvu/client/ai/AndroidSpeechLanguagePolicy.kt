@@ -26,5 +26,5 @@ object AndroidSpeechLanguagePolicy {
 }
 
 object AndroidSpeechErrorPolicy {
-    fun isLanguageFallbackError(code: Int): Boolean = code == 11 || code == 12 || code == 7 || code == 5
+    fun isLanguageFallbackError(code: Int): Boolean = code == 11 || code == 12
 }

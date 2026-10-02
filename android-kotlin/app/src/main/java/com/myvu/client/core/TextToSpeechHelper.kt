@@ -49,6 +49,12 @@ object TextToSpeechHelper : TextToSpeech.OnInitListener {
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                 tts?.setLanguage(Locale("es", "ES"))
             }
+            tts?.setAudioAttributes(
+                android.media.AudioAttributes.Builder()
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                    .build()
+            )
             appContext?.let { tts?.setSpeechRate(Prefs.ttsSpeechRate(it)) }
             tts?.setPitch(1.0f)
             isInitialized = true

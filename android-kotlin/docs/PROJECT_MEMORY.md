@@ -2280,3 +2280,101 @@ Se requería dotar al ecosistema de conexión Bluetooth de:
 ### Verificación:
 - `TtsRegressionTest` (4, con `ShadowTextToSpeech`) y un test de idempotencia. Los tests de `TtsPlayer` y de idempotencia fallan con el código anterior.
 - 379 tests, 0 fallos. Pendiente: confirmarlo en el dispositivo.
+
+## 55. [2026-10-02] — Reparación Integral del Pipeline de Voz: STT, Notificaciones Leídas desde Gafas y Enrutamiento de Audio TTS a Gafas
+
+### Requerimientos:
+- Servicio STT (Speech-to-Text) no funcionaba correctamente (cortes prematuros, bucle de fallback de idiomas, fallos en UI).
+- Las notificaciones llegaban al HUD de las gafas pero no se procesaban correctamente al solicitar su lectura desde las gafas.
+- Las respuestas del agente no se leían (audio mudo en las gafas al reproducir TTS).
+
+### Diagnóstico Forense y Causas Raíz:
+1. **STT en UI (`ChatActivity`, `ChatSidebarBottomSheet`)**:
+   - Se pasaba `Locale.getDefault()` (objeto de tipo `Locale`) a `putExtra(RecognizerIntent.EXTRA_LANGUAGE, ...)`. El framework Android requiere un `String` (ej. `"es-CO"`), por lo que el recognizer de Google ignoraba el idioma o fallaba al inicializar.
+2. **Reconocimiento de Voz y Política de Idiomas (`AndroidSpeechRecognizer`, `AndroidSpeechLanguagePolicy`)**:
+   - `cachedPreferOffline` estaba en `true` por defecto. Si el teléfono no tenía el paquete offline de español descargado, fallaba inmediatamente con códigos 11 o 12 (`ERROR_CANNOT_CHECK_SUPPORT` / `ERROR_CANNOT_LISTEN_TO_DOWNLOAD_EVENTS`).
+   - Tiempos de silencio (`completeSilenceLengthMillis`, `possiblyCompleteSilenceLengthMillis`) configurados muy agresivos (500–700ms), cortando al usuario a mitad de frase.
+   - `AndroidSpeechLanguagePolicy` trataba `ERROR_NO_MATCH` (código 7) y `ERROR_CLIENT` (código 5) como errores de idioma no soportado, ciclando en un bucle innecesario por todos los idiomas de fallback en vez de emitir timeout o error limpio.
+3. **Optimización de Audio VAD (`AudioOptimizer`)**:
+   - En `findSpeechBounds`, cuando el audio era bajo, silencioso o susurrado (`start > end`), aplicaba padding sobre índices inválidos, resultando en un rango invertido o truncando el audio a un fragmento destructivo de 100ms de silencio, arruinando la entrada de STT.
+4. **Procesamiento de Notificaciones y Peticiones IPC de Gafas (`com.upuphone.ai.ttsengine`)**:
+   - En `Notifications.kt`, el payload JSON contenía `"crateTime"` (typo heredado del firmware Flyme XR), mientras que ciertas versiones esperan `"createTime"`.
+   - Cuando el usuario toca la patilla o solicita leer una notificación en el HUD, el firmware de las gafas Meizu MYVU emite un paquete IPC `com.upuphone.ai.ttsengine.phone` con `{"caller":"com.tts.notification"}`. `InboundRouter` descartaba completamente estos paquetes al no tener handler registrado para `com.upuphone.ai.ttsengine`.
+   - No existía un búfer ni referencia de la última notificación proyectada para lectura bajo demanda.
+5. **Enrutamiento de Audio TTS a las Gafas (Bluetooth A2DP / `STREAM_MUSIC`)**:
+   - `TtsPlayer.speakSystemTts()` ejecutaba `tts.speak(chunk, mode, null, ids[i])`. Al pasar `null` como bundle de parámetros en Android 8+, el audio salía por el stream por defecto del sistema (altavoz interno / accesibilidad) en lugar de `AudioManager.STREAM_MUSIC`, que es el único canal enrutado por A2DP hacia los transductores de las gafas MYVU.
+   - Tanto `TtsPlayer`, `TextToSpeechHelper` como `MediaPlayer` carecían de `AudioAttributes` explícitos configurados con `USAGE_MEDIA` y `CONTENT_TYPE_SPEECH`.
+
+### Soluciones Implementadas:
+1. **`ChatActivity.kt` y `ChatSidebarBottomSheet.kt`**:
+   - Corrección de `putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag())` pasando un String BCP-47 válido.
+2. **`AndroidSpeechRecognizer.kt` y `AndroidSpeechLanguagePolicy.kt`**:
+   - `cachedPreferOffline` cambiado por defecto a `false` (reconocimiento online prioritario para máxima precisión sin requerir modelos descargados).
+   - Aumentados los timeouts de silencio: `completeSilenceLengthMillis = 1500L`, `possiblyCompleteSilenceLengthMillis = 1200L`.
+   - `isLanguageFallbackError` restringido estrictamente a códigos 11 y 12.
+3. **`AudioOptimizer.kt`**:
+   - En `findSpeechBounds`: si `start > end` (voz baja/silencio), retorna inmediatamente el búfer completo preservando el audio intacto (`Pair(0, max(0, shorts.size - 1))`) en vez de aplicar padding invertido.
+4. **`MyApp.kt`, `Notifications.kt`, `MirrorNotificationListener.kt` e `InboundRouter.kt`**:
+   - `MyApp.instance`: añadido singleton companion object para acceso seguro al contexto de la aplicación.
+   - `Notifications.kt`: se incluye tanto `"createTime"` como `"crateTime"` en el payload JSON.
+   - `MirrorNotificationListener.kt`: almacena `@Volatile var lastSpokenNotification: String?` en cada notificación recibida y expone `readLastNotificationAloud(context)` delegando en `TextToSpeechHelper`.
+   - `InboundRouter.kt`: añadido `checkTtsEngineRequest(msg)` para procesar `com.upuphone.ai.ttsengine` (`caller == "com.tts.notification"` lee la última notificación y `caller == "com.tts.assistant"` lee el payload de texto asistente).
+5. **`TtsPlayer.kt` y `TextToSpeechHelper.kt`**:
+   - Configurados `AudioAttributes` (`USAGE_MEDIA`, `CONTENT_TYPE_SPEECH`) en las instancias `TextToSpeech` y `MediaPlayer`.
+   - `speakSystemTts()` pasa Bundle con `KEY_PARAM_STREAM = AudioManager.STREAM_MUSIC`, garantizando que el audio se transmita por Bluetooth A2DP a las gafas Meizu MYVU.
+
+### Verificación:
+- Tests unitarios nuevos:
+  - `AudioOptimizerTest.kt`: `testLowEnergyOrQuietAudioPreservedWithoutDestructiveTruncation`.
+  - `InboundRouterTest.kt`: `ttsEngineNotificationRequestDoesNotThrow` y `ttsEngineAssistantRequestDoesNotThrow`.
+- `./gradlew testDebugUnitTest`: 382 tests ejecutados, 0 fallos.
+- `codegraph sync`: 13 archivos sincronizados, 526 nodos actualizados.
+
+## 56. [2026-10-02] — Supresión de Gestos Durante Conversación IA, Eliminación de Latencia en STT y Soporte Completo AndroidSpeechRecognizer
+
+### Requerimientos:
+- Validación forense de logs de la app en `/home/rcastro/Descargas/myvu_client_log.txt` para diagnosticar fallos persistentes en STT y respuestas del agente en las gafas inteligentes Meizu MYVU.
+
+### Diagnóstico Forense y Causas Raíz (`myvu_client_log.txt`):
+1. **Colisión de Gestos y Sobreescritura del HUD**:
+   - A las `18:00:41.375`, el usuario presionó el botón físico de las gafas para iniciar la consulta de IA ("¿Cómo estará el clima hoy en Bogotá?").
+   - A los 1.270ms (`18:00:42.641`), la patilla táctil detectó un deslizamiento inadvertido (`key_code: 201`, `SWIPE_FORWARD`).
+   - La ventana de supresión de botones físicos (`PHYSICAL_BUTTON_SUPPRESSION_MS`) era de tan solo 1.200ms. Al haber expirado por 70ms, `TouchGestureManager` procesó la acción `MEDIA_NEXT` y envió `SHOW_NOTIFICATION` al HUD, borrando y destruyendo la pantalla activa de escucha/transcripción de la IA en las gafas.
+2. **Latencia Artificial en Transcripción y Timeout del Firmware**:
+   - `AiConversation.onTranscript()` ejecutaba secuencialmente `sendGrowingCaption()` (animación palabra por palabra a 180ms/palabra) ANTES de consultar al LLM (`askAi(cleanText)`). Para 12 palabras, la UI tardaba más de 2.2s en pintar el subtítulo antes de iniciar la petición al modelo.
+   - El firmware de las gafas Meizu MYVU alcanzaba su timeout interno de transcripción y emitía un mensaje `com.upuphone.ai.ttsengine` con `caller: "com.tts.assistant"` y texto en inglés `"Just a moment, please"`, confundiendo al usuario.
+3. **Pérdida de Sílabas Suaves en VAD (`AudioOptimizer`)**:
+   - `SILENCE_THRESHOLD_SHORT = 350` descartaba los fonemas iniciales o suaves en español (ej. "có-", "es-"), y el padding de bordes de 1.600 muestras (100ms) era insuficiente.
+4. **Degradación del Proveedor STT y Bloqueo de Android Speech**:
+   - `Prefs.sttProvider()` forzaba `if (prov == "android") "local" else prov`, degradando la selección nativa a un servidor local inexistente en el puerto 8181.
+   - `SttProvider.isNative` retornaba `false` fijo y no existía la variante de enum `ANDROID`.
+   - En `ChatActivity`, `launchVoiceStt()` solo invocaba el intent del sistema `ACTION_RECOGNIZE_SPEECH` y no tenía fallback si el sistema no disponía de la actividad de voz de Google.
+
+### Soluciones Implementadas:
+1. **Supresión Dinámica de Gestos y Notificaciones durante IA Activa**:
+   - `AiConversation.kt`: añadida propiedad `@Volatile var isConversationActive: Boolean`, reflejando exactamente el estado de diálogo/escucha/respuesta.
+   - `GlassesEventHandler.kt`: filtra y descarta de inmediato cualquier gesto táctil de patilla si `AiConversation.isConversationActive` es `true`.
+   - `TouchGestureManager.kt`: ampliada la ventana de supresión física `PHYSICAL_BUTTON_SUPPRESSION_MS` de 1.200ms a 3.000ms. Si `AiConversation.isConversationActive` está activo, se rechazan gestos táctiles de reproducción o navegación que pudieran sobreescribir la pantalla.
+   - `MirrorNotificationListener.kt`: silencia el envío de notificaciones externas al HUD de las gafas mientras `AiConversation.isConversationActive` esté en curso.
+2. **Optimización de Audio VAD y Prompt Contextual**:
+   - `AudioOptimizer.kt`: rebajado `SILENCE_THRESHOLD_SHORT` de 350 a 180 para capturar susurros y consonantes suaves. Incrementado el margen de inicio y fin a 3.200 muestras (200ms).
+   - `OpenAiTranscriptionClient.kt`: enriquecido el prompt contextual en español para Whisper (`"clima, tiempo, temperatura que hará o habrá, pronóstico, mensajes, llamadas, notas y recordatorios"`).
+3. **Eliminación de Latencia y Supresión de Avisos Residuales en Inglés**:
+   - `AiConversation.kt`: `askAi(cleanText)` se lanza inmediatamente en paralelo sin esperar la animación visual de subtítulos. Reducido el tiempo de subtítulos `CAPTION_WORD_MS` a 70ms.
+   - `AiProtocol.kt`: inclusión de `sessionId` y `id` en `asrResult()`.
+   - `InboundRouter.kt`: filtro de supresión para advertencias residuales en inglés del firmware (`"Just a moment, please"` y peticiones con `domain_hint`).
+4. **Soporte Completo de STT Nativo Android y Fallback en UI**:
+   - `SttProvider.kt`: añadido `ANDROID("android", "Android Nativo (Google / On-Device)", "", "", false)` con `isNative = this == ANDROID`, `requiresEndpoint = this != ANDROID` y `requiresModel = this != ANDROID`.
+   - `Prefs.kt`: `sttProvider(c)` retorna el valor real configurado sin forzar `"android"` a `"local"`.
+   - `ChatActivity.kt`: verificación de permiso `RECORD_AUDIO`, invocación de `sttLauncher` y fallback transparente a `AndroidSpeechRecognizer` interno en caso de ausencia de intent del sistema, con ciclo de vida limpio en `onDestroy()`.
+   - `GlassesSettingsActivity.kt`: corrección de aislamiento en búsqueda Room para respetar `resolvedMac`.
+
+### Verificación:
+- Tests unitarios actualizados:
+  - `AiConversationSttTest.kt`: validación de enum `ANDROID` y resolución de provider `fromId("android")`.
+  - `TouchGestureManagerTest.kt`: validación de expiración de ventana de 3.000ms.
+  - `AudioOptimizerTest.kt`: preservación de audios de baja energía y decodificación 3:1.
+- `./gradlew testDebugUnitTest`: **384 tests ejecutados, 0 fallos** (BUILD SUCCESSFUL).
+- `./gradlew assembleDebug`: **BUILD SUCCESSFUL** (APK compilado y empaquetado sin errores).
+- `codegraph sync`: 14 archivos sincronizados, 861 nodos actualizados en 293ms.
+

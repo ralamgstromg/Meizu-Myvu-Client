@@ -140,10 +140,11 @@ class MirrorNotificationListener : NotificationListenerService() {
                 // 1. Audio handling (TTS Readout)
                 // If any active or connected device has audio/TTS enabled, speak aloud
                 val maxWords = com.myvu.client.core.Prefs.notificationMaxWords(this@MirrorNotificationListener)
+                val app = appLabel(pkg)
+                val ttsText = NotificationDigest.spoken(app, title, text, maxWords)
+                lastSpokenNotification = ttsText
                 val audioDevice = activeDevices.firstOrNull { it.isAudioNotificationEnabled() }
                 if (audioDevice != null) {
-                    val app = appLabel(pkg)
-                    val ttsText = NotificationDigest.spoken(app, title, text, maxWords)
                     com.myvu.client.core.TextToSpeechHelper.init(this@MirrorNotificationListener)
                     com.myvu.client.core.TextToSpeechHelper.speak(ttsText, context = this@MirrorNotificationListener)
                     LogBus.log("TTS read notification for [${audioDevice.name}] (mode=${audioDevice.notificationMode}) from $app: $ttsText")
@@ -179,8 +180,12 @@ class MirrorNotificationListener : NotificationListenerService() {
                     sbn.postTime,
                     false
                 )
-                connection.sendAction(Notifications.buildShow(entry))
-                LogBus.log("mirrored notification to HUD from ${appLabel(pkg)}: $displayTitle")
+                if (com.myvu.client.ai.AiConversation.isConversationActive) {
+                    LogBus.log("MirrorNotificationListener: Suppressed HUD notification during active AI conversation: $displayTitle")
+                } else {
+                    connection.sendAction(Notifications.buildShow(entry))
+                    LogBus.log("mirrored notification to HUD from ${appLabel(pkg)}: $displayTitle")
+                }
 
                 val durationSec = GlassesConfig.getNotificationDuration(this@MirrorNotificationListener)
                 if (durationSec > 0) {
@@ -248,8 +253,25 @@ class MirrorNotificationListener : NotificationListenerService() {
         @Volatile
         private var _instance: WeakReference<MirrorNotificationListener>? = null
 
+        @Volatile
+        var lastSpokenNotification: String? = null
+
         val instance: MirrorNotificationListener?
             get() = _instance?.get()
+
+        fun readLastNotificationAloud(context: Context) {
+            val text = lastSpokenNotification
+            val toSpeak = if (!text.isNullOrBlank()) {
+                text
+            } else {
+                "No hay notificaciones recientes para leer."
+            }
+            LogBus.log("Speaking notification on demand: $toSpeak")
+            com.myvu.client.core.TextToSpeechHelper.init(context) {
+                com.myvu.client.core.TextToSpeechHelper.speak(toSpeak, context = context)
+            }
+            com.myvu.client.core.TextToSpeechHelper.speak(toSpeak, context = context)
+        }
 
         /**
          * Notification access is granted in system settings, not by a runtime

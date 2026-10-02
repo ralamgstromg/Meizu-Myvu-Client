@@ -23,6 +23,7 @@ class AiConversationSttTest {
 
     @Test
     fun sttProviderEnumValuesAndIds() {
+        assertEquals("android", SttProvider.ANDROID.id)
         assertEquals("groq", SttProvider.GROQ.id)
         assertEquals("local", SttProvider.LOCAL.id)
         assertEquals("whisper_cpp", SttProvider.WHISPER_CPP.id)
@@ -30,6 +31,7 @@ class AiConversationSttTest {
 
     @Test
     fun fromIdReturnsCorrectProviderOrFallback() {
+        assertEquals(SttProvider.ANDROID, SttProvider.fromId("android"))
         assertEquals(SttProvider.GROQ, SttProvider.fromId("groq"))
         assertEquals(SttProvider.LOCAL, SttProvider.fromId("local"))
         assertEquals(SttProvider.WHISPER_CPP, SttProvider.fromId("whisper_cpp"))

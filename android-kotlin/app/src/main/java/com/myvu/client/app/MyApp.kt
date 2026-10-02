@@ -5,8 +5,14 @@ import com.myvu.client.core.LogBus
 import com.myvu.client.skills.SkillRegistry
 
 class MyApp : Application() {
+    companion object {
+        lateinit var instance: MyApp
+            private set
+    }
+
     override fun onCreate() {
         super.onCreate()
+        instance = this
         com.myvu.client.core.Prefs.applyTheme(this)
         CrashReporter.install(this)
         com.myvu.client.core.TextToSpeechHelper.attach(this)

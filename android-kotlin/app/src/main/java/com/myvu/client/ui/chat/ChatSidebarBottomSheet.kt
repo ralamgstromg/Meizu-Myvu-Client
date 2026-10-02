@@ -191,9 +191,11 @@ class ChatSidebarBottomSheet : BottomSheetDialogFragment() {
 
     private fun launchVoiceStt() {
         try {
+            val langTag = Locale.getDefault().toLanguageTag()
             val intent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, langTag)
+                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, langTag)
                 putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Habla tu comando o consulta...")
             }
             sttLauncher.launch(intent)

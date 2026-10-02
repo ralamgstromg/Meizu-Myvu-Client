@@ -7,6 +7,13 @@ enum class SttProvider(
     @JvmField val defaultModel: String,
     @JvmField val apiKeyRequired: Boolean
 ) {
+    ANDROID(
+        "android",
+        "Android Nativo (Google / On-Device)",
+        "",
+        "",
+        false
+    ),
     GROQ(
         "groq",
         "Groq Whisper",
@@ -29,9 +36,9 @@ enum class SttProvider(
         false
     );
 
-    val isNative: Boolean get() = false
-    val requiresEndpoint: Boolean get() = true
-    val requiresModel: Boolean get() = true
+    val isNative: Boolean get() = this == ANDROID
+    val requiresEndpoint: Boolean get() = this != ANDROID
+    val requiresModel: Boolean get() = this != ANDROID
     val requiresApiKey: Boolean get() = apiKeyRequired
 
     val displayName: String get() = label

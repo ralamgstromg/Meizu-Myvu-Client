@@ -64,7 +64,7 @@ object TouchGestureManager {
     private const val TRIPLE_TAP_MAX_INTERVAL_MS = 1350L
     private const val GEMINI_SCO_CAPTURE_WINDOW_MS = 8500L
     private const val GEMINI_LIVE_MAX_SCO_DURATION_MS = 5 * 60 * 1000L // 5 minutes max safety window
-    const val PHYSICAL_BUTTON_SUPPRESSION_MS = 1200L
+    const val PHYSICAL_BUTTON_SUPPRESSION_MS = 3000L
 
     @JvmStatic
     var lastPhysicalButtonTime: Long = 0L
@@ -181,7 +181,13 @@ object TouchGestureManager {
 
         val isPhysicalButton = gesture == GlassGesture.ACTION_BUTTON || rawCode == 230 || rawCode == 231 || rawCode == 202
 
-        // 1. If physical button was recently pressed, suppress concurrent temple gestures
+        // 1. If AI conversation is currently listening or speaking, suppress touchpad gestures
+        if (!isPhysicalButton && com.myvu.client.ai.AiConversation.isConversationActive) {
+            LogBus.log("Touchpad gesture ignored ($gesture, code=$rawCode) -- suppressed during active AI conversation")
+            return
+        }
+
+        // 1b. If physical button was recently pressed, suppress concurrent temple gestures
         if (!isPhysicalButton && lastPhysicalButtonTime > 0L && (now - lastPhysicalButtonTime) in 0 until PHYSICAL_BUTTON_SUPPRESSION_MS) {
             LogBus.log("Touchpad gesture ignored ($gesture, code=$rawCode) -- suppressed by recent physical button press (${now - lastPhysicalButtonTime}ms ago)")
             return

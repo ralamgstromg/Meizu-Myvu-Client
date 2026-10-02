@@ -91,6 +91,10 @@ class GlassesEventHandler(
         }
 
         inbound.setTouchGestureListener { gestureType, rawCode, _, eventTime ->
+            if (com.myvu.client.ai.AiConversation.isConversationActive) {
+                LogBus.log("GlassesEventHandler: Suppressed touch gesture ($gestureType, code=$rawCode) because AI conversation is active")
+                return@setTouchGestureListener
+            }
             TouchGestureManager.handleGesture(this.context, gestureType, rawCode, createActionExecutor(), eventTime)
         }
 

@@ -32,6 +32,11 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.navigation.NavigationView
 import com.myvu.client.R
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.myvu.client.ai.AndroidSpeechRecognizer
 import com.myvu.client.ai.AiProvider
 import com.myvu.client.ai.DailyBriefingService
 import com.myvu.client.ai.PhoneActionExecutor
@@ -97,6 +102,7 @@ class ChatActivity : AppCompatActivity() {
     private var currentSessionId: String = UUID.randomUUID().toString()
     private var attachedImageUri: Uri? = null
     private var speakNextResponse: Boolean = false
+    private var inProcessSpeechRecognizer: AndroidSpeechRecognizer? = null
 
     private val chatAdapter = ChatAdapter()
 
@@ -586,15 +592,53 @@ class ChatActivity : AppCompatActivity() {
         launchVoiceStt()
     }
 
+    override fun onDestroy() {
+        inProcessSpeechRecognizer?.destroy()
+        inProcessSpeechRecognizer = null
+        super.onDestroy()
+    }
+
     private fun launchVoiceStt() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 1001)
+            return
+        }
         try {
+            val langTag = Locale.getDefault().toLanguageTag()
             val intent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, langTag)
+                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, langTag)
                 putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Habla tu consulta o comando...")
             }
             sttLauncher.launch(intent)
         } catch (e: Exception) {
+            LogBus.warn("ChatActivity -> ACTION_RECOGNIZE_SPEECH not available, using in-process AndroidSpeechRecognizer: ${e.message}")
+            startInProcessSpeechRecognizer()
+        }
+    }
+
+    private fun startInProcessSpeechRecognizer() {
+        inProcessSpeechRecognizer?.destroy()
+        val recognizer = AndroidSpeechRecognizer(this)
+        inProcessSpeechRecognizer = recognizer
+        Toast.makeText(this, "Escuchando...", Toast.LENGTH_SHORT).show()
+        val started = recognizer.start(
+            languageTag = Locale.getDefault().toLanguageTag(),
+            onPartial = { partial ->
+                edtChatMessage.setText(partial)
+            },
+            onResult = { result ->
+                if (result.isNotBlank()) {
+                    edtChatMessage.setText(result)
+                    sendUserQuery(result)
+                }
+            },
+            onError = { _, msg ->
+                Toast.makeText(this, "STT: $msg", Toast.LENGTH_SHORT).show()
+            }
+        )
+        if (!started) {
             Toast.makeText(this, "Reconocimiento de voz no disponible en este dispositivo", Toast.LENGTH_SHORT).show()
         }
     }

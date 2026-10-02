@@ -117,6 +117,10 @@ class AiConversation(
 
     @Volatile
     private var active: Boolean = false
+        set(value) {
+            field = value
+            isConversationActive = value
+        }
     private var sessionId: String = ""
     private var turnCount: Int = 0
     private var stopRequested: Boolean = false
@@ -471,6 +475,7 @@ class AiConversation(
         }
 
         LogBus.log("AI heard: $cleanText")
+        askAi(cleanText)
         sendGrowingCaption(cleanText, 0)
     }
 
@@ -482,7 +487,6 @@ class AiConversation(
             send(AiProtocol.asrResult(sessionId, text, true))
             send(AiProtocol.vrState(AiProtocol.VR_PROCESSION))
             send(AiProtocol.chatQuery(sessionId, text))
-            askAi(text)
             return
         }
 
@@ -913,10 +917,15 @@ class AiConversation(
         private const val CALIBRATION_LOUD_STREAK = 3
         private const val NO_SPEECH_TIMEOUT_MS = 5500L
         private const val MAX_UTTERANCE_MS = 20000L
-        private const val CAPTION_WORD_MS = 180L
+        private const val CAPTION_WORD_MS = 70L
         private const val DUPLICATE_TRIGGER_MS = 1500L
         private const val MAX_TURNS = 2
         private const val SPOKEN_FOLLOW_UP_TURNS = false
+
+        @Volatile
+        @JvmStatic
+        var isConversationActive: Boolean = false
+            internal set
 
         private val STOP_PHRASES = arrayOf(
             "stop", "goodbye", "good bye", "bye", "exit", "quit",

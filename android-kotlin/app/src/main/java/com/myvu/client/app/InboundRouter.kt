@@ -76,8 +76,45 @@ class InboundRouter(private val sender: Sender) {
                 checkAiTrigger(obj)
                 checkBatteryInfo(obj)
                 checkGestureTracking(obj)
+                checkTtsEngineRequest(obj)
             } catch (e: Throwable) {
                 LogBus.error("InboundRouter: Exception handling candidate packet", e)
+            }
+        }
+    }
+
+    private fun checkTtsEngineRequest(msg: JSONObject) {
+        val caller = msg.optString("caller")
+        if (caller.isEmpty()) return
+        LogBus.log("<- glasses TTS request: caller=$caller")
+        if (caller == "com.tts.notification") {
+            try {
+                val ctx = runCatching { MyApp.instance }.getOrNull()
+                if (ctx != null) {
+                    com.myvu.client.service.MirrorNotificationListener.readLastNotificationAloud(ctx)
+                }
+            } catch (e: Throwable) {
+                LogBus.warn("Failed to read last notification: ${e.message}")
+            }
+        } else if (caller == "com.tts.assistant") {
+            val hintId = msg.optString("id")
+            val textToRead = msg.optString("read")
+            if (hintId.contains("domain_hint") || textToRead.equals("Just a moment, please", ignoreCase = true)) {
+                LogBus.log("<- Suppressed glasses fallback hint: '$textToRead'")
+                return
+            }
+            if (textToRead.isNotBlank()) {
+                try {
+                    val ctx = runCatching { MyApp.instance }.getOrNull()
+                    if (ctx != null) {
+                        com.myvu.client.core.TextToSpeechHelper.init(ctx) {
+                            com.myvu.client.core.TextToSpeechHelper.speak(textToRead, context = ctx)
+                        }
+                        com.myvu.client.core.TextToSpeechHelper.speak(textToRead, context = ctx)
+                    }
+                } catch (e: Throwable) {
+                    LogBus.warn("Failed to speak assistant text: ${e.message}")
+                }
             }
         }
     }

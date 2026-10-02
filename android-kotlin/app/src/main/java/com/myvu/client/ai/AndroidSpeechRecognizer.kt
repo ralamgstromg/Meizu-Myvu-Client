@@ -61,7 +61,7 @@ class AndroidSpeechRecognizer(context: Context) : AndroidSpeechEngine {
         }
         fallbackIndex = 0
         activeLanguage = candidateLanguages.firstOrNull()
-        val initialOffline = if (workingLang != null) cachedPreferOffline else true
+        val initialOffline = if (workingLang != null) cachedPreferOffline else false
         pendingStart = true
         main.post { startAttempt(preferOffline = initialOffline) }
         return true
@@ -87,8 +87,8 @@ class AndroidSpeechRecognizer(context: Context) : AndroidSpeechEngine {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, language)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, language)
             putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 700L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1200L)
         }
         try {
             engine.startListening(intent)
@@ -248,6 +248,6 @@ class AndroidSpeechRecognizer(context: Context) : AndroidSpeechEngine {
         @Volatile
         private var cachedWorkingLanguage: String? = null
         @Volatile
-        private var cachedPreferOffline: Boolean = true
+        private var cachedPreferOffline: Boolean = false
     }
 }

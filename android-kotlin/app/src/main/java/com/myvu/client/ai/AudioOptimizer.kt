@@ -20,7 +20,7 @@ object AudioOptimizer {
 
     private const val TARGET_PEAK_AMPLITUDE = 28000.0
     private const val MAX_GAIN = 4.0
-    private const val SILENCE_THRESHOLD_SHORT = 350
+    private const val SILENCE_THRESHOLD_SHORT = 180
 
     /**
      * Resamples 48kHz 16-bit PCM mono audio to 16kHz with anti-aliasing FIR filtering,
@@ -113,9 +113,12 @@ object AudioOptimizer {
         while (end >= start && abs(shorts[end].toInt()) < SILENCE_THRESHOLD_SHORT) {
             end--
         }
-        // Retain 100ms padding (1600 samples at 16kHz) around speech if bounds exist
-        val paddedStart = max(0, start - 1600)
-        val paddedEnd = min(shorts.size - 1, end + 1600)
+        if (start > end) {
+            return Pair(0, max(0, shorts.size - 1))
+        }
+        // Retain 200ms padding (3200 samples at 16kHz) around speech to preserve soft initial consonants and syllables
+        val paddedStart = max(0, start - 3200)
+        val paddedEnd = min(shorts.size - 1, end + 3200)
         return Pair(paddedStart, paddedEnd)
     }
 }

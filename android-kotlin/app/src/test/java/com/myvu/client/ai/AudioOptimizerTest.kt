@@ -35,4 +35,20 @@ class AudioOptimizerTest {
         val result = AudioOptimizer.optimize48kTo16k(empty)
         assertEquals(0, result.size)
     }
+
+    @Test
+    fun testLowEnergyOrQuietAudioPreservedWithoutDestructiveTruncation() {
+        // 1 second of low-energy audio (below 350 silence threshold)
+        val numSamples = 48000
+        val pcm48k = ByteArray(numSamples * 2)
+        for (i in 0 until numSamples) {
+            val sampleVal: Short = 50
+            pcm48k[i * 2] = (sampleVal.toInt() and 0xFF).toByte()
+            pcm48k[i * 2 + 1] = ((sampleVal.toInt() shr 8) and 0xFF).toByte()
+        }
+        val optimized = AudioOptimizer.optimize48kTo16k(pcm48k)
+        val outSamples = optimized.size / 2
+        // Should preserve decimated 16000 samples, NOT truncate to 1600 (100ms)
+        assertEquals(16000, outSamples)
+    }
 }

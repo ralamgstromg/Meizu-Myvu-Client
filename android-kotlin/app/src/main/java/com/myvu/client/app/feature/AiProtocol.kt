@@ -111,6 +111,7 @@ object AiProtocol {
             return message(
                 CODE_ASR_TRANS, JSONObject()
                     .put("id", sessionId)
+                    .put("sessionId", sessionId)
                     .put("isOfflineResult", false)
                     .put("text", text)
                     .put("type", if (isFinal) 1 else 0)

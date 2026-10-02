@@ -191,4 +191,14 @@ class InboundRouterTest {
         router.handle("{not valid json}")
         assertTrue(sent.isEmpty())
     }
+
+    @Test
+    fun ttsEngineNotificationRequestDoesNotThrow() {
+        router.handle("{\"caller\":\"com.tts.notification\"}")
+    }
+
+    @Test
+    fun ttsEngineAssistantRequestDoesNotThrow() {
+        router.handle("{\"caller\":\"com.tts.assistant\",\"id\":\"test_123\",\"read\":\"Hola mundo\"}")
+    }
 }

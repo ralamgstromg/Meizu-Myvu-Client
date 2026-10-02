@@ -448,9 +448,13 @@ class GlassesSettingsActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val dao = AppDatabase.getInstance(this@GlassesSettingsActivity).bluetoothDeviceDao()
             val existing = withContext(Dispatchers.IO) {
-                dao.getDevice(resolvedMac) ?: dao.getAllDevices().find {
-                    it.deviceType == BluetoothDeviceType.SMART_GLASSES.name ||
-                    it.name.contains("MYVU", ignoreCase = true)
+                if (resolvedMac.isNotBlank()) {
+                    dao.getDevice(resolvedMac)
+                } else {
+                    dao.getAllDevices().find {
+                        it.deviceType == BluetoothDeviceType.SMART_GLASSES.name ||
+                        it.name.contains("MYVU", ignoreCase = true)
+                    }
                 }
             }
 
