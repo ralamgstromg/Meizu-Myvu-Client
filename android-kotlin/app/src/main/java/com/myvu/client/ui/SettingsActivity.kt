@@ -312,6 +312,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun configureButtons() {
         wireWeather()
         wireMirror()
+        wireActionPolicy()
         wireLogging()
         wireAutoReLock()
         findViewById<View>(R.id.btnPickApps).setOnClickListener {
@@ -408,6 +409,27 @@ class SettingsActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.btnOpenActivityLog)?.setOnClickListener {
             startActivity(Intent(this, ActivityLogActivity::class.java))
+        }
+    }
+
+    /** On: CONFIRM_SENSITIVE (default). Off: ALLOW_ALL, after an explicit warning. */
+    private fun wireActionPolicy() {
+        val sw: MaterialSwitch = findViewById(R.id.swConfirmSensitiveActions) ?: return
+        sw.isChecked = Prefs.actionPolicy(this) != com.myvu.client.ai.ActionPolicy.ALLOW_ALL
+        sw.setOnCheckedChangeListener { _, checked ->
+            if (checked) {
+                Prefs.setActionPolicy(this, com.myvu.client.ai.ActionPolicy.CONFIRM_SENSITIVE)
+                return@setOnCheckedChangeListener
+            }
+            AlertDialog.Builder(this)
+                .setTitle("Desactivar confirmación")
+                .setMessage("La IA podrá enviar mensajes y hacer llamadas sin preguntarte. Un mensaje o una página que la IA lea podría intentar engañarla para enviar algo en tu nombre.\n\n¿Desactivar de todos modos?")
+                .setPositiveButton("Desactivar") { _, _ ->
+                    Prefs.setActionPolicy(this, com.myvu.client.ai.ActionPolicy.ALLOW_ALL)
+                }
+                .setNegativeButton("Cancelar") { _, _ -> sw.isChecked = true }
+                .setOnCancelListener { sw.isChecked = true }
+                .show()
         }
     }
 

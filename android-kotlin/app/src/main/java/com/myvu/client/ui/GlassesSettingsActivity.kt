@@ -60,6 +60,7 @@ class GlassesSettingsActivity : AppCompatActivity() {
 
     private lateinit var btnAiResponseModeGroup: com.google.android.material.button.MaterialButtonToggleGroup
     private lateinit var swContinuousDialogue: com.google.android.material.materialswitch.MaterialSwitch
+    private lateinit var swHudCondensedAnswers: com.google.android.material.materialswitch.MaterialSwitch
     private lateinit var swVoiceWakeup: com.google.android.material.materialswitch.MaterialSwitch
     private lateinit var swForceGeminiSco: com.google.android.material.materialswitch.MaterialSwitch
 
@@ -142,6 +143,7 @@ class GlassesSettingsActivity : AppCompatActivity() {
         // Escucha y Batería
         btnAiResponseModeGroup = findViewById(R.id.btnAiResponseModeGroup)
         swContinuousDialogue = findViewById(R.id.swContinuousDialogue)
+        swHudCondensedAnswers = findViewById(R.id.swHudCondensedAnswers)
         swVoiceWakeup = findViewById(R.id.swVoiceWakeup)
         swForceGeminiSco = findViewById(R.id.swForceGeminiSco)
 
@@ -358,6 +360,7 @@ class GlassesSettingsActivity : AppCompatActivity() {
                 com.myvu.client.ai.AiResponseMode.VISUAL_ONLY.id -> btnAiResponseModeGroup.check(R.id.btnAiResponseVisual)
                 else -> btnAiResponseModeGroup.check(R.id.btnAiResponseBoth)
             }
+            swHudCondensedAnswers.isChecked = Prefs.hudCondensedAnswers(this@GlassesSettingsActivity)
 
             // 7. Switches de escucha, wake word y SCO
             swContinuousDialogue.isChecked = currentDevice?.activeListeningEnabled ?: false
@@ -397,6 +400,7 @@ class GlassesSettingsActivity : AppCompatActivity() {
             else -> com.myvu.client.ai.AiResponseMode.VOICE_AND_VISUAL.id
         }
         Prefs.setAiResponseMode(this, chosenResponseMode)
+        Prefs.setHudCondensedAnswers(this, swHudCondensedAnswers.isChecked)
 
         // Escucha y Wake word — sync to Prefs for backward-compat; per-device stored in entity below
         val contDialogue = swContinuousDialogue.isChecked

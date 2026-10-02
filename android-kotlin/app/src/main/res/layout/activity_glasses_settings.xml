@@ -615,6 +615,16 @@
                         android:text="Voz y HUD" />
                 </com.google.android.material.button.MaterialButtonToggleGroup>
 
+                <!-- Switch Resumen en HUD -->
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/swHudCondensedAnswers"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:textSize="13sp"
+                    android:textColor="@color/ios_label"
+                    android:text="Resumen en HUD (la voz lee la respuesta completa)" />
+
                 <!-- Switch Escucha Continua -->
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/swContinuousDialogue"
