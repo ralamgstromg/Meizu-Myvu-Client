@@ -2262,3 +2262,21 @@ Se requería dotar al ecosistema de conexión Bluetooth de:
 ### Verificación:
 - Tests nuevos: `AppErrorTest`, `RoutinesTest` (6), `SearchIndexTest` (3), `HomeScreensTest` (4). `./gradlew testDebugUnitTest`: 374 tests, 0 fallos. `assembleDebug`: **BUILD SUCCESSFUL**.
 - Pendiente: prueba manual en el dispositivo (navegación, rutinas reales, Gmail con la cuenta re-vinculada, centro de permisos).
+
+## 54. [2026-10-02] — Corrección: el TTS no hablaba
+
+### Diagnóstico y Causa Raíz (análisis estático; no había dispositivo conectado):
+- `TtsPlayer` descartaba la respuesta si se pedía mientras el motor todavía se estaba vinculando y la reportaba como fallida.
+- Tras un `onInit` fallido, `TtsPlayer` y `TextToSpeechHelper` conservaban la instancia muerta y no volvían a hablar.
+- `TextToSpeechHelper.speak()` sin `context` (chat, gestos de audífonos) quedaba en cola para siempre si `MyvuService` no había inicializado el motor. Esto empeoró al pasar el launcher a `HomeActivity`.
+- La cola de `TextToSpeechHelper` se reproducía con `QUEUE_FLUSH` y cada frase pisaba a la anterior.
+- El texto se normalizaba dos veces al salir de la cola, y la regla de horas no era idempotente.
+
+### Soluciones Implementadas:
+- `TtsPlayer`: pone en cola en lugar de descartar, reintenta con un motor nuevo y normaliza una sola vez antes de sintetizar.
+- `TextToSpeechHelper`: `attach()` desde `MyApp`, reintento tras un fallo de inicialización, cola en orden (`QUEUE_ADD`) y normalización única.
+- `SpeechNormalizer` es idempotente.
+
+### Verificación:
+- `TtsRegressionTest` (4, con `ShadowTextToSpeech`) y un test de idempotencia. Los tests de `TtsPlayer` y de idempotencia fallan con el código anterior.
+- 379 tests, 0 fallos. Pendiente: confirmarlo en el dispositivo.
