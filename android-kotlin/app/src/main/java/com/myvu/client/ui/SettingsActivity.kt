@@ -766,7 +766,7 @@ class SettingsActivity : AppCompatActivity() {
 
                 AlertDialog.Builder(this@SettingsActivity)
                     .setTitle("Copia de Seguridad Generada")
-                    .setMessage("¡Respaldo creado con éxito!\n\n📁 Archivo: data.zip ($sizeKb KB)\n💾 Guardado en: /Download/MYVU/data.zip$cloudMsg")
+                    .setMessage("¡Respaldo creado con éxito!\n\n📁 Archivo: ${backupFile.name} ($sizeKb KB)\n💾 Guardado en: /Download/MYVU/${backupFile.name}\n🔒 Las claves de IA y los tokens no se incluyen en el respaldo.$cloudMsg")
                     .setPositiveButton("Aceptar", null)
                     .show()
 
@@ -924,12 +924,21 @@ class SettingsActivity : AppCompatActivity() {
                     "⏰ Recordatorios: ${result.remindersRestored}\n" +
                     "🎙️ Grabaciones de voz: ${result.recordingsRestored}\n" +
                     "📋 Tareas: ${result.todosRestored}\n" +
-                    "🎵 Audios recuperados: ${result.mediaFilesRestored}\n\n" +
-                    "Las configuraciones y claves de IA han sido actualizadas.")
-            .setPositiveButton("Aceptar") { _, _ ->
-                bindStoredValues()
-            }
+                    "🎵 Archivos multimedia: ${result.mediaFilesRestored}\n\n" +
+                    "Las configuraciones fueron restauradas. Las claves de IA y la cuenta de Google Drive no se incluyen en el respaldo: vuelve a ingresarlas si es necesario.\n\n" +
+                    "La app debe reiniciarse para cargar los datos restaurados.")
+            .setCancelable(false)
+            .setPositiveButton("Reiniciar ahora") { _, _ -> restartApp() }
             .show()
+    }
+
+    /** Relaunches the app in a fresh process so every singleton reloads the restored data. */
+    private fun restartApp() {
+        val launch = packageManager.getLaunchIntentForPackage(packageName)
+            ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        if (launch != null) startActivity(launch)
+        finishAffinity()
+        Runtime.getRuntime().exit(0)
     }
 
     companion object {
