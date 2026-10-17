@@ -50,6 +50,24 @@ class AppLayer {
                 .toString()
         }
 
+        /**
+         * "title" + NUL + "content" of a SHOW_NOTIFICATION action, or null for any other action.
+         * id and crateTime change on every build, so identity is the visible text only.
+         */
+        @JvmStatic
+        fun notificationKey(actionJson: String): String? {
+            if (!actionJson.contains("SHOW_NOTIFICATION")) return null
+            return try {
+                val entry = JSONObject(actionJson)
+                    .getJSONObject("data")
+                    .getJSONArray("data")
+                    .getJSONObject(0)
+                entry.optString("title") + "\u0000" + entry.optString("content")
+            } catch (e: JSONException) {
+                null
+            }
+        }
+
         @JvmStatic
         fun sendNotification(title: String, body: String) {
             val action = buildNotificationAction(title, body)

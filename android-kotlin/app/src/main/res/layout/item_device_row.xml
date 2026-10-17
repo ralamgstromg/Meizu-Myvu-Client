@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_ios_card"
+    android:gravity="center_vertical"
+    android:minHeight="64dp"
+    android:orientation="horizontal"
+    android:paddingStart="16dp"
+    android:paddingEnd="4dp"
+    android:paddingVertical="10dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
+
+    <ImageView
+        android:id="@+id/imgDeviceIcon"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        app:tint="@color/ios_blue"
+        tools:src="@drawable/ic_headphones" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="14dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/txtDeviceName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/ios_label"
+            android:textSize="16sp"
+            tools:text="Auriculares" />
+
+        <TextView
+            android:id="@+id/txtDeviceSub"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/ios_secondary_label"
+            android:textSize="13sp"
+            tools:text="Conectado · 80%" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/txtDeviceAction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_ios_pill"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="6dp"
+        android:textColor="@color/ios_blue"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        tools:text="Conectar" />
+
+    <ImageButton
+        android:id="@+id/btnDeviceMenu"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Más opciones"
+        android:src="@drawable/ic_more_vert_cyber"
+        app:tint="@color/ios_secondary_label" />
+</LinearLayout>

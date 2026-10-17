@@ -137,6 +137,12 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
         }
     }
 
+    /** Discovery needs BLUETOOTH_SCAN on Android 12+; without it startDiscovery() fails silently. */
+    private fun hasScanPermission(): Boolean {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+    }
+
     private fun registerReceiver() {
         if (receiverRegistered) return
         val filter = IntentFilter().apply {
@@ -219,11 +225,17 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
     }
 
     @SuppressLint("MissingPermission")
-    private fun handleDeviceDiscovered(device: BluetoothDevice) {
+    private fun handleDeviceDiscovered(device: BluetoothDevice, advertisesGlasses: Boolean = false) {
         if (!hasBluetoothPermission()) return
-        val name = device.name ?: return
         val mac = device.address
-        val type = classifyDevice(name, device.bluetoothClass, mac)
+        // Many BLE devices advertise no name; keep them so the user can still pick them.
+        val name = device.name ?: "Dispositivo ${mac.takeLast(5)}"
+        // MYVU glasses are recognised by their service UUID even when the advertisement has no name.
+        val type = if (advertisesGlasses) {
+            BluetoothDeviceType.SMART_GLASSES
+        } else {
+            classifyDevice(name, device.bluetoothClass, mac)
+        }
 
         val entity = BluetoothDeviceEntity(
             macAddress = mac,
@@ -441,8 +453,9 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
         LogBus.log("BluetoothDeviceManager: All devices marked as disconnected in database")
     }
 
-    fun markAllDevicesDisconnectedBlocking() {
-        kotlinx.coroutines.runBlocking { markAllDevicesDisconnected() }
+    /** Called from the service on the main thread: the Room write runs on the manager scope, not here. */
+    fun markAllDevicesDisconnectedAsync() {
+        scope.launch { markAllDevicesDisconnected() }
     }
 
     /**
@@ -451,13 +464,24 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
      */
     @SuppressLint("MissingPermission")
     fun startScanning() {
-        if (!hasBluetoothPermission()) return
+        if (!hasBluetoothPermission() || !hasScanPermission()) return
         _discoveredDevices.value = emptyList()
         _unbondedDiscoveredDevices.value = emptyList()
         _isScanning.value = true
         scanHandler.removeCallbacks(scanTimeoutRunnable)
         scanHandler.postDelayed(scanTimeoutRunnable, SCAN_TIMEOUT_MS)
         bluetoothAdapter?.startDiscovery()
+        // Unfiltered BLE scan so watches and other BLE-only devices show up next to classic ones.
+        // Stopped by the same timeout as classic discovery.
+        runCatching {
+            bluetoothAdapter?.bluetoothLeScanner?.startScan(
+                null,
+                android.bluetooth.le.ScanSettings.Builder()
+                    .setScanMode(android.bluetooth.le.ScanSettings.SCAN_MODE_BALANCED)
+                    .build(),
+                leScanCallback
+            )
+        }.onFailure { LogBus.warn("BluetoothDeviceManager -> BLE scan not started: ${it.message}") }
     }
 
     @SuppressLint("MissingPermission")
@@ -466,6 +490,15 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
         if (!hasBluetoothPermission()) return
         _isScanning.value = false
         bluetoothAdapter?.cancelDiscovery()
+        runCatching { bluetoothAdapter?.bluetoothLeScanner?.stopScan(leScanCallback) }
+    }
+
+    private val leScanCallback = object : android.bluetooth.le.ScanCallback() {
+        override fun onScanResult(callbackType: Int, result: android.bluetooth.le.ScanResult) {
+            // Callbacks arrive on a binder thread; hop to the main thread like the classic receiver's list updates.
+            val glasses = com.myvu.client.transport.ble.GlassesScanner.advertisesGlasses(result)
+            scanHandler.post { handleDeviceDiscovered(result.device, advertisesGlasses = glasses) }
+        }
     }
 
     suspend fun registerDevice(device: BluetoothDeviceEntity) {
@@ -608,18 +641,29 @@ class BluetoothDeviceManager private constructor(private val context: Context) {
             val removeBondMethod = dev.javaClass.getMethod("removeBond")
             val result = removeBondMethod.invoke(dev) as? Boolean ?: false
             LogBus.log("BluetoothDeviceManager -> removeBond for $mac: $result")
-            scope.launch {
-                dao.deleteDevice(mac)
-                refreshActiveDevice()
+            // Only forget the row once the bond is really gone; otherwise syncPairedDevices() brings it back.
+            if (result) {
+                scope.launch {
+                    dao.deleteDevice(mac)
+                    refreshActiveDevice()
+                }
             }
             result
         } catch (e: Exception) {
             LogBus.warn("BluetoothDeviceManager -> Could not unpair $mac: ${e.message}")
-            scope.launch {
-                dao.deleteDevice(mac)
-                refreshActiveDevice()
-            }
             false
+        }
+    }
+
+    /** Drops one headset or speaker link. Leaves other devices and the glasses service alone. */
+    @SuppressLint("MissingPermission")
+    fun disconnectAudioDevice(mac: String) {
+        if (!hasBluetoothPermission()) return
+        val dev = bluetoothAdapter?.getRemoteDevice(mac) ?: return
+        getAudioProfiles()?.disconnect(dev)
+        scope.launch {
+            dao.updateConnectionState(mac, false)
+            refreshActiveDevice()
         }
     }
 

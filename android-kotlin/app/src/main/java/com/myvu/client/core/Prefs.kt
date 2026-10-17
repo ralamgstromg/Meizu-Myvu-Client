@@ -281,6 +281,55 @@ object Prefs {
         prefs(c).edit().putFloat("tts_speech_rate", rate.coerceIn(0.5f, 2.0f)).apply()
     }
 
+    /** Lower other audio (music, video) by audio focus while a notification is spoken. */
+    @JvmStatic
+    fun notifDuckEnabled(c: Context): Boolean = prefs(c).getBoolean("notif_duck_enabled", true)
+
+    @JvmStatic
+    fun setNotifDuckEnabled(c: Context, enabled: Boolean) {
+        prefs(c).edit().putBoolean("notif_duck_enabled", enabled).apply()
+    }
+
+    /** Raise the music stream while a notification is spoken, then restore it. */
+    @JvmStatic
+    fun notifBoostEnabled(c: Context): Boolean = prefs(c).getBoolean("notif_boost_enabled", true)
+
+    @JvmStatic
+    fun setNotifBoostEnabled(c: Context, enabled: Boolean) {
+        prefs(c).edit().putBoolean("notif_boost_enabled", enabled).apply()
+    }
+
+    /** Target music level while boosting, as a percentage of the stream maximum. */
+    @JvmStatic
+    fun notifBoostPercent(c: Context): Int = prefs(c).getInt("notif_boost_percent", 80).coerceIn(10, 100)
+
+    @JvmStatic
+    fun setNotifBoostPercent(c: Context, percent: Int) {
+        prefs(c).edit().putInt("notif_boost_percent", percent.coerceIn(10, 100)).apply()
+    }
+
+    /** Crash recovery for a raised music level: the level to restore, or -1 when none is pending. */
+    @JvmStatic
+    fun speechVolumeSavedLevel(c: Context): Int = prefs(c).getInt("speech_volume_saved", -1)
+
+    /** Level the music stream was raised to; -1 when none is pending. */
+    @JvmStatic
+    fun speechVolumeRaisedLevel(c: Context): Int = prefs(c).getInt("speech_volume_raised", -1)
+
+    /** Written with commit() before the stream changes, so a kill mid-speech still leaves the record. */
+    @JvmStatic
+    fun setSpeechVolumeRecovery(c: Context, savedLevel: Int, raisedLevel: Int) {
+        prefs(c).edit()
+            .putInt("speech_volume_saved", savedLevel)
+            .putInt("speech_volume_raised", raisedLevel)
+            .commit()
+    }
+
+    @JvmStatic
+    fun clearSpeechVolumeRecovery(c: Context) {
+        prefs(c).edit().remove("speech_volume_saved").remove("speech_volume_raised").apply()
+    }
+
     /** Spoken answers show a short summary on the glasses HUD instead of the full text. */
     @JvmStatic
     fun hudCondensedAnswers(c: Context): Boolean = prefs(c).getBoolean("hud_condensed_answers", true)

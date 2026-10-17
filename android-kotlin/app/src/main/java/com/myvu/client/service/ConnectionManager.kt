@@ -174,6 +174,10 @@ class ConnectionManager(
 
     private val pendingNotifications: Deque<PendingAction> = ArrayDeque()
 
+    /** Last notification sent to the glasses: the same text within the window is not shown twice. */
+    private var lastShownNotification: String? = null
+    private var lastShownNotificationAt = 0L
+
     /**
      * Connects the standard HFP/A2DP audio profiles so the glasses light their
      * own "phone connected" indicator. Kept across auto-reconnects; closed only
@@ -687,10 +691,12 @@ class ConnectionManager(
         }
         conn.removeCallbacks(reconnectRunnable)
         reconnectAttempt++
-        val delay = Math.min(
-            RECONNECT_MAX_MS,
-            RECONNECT_BASE_MS * (1L shl Math.min(5, reconnectAttempt - 1))
-        )
+        // Glasses left off or out of range: a retry every minute all day drains the phone battery.
+        val delay = if (reconnectAttempt > MAX_FAST_RECONNECT_ATTEMPTS) {
+            SLOW_RECONNECT_MS
+        } else {
+            Math.min(RECONNECT_MAX_MS, RECONNECT_BASE_MS * (1L shl Math.min(5, reconnectAttempt - 1)))
+        }
         LogBus.log("$why -- retrying in ${delay / 1000}s")
         conn.postDelayed(reconnectRunnable, delay)
     }
@@ -1090,6 +1096,16 @@ class ConnectionManager(
             }
             lastTimeSyncSentAt = now
         }
+        // Mirror, test button and queue flush can each send the same notification; show it once.
+        AppLayer.notificationKey(actionJson)?.let { key ->
+            val now = System.currentTimeMillis()
+            if (key == lastShownNotification && now - lastShownNotificationAt < NOTIFICATION_DEDUPE_MS) {
+                LogBus.log("duplicate notification for the glasses skipped: ${truncate(key.replace('\u0000', ' '), 80)}")
+                return
+            }
+            lastShownNotification = key
+            lastShownNotificationAt = now
+        }
 
         val session = activeSession()
         val transport = activeTransport()
@@ -1243,7 +1259,7 @@ class ConnectionManager(
         val newWeather = WeatherSync(
             context, conn,
             { actionJson -> sendActionNow(actionJson) },
-            FusedLocationSource(context)
+            FusedLocationSource(context, highAccuracyWhileMoving = false)
         )
         weather = newWeather
         return newWeather
@@ -1355,6 +1371,11 @@ class ConnectionManager(
         private const val RELAY_ESTABLISH_TIMEOUT_MS = 10000L
         private const val RECONNECT_BASE_MS = 2000L
         private const val RECONNECT_MAX_MS = 60000L
+        /** After this many fast attempts (about 4 min), retry every SLOW_RECONNECT_MS instead of every minute. */
+        private const val MAX_FAST_RECONNECT_ATTEMPTS = 8
+        private const val SLOW_RECONNECT_MS = 600000L
+        /** Same notification text inside this window is sent once. Matches the mirror's own 3 s dedupe. */
+        private const val NOTIFICATION_DEDUPE_MS = 3000L
 
         private val AUDIO_MARKER = "\"code\":109".toByteArray(StandardCharsets.US_ASCII)
 

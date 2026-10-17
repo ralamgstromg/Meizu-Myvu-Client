@@ -583,13 +583,9 @@ class ConnectActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             val primary = devManager.getPrimaryDevice()
-            val mac = if (macInput.isNotEmpty()) {
-                macInput
-            } else if (primary != null && primary.deviceType == com.myvu.client.data.BluetoothDeviceType.SMART_GLASSES.name) {
-                primary.macAddress
-            } else {
-                ""
-            }
+            // No MAC typed: always auto-search. A saved primary MAC can be stale (re-paired glasses,
+            // new BLE address); the scan connects to the glasses that are actually advertising.
+            val mac = macInput
 
             // If user has chosen a non-glasses primary device (e.g. Headphones) and MAC input is empty:
             if (macInput.isEmpty() && primary != null && primary.deviceType != com.myvu.client.data.BluetoothDeviceType.SMART_GLASSES.name) {

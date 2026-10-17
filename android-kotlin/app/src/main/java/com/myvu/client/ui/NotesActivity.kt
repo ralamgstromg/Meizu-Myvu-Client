@@ -15,6 +15,12 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doOnTextChanged
@@ -67,6 +73,8 @@ class NotesActivity : AppCompatActivity() {
 
     private val noteAdapter = NoteAdapter()
     private val reminderAdapter = ReminderAdapter()
+    private var searchJob: Job? = null
+    private val SEARCH_DEBOUNCE_MS = 250L
 
     private var selectedTime: Calendar = Calendar.getInstance()
 
@@ -221,36 +229,27 @@ class NotesActivity : AppCompatActivity() {
         }
     }
 
+    /** Debounced and off the main thread: each keystroke cancels the pending query and restarts the wait. */
     private fun performSearch() {
-        val query = txtSearchNotes.text?.toString()?.trim() ?: ""
-        val checkedId = chipGroupFilter.checkedChipId
-
-        val notes: List<Note>
-        val reminders: List<Reminder>
-
-        when (checkedId) {
-            R.id.chipFilterText -> {
-                notes = noteRepo.search(query, "TEXT")
-                reminders = emptyList()
-            }
-            R.id.chipFilterVoice -> {
-                notes = noteRepo.search(query, "VOICE")
-                reminders = emptyList()
-            }
-            R.id.chipFilterReminders -> {
-                notes = emptyList()
-                reminders = reminderRepo.search(query, "ALL")
-            }
-            R.id.chipFilterPending -> {
-                notes = emptyList()
-                reminders = reminderRepo.search(query, "PENDING")
-            }
-            else -> { // chipFilterAll or default
-                notes = noteRepo.search(query, "ALL")
-                reminders = reminderRepo.search(query, "ALL")
-            }
+        searchJob?.cancel()
+        searchJob = lifecycleScope.launch {
+            delay(SEARCH_DEBOUNCE_MS)
+            val query = txtSearchNotes.text?.toString()?.trim() ?: ""
+            val checkedId = chipGroupFilter.checkedChipId
+            val (notes, reminders) = withContext(Dispatchers.IO) { searchFor(checkedId, query) }
+            showSearchResults(checkedId, notes, reminders)
         }
+    }
 
+    private fun searchFor(checkedId: Int, query: String): Pair<List<Note>, List<Reminder>> = when (checkedId) {
+        R.id.chipFilterText -> noteRepo.search(query, "TEXT") to emptyList()
+        R.id.chipFilterVoice -> noteRepo.search(query, "VOICE") to emptyList()
+        R.id.chipFilterReminders -> emptyList<Note>() to reminderRepo.search(query, "ALL")
+        R.id.chipFilterPending -> emptyList<Note>() to reminderRepo.search(query, "PENDING")
+        else -> noteRepo.search(query, "ALL") to reminderRepo.search(query, "ALL") // chipFilterAll or default
+    }
+
+    private fun showSearchResults(checkedId: Int, notes: List<Note>, reminders: List<Reminder>) {
         val tabs: TabLayout = findViewById(R.id.tabsNotes)
         if (checkedId == R.id.chipFilterReminders || checkedId == R.id.chipFilterPending) {
             tabs.getTabAt(1)?.select()

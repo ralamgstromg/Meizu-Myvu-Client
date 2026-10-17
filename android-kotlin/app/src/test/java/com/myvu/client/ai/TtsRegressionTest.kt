@@ -1,5 +1,6 @@
 package com.myvu.client.ai
 
+import android.media.AudioManager
 import android.speech.tts.TextToSpeech
 import com.myvu.client.core.TextToSpeechHelper
 import org.junit.After
@@ -76,6 +77,34 @@ class TtsRegressionTest {
 
         assertEquals(listOf("Te escucho", "Generando tu resumen"), lastEngine().spokenTextList)
         assertEquals(TextToSpeech.QUEUE_ADD, lastEngine().queueMode)
+    }
+
+    @Test
+    fun notificationDucksMusicUntilSpeechStops() {
+        val am = ctx.getSystemService(AudioManager::class.java)
+        am.setStreamVolume(AudioManager.STREAM_MUSIC, 3, 0)
+        TextToSpeechHelper.attach(ctx)
+
+        TextToSpeechHelper.speak("Mensaje nuevo", TextToSpeech.QUEUE_ADD, duck = true)
+        assertEquals(12, am.getStreamVolume(AudioManager.STREAM_MUSIC))
+
+        lastEngine().onInitListener.onInit(TextToSpeech.SUCCESS)
+        assertEquals(listOf("Mensaje nuevo"), lastEngine().spokenTextList)
+
+        TextToSpeechHelper.stop()
+        assertEquals(3, am.getStreamVolume(AudioManager.STREAM_MUSIC))
+    }
+
+    @Test
+    fun plainSpeechLeavesMusicAlone() {
+        val am = ctx.getSystemService(AudioManager::class.java)
+        am.setStreamVolume(AudioManager.STREAM_MUSIC, 3, 0)
+        TextToSpeechHelper.attach(ctx)
+
+        TextToSpeechHelper.speak("Te escucho")
+        lastEngine().onInitListener.onInit(TextToSpeech.SUCCESS)
+
+        assertEquals(3, am.getStreamVolume(AudioManager.STREAM_MUSIC))
     }
 
     @Test

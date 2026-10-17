@@ -116,6 +116,10 @@
 
         <!-- Secondary Activities -->
         <activity
+            android:name=".ui.DevicesActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".ui.ConnectActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:showWhenLocked="true"

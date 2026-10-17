@@ -79,7 +79,7 @@ class MyvuService : Service(), ConnectionManager.Listener {
             com.myvu.client.app.feature.TouchGestureManager.releaseBluetoothSco(this)
             try {
                 BluetoothDeviceManager.getInstance(this).stopScanning()
-                BluetoothDeviceManager.getInstance(this).markAllDevicesDisconnectedBlocking()
+                BluetoothDeviceManager.getInstance(this).markAllDevicesDisconnectedAsync()
             } catch (_: Exception) {}
             try {
                 com.myvu.client.health.HealthService.getInstance(this).unregisterHardwareSensor()

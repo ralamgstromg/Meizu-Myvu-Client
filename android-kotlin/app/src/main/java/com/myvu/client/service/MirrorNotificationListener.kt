@@ -145,8 +145,14 @@ class MirrorNotificationListener : NotificationListenerService() {
                 lastSpokenNotification = ttsText
                 val audioDevice = activeDevices.firstOrNull { it.isAudioNotificationEnabled() }
                 if (audioDevice != null) {
+                    // Queued, not flushed: a second notification must not cut off the first. Ducks other audio.
                     com.myvu.client.core.TextToSpeechHelper.init(this@MirrorNotificationListener)
-                    com.myvu.client.core.TextToSpeechHelper.speak(ttsText, context = this@MirrorNotificationListener)
+                    com.myvu.client.core.TextToSpeechHelper.speak(
+                        ttsText,
+                        queueMode = android.speech.tts.TextToSpeech.QUEUE_ADD,
+                        context = this@MirrorNotificationListener,
+                        duck = true,
+                    )
                     LogBus.log("TTS read notification for [${audioDevice.name}] (mode=${audioDevice.notificationMode}) from $app: $ttsText")
                 }
 
@@ -261,15 +267,18 @@ class MirrorNotificationListener : NotificationListenerService() {
 
         fun readLastNotificationAloud(context: Context) {
             val text = lastSpokenNotification
+            // The phone already read this notification when it arrived; the glasses' request is an echo.
+            if (!text.isNullOrBlank() && com.myvu.client.core.RecentSpeech.wasSpokenRecently(text)) {
+                LogBus.log("Notification already spoken recently; not repeating it for the glasses")
+                return
+            }
             val toSpeak = if (!text.isNullOrBlank()) {
                 text
             } else {
                 "No hay notificaciones recientes para leer."
             }
             LogBus.log("Speaking notification on demand: $toSpeak")
-            com.myvu.client.core.TextToSpeechHelper.init(context) {
-                com.myvu.client.core.TextToSpeechHelper.speak(toSpeak, context = context)
-            }
+            // speak() binds the engine itself; an extra init-callback speak would read the text twice.
             com.myvu.client.core.TextToSpeechHelper.speak(toSpeak, context = context)
         }
 

@@ -106,17 +106,7 @@ class GlassesScanner(
             val u = name.uppercase(Locale.US)
             if (u.contains("MYVU")) return true
         }
-        val rec: ScanRecord? = r.scanRecord
-        if (rec != null) {
-            val uuids = rec.serviceUuids
-            if (uuids != null) {
-                for (pu in uuids) {
-                    val id = pu.uuid
-                    if (ADV_SERVICE == id || GATT_SERVICE == id) return true
-                }
-            }
-        }
-        return false
+        return advertisesGlasses(r)
     }
 
     private fun nameOf(r: ScanResult): String? {
@@ -134,6 +124,12 @@ class GlassesScanner(
         private val ADV_SERVICE: UUID = uuid16(0x0bd3)
         private val GATT_SERVICE: UUID = uuid16(0x0bd1)
         private const val DEFAULT_TIMEOUT_MS: Long = 12000
+
+        /** True when the advertisement carries a MYVU service UUID (0x0bd3 advertising, 0x0bd1 GATT). */
+        fun advertisesGlasses(r: ScanResult): Boolean {
+            val uuids = r.scanRecord?.serviceUuids ?: return false
+            return uuids.any { it.uuid == ADV_SERVICE || it.uuid == GATT_SERVICE }
+        }
 
         private fun uuid16(i: Int): UUID {
             return UUID.fromString(String.format(Locale.US, "0000%04x-0000-1000-8000-00805f9b34fb", i))

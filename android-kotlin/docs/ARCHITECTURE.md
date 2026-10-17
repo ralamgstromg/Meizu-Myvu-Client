@@ -832,3 +832,27 @@ Previamente, el log existía únicamente como la pestaña 1 de un `TabLayout` en
    - `SettingsActivity.kt`: Se añadió el botón de acceso directo "Abrir Registro de Actividad Unificado" bajo la sección de logging.
 
 
+
+## 14. Audio de Notificaciones (Ducking y Volumen) y Pantalla Universal de Dispositivos
+
+### 14.1 Ducking y Volumen de la Voz (`SpeechAudioSession` + `TextToSpeechHelper`)
+- `TextToSpeechHelper.speak(text, queueMode, context, duck)`: cada locución recibe un id (`tts_N`) al encolarse. Si `duck = true`, el id entra en `duckedIds` y `SpeechAudioSession.acquire(ctx, holdMs)` aumenta el contador de referencias.
+- El `UtteranceProgressListener` del motor (`onDone`, `onError`, `onStop`) llama a `finish(id)`. Como `duckedIds.remove(id)` solo devuelve `true` una vez, cada locución libera una sola referencia aunque el motor repita callbacks.
+- `SpeechAudioSession` (objeto, sincronizado): primera referencia → audio focus `TRANSIENT_MAY_DUCK` y subida de `STREAM_MUSIC`; última → restauración del volumen (solo si no lo cambió el usuario), `abandonAudioFocusRequest`, y borrado del registro de recuperación.
+- Condiciones de salida: `AudioManager.mode != MODE_NORMAL` (SCO/Gemini/llamada) o foco denegado → no se sube volumen. Watchdog = `palabras × 450 ms + 2000 ms` como respaldo ante motor sin callbacks.
+- Recuperación: `Prefs.setSpeechVolumeRecovery` con `commit()` antes del cambio; `MyApp.onCreate` → `SpeechAudioSession.restoreAfterCrash`.
+- Solo las notificaciones usan `duck = true`. Gestos, briefings y lectura bajo demanda hablan sin ducking.
+
+### 14.2 Pantalla de Dispositivos (`DevicesActivity`)
+- Entradas: tarjeta "Dispositivos" en Hoy (`TodayFragment`) y "Dispositivos y conexión" en Más (`MoreFragment`). `ConnectActivity` queda como panel de gafas, alcanzable desde el menú ⋮ de la fila de gafas.
+- Datos: `BluetoothDeviceManager.getAllDevicesFlow()` (emparejados, Room), `unbondedDiscoveredDevices` e `isScanning` (cercanos). `DevicesAdapter` usa `ListAdapter` + `DiffUtil` sobre la sealed `Row` (Header, Empty, Paired, Nearby).
+- Acciones por tipo (`BluetoothDeviceType`):
+  - `SMART_GLASSES`: conectar → `MyvuService` (`ACTION_START` + `EXTRA_MAC`); desconectar → `ACTION_STOP` con confirmación.
+  - `HEADPHONES` / `GENERIC`: conectar → `connectDeviceWithCleanSwitch`; desconectar → `disconnectAudioDevice(mac)` (solo ese perfil).
+  - Cercanos: `pairDevice(mac)`; el resultado llega por `ACTION_BOND_STATE_CHANGED` (receptor registrado en `onStart`).
+- Escaneo: `startScanning()` combina discovery clásico y LE sin filtro, con timeout de 12 s. `DevicesActivity.onStop()` detiene la búsqueda.
+- Permisos: `BLUETOOTH_SCAN` + `BLUETOOTH_CONNECT` (Android 12+) o `ACCESS_FINE_LOCATION` (anteriores). Bluetooth apagado → `ACTION_REQUEST_ENABLE`.
+- Limitaciones documentadas: sin modelo `ScannedDevice`, sin clasificación mejorada, sin verificación del perfil real antes de marcar `isConnected`, sin arranque de `MyvuService` para auriculares (ver `docs/PROJECT_MEMORY.md` §57).
+
+### 14.3 Escaneo de Gafas Sin Cambios de Filtro
+- `GlassesScanner` sigue sin `ScanFilter`: la coincidencia por subcadena "MYVU" del nombre no tiene equivalente en filtros de Android. Un filtro por UUID podría perder gafas que solo anuncian nombre; queda pendiente de prueba en hardware.

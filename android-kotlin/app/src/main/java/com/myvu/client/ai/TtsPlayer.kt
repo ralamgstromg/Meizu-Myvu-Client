@@ -112,6 +112,7 @@ class TtsPlayer(private val context: Context) {
 
     /** [text] is raw answer text; it is normalized for es-CO speech exactly once, right before synthesis. */
     fun speak(text: String, cb: Callback?) {
+        com.myvu.client.core.RecentSpeech.remember(text)
         if (tts == null) {
             pendingText = text
             pending = cb

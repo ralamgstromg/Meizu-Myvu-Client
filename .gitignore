@@ -45,3 +45,6 @@ scratch_*.png
 .DS_Store
 Thumbs.db
 .codegraph
+
+# Output of scripts/build-apk.sh
+dist/

@@ -435,6 +435,24 @@ class SettingsActivity : AppCompatActivity() {
                 if (fromUser) Prefs.setNotificationMaxWords(this, value.toInt())
             }
         }
+        findViewById<com.google.android.material.materialswitch.MaterialSwitch?>(R.id.swNotifDuck)?.let { sw ->
+            sw.isChecked = Prefs.notifDuckEnabled(this)
+            sw.setOnCheckedChangeListener { _, checked -> Prefs.setNotifDuckEnabled(this, checked) }
+        }
+        findViewById<com.google.android.material.materialswitch.MaterialSwitch?>(R.id.swNotifBoost)?.let { sw ->
+            sw.isChecked = Prefs.notifBoostEnabled(this)
+            sw.setOnCheckedChangeListener { _, checked -> Prefs.setNotifBoostEnabled(this, checked) }
+        }
+        val boostLabel: TextView? = findViewById(R.id.lblNotifBoostPercent)
+        findViewById<com.google.android.material.slider.Slider?>(R.id.sliderNotifBoostPercent)?.let { slider ->
+            val percent = Prefs.notifBoostPercent(this)
+            slider.value = (Math.round(percent / 5f) * 5f).coerceIn(slider.valueFrom, slider.valueTo)
+            boostLabel?.text = "Volumen de la voz: ${slider.value.toInt()}% del máximo"
+            slider.addOnChangeListener { _, value, fromUser ->
+                boostLabel?.text = "Volumen de la voz: ${value.toInt()}% del máximo"
+                if (fromUser) Prefs.setNotifBoostPercent(this, value.toInt())
+            }
+        }
     }
 
     /** On: CONFIRM_SENSITIVE (default). Off: ALLOW_ALL, after an explicit warning. */

@@ -14,7 +14,11 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.myvu.client.core.LogBus
 
-class FusedLocationSource(context: Context) : LocationSource {
+// highAccuracyWhileMoving=false for weather: a city-level fix is enough, so the GPS never powers up.
+class FusedLocationSource(
+    context: Context,
+    private val highAccuracyWhileMoving: Boolean = true,
+) : LocationSource {
 
     private val context: Context = context.applicationContext
     private val client: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this.context)
@@ -31,7 +35,7 @@ class FusedLocationSource(context: Context) : LocationSource {
         }
 
         currentIntervalMs = FAST_INTERVAL_MS
-        val request = createLocationRequest(currentIntervalMs)
+        val request = createLocationRequest(currentIntervalMs, priorityFor(currentIntervalMs))
 
         callback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
@@ -75,7 +79,7 @@ class FusedLocationSource(context: Context) : LocationSource {
         if (newInterval != currentIntervalMs && cb != null) {
             currentIntervalMs = newInterval
             try {
-                val newRequest = createLocationRequest(newInterval)
+                val newRequest = createLocationRequest(newInterval, priorityFor(newInterval))
                 client.requestLocationUpdates(newRequest, cb, Looper.getMainLooper())
                 LogBus.log("location polling interval updated to ${newInterval}ms for speed ${speed}m/s")
             } catch (e: SecurityException) {
@@ -83,6 +87,14 @@ class FusedLocationSource(context: Context) : LocationSource {
             }
         }
     }
+
+    /// GPS only while moving (fast or slow polling); stationary polling uses network-level accuracy.
+    private fun priorityFor(intervalMs: Long): Int =
+        if (highAccuracyWhileMoving && intervalMs < STATIONARY_INTERVAL_MS) {
+            Priority.PRIORITY_HIGH_ACCURACY
+        } else {
+            Priority.PRIORITY_BALANCED_POWER_ACCURACY
+        }
 
     override fun stop() {
         callback?.let { cb ->
@@ -109,8 +121,8 @@ class FusedLocationSource(context: Context) : LocationSource {
             }
         }
 
-        private fun createLocationRequest(intervalMs: Long): LocationRequest {
-            return LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervalMs)
+        private fun createLocationRequest(intervalMs: Long, priority: Int): LocationRequest {
+            return LocationRequest.Builder(priority, intervalMs)
                 .setMinUpdateIntervalMillis(intervalMs)
                 .setWaitForAccurateLocation(false)
                 .build()

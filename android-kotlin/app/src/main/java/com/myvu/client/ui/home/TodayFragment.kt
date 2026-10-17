@@ -20,7 +20,7 @@ import com.myvu.client.routines.RoutineRunner
 import com.myvu.client.service.BluetoothDeviceManager
 import com.myvu.client.service.ConnectionState
 import com.myvu.client.service.MyvuService
-import com.myvu.client.ui.ConnectActivity
+import com.myvu.client.ui.DevicesActivity
 import com.myvu.client.ui.NotesActivity
 import com.myvu.client.ui.VoiceRecorderActivity
 import com.myvu.client.ui.chat.ChatActivity
@@ -50,7 +50,7 @@ class TodayFragment : Fragment() {
         view.findViewById<TextView>(R.id.txtTodayDate).text =
             SimpleDateFormat("EEEE d 'de' MMMM", Locale("es", "CO")).format(Date()).replaceFirstChar { it.uppercase() }
 
-        view.findViewById<View>(R.id.cardTodayDevices).setOnClickListener { startActivity(Intent(ctx, ConnectActivity::class.java)) }
+        view.findViewById<View>(R.id.cardTodayDevices).setOnClickListener { DevicesActivity.start(ctx) }
         observeDevices(view.findViewById(R.id.txtTodayDevices))
 
         val ask: TextInputEditText = view.findViewById(R.id.edtTodayAsk)

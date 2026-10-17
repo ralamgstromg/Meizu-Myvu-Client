@@ -2378,3 +2378,110 @@ Se requería dotar al ecosistema de conexión Bluetooth de:
 - `./gradlew assembleDebug`: **BUILD SUCCESSFUL** (APK compilado y empaquetado sin errores).
 - `codegraph sync`: 14 archivos sincronizados, 861 nodos actualizados en 293ms.
 
+
+## 57. [2026-10-17] — Ducking y volumen de voz en notificaciones, pantalla universal de dispositivos y ajustes de batería
+
+### Requerimientos:
+1. Revisar el código buscando mejoras de rendimiento y batería, respetando lo ya documentado (secciones 52–56 y planes 2026-09-09 a 2026-10-02).
+2. Interfaz de conexión sencilla que sirva para cualquier dispositivo Bluetooth (no solo gafas MYVU).
+3. Al leer una notificación por TTS: bajar la música y subir el volumen de la voz; al terminar, volver al nivel normal.
+
+Plan aprobado: `docs/superpowers/plans/2026-10-17-battery-devices-notification-ducking-plan.md`.
+
+### Diagnóstico (lo que faltaba):
+- Ningún código usaba audio focus ni cambiaba volumen. Las notificaciones se hablaban con `QUEUE_FLUSH`, así que una segunda cortaba a la primera.
+- `TextToSpeechHelper` no tenía `UtteranceProgressListener`: no había señal de fin de locución.
+- `readLastNotificationAloud` e `InboundRouter` (lectura del asistente) llamaban a `speak` dos veces: `init(ctx) { speak }` y después `speak`. Como `init` no guarda `onReady` cuando crea el motor, la segunda llamada siempre hablaba; con motor ya activo, se hablaba dos veces.
+- `ConnectActivity` era una pantalla de gafas: campo MAC manual, wifi, zen y nav siempre visibles. Escaneo solo clásico. "Desconectar" era siempre la desconexión total.
+- Reconexión BLE externa (`ConnectionManager.scheduleReconnect`) reintentaba cada 60 s indefinidamente cuando las gafas estaban apagadas.
+- `FusedLocationSource` pedía `PRIORITY_HIGH_ACCURACY` también para el clima y en reposo.
+- Búsqueda de notas corría en el hilo UI en cada pulsación.
+- `MyvuService.onStartCommand` llamaba a `markAllDevicesDisconnectedBlocking()` (Room bloqueante en hilo principal).
+- `unpairDevice` borraba la fila de Room aunque `removeBond` fallara; `syncPairedDevices` la volvía a insertar.
+- `handleDeviceDiscovered` descartaba dispositivos sin nombre; BLE sin nombre no aparecía.
+
+### Cambios implementados:
+**A. Ducking y volumen (`core/SpeechAudioSession.kt`, nuevo)**
+- Objeto con contador de referencias. `acquire(ctx, holdMs)` al encolar una locución con ducking; `release()` cuando termina la última.
+- Audio focus `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK`, atributos `USAGE_ASSISTANCE_NAVIGATION_GUIDANCE` + `CONTENT_TYPE_SPEECH`, `setWillPauseWhenDucked(false)`.
+- Si el foco se deniega, no sube volumen. Si `AudioManager.mode != MODE_NORMAL` (SCO/Gemini, llamada), no actúa.
+- Sube `STREAM_MUSIC` a `max(actual, % configurado del máximo)` con flag `0` (sin UI). Lee el valor de vuelta por si el dispositivo lo ignora.
+- Restaura solo si el volumen sigue siendo el que pusimos; si el usuario lo cambió durante la lectura, se respeta.
+- Recuperación tras muerte del proceso: el nivel se persiste con `commit()` antes de cambiarlo; `MyApp.onCreate` llama a `restoreAfterCrash`.
+- Watchdog: `holdMs = palabras × 450 ms + 2000 ms`. Fuerza la restauración si el motor nunca emite fin.
+
+**B. `TextToSpeechHelper`**
+- `UtteranceProgressListener` (`onDone`, `onError` ×2, `onStop`) libera la referencia por id. Un conjunto `duckedIds` asegura que cada id libere una sola vez, aunque el motor llame varias veces.
+- `speak(..., duck: Boolean = false)`. Los ids se generan al encolar, así que las locuciones pendientes (motor aún no listo) cuentan como en vuelo.
+- `stop()` libera las locuciones en reproducción; las pendientes conservan su referencia. `shutdown()` libera todo.
+- Notificaciones: `QUEUE_ADD` + `duck = true`. Gestos, briefings y lectura bajo demanda no cambian de modo de cola (la lectura bajo demanda sigue con flush).
+- Se eliminó el `init { speak }` duplicado en `readLastNotificationAloud` (`MirrorNotificationListener`) e `InboundRouter`.
+
+**C. Preferencias y ajustes (`Prefs`, `activity_settings.xml`, `SettingsActivity`)**
+- `notif_duck_enabled` (true), `notif_boost_enabled` (true), `notif_boost_percent` (80, rango 10–100), y claves de recuperación `speech_volume_saved` / `speech_volume_raised`.
+- Controles en la tarjeta de notificaciones de Ajustes: dos switches y un slider de volumen.
+
+**D. Pantalla universal de dispositivos (`ui/DevicesActivity.kt`, nueva)**
+- Punto de entrada único desde Hoy (`cardTodayDevices`) y Más ("Dispositivos y conexión"). `ConnectActivity` sigue existiendo como panel de gafas, accesible desde el menú ⋮ de la fila de gafas.
+- Secciones "Mis dispositivos" (Room, `getAllDevicesFlow`) y "Cercanos" (`unbondedDiscoveredDevices`, sin los ya emparejados).
+- Fila: icono por tipo, estado (Conectado/Desconectado) y batería si existe. Botón de acción: Conectar/Desconectar/Emparejar. Menú ⋮: Configurar, Usar como principal, Olvidar, y Panel de gafas (solo gafas).
+- Gafas: conectar = `MyvuService` con `EXTRA_MAC`; desconectar = `ACTION_STOP` con confirmación (apaga el servicio completo, como antes).
+- Otros: conectar = `connectDeviceWithCleanSwitch`; desconectar = `BluetoothDeviceManager.disconnectAudioDevice(mac)` (nuevo, solo ese perfil).
+- Estados de permiso (`BLUETOOTH_SCAN`/`BLUETOOTH_CONNECT`, o ubicación en < Android 12) y de Bluetooth apagado, con botón para resolverlos.
+- Recibe `ACTION_BOND_STATE_CHANGED` y avisa al emparejar o si falla. Detiene la búsqueda al salir de la pantalla.
+- Escaneo BLE sin filtro añadido en `BluetoothDeviceManager.startScanning()`, con el mismo timeout de 12 s que el clásico. Dispositivos sin nombre se muestran como "Dispositivo XXXXX".
+- `unpairDevice` solo borra la fila de Room si `removeBond` devuelve `true`.
+- `hasScanPermission()`: `startScanning()` no arranca sin `BLUETOOTH_SCAN` en Android 12+.
+
+**E. Batería y rendimiento**
+- A1 `ConnectionManager`: tras 8 reintentos rápidos (≈4 min), la reconexión pasa a cada 10 min.
+- A2 `FusedLocationSource(context, highAccuracyWhileMoving)`: el clima usa `PRIORITY_BALANCED_POWER_ACCURACY`; la navegación usa alta precisión solo con intervalo de movimiento (< 15 s).
+- A4 `NotesActivity`: búsqueda con debounce de 250 ms en `lifecycleScope` + `Dispatchers.IO`.
+- A6 `MyvuService`: `markAllDevicesDisconnectedAsync()` (usa el scope de `BluetoothDeviceManager`), en lugar del bloqueante en hilo principal.
+
+### Pendientes (no incluidos en esta pasada, con motivo):
+- **A3 filtro de escaneo BLE para gafas**: `ScanFilter` no expresa la coincidencia por subcadena "MYVU" del nombre; un filtro por UUID podría dejar de ver las gafas que solo anuncian nombre. Requiere prueba en hardware.
+- **A5 `LogBus`** (clasificación perezosa y formateadores): impacto bajo, toca el log de actividad; sin medición en dispositivo.
+- **R8 / `isMinifyEnabled` / `largeHeap`**: reglas keep para la reflexión de `AudioProfiles` y `BtTransport`; requiere build release y prueba.
+- **R4** (51 `catch (ignored)`) y **R5** (scopes sin ciclo de vida en `NoteAiProcessor`, `TotalDisconnectHelper`, `UserProfileAnalyzer`): sin cambios.
+- **Modelo `ScannedDevice` / `DeviceRowState`**: no creado. La pantalla reutiliza `BluetoothDeviceEntity`; no hay cambio de esquema Room (evita la migración destructiva que borraría el chat).
+- **Clasificación de dispositivos** (`classifyDeviceSimple` por `BluetoothClass` + UUID): sin cambios; altavoces/TV pueden seguir entrando como `HEADPHONES`.
+- **Verificación del perfil de audio real** antes de marcar `isConnected`: sin cambios; `connectDeviceWithCleanSwitch` sigue marcando conectado tras la reflexión `@SystemApi`.
+- **Servicio para auriculares**: conectar un auricular desde la pantalla no arranca `MyvuService`, así que los gestos de auricular siguen dependiendo de que el servicio esté vivo.
+- **Bottom sheet `DeviceManagementBottomSheet`**: se mantiene, sin retirar.
+- **Limitación del ducking de volumen**: TTS y música comparten `STREAM_MUSIC`. Subir el stream sube también la música; el foco la baja. Si la app de música ignora el foco, la música suena más fuerte durante la locución.
+
+### Verificación:
+- `./gradlew assembleDebug` (JDK 21 por override de línea de comandos; `/opt/jdk-25` no existe en esta máquina): **BUILD SUCCESSFUL**, sin errores nuevos.
+- `./gradlew testDebugUnitTest`: **393 tests, 0 fallos, 0 errores**. Nuevas: `SpeechAudioSessionTest` (7) y dos casos en `TtsRegressionTest` (`notificationDucksMusicUntilSpeechStops`, `plainSpeechLeavesMusicAlone`).
+- `trivy fs --scanners secret,vuln`: sin secretos detectados. Sin escaneo de vulnerabilidades: el proyecto Gradle no tiene lockfile, así que trivy no tenía archivos soportados.
+- Pendiente manual en dispositivo: reproducir música, recibir notificación (baja música, sube voz, restaura al terminar); barge-in con auricular; emparejar un dispositivo BLE genérico; medir `dumpsys batterystats` antes y después de A1/A2.
+
+## 58. [2026-10-17] — Repetición de Respuestas y Notificaciones en Voz y en las Gafas
+
+### Requerimientos:
+- El usuario reporta (`myvu_activity_log.txt`) que las gafas repiten respuestas por voz y que una notificación se repite muchas veces.
+
+### Diagnóstico:
+- Las gafas envían `TTS request: caller=com.tts.assistant` con el texto que el teléfono ya habló (`TTS_PLAYBACK_FINISHED` y 0.3 s después la petición). `InboundRouter` lo volvía a hablar.
+- Las gafas envían `caller=com.tts.notification` tras recibir cada notificación; `readLastNotificationAloud` la leía otra vez, aunque el teléfono ya la hubiera leído al llegar.
+- Dos `SHOW_NOTIFICATION` idénticas se encolaron con 0.4 s de diferencia (`session establishing`), se vaciaron juntas y salieron por BLE como msgId 29 y 30. El JSON cambia en cada build (`id` y `crateTime`), así que no había deduplicación posible sin mirar el texto.
+
+### Cambios implementados:
+- `core/RecentSpeech.kt` (nuevo): registro de 2 min de lo hablado. Se alimenta desde `TtsPlayer.speak` y `TextToSpeechHelper.speak`. Compara texto normalizado: igualdad, o contención si ambos textos tienen ≥ 24 caracteres.
+- `InboundRouter.checkTtsEngineRequest`: un `com.tts.assistant` cuyo texto ya se habló se ignora (queda en el log).
+- `MirrorNotificationListener.readLastNotificationAloud`: si la última notificación se leyó hace menos de 2 min, no se repite.
+- `AppLayer.notificationKey(actionJson)`: clave `title` + `content` de un `SHOW_NOTIFICATION`, ignorando `id` y `crateTime`.
+- `ConnectionManager.sendActionNow`: un `SHOW_NOTIFICATION` con la misma clave dentro de 3 s no se envía ni se encola. Cubre el envío directo, el de prueba y el flush de la cola.
+
+### Tradeoffs:
+- Un "lee la última" pedido en las gafas dentro de los 2 min tras la lectura no suena.
+- Dos notificaciones con el mismo título y texto en menos de 3 s se muestran una sola vez.
+
+### Pendiente cerrado:
+- Notificaciones duplicadas en la pantalla de las gafas (antes pendiente en §58 de la conversación): resuelto por la deduplicación en `sendActionNow`.
+
+### Verificación:
+- `./gradlew testDebugUnitTest`: **401 tests, 0 fallos**. Nuevas: `RecentSpeechTest` (5), `NotificationKeyTest` (3).
+- `SettingsGestureConfigTest.testGlassesSettingsActiveListeningTogglePersistsPerDevice` falló una vez en la suite completa y pasó 3 de 3 en aislado. Es intermitente y no toca los archivos de este cambio; queda anotado como flaky.
+- Pendiente manual: reproducir con gafas (respuesta de IA, notificación entrante, "lee la última") y revisar el log.

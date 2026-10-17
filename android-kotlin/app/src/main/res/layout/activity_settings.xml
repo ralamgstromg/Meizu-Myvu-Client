@@ -886,6 +886,43 @@
                         android:valueTo="100"
                         android:stepSize="5"
                         android:value="20" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/swNotifDuck"
+                        style="@style/Switch.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:textSize="13sp"
+                        android:textColor="@color/on_surface_obsidian"
+                        android:text="Bajar la música mientras se lee una notificación" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/swNotifBoost"
+                        style="@style/Switch.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textSize="13sp"
+                        android:textColor="@color/on_surface_obsidian"
+                        android:text="Subir el volumen de la voz al leer notificaciones" />
+
+                    <TextView
+                        android:id="@+id/lblNotifBoostPercent"
+                        style="@style/Label.Myvu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Volumen de la voz: 80% del máximo" />
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/sliderNotifBoostPercent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="10"
+                        android:valueTo="100"
+                        android:stepSize="5"
+                        android:value="80" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

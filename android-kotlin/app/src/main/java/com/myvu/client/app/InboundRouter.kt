@@ -104,12 +104,14 @@ class InboundRouter(private val sender: Sender) {
                 return
             }
             if (textToRead.isNotBlank()) {
+                if (com.myvu.client.core.RecentSpeech.wasSpokenRecently(textToRead)) {
+                    LogBus.log("<- Suppressed glasses echo: this answer was already spoken")
+                    return
+                }
                 try {
                     val ctx = runCatching { MyApp.instance }.getOrNull()
                     if (ctx != null) {
-                        com.myvu.client.core.TextToSpeechHelper.init(ctx) {
-                            com.myvu.client.core.TextToSpeechHelper.speak(textToRead, context = ctx)
-                        }
+                        // speak() binds the engine itself; an extra init-callback speak would read the text twice.
                         com.myvu.client.core.TextToSpeechHelper.speak(textToRead, context = ctx)
                     }
                 } catch (e: Throwable) {

@@ -10,7 +10,7 @@ import androidx.fragment.app.Fragment
 import com.google.android.material.button.MaterialButton
 import com.myvu.client.R
 import com.myvu.client.ui.ActivityLogActivity
-import com.myvu.client.ui.ConnectActivity
+import com.myvu.client.ui.DevicesActivity
 import com.myvu.client.ui.GlassesSettingsActivity
 import com.myvu.client.ui.HeadphoneSettingsActivity
 import com.myvu.client.ui.NotificationAppsActivity
@@ -26,7 +26,7 @@ class MoreFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val list: LinearLayout = view.findViewById(R.id.listMore)
         val entries = listOf(
-            "🔗 Dispositivos y conexión" to ConnectActivity::class.java,
+            "🔗 Dispositivos y conexión" to DevicesActivity::class.java,
             "👓 Gafas: HUD, gestos y respuestas" to GlassesSettingsActivity::class.java,
             "🎧 Audífonos: toques y lectura" to HeadphoneSettingsActivity::class.java,
             "🧠 IA, voz, notificaciones y respaldo" to SettingsActivity::class.java,
